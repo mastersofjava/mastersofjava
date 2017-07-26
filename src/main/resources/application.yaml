@@ -1,0 +1,11 @@
+---
+
+moj:
+  server:
+    compiler:
+      workDir: ./work
+      outputDir: ./classes
+      inheritClassPath: no
+      classPath:
+        - junit/junit/4.12/junit-4.12.jar
+...
