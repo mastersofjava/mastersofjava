@@ -1,0 +1,14 @@
+# generated files
+bin/
+gen/
+target/
+
+# Eclipse project files
+.classpath
+.project
+
+# Intellij project files
+*.iml
+*.ipr
+*.iws
+.idea/
