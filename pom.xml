@@ -23,6 +23,10 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-messaging</artifactId>
 		</dependency>
@@ -52,6 +56,18 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>jquery-ui</artifactId>
+			<version>1.12.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>jquery-ui-themes</artifactId>
+			<version>1.12.1</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>codemirror</artifactId>
 			<version>5.27.4</version>
@@ -71,6 +87,8 @@
 
 	<properties>
 		<java.version>1.8</java.version>
+		<thymeleaf.version>3.0.7.RELEASE</thymeleaf.version>
+		<thymeleaf-layout-dialect.version>2.2.1</thymeleaf-layout-dialect.version>
 	</properties>
 
 	<build>
