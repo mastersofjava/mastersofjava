@@ -1,4 +1,15 @@
-/target/
-/.settings/
-/.classpath
-/.project
+# generated files
+bin/
+gen/
+target/
+
+# Eclipse project files
+.classpath
+.project
+settings/
+
+# Intellij project files
+*.iml
+*.ipr
+*.iws
+.idea/
