@@ -2,6 +2,7 @@ package nl.moj.server;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,24 +11,25 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class IndexController {
 
+	private AssignmentService assignmentService;
+	
+	
+	public IndexController(AssignmentService assignmentService) {
+		super();
+		this.assignmentService = assignmentService;
+	}
+
 	@GetMapping("/")
 	public String index(Model model) {
-		List<String> files = new ArrayList<>();
-		files.add("opgave");
-		files.add("anderbestand");
-		files.add("noganderbestand");
+		List<JavaFile> files = assignmentService.getAssignmentFiles();
 		model.addAttribute("files", files);
 		return "index";
 	}
-	
+
 	@GetMapping(value = "index.js")
-    public String common(Model model) {
-        model.addAttribute("code", "Thymeleaf rules!".hashCode());
-		List<String> files = new ArrayList<>();
-		files.add("opgave");
-		files.add("anderbestand");
-		files.add("noganderbestand");
+	public String common(Model model) {
+		List<JavaFile> files = assignmentService.getAssignmentFiles();
 		model.addAttribute("files", files);
-        return "index.js";
-}
+		return "index.js";
+	}
 }

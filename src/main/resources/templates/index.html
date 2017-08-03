@@ -26,10 +26,10 @@
 <body onload="connect();">
 <div id="tabs" >
   <ul>
-    <li th:each="file : ${files}"><a href="#" th:attrappend="href=|${file}.tab|" th:text="|${file}.java|" ></a></li>
+    <li th:each="file : ${files}"><a href="#" th:attrappend="href=|${file.name}.tab|" th:text="|${file.filename}|" ></a></li>
   </ul>
-  <div th:each="file : ${files}" th:attr="id=|${file}.tab|">
-  	<div th:attr="id=|${file}.java|" ></div>
+  <div th:each="file : ${files}" th:attr="id=|${file.name}.tab|">
+  	<div th:attr="id=|${file.filename}|" ></div>
   </div>
 </div>
 
@@ -37,6 +37,7 @@
 	<button id="compile" onclick="compile();">compile</button>
 	<button id="test" onclick="test();">test</button>
 	<button id="sendMessage" onclick="sendMessage();">Send</button>
+	<button id="getFiles" onclick="getAssignmentFiles();">getAssignmentFiles</button>
 	<p id="response"></p>
 </div>
 

@@ -4,6 +4,7 @@ import java.security.Principal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -11,10 +12,16 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 
+import nl.moj.server.compile.CompileService;
+
 @Controller
 @MessageMapping("/submit")
 public class SubmitController {
 
+	
+	@Autowired
+	private CompileService compileService;
+	
 	@MessageMapping("/compile")
 	//@SendTo("/topic/messages")
 	@SendToUser("/queue/feedback")
@@ -22,6 +29,7 @@ public class SubmitController {
 	    String time = new SimpleDateFormat("HH:mm").format(new Date());
 	    //System.out.println(message.getSource());
 	    System.out.println(user.getName());
+	    compileService.compile(null);
 	    return new FeedbackMessage(user.getName(), "some feedback", time);
 	}
 	

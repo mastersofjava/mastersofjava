@@ -66,3 +66,18 @@
 				+ messageOutput.text + " (" + messageOutput.time + ")"));
 		response.appendChild(p);
 	}
+	
+	function showOutput(messageOutput) {
+		var response = document.getElementById('response');
+		var p = document.createElement('p');
+		p.style.wordWrap = 'break-word';
+		p.appendChild(document.createTextNode(messageOutput));
+		response.appendChild(p);
+	}
+	
+	function getAssignmentFiles(){
+		$.ajax({url: "/files", success: function(result){
+	        //$("#div1").html(result);
+			showOutput(result);
+	    }});
+	}
