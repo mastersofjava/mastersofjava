@@ -3,7 +3,7 @@
     function getContent() {
 		var curTab = $('.ui-state-active');
 		console.log(curTab.index());
-		return cmArray[curTab.index()].getValue();
+		return cmArray[2].getValue();
     }  
       
 	function setConnected(connected) {
@@ -61,9 +61,13 @@
 		console.log("show");
 		var response = document.getElementById('response');
 		var p = document.createElement('p');
-		p.style.wordWrap = 'break-word';
-		p.appendChild(document.createTextNode(messageOutput.team + ": "
-				+ messageOutput.text + " (" + messageOutput.time + ")"));
+		p.appendChild(document.createTextNode(messageOutput.team + ": "));
+		response.appendChild(p);
+		var pre = document.createElement('pre');
+		pre.appendChild(document.createTextNode(messageOutput.text));
+		response.appendChild(pre);
+		p = document.createElement('p');
+		p.appendChild(document.createTextNode(messageOutput.time));
 		response.appendChild(p);
 	}
 	

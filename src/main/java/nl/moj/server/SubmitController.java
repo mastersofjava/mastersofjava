@@ -27,7 +27,7 @@ public class SubmitController {
 	@SendToUser("/queue/feedback")
 	public FeedbackMessage compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg) throws Exception {
 	    String time = new SimpleDateFormat("HH:mm").format(new Date());
-	    String result = compileService.compile(null);
+	    String result = compileService.compile(message.getSource());
 	    return new FeedbackMessage(user.getName(), result, time);
 	}
 	

@@ -5,6 +5,6 @@ public class Test {
 	private String test = "test";
 	
 	public String getTest() {
-		return tst;
+		return test;
 	}
 }

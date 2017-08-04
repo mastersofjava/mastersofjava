@@ -80,9 +80,9 @@ public class JavaCompiler {
 	 */
 	protected String report(Diagnostic<?> dg, StringBuilder sb) {
 
-		sb.append(dg.getSource());
+		//sb.append(dg.getSource()+ "\n");
 		sb.append(dg.getKind() + "> Line=" + dg.getLineNumber() + ", Column=" + dg.getColumnNumber());
-		sb.append("Message> " + dg.getMessage(null));
+		sb.append("Message> " + dg.getMessage(null)+ "\n");
 		return sb.toString();
 	}
 

@@ -54,14 +54,14 @@ public class CompileService {
         return classPath;
     }
 
-    public String compile(AssignmentDTO assignment) throws IOException {
+    public String compile(String teamOpgave) throws IOException {
         createClassPath(true);
 
         List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
         JavaFile order = assignmentFiles.stream().filter(f-> f.getName().equalsIgnoreCase("Order")).findFirst().get();
         JavaFile test = assignmentFiles.stream().filter(f-> f.getName().equalsIgnoreCase("Test")).findFirst().get();
-        JavaFile opgave = assignmentFiles.stream().filter(f-> f.getName().equalsIgnoreCase("WorkloadbalancerImpl")).findFirst().get();
-              
+        JavaFile opgave = new JavaFile("WorkloadbalancerImpl.java", teamOpgave);
+        
 		List<JavaFileObject> javaFileObjects = new ArrayList<JavaFileObject>(1);
 		javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(order.getFilename(), order.getContent()));
 		javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(opgave.getFilename(), opgave.getContent()));

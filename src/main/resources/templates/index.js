@@ -3,7 +3,7 @@ var cmArray = [];
 
 [# th:each="file : ${files}"]
 var readOnly = true;
-if ([# th:text="${file.name}"/] == "opgave") {
+if ([# th:text="${file.name}"/] == "WorkloadbalancerImpl") {
 	readOnly = false;
 }
 var [# th:utext="${file.name}"/] = new CodeMirror(document.getElementById([# th:text="|${file.filename}|"/]), {
