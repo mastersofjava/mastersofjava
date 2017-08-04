@@ -178,7 +178,7 @@ public class AppConfig {
 		CompositeFileListFilter<File> filters =new CompositeFileListFilter<>();
 		filters.addFilter(new SimplePatternFileListFilter("*.java"));
 		LastModifiedFileListFilter lastmodified = new LastModifiedFileListFilter();
-		lastmodified.setAge(1, TimeUnit.MINUTES);
+		lastmodified.setAge(1, TimeUnit.SECONDS);
 		filters.addFilter(lastmodified);
 		filters.addFilter(new AcceptOnceFileListFilter<>());
 		

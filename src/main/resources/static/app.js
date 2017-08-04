@@ -3,7 +3,7 @@
     function getContent() {
 		var curTab = $('.ui-state-active');
 		console.log(curTab.index());
-		return cmArray[0].getValue();
+		return cmArray[curTab.index()].getValue();
     }  
       
 	function setConnected(connected) {

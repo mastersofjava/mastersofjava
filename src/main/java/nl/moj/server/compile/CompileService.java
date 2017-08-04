@@ -7,7 +7,6 @@ import nl.moj.server.AssignmentService;
 import nl.moj.server.JavaFile;
 
 import javax.annotation.PostConstruct;
-import javax.tools.Diagnostic;
 import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
@@ -55,36 +54,20 @@ public class CompileService {
         return classPath;
     }
 
-    //@PostConstruct
-//    public Stream<DiagnosticDTO> compile() throws IOException {
-//        AssignmentDTO assignmentDTO = AssignmentDTO.of("team1", "SimplePuzzle");
-//
-//        return compile(assignmentDTO);
-//    }
-
-    public void compile(AssignmentDTO assignment) throws IOException {
-        //final Path root = workDir().resolve(assignment.getTeamName()).resolve(assignment.getAssignment());
-
+    public String compile(AssignmentDTO assignment) throws IOException {
         createClassPath(true);
-        //prepareOutputDirectory(root);
 
         List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
-        JavaFile opgave = assignmentFiles.stream().filter(f-> f.getName().equalsIgnoreCase("opgave")).findFirst().get();
-        
-        
-        compiler.compile(opgave.getFilename(), opgave.getContent());//, err, sourcePath, classPath);
-        
-        
-//        final Iterable<? extends JavaFileObject> javaObjectFiles = standardFileManager.getJavaFileObjectsFromFiles(assignmentFiles(root));
-
-        //TODO: move compilation to a separate thread!
-//        final JavaCompiler.CompilationTask task = compiler.getTask(null, standardFileManager, diagnosticCollector,null, null, javaObjectFiles);
-//        final Boolean call = task.call();
-
-      //  return diagnosticCollector
-       //         .getDiagnostics()
-      //          .stream()
-      //          .map(d -> DiagnosticDTO.of(d.getSource().getName(), d.getLineNumber(), d.getMessage(null)));
+        JavaFile order = assignmentFiles.stream().filter(f-> f.getName().equalsIgnoreCase("Order")).findFirst().get();
+        JavaFile test = assignmentFiles.stream().filter(f-> f.getName().equalsIgnoreCase("Test")).findFirst().get();
+        JavaFile opgave = assignmentFiles.stream().filter(f-> f.getName().equalsIgnoreCase("WorkloadbalancerImpl")).findFirst().get();
+              
+		List<JavaFileObject> javaFileObjects = new ArrayList<JavaFileObject>(1);
+		javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(order.getFilename(), order.getContent()));
+		javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(opgave.getFilename(), opgave.getContent()));
+		javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(test.getFilename(), test.getContent()));
+		return compiler.compile(javaFileObjects,null,null);//, err, sourcePath, classPath);
+		
     }
 
     private Set<File> assignmentFiles(final Path root) throws IOException {

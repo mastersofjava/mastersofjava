@@ -1,9 +1,11 @@
 package nl.moj.server.compile;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.CharBuffer;
@@ -16,6 +18,12 @@ import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
 import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardLocation;
+import javax.validation.constraints.NotNull;
+
+import org.springframework.stereotype.Component;
+
+import javax.tools.JavaFileManager.Location;
 
 /**
  * <p>
@@ -43,6 +51,7 @@ import javax.tools.SimpleJavaFileObject;
  * @author A. Sundararajan
  * @author Rick O'Sullivan
  */
+@Component
 public final class MemoryJavaFileManager<FM extends JavaFileManager> extends ForwardingJavaFileManager<FM> {
 	/** Java source file extension. */
 	private final static String JAVA_SOURCE_EXTENSION = ".java";
@@ -172,6 +181,30 @@ public final class MemoryJavaFileManager<FM extends JavaFileManager> extends For
 			return super.getJavaFileForOutput(location, className, kind, sibling);
 	}
 
+	public JavaFileObject getJavaFileForInput(Location location, String className, Kind kind) throws IOException {
+		if (location == StandardLocation.CLASS_OUTPUT && getMemoryMap().containsKey(className) && kind == Kind.CLASS) {
+			byte[] bs = getMemoryMap().get(className);
+			return new SimpleJavaFileObject(URI.create(className), kind) {
+				@NotNull
+				public InputStream openInputStream() {
+					return new ByteArrayInputStream(bs);
+				}
+			};
+		}
+
+		return fileManager.getJavaFileForInput(location, className, kind);
+
+	}
+
+//    public ClassLoader getClassLoader(Location location) {
+//    	if (location == StandardLocation.CLASS_OUTPUT) {
+//    		new MemoryClassLoader(getMemoryMap());
+//    	}
+//    	
+//        return fileManager.getClassLoader(location);
+//    }
+    
+    
 	/**
 	 * Create a JavaFileObject for the given class name and byte code.
 	 * 
@@ -183,8 +216,8 @@ public final class MemoryJavaFileManager<FM extends JavaFileManager> extends For
 	 * @return A new JavaFileObject containing the bytcode and identified by the
 	 *         class name.
 	 */
-	protected static JavaFileObject createJavaFileObject(String className, String bytecode) {
-		return new SourceJavaFileObject(className, bytecode);
+	protected static JavaFileObject createJavaFileObject(String className, String sourceCode) {
+		return new SourceJavaFileObject(className, sourceCode);
 	}
 
 	private static URI toURI(String name) {
