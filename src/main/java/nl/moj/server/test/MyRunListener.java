@@ -1,11 +1,9 @@
-package nl.moj.server.compile;
+package nl.moj.server.test;
 
 import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
-
-import nl.moj.server.test.TestCollector;
 
 public class MyRunListener extends RunListener {
 
@@ -21,6 +19,8 @@ public class MyRunListener extends RunListener {
 
     public void testRunFinished(Result result) throws Exception {
         testCollector.addTestResult("Number of tests executed: " + result.getRunCount() + "\n");
+        
+        testCollector.addTestResult("Number of tests failed: " + result.getFailures().size() + "\n");
     }
 
     public void testStarted(Description description) throws Exception {
@@ -32,11 +32,11 @@ public class MyRunListener extends RunListener {
     }
 
     public void testFailure(Failure failure) throws Exception {
-        testCollector.addTestResult("Failed: " + failure.getDescription().getMethodName() + "\n");
+        testCollector.addTestResult("Failed: " + failure.getMessage() + "\n");
     }
 
     public void testAssumptionFailure(Failure failure) {
-        testCollector.addTestResult("Failed: " + failure.getDescription().getMethodName() + "\n");
+        testCollector.addTestResult("FailedAssumption: " + failure.getMessage() + "\n");
     }
 
     public void testIgnored(Description description) throws Exception {

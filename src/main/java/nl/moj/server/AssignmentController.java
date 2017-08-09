@@ -7,7 +7,7 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import nl.moj.server.files.JavaFile;
+import nl.moj.server.files.AssignmentFile;
 
 @RestController
 @Scope(value = "application", proxyMode = ScopedProxyMode.TARGET_CLASS)
@@ -21,13 +21,13 @@ public class AssignmentController {
 	}
 
 	@RequestMapping("/files")
-	public List<JavaFile> getFiles() {
-		return assignmentService.getAssignmentFiles();
+	public List<AssignmentFile> getFiles() {
+		return assignmentService.getJavaFiles();
 	}
 
 	@RequestMapping("/file/{filename}")
-	public List<JavaFile> getFile(String filename) {
-		return assignmentService.getAssignmentFiles();
+	public List<AssignmentFile> getFile(String filename) {
+		return assignmentService.getJavaFiles();
 	}
 
 }

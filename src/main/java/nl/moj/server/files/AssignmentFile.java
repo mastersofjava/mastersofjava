@@ -1,6 +1,6 @@
 package nl.moj.server.files;
 
-public class JavaFile {
+public class AssignmentFile {
 
 	private final String name;
 
@@ -8,11 +8,14 @@ public class JavaFile {
 
 	private final String content;
 
-	public JavaFile(String filename, String content) {
+	private final FileType fileType;
+	
+	public AssignmentFile(String filename, String content, FileType fileType) {
 		super();
 		this.name = filename.substring(0, filename.indexOf("."));
 		this.filename = filename;
 		this.content = content;
+		this.fileType = fileType;
 	}
 
 	public String getName() {
@@ -25,6 +28,10 @@ public class JavaFile {
 
 	public String getContent() {
 		return content;
+	}
+
+	public FileType getFileType() {
+		return fileType;
 	}
 
 }

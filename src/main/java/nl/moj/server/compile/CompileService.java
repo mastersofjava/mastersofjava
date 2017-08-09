@@ -19,7 +19,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.AssignmentService;
-import nl.moj.server.files.JavaFile;
+import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.timed.AsyncTimed;
 
 @Service
@@ -45,9 +45,9 @@ public class CompileService {
 
 			@Override
 			public CompileResult get() {
-
 				final List<String> editableFileNames = assignmentService.getEditableFileNames();
-				final List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
+				final List<AssignmentFile> assignmentFiles = assignmentService.getJavaAndTestFiles();
+
 				List<JavaFileObject> javaFileObjects = assignmentFiles.stream()
 						.filter(a -> !assignmentService.getEditableFileNames().contains(a.getName())).map(a -> {
 							JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(),
@@ -75,12 +75,7 @@ public class CompileService {
 					result = sb.toString();
 					diagnosticCollector = new DiagnosticCollector<>();
 				}
-				try {
-					Thread.sleep(3000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+	
 				return new CompileResult(result, javaFileManager.getMemoryMap());
 			}
 		}, timed);
