@@ -35,16 +35,15 @@ public class CompileService {
 
 	private Map<String, byte[]> memoryMap;
 
-	public String compile2(String teamOpgave) {
-
-		List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
+	public String compile2(List<String> teamOpgave) {
+		final List<String> editableFileNames = assignmentService.getEditableFileNames();
+		final List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
 		List<JavaFileObject> javaFileObjects = assignmentFiles.stream()
-				.filter(a -> !a.getName().equals("WorkloadbalancerImpl")).map(a -> {
+				.filter(a -> !assignmentService.getEditableFileNames().contains(a.getName())).map(a -> {
 					JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(), a.getContent());
 					return jfo;
 				}).collect(Collectors.toList());
-
-		javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject("WorkloadbalancerImpl.java", teamOpgave));
+		editableFileNames.forEach(file -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(file, teamOpgave.get(editableFileNames.indexOf(file)))));
 
 		// C) Java compiler options
 		List<String> options = createCompilerOptions();
@@ -69,21 +68,19 @@ public class CompileService {
 		return "Succes";
 	}
 
-	public CompletableFuture<CompileResult> compile(String teamOpgave) {
-
+	public CompletableFuture<CompileResult> compile(List<String> teamOpgave) {
 		return CompletableFuture.supplyAsync(new Supplier<CompileResult>() {
 
 			@Override
 			public CompileResult get() {
 				List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
 				List<JavaFileObject> javaFileObjects = assignmentFiles.stream()
-						.filter(a -> !a.getName().equals("WorkloadbalancerImpl")).map(a -> {
+						.filter(a -> !assignmentService.getEditableFileNames().contains(a.getName())).map(a -> {
 							JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(), a.getContent());
 							return jfo;
 						}).collect(Collectors.toList());
-
-				javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject("WorkloadbalancerImpl.java", teamOpgave));
-
+				assignmentService.getEditableFileNames().forEach(fileName -> 
+					javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(fileName +".java", teamOpgave.get(assignmentService.getEditableFileNames().indexOf(fileName)))));
 				// C) Java compiler options
 				List<String> options = createCompilerOptions();
 
@@ -100,6 +97,7 @@ public class CompileService {
 					for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics())
 						report(diagnostic, sb);
 					result = sb.toString();
+					diagnosticCollector = new DiagnosticCollector<JavaFileObject>();
 				} else {
 					memoryMap = javaFileManager.getMemoryMap();
 				}

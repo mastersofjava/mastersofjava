@@ -3,12 +3,12 @@ package nl.moj.server;
 public class SourceMessage {
 
 	private String team;
-	private String source;
+	private String[] source;
 
 	public SourceMessage() {
 	}
 	
-	public SourceMessage(String team, String source) {
+	public SourceMessage(String team, String[] source) {
 		this.team = team;
 		this.source = source;
 	}
@@ -21,11 +21,11 @@ public class SourceMessage {
 		this.team = team;
 	}
 
-	public String getSource() {
+	public String[] getSource() {
 		return source;
 	}
 
-	public void setSource(String source) {
+	public void setSource(String[] source) {
 		this.source = source;
 	}
 

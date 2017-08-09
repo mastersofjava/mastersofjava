@@ -1,6 +1,9 @@
 package nl.moj.server;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -57,7 +60,7 @@ import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 @Configuration
 public class AppConfig {
 
-	private static final String DIRECTORY = "/home/mhayen/Workspaces/workspace-moj/server/assignments";
+	private static final String DIRECTORY = "./assignments";
 	
 	@EnableWebSecurity
 	public class SecurityConfig {
@@ -182,8 +185,8 @@ public class AppConfig {
 		filters.addFilter(lastmodified);
 		filters.addFilter(new AcceptOnceFileListFilter<>());
 		
-		
 		FileReadingMessageSource source = new FileReadingMessageSource();
+		source.setUseWatchService(true);
 		source.setAutoCreateDirectory(true);
 		source.setDirectory(new File(DIRECTORY));
 		source.setFilter(filters);
@@ -201,5 +204,15 @@ public class AppConfig {
 		return new FileProcessor();
 	}
 
-
+	@Bean
+	public Properties properties(){
+		Properties prop = new Properties();
+		try {
+			prop.load(new FileInputStream(DIRECTORY+"/puzzle.properties"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return prop;
+	}
 }

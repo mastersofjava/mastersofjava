@@ -3,8 +3,11 @@
     function getContent() {
 		var curTab = $('.ui-state-active');
 		console.log(curTab.index());
-		return cmFirst.getValue();
-		//return cmArray[2].getValue();
+		var editables = new Array();
+		for(let i = 0; i < cmEditables.length; i++){
+			editables.push(cmEditables[i].getValue());
+		}
+		return editables;
     }  
       
 	function setConnected(connected) {

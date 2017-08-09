@@ -2,6 +2,7 @@ package nl.moj.server;
 
 import java.security.Principal;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
@@ -34,7 +35,8 @@ public class SubmitController {
 	public FeedbackMessage compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		String time = new SimpleDateFormat("HH:mm").format(new Date());
-		CompletableFuture<CompileResult> future = compileService.compile(message.getSource());
+		System.out.println(message.getSource());
+		CompletableFuture<CompileResult> future = compileService.compile(Arrays.asList(message.getSource()));
 		String feedback = future.get().getCompileResult();
 		return new FeedbackMessage(user.getName(), feedback, time);
 	}
@@ -45,7 +47,7 @@ public class SubmitController {
 	public FeedbackMessage test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		String time = new SimpleDateFormat("HH:mm").format(new Date());
-		CompletableFuture<CompileResult> future = compileService.compile(message.getSource());
+		CompletableFuture<CompileResult> future = compileService.compile(Arrays.asList(message.getSource()));
 		CompletableFuture<TestResult> testFuture = future.thenCompose(compileResult -> testService.test(compileResult));
 		testFuture.thenAccept(p -> System.out.println(p.getTestResult()));
 		String feedback = future.get().getCompileResult() + testFuture.get().getTestResult();
