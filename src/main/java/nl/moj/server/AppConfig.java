@@ -1,7 +1,17 @@
 package nl.moj.server;
 
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+
 import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
 
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -14,7 +24,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.EnableLoadTimeWeaving;
+import org.springframework.context.annotation.Scope;
 import org.springframework.http.CacheControl;
+import org.springframework.instrument.classloading.InstrumentationLoadTimeWeaver;
 import org.springframework.integration.annotation.InboundChannelAdapter;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.core.MessageSource;
@@ -43,6 +57,10 @@ import org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver;
 import org.thymeleaf.spring4.view.ThymeleafViewResolver;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ITemplateResolver;
+
+import nl.moj.server.timed.AsyncTimed;
+import nl.moj.server.timed.AsyncTimedAspect;
+
 import org.springframework.integration.annotation.Poller;
 import org.springframework.integration.file.FileReadingMessageSource;
 import org.springframework.integration.file.filters.AcceptOnceFileListFilter;
@@ -55,10 +73,29 @@ import nz.net.ultraq.thymeleaf.LayoutDialect;
 import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 
 @Configuration
+@EnableAspectJAutoProxy
 public class AppConfig {
 
-	private static final String DIRECTORY = "/home/mhayen/Workspaces/workspace-moj/server/assignments";
-	
+	private static final String DIRECTORY = "./assignments";
+
+    @Bean
+    public JavaCompiler systemJavaCompiler() {
+        return ToolProvider.getSystemJavaCompiler();
+    }
+
+    @Bean
+    @Scope(SCOPE_PROTOTYPE)
+    public DiagnosticCollector<JavaFileObject> diagnosticCollector() {
+        return new DiagnosticCollector<>();
+    }
+    
+    @Bean
+    public StandardJavaFileManager standardJavaFileManager(JavaCompiler javaCompiler, DiagnosticCollector<JavaFileObject> diagnosticCollector) {
+        final Charset charset = StandardCharsets.UTF_8;
+
+        return javaCompiler.getStandardFileManager(diagnosticCollector, null, charset);
+    }
+    
 	@EnableWebSecurity
 	public class SecurityConfig {
 
@@ -99,8 +136,7 @@ public class AppConfig {
 			return true;
 		}
 	}
-	
-	
+
 	@EnableWebMvc
 	@Configuration
 	public class WebAppConfig extends WebMvcConfigurerAdapter {
@@ -111,9 +147,9 @@ public class AppConfig {
 		public void setApplicationContext(ApplicationContext applicationContext) {
 			this.applicationContext = applicationContext;
 		}
-		
+
 		public WebAppConfig() {
-			
+
 		}
 
 		@Override
@@ -123,10 +159,8 @@ public class AppConfig {
 					.addResourceLocations("classpath:/META-INF/resources/webjars/", "/webjars/")
 					.setCacheControl(CacheControl.maxAge(30L, TimeUnit.DAYS).cachePublic()).resourceChain(true)
 					.addResolver(new WebJarsResourceResolver());
-			registry.addResourceHandler("/**","/static/**")
-					.addResourceLocations("classpath:/static/");
+			registry.addResourceHandler("/**", "/static/**").addResourceLocations("classpath:/static/");
 		}
-
 
 		@Bean
 		public ViewResolver javascriptViewResolver() {
@@ -161,28 +195,25 @@ public class AppConfig {
 
 	@Bean
 	public IntegrationFlow processFileFlow() {
-		return IntegrationFlows
-				.from("fileInputChannel")
-				.transform(fileToStringTransformer())
+		return IntegrationFlows.from("fileInputChannel").transform(fileToStringTransformer())
 				.handle("fileProcessor", "process").get();
 	}
 
-    @Bean
-    public MessageChannel fileInputChannel() {
-        return new DirectChannel();
-    }
+	@Bean
+	public MessageChannel fileInputChannel() {
+		return new DirectChannel();
+	}
 
 	@Bean
 	@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000"))
 	public MessageSource<File> fileReadingMessageSource() {
-		CompositeFileListFilter<File> filters =new CompositeFileListFilter<>();
+		CompositeFileListFilter<File> filters = new CompositeFileListFilter<>();
 		filters.addFilter(new SimplePatternFileListFilter("*.java"));
 		LastModifiedFileListFilter lastmodified = new LastModifiedFileListFilter();
 		lastmodified.setAge(1, TimeUnit.SECONDS);
 		filters.addFilter(lastmodified);
 		filters.addFilter(new AcceptOnceFileListFilter<>());
-		
-		
+
 		FileReadingMessageSource source = new FileReadingMessageSource();
 		source.setAutoCreateDirectory(true);
 		source.setDirectory(new File(DIRECTORY));
@@ -200,6 +231,5 @@ public class AppConfig {
 	public FileProcessor fileProcessor() {
 		return new FileProcessor();
 	}
-
 
 }

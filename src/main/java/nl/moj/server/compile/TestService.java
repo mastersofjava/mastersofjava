@@ -9,9 +9,12 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.springframework.stereotype.Service;
 
+import nl.moj.server.timed.AsyncTimed;
+
 @Service
 public class TestService {
 
+	@AsyncTimed
 	public CompletableFuture<TestResult> test(CompileResult compileResult) {
 
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
@@ -19,7 +22,6 @@ public class TestService {
 			@Override
 			public TestResult get() {
 				JUnitCore junit = new JUnitCore();
-				
 
 				MemoryClassLoader classLoader = new MemoryClassLoader(compileResult.getMemoryMap());
 				Class<?> clazz = null;
@@ -35,10 +37,7 @@ public class TestService {
 
 				junit.run(clazz);
 				return new TestResult(testCollector.getTestResults());
-				
 			}
-			
 		});
-		
 	}
 }
