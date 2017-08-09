@@ -1,4 +1,4 @@
-package nl.moj.server.compile;
+package nl.moj.server.test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -8,6 +8,9 @@ import org.junit.runner.JUnitCore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import nl.moj.server.compile.CompileResult;
+import nl.moj.server.compile.MemoryClassLoader;
+import nl.moj.server.compile.MyRunListener;
 import nl.moj.server.timed.AsyncTimed;
 
 @Service

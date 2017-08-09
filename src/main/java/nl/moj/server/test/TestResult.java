@@ -1,4 +1,4 @@
-package nl.moj.server.compile;
+package nl.moj.server.test;
 
 public class TestResult {
 

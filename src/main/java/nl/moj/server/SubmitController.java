@@ -15,8 +15,8 @@ import org.springframework.stereotype.Controller;
 
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.CompileService;
-import nl.moj.server.compile.TestResult;
-import nl.moj.server.compile.TestService;
+import nl.moj.server.test.TestResult;
+import nl.moj.server.test.TestService;
 
 @Controller
 @MessageMapping("/submit")

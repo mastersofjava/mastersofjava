@@ -5,6 +5,8 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
+import nl.moj.server.test.TestCollector;
+
 public class MyRunListener extends RunListener {
 
 	private TestCollector testCollector;
