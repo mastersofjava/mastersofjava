@@ -3,9 +3,12 @@ package nl.moj.server;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -75,28 +78,30 @@ public class AppConfig {
 
 	private static final String DIRECTORY = "./assignments";
 
+
 	@Configuration
 	public class CompilerConfig {
-	    @Bean
-	    public JavaCompiler systemJavaCompiler() {
-	        return ToolProvider.getSystemJavaCompiler();
-	    }
+		@Bean
+		public JavaCompiler systemJavaCompiler() {
+			return ToolProvider.getSystemJavaCompiler();
+		}
 
-	    @Bean
-	    @Scope(SCOPE_PROTOTYPE)
-	    public DiagnosticCollector<JavaFileObject> diagnosticCollector() {
-	        return new DiagnosticCollector<>();
-	    }
-	    
-	    @Bean
-	    public StandardJavaFileManager standardJavaFileManager(JavaCompiler javaCompiler, DiagnosticCollector<JavaFileObject> diagnosticCollector) {
-	        final Charset charset = StandardCharsets.UTF_8;
+		@Bean
+		@Scope(SCOPE_PROTOTYPE)
+		public DiagnosticCollector<JavaFileObject> diagnosticCollector() {
+			return new DiagnosticCollector<>();
+		}
 
-	        return javaCompiler.getStandardFileManager(diagnosticCollector, null, charset);
-	    }
+		@Bean
+		public StandardJavaFileManager standardJavaFileManager(JavaCompiler javaCompiler,
+				DiagnosticCollector<JavaFileObject> diagnosticCollector) {
+			final Charset charset = StandardCharsets.UTF_8;
+
+			return javaCompiler.getStandardFileManager(diagnosticCollector, null, charset);
+		}
 	}
 
-    
+
 	@EnableWebSecurity
 	@Configuration
 	public class SecurityConfig {
@@ -219,10 +224,10 @@ public class AppConfig {
 			filters.addFilter(new AcceptOnceFileListFilter<>());
 
 			FileReadingMessageSource source = new FileReadingMessageSource();
+			source.setUseWatchService(true);
 			source.setAutoCreateDirectory(true);
 			source.setDirectory(new File(DIRECTORY));
 			source.setFilter(filters);
-
 			return source;
 		}
 
@@ -237,28 +242,39 @@ public class AppConfig {
 		}
 	}
 
-	
 	@Configuration
 	@EnableAsync
 	public class SpringAsyncConfig implements AsyncConfigurer {
-	    protected final Log logger = LogFactory.getLog(getClass());
+		protected final Log logger = LogFactory.getLog(getClass());
 
-	    @Override
-	    public Executor getAsyncExecutor() {
-	        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("async-%d").build();
-	        return CompletableExecutors.completable(Executors.newFixedThreadPool(10, threadFactory));
-	    }
+		@Override
+		public Executor getAsyncExecutor() {
+			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("async-%d").build();
+			return CompletableExecutors.completable(Executors.newFixedThreadPool(10, threadFactory));
+		}
 
-	    @Bean(name = "timed")
-	    public Executor timeoutExecutor() {
-	        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("timed-%d").build();
-	        return TimedCompletables.timed(Executors.newFixedThreadPool(10, threadFactory), Duration.ofSeconds(2));
-	    }
+		@Bean(name = "timed")
+		public Executor timeoutExecutor() {
+			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("timed-%d").build();
+			return TimedCompletables.timed(Executors.newFixedThreadPool(10, threadFactory), Duration.ofSeconds(2));
+		}
 
-	    @Override
-	    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
-	        return (ex, method, params) -> logger.error("Uncaught async error", ex);
-	    }
+		@Override
+		public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+			return (ex, method, params) -> logger.error("Uncaught async error", ex);
+		}
+	}
+
+	@Bean
+	public Properties properties() {
+		Properties prop = new Properties();
+		try {
+			prop.load(new FileInputStream(DIRECTORY + "/puzzle.properties"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return prop;
 	}
 
 }

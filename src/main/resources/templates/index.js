@@ -1,25 +1,28 @@
 var cmArray = [];
 
-var cmFirst = null;
+var cmEditables = [];
 
 [# th:each="file : ${files}"]
-var readOnly = true;
-if ([# th:text="${file.name}"/] == "WorkloadbalancerImpl") {
-	readOnly = false;
-}
-var [# th:utext="${file.name}"/] = new CodeMirror(document.getElementById([# th:text="|${file.filename}|"/]), {
-	lineNumbers: true,
-	matchBrackets: true,
-	mode: "text/x-java",
-	readOnly: readOnly
-  });
-cmArray.push([# th:utext="${file.name}"/]);
-
-if ([# th:text="${file.name}"/] == "WorkloadbalancerImpl") {
-	cmFirst = [# th:utext="${file.name}"/];
-}
-	
-[# th:utext="${file.name}"/].setValue([# th:text="${file.content}"/]);
+	var readOnly = true;
+	[# th:each="editable : ${editables}"]
+		if ([# th:text="${file.name}"/] == [# th:text ="${editable}"/]) {
+			readOnly = false;
+		}
+	[/]
+	var [# th:utext="${file.name}"/] = new CodeMirror(document.getElementById([# th:text="|${file.filename}|"/]), {
+		lineNumbers: true,
+		matchBrackets: true,
+		mode: "text/x-java",
+		readOnly: readOnly
+	  });
+	cmArray.push([# th:utext="${file.name}"/]);
+	[# th:each="editable : ${editables}"]
+		if ([# th:text="${file.name}"/] == [# th:text ="${editable}"/]) {
+			cmEditables.push([# th:utext="${file.name}"/]);
+		}
+	[/]
+		
+	[# th:utext="${file.name}"/].setValue([# th:text="${file.content}"/]);
 
 [/]  
 

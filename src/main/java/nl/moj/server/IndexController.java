@@ -27,6 +27,7 @@ public class IndexController {
 	@GetMapping(value = "index.js")
 	public String common(Model model) {
 		List<JavaFile> files = assignmentService.getAssignmentFiles();
+		model.addAttribute("editables", assignmentService.getEditableFileNames());
 		model.addAttribute("files", files);
 		return "index.js";
 	}

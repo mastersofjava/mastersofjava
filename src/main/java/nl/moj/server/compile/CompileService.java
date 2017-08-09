@@ -37,23 +37,25 @@ public class CompileService {
 
 	@Autowired
 	private Executor timed;
-	
+
 	@AsyncTimed
 	@Async("timed")
-	public CompletableFuture<CompileResult> compile(String teamOpgave) {
-
+	public CompletableFuture<CompileResult> compile(List<String> teamOpgave) {
 		return CompletableFuture.supplyAsync(new Supplier<CompileResult>() {
 
 			@Override
 			public CompileResult get() {
-				List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
+
+				final List<String> editableFileNames = assignmentService.getEditableFileNames();
+				final List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
 				List<JavaFileObject> javaFileObjects = assignmentFiles.stream()
-						.filter(a -> !a.getName().equals("WorkloadbalancerImpl")).map(a -> {
-							JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(), a.getContent());
+						.filter(a -> !assignmentService.getEditableFileNames().contains(a.getName())).map(a -> {
+							JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(),
+									a.getContent());
 							return jfo;
 						}).collect(Collectors.toList());
-
-				javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject("WorkloadbalancerImpl.java", teamOpgave));
+				editableFileNames.forEach(file -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(file,
+						teamOpgave.get(editableFileNames.indexOf(file)))));
 
 				// C) Java compiler options
 				List<String> options = createCompilerOptions();
@@ -61,11 +63,10 @@ public class CompileService {
 				PrintWriter err = new PrintWriter(System.err);
 
 				// Create a compilation task.
-				CompilationTask compilationTask = javaCompiler.getTask(err, javaFileManager, diagnosticCollector, options, null,
-						javaFileObjects);
+				CompilationTask compilationTask = javaCompiler.getTask(err, javaFileManager, diagnosticCollector,
+						options, null, javaFileObjects);
+
 				String result = "Succes\n";
-				// Performs this compilation task.
-				// True, if and only if, all the files compiled without errors.
 				if (!compilationTask.call()) {
 					StringBuilder sb = new StringBuilder();
 					for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics())
@@ -80,8 +81,9 @@ public class CompileService {
 				}
 				return new CompileResult(result, javaFileManager.getMemoryMap());
 			}
-		},timed);
+		}, timed);
 	}
+
 	private List<String> createCompilerOptions() {
 		List<String> options = new ArrayList<String>();
 		// enable all recommended warnings.
