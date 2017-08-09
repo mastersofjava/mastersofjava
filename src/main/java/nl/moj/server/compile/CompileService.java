@@ -54,7 +54,8 @@ public class CompileService {
 									a.getContent());
 							return jfo;
 						}).collect(Collectors.toList());
-				editableFileNames.forEach(file -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(file,
+				
+				editableFileNames.forEach(file -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(file + ".java",
 						teamOpgave.get(editableFileNames.indexOf(file)))));
 
 				// C) Java compiler options
@@ -94,9 +95,13 @@ public class CompileService {
 	}
 
 	private String report(Diagnostic<?> dg, StringBuilder sb) {
+		
 		sb.append(dg.getKind() + "> Line=" + dg.getLineNumber() + ", Column=" + dg.getColumnNumber() + "\n");
 		sb.append("Message> " + dg.getMessage(null) + "\n");
 		sb.append("Cause> " + dg.getCode() + "\n");
+		JavaFileObject jfo = (JavaFileObject)dg.getSource();
+		
+		sb.append(jfo.getName());
 		return sb.toString();
 	}
 }
