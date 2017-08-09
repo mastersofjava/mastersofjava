@@ -64,15 +64,18 @@
 	function showMessageOutput(messageOutput) {
 		console.log("show");
 		var response = document.getElementById('response');
+		response.insertBefore(document.createElement('hr'), response.firstElementChild);
 		var p = document.createElement('p');
-		p.appendChild(document.createTextNode(messageOutput.team + ": "));
-		response.appendChild(p);
+		p.appendChild(document.createTextNode(messageOutput.time));
+		response.insertBefore(p, response.firstElementChild);
+		
 		var pre = document.createElement('pre');
 		pre.appendChild(document.createTextNode(messageOutput.text));
-		response.appendChild(pre);
+		response.insertBefore(pre, response.firstElementChild);
+		
 		p = document.createElement('p');
-		p.appendChild(document.createTextNode(messageOutput.time));
-		response.appendChild(p);
+		p.appendChild(document.createTextNode(messageOutput.team + ": "));
+		response.insertBefore(p, response.firstElementChild);
 	}
 	
 	function showOutput(messageOutput) {
