@@ -1,5 +1,6 @@
 var cmArray = [];
 
+var cmFirst = null;
 
 [# th:each="file : ${files}"]
 var readOnly = true;
@@ -14,6 +15,10 @@ var [# th:utext="${file.name}"/] = new CodeMirror(document.getElementById([# th:
   });
 cmArray.push([# th:utext="${file.name}"/]);
 
+if ([# th:text="${file.name}"/] == "WorkloadbalancerImpl") {
+	cmFirst = [# th:utext="${file.name}"/];
+}
+	
 [# th:utext="${file.name}"/].setValue([# th:text="${file.content}"/]);
 
 [/]  

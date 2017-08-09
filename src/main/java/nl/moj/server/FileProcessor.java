@@ -5,7 +5,7 @@ import org.springframework.messaging.Message;
 
 public class FileProcessor {
     private static final String HEADER_FILE_NAME = "file_name";
-    private static final String MSG = "%s received. Content: %s";
+    private static final String MSG = "%s received";
     
     @Autowired
     private AssignmentService assignmentService;
@@ -15,7 +15,7 @@ public class FileProcessor {
         String fileName = (String) msg.getHeaders().get(HEADER_FILE_NAME);
         String content = msg.getPayload();
 
-        System.out.println(String.format(MSG, fileName, content));
+        System.out.println(String.format(MSG, fileName));
         JavaFile file = new JavaFile(fileName, content);
         assignmentService.addFile(file);
     }

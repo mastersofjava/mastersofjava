@@ -1,110 +1,132 @@
 package nl.moj.server.compile;
 
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler.CompilationTask;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.AssignmentService;
 import nl.moj.server.JavaFile;
 
-import javax.annotation.PostConstruct;
-import javax.tools.*;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
 @Service
 public class CompileService {
 
 	@Autowired
-    private JavaCompiler compiler;
+	private javax.tools.JavaCompiler javaCompiler;
+	@Autowired
+	private DiagnosticCollector<JavaFileObject> diagnosticCollector;
+	@Autowired
+	private MemoryJavaFileManager<StandardJavaFileManager> javaFileManager;
 
-    private DiagnosticCollector<JavaFileObject> diagnosticCollector;
+	@Autowired
+	private AssignmentService assignmentService;
 
-    @Autowired
-    private CompilerProperties compilerProperties;
-    
-    @Autowired
-    private AssignmentService assignmentService;
+	private Map<String, byte[]> memoryMap;
 
-    private List<File> createClassPath(final boolean inheritClassPath) {
+	public String compile2(String teamOpgave) {
 
-        final Path homeDir = Paths.get(System.getProperty("user.home"));
-        final Path mavenRepo = homeDir.resolve(".m2").resolve("repository");
+		List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
+		List<JavaFileObject> javaFileObjects = assignmentFiles.stream()
+				.filter(a -> !a.getName().equals("WorkloadbalancerImpl")).map(a -> {
+					JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(), a.getContent());
+					return jfo;
+				}).collect(Collectors.toList());
 
-        final List<File> classPath = new ArrayList<>();
+		javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject("WorkloadbalancerImpl.java", teamOpgave));
 
-//        if(inheritClassPath) {
-//            final Iterable<? extends File> location = standardFileManager.getLocation(StandardLocation.CLASS_PATH);
-//            location.forEach(classPath::add);
-//        }
+		// C) Java compiler options
+		List<String> options = createCompilerOptions();
 
-        final Set<File> additionalClassPathEntries = compilerProperties.getClassPath()
-                .stream()
-                .map(mavenRepo::resolve)
-                .map(Path::toFile)
-                .collect(Collectors.toSet());
+		PrintWriter err = new PrintWriter(System.err);
 
-        classPath.addAll(additionalClassPathEntries);
+		// Create a compilation task.
+		CompilationTask compilationTask = javaCompiler.getTask(err, javaFileManager, diagnosticCollector, options, null,
+				javaFileObjects);
 
-        return classPath;
-    }
+		// Performs this compilation task.
+		// True, if and only if, all the files compiled without errors.
+		if (!compilationTask.call()) {
+			StringBuilder sb = new StringBuilder();
+			for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics())
+				report(diagnostic, sb);
+			return sb.toString();
+		} else {
+			memoryMap = javaFileManager.getMemoryMap();
+		}
 
-    public String compile(String teamOpgave) throws IOException {
-        createClassPath(true);
+		return "Succes";
+	}
 
-        List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
-        JavaFile order = assignmentFiles.stream().filter(f-> f.getName().equalsIgnoreCase("Order")).findFirst().get();
-        JavaFile test = assignmentFiles.stream().filter(f-> f.getName().equalsIgnoreCase("Test")).findFirst().get();
-        JavaFile opgave = new JavaFile("WorkloadbalancerImpl.java", teamOpgave);
-        
-		List<JavaFileObject> javaFileObjects = new ArrayList<JavaFileObject>(1);
-		javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(order.getFilename(), order.getContent()));
-		javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(opgave.getFilename(), opgave.getContent()));
-		javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(test.getFilename(), test.getContent()));
-		return compiler.compile(javaFileObjects,null,null);//, err, sourcePath, classPath);
-		
-    }
+	public CompletableFuture<CompileResult> compile(String teamOpgave) {
 
-    private Set<File> assignmentFiles(final Path root) throws IOException {
-        final Set<File> javaFiles = new HashSet<>();
+		return CompletableFuture.supplyAsync(new Supplier<CompileResult>() {
 
-        Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+			@Override
+			public CompileResult get() {
+				List<JavaFile> assignmentFiles = assignmentService.getAssignmentFiles();
+				List<JavaFileObject> javaFileObjects = assignmentFiles.stream()
+						.filter(a -> !a.getName().equals("WorkloadbalancerImpl")).map(a -> {
+							JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(), a.getContent());
+							return jfo;
+						}).collect(Collectors.toList());
 
-            @Override
-            public FileVisitResult visitFile(final Path path, final BasicFileAttributes basicFileAttributes) throws IOException {
+				javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject("WorkloadbalancerImpl.java", teamOpgave));
 
-                if(path.toFile().isFile() && path.toString().endsWith(".java")) {
-                    javaFiles.add(path.toFile());
-                }
+				// C) Java compiler options
+				List<String> options = createCompilerOptions();
 
-                return FileVisitResult.CONTINUE;
-            }
-        });
+				PrintWriter err = new PrintWriter(System.err);
 
-        return javaFiles;
-    }
+				// Create a compilation task.
+				CompilationTask compilationTask = javaCompiler.getTask(err, javaFileManager, diagnosticCollector, options, null,
+						javaFileObjects);
+				String result = "Succes\n";
+				// Performs this compilation task.
+				// True, if and only if, all the files compiled without errors.
+				if (!compilationTask.call()) {
+					StringBuilder sb = new StringBuilder();
+					for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics())
+						report(diagnostic, sb);
+					result = sb.toString();
+				} else {
+					memoryMap = javaFileManager.getMemoryMap();
+				}
+				return new CompileResult(result, memoryMap);
+			}
+		});
+	}
+	protected List<String> createCompilerOptions() {
+		List<String> options = new ArrayList<String>();
 
-    private void prepareOutputDirectory(final Path workDir) throws IOException {
-        final File outputDir = workDir.resolve(outputDir()).toFile();
+		// enable all recommended warnings.
+		options.add("-Xlint:all");
 
-        if(!outputDir.exists() && !outputDir.mkdirs()) {
-            throw new IOException("Could not create output directory: " + outputDir);
-        }
+		// enable debugging for line numbers and local variables.
+		options.add("-g:lines,vars");
 
-        //standardFileManager.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(outputDir));
-    }
+		return options;
+	}
 
-    private Path workDir() {
-        return compilerProperties.getWorkDir();
-    }
+	protected String report(Diagnostic<?> dg, StringBuilder sb) {
+		sb.append(dg.getKind() + "> Line=" + dg.getLineNumber() + ", Column=" + dg.getColumnNumber() + "\n");
+		sb.append("Message> " + dg.getMessage(null) + "\n");
+		sb.append("Cause> " + dg.getCode() + "\n");
+		return sb.toString();
+	}
 
-    private Path outputDir() {
-        return compilerProperties.getOutputDir();
-    }
-
+	public Map<String, byte[]> getMemoryMap() {
+		return memoryMap;
+	}
 }

@@ -181,20 +181,20 @@ public final class MemoryJavaFileManager<FM extends JavaFileManager> extends For
 			return super.getJavaFileForOutput(location, className, kind, sibling);
 	}
 
-	public JavaFileObject getJavaFileForInput(Location location, String className, Kind kind) throws IOException {
-		if (location == StandardLocation.CLASS_OUTPUT && getMemoryMap().containsKey(className) && kind == Kind.CLASS) {
-			byte[] bs = getMemoryMap().get(className);
-			return new SimpleJavaFileObject(URI.create(className), kind) {
-				@NotNull
-				public InputStream openInputStream() {
-					return new ByteArrayInputStream(bs);
-				}
-			};
-		}
-
-		return fileManager.getJavaFileForInput(location, className, kind);
-
-	}
+//	public JavaFileObject getJavaFileForInput(Location location, String className, Kind kind) throws IOException {
+//		if (location == StandardLocation.CLASS_OUTPUT && getMemoryMap().containsKey(className) && kind == Kind.CLASS) {
+//			byte[] bs = getMemoryMap().get(className);
+//			return new SimpleJavaFileObject(URI.create(className), kind) {
+//				@NotNull
+//				public InputStream openInputStream() {
+//					return new ByteArrayInputStream(bs);
+//				}
+//			};
+//		}
+//
+//		return fileManager.getJavaFileForInput(location, className, kind);
+//
+//	}
 
 //    public ClassLoader getClassLoader(Location location) {
 //    	if (location == StandardLocation.CLASS_OUTPUT) {
