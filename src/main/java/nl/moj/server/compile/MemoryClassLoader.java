@@ -1,8 +1,8 @@
 package nl.moj.server.compile;
 
-import java.util.Map;
-
 import static java.lang.String.format;
+
+import java.util.Map;
 
 public class MemoryClassLoader extends ClassLoader {
     private final Map<String, byte[]> classDefinitions;
