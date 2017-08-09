@@ -7,6 +7,8 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import nl.moj.server.files.JavaFile;
+
 @RestController
 @Scope(value = "application", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class AssignmentController {

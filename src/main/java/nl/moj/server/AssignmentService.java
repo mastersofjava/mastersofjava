@@ -10,6 +10,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Service;
 
+import nl.moj.server.files.JavaFile;
+
 @Service
 @Scope(value = "application", proxyMode = ScopedProxyMode.TARGET_CLASS)
 public class AssignmentService {

@@ -19,7 +19,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.AssignmentService;
-import nl.moj.server.JavaFile;
+import nl.moj.server.files.JavaFile;
 import nl.moj.server.timed.AsyncTimed;
 
 @Service

@@ -1,4 +1,4 @@
-package nl.moj.server;
+package nl.moj.server.files;
 
 public class JavaFile {
 

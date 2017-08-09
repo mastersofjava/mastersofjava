@@ -6,6 +6,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import nl.moj.server.files.JavaFile;
+
 @Controller
 public class IndexController {
 
