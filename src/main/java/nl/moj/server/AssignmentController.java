@@ -1,12 +1,11 @@
 package nl.moj.server;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.context.annotation.ScopedProxyMode;
 
 @RestController
 @Scope(value = "application", proxyMode = ScopedProxyMode.TARGET_CLASS)

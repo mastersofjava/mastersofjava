@@ -4,6 +4,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -14,6 +15,7 @@ import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.AssignmentService;
@@ -33,7 +35,11 @@ public class CompileService {
 	@Autowired
 	private AssignmentService assignmentService;
 
+	@Autowired
+	private Executor timed;
+	
 	@AsyncTimed
+	@Async("timed")
 	public CompletableFuture<CompileResult> compile(String teamOpgave) {
 
 		return CompletableFuture.supplyAsync(new Supplier<CompileResult>() {
@@ -66,9 +72,15 @@ public class CompileService {
 						report(diagnostic, sb);
 					result = sb.toString();
 				}
+				try {
+					Thread.sleep(3000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				return new CompileResult(result, javaFileManager.getMemoryMap());
 			}
-		});
+		},timed);
 	}
 	private List<String> createCompilerOptions() {
 		List<String> options = new ArrayList<String>();

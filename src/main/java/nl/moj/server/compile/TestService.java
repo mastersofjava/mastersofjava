@@ -1,18 +1,20 @@
 package nl.moj.server.compile;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.timed.AsyncTimed;
 
 @Service
 public class TestService {
+
+	@Autowired
+	private Executor timed;
 
 	@AsyncTimed
 	public CompletableFuture<TestResult> test(CompileResult compileResult) {
@@ -38,6 +40,6 @@ public class TestService {
 				junit.run(clazz);
 				return new TestResult(testCollector.getTestResults());
 			}
-		});
+		}, timed);
 	}
 }

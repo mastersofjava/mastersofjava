@@ -4,7 +4,6 @@ import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public class MyRunListener extends RunListener {
 
