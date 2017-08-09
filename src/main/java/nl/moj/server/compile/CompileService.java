@@ -73,6 +73,7 @@ public class CompileService {
 					for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics())
 						report(diagnostic, sb);
 					result = sb.toString();
+					diagnosticCollector = new DiagnosticCollector<>();
 				}
 				try {
 					Thread.sleep(3000);
