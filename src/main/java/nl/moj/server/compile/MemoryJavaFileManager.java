@@ -1,11 +1,9 @@
 package nl.moj.server.compile;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FilterOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.CharBuffer;
@@ -18,12 +16,8 @@ import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
 import javax.tools.SimpleJavaFileObject;
-import javax.tools.StandardLocation;
-import javax.validation.constraints.NotNull;
 
 import org.springframework.stereotype.Component;
-
-import javax.tools.JavaFileManager.Location;
 
 /**
  * <p>
