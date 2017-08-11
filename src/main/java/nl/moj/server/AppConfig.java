@@ -22,12 +22,16 @@ import javax.tools.ToolProvider;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tomcat.jdbc.pool.DataSource;
+import org.mybatis.spring.SqlSessionFactoryBean;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.CacheControl;
 import org.springframework.integration.annotation.InboundChannelAdapter;
@@ -42,6 +46,7 @@ import org.springframework.integration.file.filters.CompositeFileListFilter;
 import org.springframework.integration.file.filters.LastModifiedFileListFilter;
 import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.file.transformer.FileToStringTransformer;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
@@ -74,6 +79,7 @@ import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 
 @Configuration
 @EnableAspectJAutoProxy
+@Import(AppConfig.SecurityConfig.class)
 public class AppConfig {
 
 	private static final String DIRECTORY = "./assignments";
@@ -104,13 +110,15 @@ public class AppConfig {
 
 	@EnableWebSecurity
 	@Configuration
-	public class SecurityConfig {
+	public static class SecurityConfig {
 
 		@Autowired
 		public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
 			auth.inMemoryAuthentication().withUser("team1").password("team1").roles("USER").and().withUser("team2")
 					.password("team2").roles("USER");
 		}
+		
+		
 	}
 
 	@Configuration
@@ -245,18 +253,19 @@ public class AppConfig {
 	@Configuration
 	@EnableAsync
 	public class SpringAsyncConfig implements AsyncConfigurer {
+		private static final int THREADS = 10;
 		protected final Log logger = LogFactory.getLog(getClass());
 
 		@Override
 		public Executor getAsyncExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("async-%d").build();
-			return CompletableExecutors.completable(Executors.newFixedThreadPool(10, threadFactory));
+			return CompletableExecutors.completable(Executors.newFixedThreadPool(THREADS, threadFactory));
 		}
 
 		@Bean(name = "timed")
 		public Executor timeoutExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("timed-%d").build();
-			return TimedCompletables.timed(Executors.newFixedThreadPool(10, threadFactory), Duration.ofSeconds(2));
+			return TimedCompletables.timed(Executors.newFixedThreadPool(THREADS, threadFactory), Duration.ofSeconds(2));
 		}
 
 		@Override
@@ -264,7 +273,7 @@ public class AppConfig {
 			return (ex, method, params) -> logger.error("Uncaught async error", ex);
 		}
 	}
-
+	
 	@Bean
 	public Properties properties() {
 		Properties prop = new Properties();

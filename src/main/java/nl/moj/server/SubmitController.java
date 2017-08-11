@@ -4,6 +4,7 @@ import java.security.Principal;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Controller;
 
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.CompileService;
+import nl.moj.server.model.Result;
+import nl.moj.server.persistence.ResultMapper;
 import nl.moj.server.test.TestResult;
 import nl.moj.server.test.TestService;
 
@@ -28,6 +31,9 @@ public class SubmitController {
 	@Autowired
 	private TestService testService;
 
+	@Autowired
+	private ResultMapper resultMapper;
+	
 	@MessageMapping("/compile")
 	@SendToUser("/queue/feedback")
 	public FeedbackMessage compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
@@ -35,7 +41,10 @@ public class SubmitController {
 		String time = new SimpleDateFormat("HH:mm").format(new Date());
 		System.out.println(message.getSource());
 		CompletableFuture<CompileResult> future = compileService.compile(Arrays.asList(message.getSource()));
-		String feedback = future.get().getCompileResult();
+		
+		List<Result> allResults = resultMapper.getAllResults();
+		
+		String feedback = future.get().getCompileResult() + allResults.get(0).getResult();
 		return new FeedbackMessage(user.getName(), feedback, time);
 	}
 
