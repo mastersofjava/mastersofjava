@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Getting Started: Handling Form Submission</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<link rel="stylesheet" href="registration.css" />
+</head>
+<body>
+	<div class="container">
+		<div class="main">
+			<h1>Welcome!</h1>
+			<p th:if="${param.logout}" class="alert">You have been logged out</p>
+			<p th:if="${param.error}" class="alert alert-error">There was an
+				error, please try again</p>
+			<h2>Login to Masters of Java</h2>
+				
+			<form name="form" class="form" th:action="@{/login}" action="/login" method="POST">
+				<input type="text" name="username" value="" placeholder="Username" />
+				<input type="password" name="password" placeholder="Password" /> 
+				<input type="submit" id="login" value="Login" class="btn btn-primary" />
+				<a href="/register">Register</a>
+			</form>
+		</div>
+	</div>
+</body>
+</html>
+
