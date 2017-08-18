@@ -51,10 +51,16 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
 import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -110,15 +116,33 @@ public class AppConfig {
 
 	@EnableWebSecurity
 	@Configuration
-	public static class SecurityConfig {
-
+	public static class SecurityConfig extends WebSecurityConfigurerAdapter{
 		@Autowired
-		public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-			auth.inMemoryAuthentication().withUser("team1").password("team1").roles("USER").and().withUser("team2")
-					.password("team2").roles("USER");
+		TeamDetailsService teamDetailsService = new TeamDetailsService();
+		@Bean
+		public PasswordEncoder passwordEncoder() {
+		    return new BCryptPasswordEncoder();
 		}
-		
-		
+		@Bean
+		public DaoAuthenticationProvider authProvider() {
+		    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+		    authProvider.setUserDetailsService(teamDetailsService);
+		    authProvider.setPasswordEncoder(passwordEncoder());
+		    return authProvider;
+		}
+	    @Override
+	    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+	        auth.authenticationProvider(authProvider());
+	    }
+        @Override
+        protected void configure(HttpSecurity http) throws Exception {
+            http.authorizeRequests()
+            .antMatchers("/login","/register").permitAll()
+            .antMatchers("/", "/index").access("hasRole('USER')")
+            .and().formLogin().loginPage("/login")
+            .and().logout()
+            .and().csrf().disable();
+        }
 	}
 
 	@Configuration

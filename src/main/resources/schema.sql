@@ -7,3 +7,12 @@ create table result (
 	result varchar(200)
 
 );
+drop table team if exists;
+
+create table team (
+
+	id int not null primary key auto_increment,
+	name varchar(200),
+	password varchar(200)
+
+);
