@@ -13,6 +13,7 @@ create table team (
 
 	id int not null primary key auto_increment,
 	name varchar(200),
-	password varchar(200)
+	password varchar(200),
+	role varchar(200)
 
 );

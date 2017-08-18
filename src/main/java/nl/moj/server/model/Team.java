@@ -5,7 +5,8 @@ public class Team {
 	private String name;
 	private String password;
 	private String cpassword;
-
+	private String role;
+	
 	public int getId() {
 		return id;
 	}
@@ -36,6 +37,14 @@ public class Team {
 
 	public void setCpassword(String cpassword) {
 		this.cpassword = cpassword;
+	}
+
+	public String getRole() {
+		return role;
+	}
+
+	public void setRole(String role) {
+		this.role = role;
 	}
 
 }

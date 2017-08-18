@@ -14,6 +14,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
@@ -25,6 +28,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.annotation.MapperScan;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -59,8 +64,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
 import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -138,10 +146,38 @@ public class AppConfig {
         protected void configure(HttpSecurity http) throws Exception {
             http.authorizeRequests()
             .antMatchers("/login","/register").permitAll()
-            .antMatchers("/", "/index").access("hasRole('USER')")
-            .and().formLogin().loginPage("/login")
+            .antMatchers("/").hasRole("USER")
+            .antMatchers("/control").hasRole("CONTROL")
+            .and().formLogin()
+            .successHandler(new CustomAuthenticationSuccessHandler())
+            .loginPage("/login")
             .and().logout()
+            .and().headers().frameOptions().disable()
             .and().csrf().disable();
+        }
+        
+        public class CustomAuthenticationSuccessHandler  implements AuthenticationSuccessHandler {
+
+        	@Override
+        	public void onAuthenticationSuccess(HttpServletRequest request,
+        			HttpServletResponse response, Authentication authentication)
+        			throws IOException, ServletException {
+                //set our response to OK status
+                response.setStatus(HttpServletResponse.SC_OK);
+                boolean admin = false;
+                
+                for (GrantedAuthority auth : authentication.getAuthorities()) {
+                    if ("ROLE_CONTROL".equals(auth.getAuthority())){
+                    	admin = true;
+                    }
+                }
+                
+                if(admin){
+                	response.sendRedirect("/control");
+                }else{
+                	response.sendRedirect("/");
+                }
+        	}
         }
 	}
 

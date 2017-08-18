@@ -29,12 +29,12 @@ public class TeamDetailsService implements UserDetailsService {
 		if (team == null)
 			throw new UsernameNotFoundException("no team found with name: " + teamname);
 		System.out.println("teamname: " + team.getName() + " password: " + team.getPassword());
-		return new User(teamname, team.getPassword(), true, true, true, true, getAuthorities(teamname));
+		return new User(teamname, team.getPassword(), true, true, true, true, getAuthorities(team));
 	}
 
-	public Collection<? extends GrantedAuthority> getAuthorities(String teamname) {
+	public Collection<? extends GrantedAuthority> getAuthorities(Team team) {
 		List<GrantedAuthority> authList = new ArrayList<>();
-		SimpleGrantedAuthority sGA = new SimpleGrantedAuthority(new String("ROLE_USER"));
+		SimpleGrantedAuthority sGA = new SimpleGrantedAuthority(team.getRole());
 		authList.add(sGA);
 		return authList;
 	}

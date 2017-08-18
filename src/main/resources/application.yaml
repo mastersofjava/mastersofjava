@@ -26,4 +26,5 @@ security.basic.enabled: false
 
 mybatis.mapper-locations: persistence/mapper.xml
 
+logging.level.nl.moj.server.persistence.TeamMapper: DEBUG
 ...

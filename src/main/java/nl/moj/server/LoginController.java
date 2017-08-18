@@ -5,7 +5,6 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 
-import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,10 +31,12 @@ public class LoginController {
 	
 	@Autowired AssignmentService assignmentService;
 	
-	@PostConstruct
-	public void run() throws Exception {
-		teamMapper.addTeam("team2", encoder.encode("team2"));
-	}
+//	@PostConstruct
+//	public void run() throws Exception {
+//		teamMapper.addTeam("control", encoder.encode("control"),"ROLE_CONTROL");
+//		teamMapper.addTeam("team1", encoder.encode("team1"),"ROLE_USER");
+//		teamMapper.addTeam("team2", encoder.encode("team2"),"ROLE_USER");
+//	}
 
 	
     @GetMapping("/login")
@@ -58,7 +59,7 @@ public class LoginController {
     		return "register";
     	}
     	
-    	teamMapper.addTeam(team.getName(), encoder.encode(team.getPassword()));
+    	teamMapper.addTeam(team.getName(), encoder.encode(team.getPassword()),"ROLE_USER");
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("USER")));
     	context.setAuthentication(authentication);
