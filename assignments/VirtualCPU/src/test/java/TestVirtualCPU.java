@@ -4,6 +4,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 
+
 public class TestVirtualCPU {
 
 	private static final String[] NAMES = new String[] { "Program 1", "Program 2", "Program 3", "Program 4" };

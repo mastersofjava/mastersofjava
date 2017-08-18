@@ -5,25 +5,29 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.annotation.SendToUser;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 
+import net.tascalate.concurrent.CompletableTask;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.CompileService;
-import nl.moj.server.model.Result;
-import nl.moj.server.persistence.ResultMapper;
 import nl.moj.server.test.TestResult;
 import nl.moj.server.test.TestService;
 
 @Controller
 @MessageMapping("/submit")
 public class SubmitController {
+
+	private static final Logger log = LoggerFactory.getLogger(SubmitController.class);
 
 	@Autowired
 	private CompileService compileService;
@@ -32,31 +36,44 @@ public class SubmitController {
 	private TestService testService;
 
 	@Autowired
-	private ResultMapper resultMapper;
-	
+	@Qualifier("timed")
+	private Executor timed;
+
+	@Autowired
+	private SimpMessagingTemplate template;
+
 	@MessageMapping("/compile")
-	@SendToUser("/queue/feedback")
-	public FeedbackMessage compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
+	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		String time = new SimpleDateFormat("HH:mm").format(new Date());
-		System.out.println(message.getSource());
-		CompletableFuture<CompileResult> future = compileService.compile(Arrays.asList(message.getSource()));
-		
-		List<Result> allResults = resultMapper.getAllResults();
-		
-		String feedback = future.get().getCompileResult() + allResults.get(0).getResult();
-		return new FeedbackMessage(user.getName(), feedback, time);
+		List<String> asList = Arrays.asList(message.getSource());
+
+		CompletableTask.supplyAsync(compileService.compile(asList, user.getName()), timed)
+				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
 	}
 
 	@MessageMapping("/test")
-	@SendToUser("/queue/feedback")
-	public FeedbackMessage test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
+	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		String time = new SimpleDateFormat("HH:mm").format(new Date());
-		CompletableFuture<CompileResult> future = compileService.compile(Arrays.asList(message.getSource()));
-		CompletableFuture<TestResult> testFuture = future.thenCompose(compileResult -> testService.test(compileResult));
-		testFuture.thenAccept(p -> System.out.println(p.getTestResult()));
-		String feedback = future.get().getCompileResult() + testFuture.get().getTestResult();
-		return new FeedbackMessage(user.getName(), feedback, time);
+		List<String> asList = Arrays.asList(message.getSource());
+
+		CompletableTask.supplyAsync(compileService.compile(asList, user.getName(), true), timed)
+			//	.thenApplyAsync(compileResult->testService.tester(compileResult))
+				.thenComposeAsync( compileResult -> testService.test(compileResult),timed)
+				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
 	}
+
+	private void sendFeedbackMessage(CompileResult compileResult) {
+		log.info("sending feedback");
+		String time = new SimpleDateFormat("HH:mm").format(new Date());
+		template.convertAndSendToUser(compileResult.getUser(), "/queue/feedback",
+				new FeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), time));
+	}
+
+	private void sendFeedbackMessage(TestResult testResult) {
+		log.info("sending feedback");
+		String time = new SimpleDateFormat("HH:mm").format(new Date());
+		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback",
+				new FeedbackMessage(testResult.getUser(), testResult.getTestResult(), time));
+	}
+
 }

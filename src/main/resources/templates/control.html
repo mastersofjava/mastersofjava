@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+	<script src="/webjars/jquery/jquery.min.js"></script>
+	<script src="/webjars/sockjs-client/sockjs.min.js"></script>
+	<script src="/webjars/stomp-websocket/stomp.min.js"></script>
+
+	<script src="coolclock.js" type="text/javascript"></script>
+<title>Control</title>
+</head>
+<body onload="connect();">
+
+<div>
+<canvas id="clockid"  class="CoolClock"></canvas>
+</div>
+
+<div>
+	<ul>
+		<li th:each="name : ${assignmenNames}" >
+			<input type="radio"  th:value="${name}" th:text="${name}"/>
+
+		</li>
+	</ul>	
+</div>
+<div id="conversationDiv">
+	<button id="start" onclick="startTask();">Start Task</button>
+	<button id="test" onclick="getSplit();">test</button>
+	<p id="response"></p>
+</div>
+
+
+<script type="text/javascript" src="taskcontrol.js"></script>
+</body>
+</html>

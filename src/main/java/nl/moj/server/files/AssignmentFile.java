@@ -9,13 +9,16 @@ public class AssignmentFile {
 	private final String content;
 
 	private final FileType fileType;
-	
-	public AssignmentFile(String filename, String content, FileType fileType) {
+
+	private final String assignment;
+
+	public AssignmentFile(String filename, String content, FileType fileType, String assignment) {
 		super();
 		this.name = filename.substring(0, filename.indexOf("."));
 		this.filename = filename;
 		this.content = content;
 		this.fileType = fileType;
+		this.assignment = assignment;
 	}
 
 	public String getName() {
@@ -32,6 +35,10 @@ public class AssignmentFile {
 
 	public FileType getFileType() {
 		return fileType;
+	}
+
+	public String getAssignment() {
+		return assignment;
 	}
 
 }

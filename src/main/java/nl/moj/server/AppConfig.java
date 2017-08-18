@@ -82,7 +82,7 @@ import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 @Import(AppConfig.SecurityConfig.class)
 public class AppConfig {
 
-	private static final String DIRECTORY = "./assignments";
+	public static final String DIRECTORY = "./assignments";
 
 
 	@Configuration
@@ -130,11 +130,13 @@ public class AppConfig {
 			config.enableSimpleBroker("/topic", "/queue"); // ,"/user"
 			config.setApplicationDestinationPrefixes("/app");
 			config.setUserDestinationPrefix("/user");
+			
 		}
 
 		@Override
 		public void registerStompEndpoints(StompEndpointRegistry registry) {
 			registry.addEndpoint("/submit").withSockJS();
+			registry.addEndpoint("/control").withSockJS();
 		}
 	}
 

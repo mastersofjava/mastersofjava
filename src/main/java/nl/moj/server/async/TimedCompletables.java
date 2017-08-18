@@ -12,6 +12,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TimedCompletables {
 
     public static Executor timed(ExecutorService executorService, Duration duration) {
@@ -19,6 +22,7 @@ public class TimedCompletables {
     }
 
     static class TimeOutExecutorService extends CompletableExecutors.DelegatingCompletableExecutorService {
+		private static final Logger log = LoggerFactory.getLogger(TimedCompletables.TimeOutExecutorService.class);
         private final Duration timeout;
         private final ScheduledExecutorService schedulerExecutor;
 
@@ -30,6 +34,7 @@ public class TimedCompletables {
 
         // http://stackoverflow.com/questions/23575067/timeout-with-default-value-in-java-8-completablefuture/24457111#24457111
         @Override public <T> CompletableFuture<T> submit(Callable<T> task) {
+        	log.info("in timeoutExecutor");
             CompletableFuture<T> cf = new CompletableFuture<>();
             Future<?> future = delegate.submit(() -> {
                 try {
