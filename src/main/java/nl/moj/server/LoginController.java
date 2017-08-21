@@ -1,9 +1,6 @@
 package nl.moj.server;
 
 import java.util.Arrays;
-import java.util.List;
-
-import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,7 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
-import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.model.Team;
 import nl.moj.server.persistence.TeamMapper;
 
@@ -28,16 +24,6 @@ public class LoginController {
 	
 	@Autowired
 	private PasswordEncoder encoder;
-	
-	@Autowired AssignmentService assignmentService;
-	
-//	@PostConstruct
-//	public void run() throws Exception {
-//		teamMapper.addTeam("control", encoder.encode("control"),"ROLE_CONTROL");
-//		teamMapper.addTeam("team1", encoder.encode("team1"),"ROLE_USER");
-//		teamMapper.addTeam("team2", encoder.encode("team2"),"ROLE_USER");
-//	}
-
 	
     @GetMapping("/login")
     public String loginForm(Model model) {
@@ -61,12 +47,10 @@ public class LoginController {
     	
     	teamMapper.addTeam(team.getName(), encoder.encode(team.getPassword()),"ROLE_USER");
     	SecurityContext context = SecurityContextHolder.getContext();
-    	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("USER")));
+    	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     	context.setAuthentication(authentication);
     	
-		List<AssignmentFile> files = assignmentService.getJavaFiles();
-		model.addAttribute("files", files);
-    	return "index";
+    	return "redirect:/";
     }
     
     @GetMapping("/register")
