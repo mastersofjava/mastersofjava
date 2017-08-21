@@ -23,7 +23,7 @@ public class AssignmentService {
 	private Properties properties;
 	
 	public List<AssignmentFile> getJavaFiles() {
-		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.JAVA_SOURCE)).collect(Collectors.toList());
+		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.EDIT)).collect(Collectors.toList());
 	}
 
 	public List<AssignmentFile> getTestFiles() {
@@ -31,8 +31,12 @@ public class AssignmentService {
 	}
 
 	public List<AssignmentFile> getJavaAndTestFiles() {
-		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.JAVA_SOURCE) || f.getFileType().equals(FileType.TEST)).collect(Collectors.toList());
+		List<AssignmentFile> files = getJavaFiles();
+		files.addAll(getTestFiles());
+		return files;
 	}
+	
+	
 
 	public void setAssignmentFiles(List<AssignmentFile> assFiles) {
 		this.assFiles = assFiles;
@@ -58,6 +62,18 @@ public class AssignmentService {
 
 	public List<String> getEditableFileNames() {
 		return Arrays.asList(properties.get("Editables").toString().split(","));
+	}
+
+	public List<String> getTestFileNames() {
+		return Arrays.asList(properties.get("TestClasses").toString().split(","));
+	}
+
+	public List<String> getSubmitFileNames() {
+		return Arrays.asList(properties.get("SubmitClasses").toString().split(","));
+	}
+
+	public List<String> getSolutionFileNames() {
+		return Arrays.asList(properties.get("Solution").toString().split(","));
 	}
 	
 	

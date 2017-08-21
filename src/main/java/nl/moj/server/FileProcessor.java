@@ -37,20 +37,26 @@ public class FileProcessor {
 		log.info("{} received", filename);
 		String type = filename.substring(filename.indexOf("."));
 		AssignmentFile file = null;
+		String content = msg.getPayload();
 		switch (type) {
 		case ".java":
-			if (filename.toLowerCase().contains("test")) {
-				file = new AssignmentFile(filename, msg.getPayload(), FileType.TEST, assignment);
+			if(assignmentService.getEditableFileNames().contains(filename)){
+				file = new AssignmentFile(filename, content, FileType.EDIT, assignment);
+			}else if (assignmentService.getTestFileNames().contains(filename)) {
+				file = new AssignmentFile(filename, content, FileType.TEST, assignment);
+			}else if (assignmentService.getSubmitFileNames().contains(filename)) {
+				file = new AssignmentFile(filename, content, FileType.SUBMIT, assignment);
+			}else if (assignmentService.getSolutionFileNames().contains(filename)) {
+				file = new AssignmentFile(filename, content, FileType.SOLUTION, assignment);
 			} else {
-				file = new AssignmentFile(filename, msg.getPayload(), FileType.JAVA_SOURCE, assignment);
+				file = new AssignmentFile(filename, content, FileType.READONLY, assignment);
 			}
 			break;
 		case ".txt":
-			file = new AssignmentFile(filename, msg.getPayload(), FileType.TASK, assignment);
+			file = new AssignmentFile(filename, content, FileType.TASK, assignment);
 			break;
 		default:
 			break;
-			
 		}
 		assignmentService.addFile(file);
 		competition.addAssignmentFile(file);

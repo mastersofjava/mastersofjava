@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import nl.moj.server.AssignmentService;
 import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
 
 @Service
 public class CompileService {
@@ -51,14 +52,13 @@ public class CompileService {
 			}
 			final List<String> editableFileNames = assignmentService.getEditableFileNames();
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream()
-					.filter(a -> !assignmentService.getEditableFileNames().contains(a.getName())).map(a -> {
+					.filter(a -> a.getFileType() != FileType.EDIT).map(a -> {
 						JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(),
 								a.getContent());
 						return jfo;
 					}).collect(Collectors.toList());
-
 			editableFileNames.forEach(file -> javaFileObjects.add(MemoryJavaFileManager
-					.createJavaFileObject(file + ".java", teamOpgave.get(editableFileNames.indexOf(file)))));
+					.createJavaFileObject(file, teamOpgave.get(editableFileNames.indexOf(file)))));
 
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();
