@@ -2,8 +2,7 @@ package nl.moj.server.timed;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.commons.lang3.time.StopWatch;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -13,8 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import net.tascalate.concurrent.CompletableTask;
-
-import org.apache.commons.lang3.time.StopWatch;
 
 /**
  * Monitors a {@link CompletableFuture} and reports the time consumed to process

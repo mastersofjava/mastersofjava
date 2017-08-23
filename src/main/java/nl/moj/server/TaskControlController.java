@@ -2,10 +2,8 @@ package nl.moj.server;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -20,10 +18,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import nl.moj.server.TaskControlController.TaskTimeMessage;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.competition.TaskTimer;
-import nl.moj.server.compile.CompileResult;
 
 @Controller
 public class TaskControlController {

@@ -3,12 +3,11 @@ package nl.moj.server;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Properties;
+import java.util.Comparator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -25,11 +24,6 @@ import javax.tools.ToolProvider;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tomcat.jdbc.pool.DataSource;
-import org.mybatis.spring.SqlSessionFactoryBean;
-import org.mybatis.spring.annotation.MapperScan;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -50,16 +44,13 @@ import org.springframework.integration.file.filters.AcceptOnceFileListFilter;
 import org.springframework.integration.file.filters.CompositeFileListFilter;
 import org.springframework.integration.file.filters.IgnoreHiddenFileListFilter;
 import org.springframework.integration.file.filters.LastModifiedFileListFilter;
-import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.file.transformer.FileToStringTransformer;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -286,6 +277,21 @@ public class AppConfig {
 		}
 
 		@Bean
+		public Comparator<File> comparator(){
+			
+			return new Comparator<File>() {
+
+				@Override
+				public int compare(File o1, File o2) {
+					if (o1.getName().equalsIgnoreCase("pom.xml"))
+						return 0;
+					return 10;
+				}
+				
+			};
+		}
+		
+		@Bean
 		@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000", maxMessagesPerPoll = "10"))
 		public MessageSource<File> fileReadingMessageSource() {
 			CompositeFileListFilter<File> filters = new CompositeFileListFilter<>();
@@ -297,7 +303,9 @@ public class AppConfig {
 			filters.addFilter(lastmodified);
 			filters.addFilter(new AcceptOnceFileListFilter<>());
 
-			FileReadingMessageSource source = new FileReadingMessageSource();
+			
+			FileReadingMessageSource source = new FileReadingMessageSource(comparator());
+			source.setScanEachPoll(true);
 			source.setUseWatchService(true);
 			source.setAutoCreateDirectory(true);
 			source.setDirectory(new File(DIRECTORY));

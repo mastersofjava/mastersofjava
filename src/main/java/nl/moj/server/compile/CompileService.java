@@ -43,9 +43,6 @@ public class CompileService {
 	}
 	
 	public Supplier<CompileResult> compile(Map<String, String> sources, String user, boolean withTest) {
-		
-		sources.forEach((k,v) -> System.out.println(k + v));
-		
 		Supplier<CompileResult> supplier = () -> {
 			Collection<AssignmentFile> assignmentFiles;
 			if (withTest) {
@@ -60,11 +57,8 @@ public class CompileService {
 								a.getContent());
 						return jfo;
 					}).collect(Collectors.toList());
-			System.out.println(sources.size());
+
 			sources.forEach((k,v) -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(k, v)));
-			
-//			editableFileNames.forEach(file -> javaFileObjects.add(MemoryJavaFileManager
-//					.createJavaFileObject(file + ".java", sources.get(editableFileNames.indexOf(file)))));
 
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();

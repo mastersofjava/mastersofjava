@@ -2,9 +2,7 @@ package nl.moj.server;
 
 import java.security.Principal;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.slf4j.Logger;
@@ -45,9 +43,6 @@ public class SubmitController {
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		for (String value: message.getSource().values()) {
-			System.out.println(value);
-		}
 		CompletableTask.supplyAsync(compileService.compile(message.getSource(), user.getName()), timed)
 				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
 	}
@@ -55,9 +50,7 @@ public class SubmitController {
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-
 		CompletableTask.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), timed)
-			//	.thenApplyAsync(compileResult->testService.tester(compileResult))
 				.thenComposeAsync( compileResult -> testService.test(compileResult),timed)
 				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
 	}

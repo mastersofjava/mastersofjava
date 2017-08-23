@@ -33,4 +33,20 @@ public class AssignmentService {
 	public List<AssignmentFile> getReadOnlyJavaAndTestFiles(){
 		return competition.getCurrentAssignment().getReadOnlyJavaAndTestFiles();
 	}
+
+	public List<String> getTestFileNames() {
+		return competition.getCurrentAssignment().getTestClassesNames();
+	}
+
+	public List<String> getSubmitFileNames() {
+		return competition.getCurrentAssignment().getSubmitFileNames();
+	}
+
+	public List<String> getSolutionFileNames() {
+		return competition.getCurrentAssignment().getSolutionFileNames();
+	}
+	
+	public List<String> getEditableFileNames() {
+		return competition.getCurrentAssignment().getEditableFileNames();
+	}
 }

@@ -49,10 +49,6 @@
 		setConnected(false);
 		console.log("Disconnected");
 	}
-
-	function mapToJson(map) {
-	    return JSON.stringify([...map]);
-	}
 	
 	function compile() {
 		
@@ -65,7 +61,7 @@
 	function test() { 
 		stompClient.send("/app/submit/test", {}, JSON.stringify({
 			'team' : 'team1',
-			'source' : mapToJson(getContent())
+			'source' : getContent()
 		}));
 	}
 

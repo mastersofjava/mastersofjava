@@ -13,10 +13,10 @@ public class AssignmentFile {
 	private final FileType fileType;
 
 	private final String assignment;
-	
+
 	private final File file;
-	
-	private boolean readOnly;
+
+	private final boolean readOnly;
 
 	public AssignmentFile(String filename, String content, FileType fileType, String assignment, File file) {
 		super();
@@ -26,6 +26,10 @@ public class AssignmentFile {
 		this.fileType = fileType;
 		this.assignment = assignment;
 		this.file = file;
+		if (fileType.equals(FileType.READONLY))
+			this.readOnly = true;
+		else
+			this.readOnly = false;
 	}
 
 	public String getName() {
@@ -55,10 +59,4 @@ public class AssignmentFile {
 	public boolean isReadOnly() {
 		return readOnly;
 	}
-
-	public AssignmentFile setReadOnly(boolean readOnly) {
-		this.readOnly = readOnly;
-		return this;
-	}
-
 }
