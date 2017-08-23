@@ -278,13 +278,13 @@ public class AppConfig {
 
 		@Bean
 		public Comparator<File> comparator(){
-			
+			// make sure pom.xml is read first
 			return new Comparator<File>() {
 
 				@Override
 				public int compare(File o1, File o2) {
 					if (o1.getName().equalsIgnoreCase("pom.xml"))
-						return 0;
+						return -10;
 					return 10;
 				}
 				
@@ -295,7 +295,6 @@ public class AppConfig {
 		@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000", maxMessagesPerPoll = "10"))
 		public MessageSource<File> fileReadingMessageSource() {
 			CompositeFileListFilter<File> filters = new CompositeFileListFilter<>();
-			//filters.addFilter(new SimplePatternFileListFilter("*.java"));
 			filters.addFilter(new IgnoreHiddenFileListFilter());
 			filters.addFilter(new AssignmentFileFilter());
 			LastModifiedFileListFilter lastmodified = new LastModifiedFileListFilter();
@@ -305,7 +304,6 @@ public class AppConfig {
 
 			
 			FileReadingMessageSource source = new FileReadingMessageSource(comparator());
-			source.setScanEachPoll(true);
 			source.setUseWatchService(true);
 			source.setAutoCreateDirectory(true);
 			source.setDirectory(new File(DIRECTORY));

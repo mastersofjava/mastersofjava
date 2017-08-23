@@ -10,8 +10,8 @@
 	<version>1.0.0</version>
 
 	<properties>
-		<editables>VirtualCPU</editables>
-		<testClasses>TestVirtualCPU</testClasses>
+		<editables>VirtualCPU.java</editables>
+		<testClasses>TestVirtualCPU.java</testClasses>
 		<submitClasses></submitClasses>
 		<testClassTimeout>60</testClassTimeout>
 		<submitClassTimeout>60</submitClassTimeout>

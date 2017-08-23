@@ -76,14 +76,13 @@ public class Assignment {
 
 	public List<AssignmentFile> getReadOnlyJavaFiles() {
 		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.READONLY))
-				.filter(f -> f.isReadOnly())
 				.collect(Collectors.toList());
 	}
 
 	public List<AssignmentFile> getReadOnlyJavaAndTestFiles() {
 		return assFiles.stream()
 				.filter(f -> f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.TEST))
-				.filter(f -> f.isReadOnly()).collect(Collectors.toList());
+				.collect(Collectors.toList());
 	}
 
 	public List<String> getTestClassesNames() {

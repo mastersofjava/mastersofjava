@@ -52,6 +52,7 @@ public class CompileService {
 				assignmentFiles = assignmentService.getReadOnlyJavaFiles();
 			}
 			
+			assignmentFiles.forEach(f -> System.out.println(f.getFilename()));
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream()
 					.map(a -> {
 						JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(),
@@ -60,7 +61,8 @@ public class CompileService {
 					}).collect(Collectors.toList());
 
 			sources.forEach((k,v) -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(k, v)));
-
+			sources.forEach((k,v) -> System.out.println(k));
+			javaFileObjects.forEach(f -> System.out.println(f.getName()));
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();
 

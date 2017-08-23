@@ -12,7 +12,7 @@ import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
 
 public class FileProcessor {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(FileProcessor.class);
 
 	private static final String HEADER_FILE_NAME = "file_name";
@@ -20,7 +20,7 @@ public class FileProcessor {
 
 	@Autowired
 	private AssignmentService assignmentService;
-	
+
 	@Autowired
 	private Competition competition;
 
@@ -28,25 +28,25 @@ public class FileProcessor {
 		String filename = (String) msg.getHeaders().get(HEADER_FILE_NAME);
 		File origFile = (File) msg.getHeaders().get(HEADER_FILE_ORIGINALFILE);
 		String origFilename = origFile.getAbsolutePath();
-		
+
 		int beginIndex = origFilename.indexOf(AppConfig.DIRECTORY) + AppConfig.DIRECTORY.length() + 1;
 		int indexOf = origFilename.indexOf("/", beginIndex);
 		String assignment = origFilename.substring(beginIndex, indexOf);
 		log.info("assignment: {}", assignment);
-		
+
 		log.info("{} received", filename);
 		String type = filename.substring(filename.indexOf("."));
 		AssignmentFile file = null;
 		String content = msg.getPayload();
 		switch (type) {
 		case ".java":
-			if( assignmentService.getEditableFileNames().contains(filename)){
-				file = new AssignmentFile(filename, content, FileType.EDIT, assignment,origFile);
-			}else if (assignmentService.getTestFileNames().contains(filename)) {
-				file = new AssignmentFile(filename, content, FileType.TEST, assignment,origFile);
-			}else if (assignmentService.getSubmitFileNames().contains(filename)) {
+			if (assignmentService.getEditableFileNames().contains(filename)) {
+				file = new AssignmentFile(filename, content, FileType.EDIT, assignment, origFile);
+			} else if (assignmentService.getTestFileNames().contains(filename)) {
+				file = new AssignmentFile(filename, content, FileType.TEST, assignment, origFile);
+			} else if (assignmentService.getSubmitFileNames().contains(filename)) {
 				file = new AssignmentFile(filename, content, FileType.SUBMIT, assignment, origFile);
-			}else if (assignmentService.getSolutionFileNames().contains(filename)) {
+			} else if (assignmentService.getSolutionFileNames().contains(filename)) {
 				file = new AssignmentFile(filename, content, FileType.SOLUTION, assignment, origFile);
 			} else {
 				file = new AssignmentFile(filename, content, FileType.READONLY, assignment, origFile);
@@ -67,7 +67,5 @@ public class FileProcessor {
 			break;
 		}
 	}
-	
 
-	
 }

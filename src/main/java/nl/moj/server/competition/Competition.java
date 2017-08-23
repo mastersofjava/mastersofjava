@@ -55,8 +55,6 @@ public class Competition {
 		Assignment assign;
 		if (assignments.containsKey(file.getAssignment())) {
 			assign = assignments.get(file.getAssignment());
-			assign.getFilenames().forEach(fn -> System.out.println("in filenames:" + fn));
-			System.out.println("adding " + file.getFilename());
 			assign.addFilename(file.getFilename());
 			assign.addFile(file);
 			assignments.replace(file.getAssignment(), assign);

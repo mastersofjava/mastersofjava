@@ -50,6 +50,7 @@ public class SubmitController {
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
+		message.getSource().forEach((k,v) -> log.info("{},{}",k,v) );
 		CompletableTask.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), timed)
 				.thenComposeAsync( compileResult -> testService.test(compileResult),timed)
 				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
