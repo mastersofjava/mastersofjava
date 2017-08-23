@@ -1,7 +1,14 @@
 package nl.moj.server;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Properties;
 
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,19 +47,27 @@ public class FileProcessor {
 		switch (type) {
 		case ".java":
 			if (filename.toLowerCase().contains("test")) {
-				file = new AssignmentFile(filename, msg.getPayload(), FileType.TEST, assignment);
+				file = new AssignmentFile(filename, msg.getPayload(), FileType.TEST, assignment, origFile);
 			} else {
-				file = new AssignmentFile(filename, msg.getPayload(), FileType.JAVA_SOURCE, assignment);
+				file = new AssignmentFile(filename, msg.getPayload(), FileType.JAVA_SOURCE, assignment, origFile);
 			}
 			break;
 		case ".txt":
-			file = new AssignmentFile(filename, msg.getPayload(), FileType.TASK, assignment);
+			file = new AssignmentFile(filename, msg.getPayload(), FileType.TASK, assignment, origFile);
 			break;
+		case ".xml":
+			if (filename.equalsIgnoreCase("pom.xml")) {
+				file = new AssignmentFile(filename, msg.getPayload(), FileType.POM, assignment, origFile);
+			}
 		default:
 			break;
 			
 		}
-		assignmentService.addFile(file);
-		competition.addAssignmentFile(file);
+		if (file != null) {
+			competition.addAssignmentFile(file);			
+		}
 	}
+	
+
+	
 }

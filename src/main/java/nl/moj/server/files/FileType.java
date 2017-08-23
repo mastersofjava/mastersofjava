@@ -5,4 +5,5 @@ public enum FileType {
 	JAVA_SOURCE,
 	TEST,
 	TASK,
+	POM
 }

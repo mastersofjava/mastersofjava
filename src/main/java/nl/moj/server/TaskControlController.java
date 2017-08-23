@@ -49,7 +49,7 @@ public class TaskControlController {
 	@MessageMapping("/control/starttask")
 	@SendToUser("/control/queue/feedback")
 	public String startTask(StartTaskMessage message) {
-
+		competition.setCurrentAssignment(message.getTaskName());
 		timer.start(message.taskName);
 		final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() -> sendTaskTime(), 0, 1, TimeUnit.SECONDS);
 		ex.schedule(new Runnable() {

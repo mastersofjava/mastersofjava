@@ -45,18 +45,18 @@ public class SubmitController {
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		List<String> asList = Arrays.asList(message.getSource());
-
-		CompletableTask.supplyAsync(compileService.compile(asList, user.getName()), timed)
+		for (String value: message.getSource().values()) {
+			System.out.println(value);
+		}
+		CompletableTask.supplyAsync(compileService.compile(message.getSource(), user.getName()), timed)
 				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
 	}
 
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		List<String> asList = Arrays.asList(message.getSource());
 
-		CompletableTask.supplyAsync(compileService.compile(asList, user.getName(), true), timed)
+		CompletableTask.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), timed)
 			//	.thenApplyAsync(compileResult->testService.tester(compileResult))
 				.thenComposeAsync( compileResult -> testService.test(compileResult),timed)
 				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();

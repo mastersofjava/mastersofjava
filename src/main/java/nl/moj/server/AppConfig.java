@@ -48,6 +48,7 @@ import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.file.FileReadingMessageSource;
 import org.springframework.integration.file.filters.AcceptOnceFileListFilter;
 import org.springframework.integration.file.filters.CompositeFileListFilter;
+import org.springframework.integration.file.filters.IgnoreHiddenFileListFilter;
 import org.springframework.integration.file.filters.LastModifiedFileListFilter;
 import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.file.transformer.FileToStringTransformer;
@@ -88,6 +89,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import nl.moj.server.async.CompletableExecutors;
 import nl.moj.server.async.TimedCompletables;
+import nl.moj.server.files.AssignmentFileFilter;
 import nz.net.ultraq.thymeleaf.LayoutDialect;
 import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 
@@ -284,10 +286,12 @@ public class AppConfig {
 		}
 
 		@Bean
-		@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000"))
+		@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000", maxMessagesPerPoll = "10"))
 		public MessageSource<File> fileReadingMessageSource() {
 			CompositeFileListFilter<File> filters = new CompositeFileListFilter<>();
-			filters.addFilter(new SimplePatternFileListFilter("*.java"));
+			//filters.addFilter(new SimplePatternFileListFilter("*.java"));
+			filters.addFilter(new IgnoreHiddenFileListFilter());
+			filters.addFilter(new AssignmentFileFilter());
 			LastModifiedFileListFilter lastmodified = new LastModifiedFileListFilter();
 			lastmodified.setAge(1, TimeUnit.SECONDS);
 			filters.addFilter(lastmodified);
@@ -336,16 +340,16 @@ public class AppConfig {
 		}
 	}
 	
-	@Bean
-	public Properties properties() {
-		Properties prop = new Properties();
-		try {
-			prop.load(new FileInputStream(DIRECTORY + "/puzzle.properties"));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return prop;
-	}
+//	@Bean
+//	public Properties properties() {
+//		Properties prop = new Properties();
+//		try {
+//			prop.load(new FileInputStream(DIRECTORY + "/puzzle.properties"));
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		return prop;
+//	}
 
 }

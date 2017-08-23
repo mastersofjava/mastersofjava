@@ -3,10 +3,14 @@
     function getContent() {
 		var curTab = $('.ui-state-active');
 		console.log(curTab.index());
-		var editables = new Array();
-		for(let i = 0; i < cmEditables.length; i++){
-			editables.push(cmEditables[i].getValue());
+		var editables = [];
+		for(let i = 0; i < filesArray.length; i++){
+			if (!filesArray[i].readonly) {
+				var file = {filename: filesArray[i].filename, content: filesArray[i].cmEditor.getValue()}
+				editables.push(file);				
+			}
 		}
+		
 		return editables;
     }  
       
@@ -46,17 +50,22 @@
 		console.log("Disconnected");
 	}
 
+	function mapToJson(map) {
+	    return JSON.stringify([...map]);
+	}
+	
 	function compile() {
+		
 		stompClient.send("/app/submit/compile", {}, JSON.stringify({
 			'team' : 'team1',
-			'source' : getContent()
+			'source' :  getContent()
 		}));
 	}
 
 	function test() { 
 		stompClient.send("/app/submit/test", {}, JSON.stringify({
 			'team' : 'team1',
-			'source' : getContent()
+			'source' : mapToJson(getContent())
 		}));
 	}
 

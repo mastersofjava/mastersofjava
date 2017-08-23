@@ -10,20 +10,23 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
 
 @Service
 public class Competition {
 
-	private String currentAssignment;
+	private Assignment currentAssignment;
 	
 	private Map<String,Assignment> assignments;
 
-	public String getCurrentAssignment() {
+	public Assignment getCurrentAssignment() {
 		return currentAssignment;
 	}
 
-	public void setCurrentAssignment(String currentAssignment) {
-		this.currentAssignment = currentAssignment;
+	public void setCurrentAssignment(String assignmentName) {
+		if (assignments.containsKey(assignmentName)) {
+			this.currentAssignment = assignments.get(assignmentName);	
+		}
 	}
 
 	public Map<String, Assignment> getAssignments() {
@@ -41,6 +44,11 @@ public class Competition {
 		assignments.put(assignment.getName(), assignment);
 	}
 	
+	public Assignment getAssignment(String name) {
+		return assignments.get(name);
+	}
+	
+	
 	public void addAssignmentFile(AssignmentFile file) {
 		if (assignments == null) {
 			assignments = new HashMap<>();
@@ -51,12 +59,18 @@ public class Competition {
 			assign.getFilenames().forEach(fn -> System.out.println("in filenames:" + fn));
 			System.out.println("adding " + file.getFilename());
 			assign.addFilename(file.getFilename());
+			assign.addFile(file);
 			assignments.replace(file.getAssignment(), assign);
 		} else {
 			List<String> filenames = new ArrayList<>();
 			filenames.add(file.getFilename());
-			assign = new Assignment(file.getAssignment(),filenames);
+			assign = new Assignment(file.getAssignment());
+			assign.addFilename(file.getFilename());
+			assign.addFile(file);
 			assignments.put(file.getAssignment(), assign);
+		}
+		if (file.getFileType().equals(FileType.POM)) {
+			assign.parsePom(file.getFile());
 		}
 	}
 

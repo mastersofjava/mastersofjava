@@ -4,6 +4,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -37,28 +38,33 @@ public class CompileService {
 	@Autowired
 	private AssignmentService assignmentService;
 
-	public Supplier<CompileResult> compile(List<String> teamOpgave, String user) {
-		return compile(teamOpgave, user, false);
+	public Supplier<CompileResult> compile(Map<String, String> sources, String user) {
+		return compile(sources, user, false);
 	}
 	
-	public Supplier<CompileResult> compile(List<String> teamOpgave, String user, boolean withTest) {
+	public Supplier<CompileResult> compile(Map<String, String> sources, String user, boolean withTest) {
+		
+		sources.forEach((k,v) -> System.out.println(k + v));
+		
 		Supplier<CompileResult> supplier = () -> {
 			Collection<AssignmentFile> assignmentFiles;
 			if (withTest) {
-				assignmentFiles = assignmentService.getJavaAndTestFiles();	
+				assignmentFiles = assignmentService.getReadOnlyJavaAndTestFiles();
 			} else {
-				assignmentFiles = assignmentService.getJavaFiles();	
+				assignmentFiles = assignmentService.getReadOnlyJavaFiles();
 			}
-			final List<String> editableFileNames = assignmentService.getEditableFileNames();
+			
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream()
-					.filter(a -> !assignmentService.getEditableFileNames().contains(a.getName())).map(a -> {
+					.map(a -> {
 						JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(),
 								a.getContent());
 						return jfo;
 					}).collect(Collectors.toList());
-
-			editableFileNames.forEach(file -> javaFileObjects.add(MemoryJavaFileManager
-					.createJavaFileObject(file + ".java", teamOpgave.get(editableFileNames.indexOf(file)))));
+			System.out.println(sources.size());
+			sources.forEach((k,v) -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(k, v)));
+			
+//			editableFileNames.forEach(file -> javaFileObjects.add(MemoryJavaFileManager
+//					.createJavaFileObject(file + ".java", sources.get(editableFileNames.indexOf(file)))));
 
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();
