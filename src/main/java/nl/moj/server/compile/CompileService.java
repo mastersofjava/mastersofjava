@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import nl.moj.server.AssignmentService;
 import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
 
 @Service
 public class CompileService {

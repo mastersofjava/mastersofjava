@@ -65,10 +65,6 @@ public class FileProcessor {
 			}
 		default:
 			break;
-			
-		}
-		if (file != null) {
-						
 		}
 	}
 	
