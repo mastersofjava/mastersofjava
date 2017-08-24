@@ -19,9 +19,6 @@ public class FileProcessor {
 	private static final String HEADER_FILE_ORIGINALFILE = "file_originalFile";
 
 	@Autowired
-	private AssignmentService assignmentService;
-
-	@Autowired
 	private Competition competition;
 
 	public void process(Message<String> msg) {
@@ -40,13 +37,13 @@ public class FileProcessor {
 		String content = msg.getPayload();
 		switch (type) {
 		case ".java":
-			if (assignmentService.getEditableFileNames().contains(filename)) {
+			if (competition.getAssignment(assignment).getEditableFileNames().contains(filename)) {
 				file = new AssignmentFile(filename, content, FileType.EDIT, assignment, origFile);
-			} else if (assignmentService.getTestFileNames().contains(filename)) {
+			} else if (competition.getAssignment(assignment).getTestFileNames().contains(filename)) {
 				file = new AssignmentFile(filename, content, FileType.TEST, assignment, origFile);
-			} else if (assignmentService.getSubmitFileNames().contains(filename)) {
+			} else if (competition.getAssignment(assignment).getSubmitFileNames().contains(filename)) {
 				file = new AssignmentFile(filename, content, FileType.SUBMIT, assignment, origFile);
-			} else if (assignmentService.getSolutionFileNames().contains(filename)) {
+			} else if (competition.getAssignment(assignment).getSolutionFileNames().contains(filename)) {
 				file = new AssignmentFile(filename, content, FileType.SOLUTION, assignment, origFile);
 			} else {
 				file = new AssignmentFile(filename, content, FileType.READONLY, assignment, origFile);

@@ -35,7 +35,7 @@ public class AssignmentService {
 	}
 
 	public List<String> getTestFileNames() {
-		return competition.getCurrentAssignment().getTestClassesNames();
+		return competition.getCurrentAssignment().getTestFileNames();
 	}
 
 	public List<String> getSubmitFileNames() {

@@ -18,7 +18,7 @@
 <div>
 	<ul>
 		<li th:each="name : ${assignmenNames}" >
-			<input type="radio"  th:value="${name}" th:text="${name}"/>
+			<input type="radio" name="assignment" th:value="${name}" th:text="${name}"/>
 
 		</li>
 	</ul>	

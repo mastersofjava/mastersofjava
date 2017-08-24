@@ -27,21 +27,6 @@ public class Competition {
 			this.currentAssignment = assignments.get(assignmentName);	
 		}
 	}
-
-	public Map<String, Assignment> getAssignments() {
-		return assignments;
-	}
-
-	public void setAssignments(Map<String, Assignment> assignments) {
-		this.assignments = assignments;
-	}
-	
-	public void addAssignment(Assignment assignment) {
-		if (assignments == null) {
-			assignments = new HashMap<>();
-		}
-		assignments.put(assignment.getName(), assignment);
-	}
 	
 	public Assignment getAssignment(String name) {
 		return assignments.get(name);

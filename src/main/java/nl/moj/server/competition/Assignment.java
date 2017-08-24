@@ -85,7 +85,7 @@ public class Assignment {
 				.collect(Collectors.toList());
 	}
 
-	public List<String> getTestClassesNames() {
+	public List<String> getTestFileNames() {
 		return Arrays.asList(properties.get("testClasses").toString().split(","));
 	}
 
