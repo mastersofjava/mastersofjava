@@ -302,7 +302,7 @@ public class AppConfig {
 			LastModifiedFileListFilter lastmodified = new LastModifiedFileListFilter();
 			lastmodified.setAge(1, TimeUnit.SECONDS);
 			filters.addFilter(lastmodified);
-			filters.addFilter(new AcceptOnceFileListFilter<>());
+			//filters.addFilter(new AcceptOnceFileListFilter<>());
 
 			
 			FileReadingMessageSource source = new FileReadingMessageSource(comparator());
