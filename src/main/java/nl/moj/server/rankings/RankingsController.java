@@ -47,8 +47,10 @@ public class RankingsController {
 	
 	public void updateScoreBoard(TestResult testResult){
 		String teamname = testResult.getUser();
-		String assignment = competition.getCurrentAssignment();
+		String assignment = competition.getCurrentAssignment().getName();
 		Integer score = resultMapper.getScore(teamname, assignment);
+		if(score == null)
+			score = 0;
 		resultMapper.updateScore(teamname, assignment, score + 100);
 		refreshScoreBoard();
 	}

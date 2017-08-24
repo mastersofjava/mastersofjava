@@ -7,4 +7,5 @@ public enum FileType {
 	READONLY,
 	TASK, 
 	SOLUTION,
+	POM
 }

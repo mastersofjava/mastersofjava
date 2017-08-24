@@ -6,27 +6,7 @@ INSERT INTO TEAM (name, password, role)
 VALUES ('team2', '$2a$10$/f3f9fZOExP7w2ewd0m7I.bvYFnCRMt7lYBEWiXkqVt/0COiWCpvu', 'ROLE_USER');
 
 INSERT INTO RESULT (team, assignment, score)
-VALUES ('team1', 'assignment1', 0);
-INSERT INTO RESULT (team, assignment, score)
-VALUES ('team1', 'assignment2', 0);
-INSERT INTO RESULT (team, assignment, score)
-VALUES ('team1', 'assignment3', 0);
-INSERT INTO RESULT (team, assignment, score)
-VALUES ('team1', 'assignment4', 0);
-INSERT INTO RESULT (team, assignment, score)
-VALUES ('team1', 'assignment5', 0);
-INSERT INTO RESULT (team, assignment, score)
-VALUES ('team1', 'assignment6', 0);
+VALUES ('team1', 'VirtualCPU', 0);
 
 INSERT INTO RESULT (team, assignment, score)
-VALUES ('team2', 'assignment1', 0);
-INSERT INTO RESULT (team, assignment, score)
-VALUES ('team2', 'assignment2', 0);
-INSERT INTO RESULT (team, assignment, score)
-VALUES ('team2', 'assignment3', 0);
-INSERT INTO RESULT (team, assignment, score)
-VALUES ('team2', 'assignment4', 0);
-INSERT INTO RESULT (team, assignment, score)
-VALUES ('team2', 'assignment5', 0);
-INSERT INTO RESULT (team, assignment, score)
-VALUES ('team2', 'assignment6', 0);
+VALUES ('team2', 'VirtualCPU', 0);

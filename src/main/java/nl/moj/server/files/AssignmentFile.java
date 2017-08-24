@@ -1,5 +1,7 @@
 package nl.moj.server.files;
 
+import java.io.File;
+
 public class AssignmentFile {
 
 	private final String name;
@@ -12,13 +14,22 @@ public class AssignmentFile {
 
 	private final String assignment;
 
-	public AssignmentFile(String filename, String content, FileType fileType, String assignment) {
+	private final File file;
+
+	private final boolean readOnly;
+
+	public AssignmentFile(String filename, String content, FileType fileType, String assignment, File file) {
 		super();
 		this.name = filename.substring(0, filename.indexOf("."));
 		this.filename = filename;
 		this.content = content;
 		this.fileType = fileType;
 		this.assignment = assignment;
+		this.file = file;
+		if (fileType.equals(FileType.READONLY))
+			this.readOnly = true;
+		else
+			this.readOnly = false;
 	}
 
 	public String getName() {
@@ -41,4 +52,11 @@ public class AssignmentFile {
 		return assignment;
 	}
 
+	public File getFile() {
+		return file;
+	}
+
+	public boolean isReadOnly() {
+		return readOnly;
+	}
 }

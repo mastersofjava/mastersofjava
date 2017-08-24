@@ -23,12 +23,9 @@ public class TeamDetailsService implements UserDetailsService {
 
 	@Override
 	public UserDetails loadUserByUsername(String teamname) throws UsernameNotFoundException {
-		System.out.println("find team " + teamname + " out of " + teamMapper.findById(1l));
 		Team team = teamMapper.findByName(teamname);
-		System.out.println(team);
 		if (team == null)
 			throw new UsernameNotFoundException("no team found with name: " + teamname);
-		System.out.println("teamname: " + team.getName() + " password: " + team.getPassword());
 		return new User(teamname, team.getPassword(), true, true, true, true, getAuthorities(team));
 	}
 
