@@ -14,8 +14,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import nl.moj.server.competition.Competition;
 import nl.moj.server.model.Team;
+import nl.moj.server.persistence.ResultMapper;
 import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.rankings.RankingsController;
 
 @Controller
 public class LoginController {
@@ -23,7 +26,16 @@ public class LoginController {
 	private TeamMapper teamMapper;
 	
 	@Autowired
+	private ResultMapper resultMapper;
+	
+	@Autowired
 	private PasswordEncoder encoder;
+	
+	@Autowired
+	private RankingsController rankingsController;
+	
+	@Autowired
+	private Competition competition;
 	
     @GetMapping("/login")
     public String loginForm(Model model) {
@@ -46,10 +58,14 @@ public class LoginController {
     	}
     	
     	teamMapper.addTeam(team.getName(), encoder.encode(team.getPassword()),"ROLE_USER");
+    	for(String assignment : competition.getAssignmentNames()){
+    		resultMapper.insertResult(team.getName(), assignment);
+    	}
+    	
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     	context.setAuthentication(authentication);
-    	
+    	rankingsController.refreshScoreBoard();
     	return "redirect:/";
     }
     

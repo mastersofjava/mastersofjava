@@ -36,7 +36,9 @@ public class AssignmentService {
 		return files;
 	}
 	
-	
+	public List<AssignmentFile> getTestAndSubmitFiles() {
+		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TEST) || f.getFileType().equals(FileType.SUBMIT)).collect(Collectors.toList());
+	}
 
 	public void setAssignmentFiles(List<AssignmentFile> assFiles) {
 		this.assFiles = assFiles;

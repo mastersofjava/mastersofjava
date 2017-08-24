@@ -1,11 +1,11 @@
 package nl.moj.server.competition;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.springframework.stereotype.Service;
 
@@ -14,7 +14,7 @@ import nl.moj.server.files.AssignmentFile;
 @Service
 public class Competition {
 
-	private String currentAssignment;
+	private String currentAssignment = "assignment1";
 	
 	private Map<String,Assignment> assignments;
 
@@ -61,6 +61,11 @@ public class Competition {
 	}
 
 	public Set<String> getAssignmentNames() {
-		return assignments.keySet();
+		Set<String> set = new TreeSet<>();
+		for(int i = 1; i < 7; i++){
+			set.add("assignment"+i);
+		}
+		return set;
+//		return assignments.keySet();
 	}
 }

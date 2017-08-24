@@ -187,16 +187,16 @@ public class AppConfig {
 
 		@Override
 		public void configureMessageBroker(MessageBrokerRegistry config) {
-			config.enableSimpleBroker("/topic", "/queue"); // ,"/user"
+			config.enableSimpleBroker("/topic", "/queue","/rankings"); // ,"/user"
 			config.setApplicationDestinationPrefixes("/app");
 			config.setUserDestinationPrefix("/user");
-			
 		}
 
 		@Override
 		public void registerStompEndpoints(StompEndpointRegistry registry) {
 			registry.addEndpoint("/submit").withSockJS();
 			registry.addEndpoint("/control").withSockJS();
+			registry.addEndpoint("/rankings").withSockJS();
 		}
 	}
 

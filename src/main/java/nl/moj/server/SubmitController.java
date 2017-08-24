@@ -20,6 +20,8 @@ import org.springframework.stereotype.Controller;
 import net.tascalate.concurrent.CompletableTask;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.CompileService;
+import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.rankings.RankingsController;
 import nl.moj.server.test.TestResult;
 import nl.moj.server.test.TestService;
 
@@ -41,12 +43,17 @@ public class SubmitController {
 
 	@Autowired
 	private SimpMessagingTemplate template;
+	
+//	@Autowired
+//	private TeamMapper teamMapper;
+	
+	@Autowired
+	private RankingsController rankingsController;
 
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		List<String> asList = Arrays.asList(message.getSource());
-
 		CompletableTask.supplyAsync(compileService.compile(asList, user.getName()), timed)
 				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
 	}
@@ -61,7 +68,20 @@ public class SubmitController {
 				.thenComposeAsync( compileResult -> testService.test(compileResult),timed)
 				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
 	}
+	@MessageMapping("/submit")
+	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
+			throws Exception {
+		List<String> asList = Arrays.asList(message.getSource());
 
+		CompletableTask.supplyAsync(compileService.compile(asList, user.getName(), true), timed)
+			//	.thenApplyAsync(compileResult->testService.tester(compileResult))
+				.thenComposeAsync( compileResult -> testService.submit(compileResult),timed)
+				.thenAccept(testResult -> {
+						rankingsController.updateScoreBoard(testResult);
+						sendFeedbackMessage(testResult);
+					}).get();
+	}
+	
 	private void sendFeedbackMessage(CompileResult compileResult) {
 		log.info("sending feedback");
 		String time = new SimpleDateFormat("HH:mm").format(new Date());
