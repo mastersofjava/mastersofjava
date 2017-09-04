@@ -4,9 +4,11 @@ public class Result {
 
 	private int id;
 	
-	private String result;
-	
 	private String team;
+
+	private String assignment;
+
+	private Integer score;
 
 	public int getId() {
 		return id;
@@ -16,12 +18,12 @@ public class Result {
 		this.id = id;
 	}
 
-	public String getResult() {
-		return result;
+	public Integer getScore() {
+		return score;
 	}
 
-	public void setResult(String result) {
-		this.result = result;
+	public void setScore(Integer score) {
+		this.score = score;
 	}
 
 	public String getTeam() {
@@ -29,7 +31,15 @@ public class Result {
 	}
 
 	public void setTeam(String team) {
-		this.team = team;
+		this.team= team;
+	}
+
+	public String getAssignment() {
+		return assignment;
+	}
+
+	public void setAssignment(String assignment) {
+		this.assignment = assignment;
 	}
 	
 	

@@ -8,9 +8,15 @@ public class CompileResult {
 
 	private Map<String, byte[]> memoryMap;
 
-	public CompileResult(String compileResult, Map<String, byte[]> memoryMap) {
+	private String user;
+	
+	private Boolean successful;
+	
+	public CompileResult(String compileResult, Map<String, byte[]> memoryMap, String user, Boolean successful) {
 		this.compileResult = compileResult;
 		this.memoryMap = memoryMap;
+		this.user = user;
+		this.setSuccessful(successful);
 	}
 
 	public String getCompileResult() {
@@ -28,6 +34,22 @@ public class CompileResult {
 
 	public void setMemoryMap(Map<String, byte[]> memoryMap) {
 		this.memoryMap = memoryMap;
+	}
+
+	public String getUser() {
+		return user;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	public Boolean isSuccessful() {
+		return successful;
+	}
+
+	public void setSuccessful(Boolean successful) {
+		this.successful = successful;
 	}
 
 }

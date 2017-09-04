@@ -1,18 +1,23 @@
 package nl.moj.server;
 
+import java.util.Map;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+@JsonDeserialize(using = SourceMessageDeserializer.class)
 public class SourceMessage {
 
 	private String team;
-	private String[] source;
+	private Map<String, String> source;
 
 	public SourceMessage() {
 	}
-	
-	public SourceMessage(String team, String[] source) {
+
+	public SourceMessage(String team, Map<String, String> source) {
 		this.team = team;
 		this.source = source;
 	}
-	
+
 	public String getTeam() {
 		return team;
 	}
@@ -21,11 +26,11 @@ public class SourceMessage {
 		this.team = team;
 	}
 
-	public String[] getSource() {
+	public Map<String, String> getSource() {
 		return source;
 	}
 
-	public void setSource(String[] source) {
+	public void setSource(Map<String, String> source) {
 		this.source = source;
 	}
 

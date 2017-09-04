@@ -3,22 +3,26 @@
     function getContent() {
 		var curTab = $('.ui-state-active');
 		console.log(curTab.index());
-		var editables = new Array();
-		for(let i = 0; i < cmEditables.length; i++){
-			editables.push(cmEditables[i].getValue());
+		var editables = [];
+		for(let i = 0; i < filesArray.length; i++){
+			if (!filesArray[i].readonly) {
+				var file = {filename: filesArray[i].filename, content: filesArray[i].cmEditor.getValue()}
+				editables.push(file);				
+			}
 		}
+		
 		return editables;
     }  
       
 	function setConnected(connected) {
-		document.getElementById('response').innerHTML = '';
+		document.getElementById('status').innerHTML = 'connected';
 	}
 
 	function connect() {
 
 		var socket = new SockJS('/submit');
 		stompClient = Stomp.over(socket);
-
+		stompClient.debug = null;
 		stompClient.connect({}, function(frame) {
 
 			setConnected(true);
@@ -45,21 +49,28 @@
 		setConnected(false);
 		console.log("Disconnected");
 	}
-
+	
 	function compile() {
+		
 		stompClient.send("/app/submit/compile", {}, JSON.stringify({
 			'team' : 'team1',
-			'source' : getContent()
+			'source' :  getContent()
 		}));
 	}
 
-	function test() {
+	function test() { 
 		stompClient.send("/app/submit/test", {}, JSON.stringify({
 			'team' : 'team1',
 			'source' : getContent()
 		}));
 	}
 
+	function submit() {
+		stompClient.send("/app/submit/submit", {}, JSON.stringify({
+			'team' : 'team1',
+			'source' : getContent()
+		}));
+	}
 	
 	function showMessageOutput(messageOutput) {
 		console.log("show");

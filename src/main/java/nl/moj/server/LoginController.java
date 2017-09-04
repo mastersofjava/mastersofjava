@@ -1,11 +1,7 @@
 package nl.moj.server;
 
 import java.util.Arrays;
-import java.util.List;
 
-import javax.annotation.PostConstruct;
-
-import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,9 +14,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
-import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.competition.Competition;
 import nl.moj.server.model.Team;
+import nl.moj.server.persistence.ResultMapper;
 import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.rankings.RankingsController;
 
 @Controller
 public class LoginController {
@@ -28,15 +26,16 @@ public class LoginController {
 	private TeamMapper teamMapper;
 	
 	@Autowired
+	private ResultMapper resultMapper;
+	
+	@Autowired
 	private PasswordEncoder encoder;
 	
-	@Autowired AssignmentService assignmentService;
+	@Autowired
+	private RankingsController rankingsController;
 	
-	@PostConstruct
-	public void run() throws Exception {
-		teamMapper.addTeam("team2", encoder.encode("team2"));
-	}
-
+	@Autowired
+	private Competition competition;
 	
     @GetMapping("/login")
     public String loginForm(Model model) {
@@ -58,14 +57,16 @@ public class LoginController {
     		return "register";
     	}
     	
-    	teamMapper.addTeam(team.getName(), encoder.encode(team.getPassword()));
-    	SecurityContext context = SecurityContextHolder.getContext();
-    	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("USER")));
-    	context.setAuthentication(authentication);
+    	teamMapper.addTeam(team.getName(), encoder.encode(team.getPassword()),"ROLE_USER");
+    	for(String assignment : competition.getAssignmentNames()){
+    		resultMapper.insertResult(team.getName(), assignment);
+    	}
     	
-		List<AssignmentFile> files = assignmentService.getJavaFiles();
-		model.addAttribute("files", files);
-    	return "index";
+    	SecurityContext context = SecurityContextHolder.getContext();
+    	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
+    	context.setAuthentication(authentication);
+    	rankingsController.refreshScoreBoard();
+    	return "redirect:/";
     }
     
     @GetMapping("/register")

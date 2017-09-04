@@ -8,12 +8,16 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
@@ -22,9 +26,6 @@ import javax.tools.ToolProvider;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tomcat.jdbc.pool.DataSource;
-import org.mybatis.spring.SqlSessionFactoryBean;
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -43,24 +44,25 @@ import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.file.FileReadingMessageSource;
 import org.springframework.integration.file.filters.AcceptOnceFileListFilter;
 import org.springframework.integration.file.filters.CompositeFileListFilter;
+import org.springframework.integration.file.filters.IgnoreHiddenFileListFilter;
 import org.springframework.integration.file.filters.LastModifiedFileListFilter;
-import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.file.transformer.FileToStringTransformer;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
 import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -80,6 +82,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import nl.moj.server.async.CompletableExecutors;
 import nl.moj.server.async.TimedCompletables;
+import nl.moj.server.files.AssignmentFileFilter;
 import nz.net.ultraq.thymeleaf.LayoutDialect;
 import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 
@@ -88,7 +91,7 @@ import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 @Import(AppConfig.SecurityConfig.class)
 public class AppConfig {
 
-	private static final String DIRECTORY = "./assignments";
+	public static final String DIRECTORY = "./assignments";
 
 
 	@Configuration
@@ -138,10 +141,38 @@ public class AppConfig {
         protected void configure(HttpSecurity http) throws Exception {
             http.authorizeRequests()
             .antMatchers("/login","/register").permitAll()
-            .antMatchers("/", "/index").access("hasRole('USER')")
-            .and().formLogin().loginPage("/login")
+            .antMatchers("/").hasRole("USER")
+            .antMatchers("/control").hasRole("CONTROL")
+            .and().formLogin()
+            .successHandler(new CustomAuthenticationSuccessHandler())
+            .loginPage("/login")
             .and().logout()
+            .and().headers().frameOptions().disable()
             .and().csrf().disable();
+        }
+        
+        public class CustomAuthenticationSuccessHandler  implements AuthenticationSuccessHandler {
+
+        	@Override
+        	public void onAuthenticationSuccess(HttpServletRequest request,
+        			HttpServletResponse response, Authentication authentication)
+        			throws IOException, ServletException {
+                //set our response to OK status
+                response.setStatus(HttpServletResponse.SC_OK);
+                boolean admin = false;
+                
+                for (GrantedAuthority auth : authentication.getAuthorities()) {
+                    if ("ROLE_CONTROL".equals(auth.getAuthority())){
+                    	admin = true;
+                    }
+                }
+                
+                if(admin){
+                	response.sendRedirect("/control");
+                }else{
+                	response.sendRedirect("/");
+                }
+        	}
         }
 	}
 
@@ -151,7 +182,7 @@ public class AppConfig {
 
 		@Override
 		public void configureMessageBroker(MessageBrokerRegistry config) {
-			config.enableSimpleBroker("/topic", "/queue"); // ,"/user"
+			config.enableSimpleBroker("/topic", "/queue","/rankings"); // ,"/user"
 			config.setApplicationDestinationPrefixes("/app");
 			config.setUserDestinationPrefix("/user");
 		}
@@ -159,6 +190,8 @@ public class AppConfig {
 		@Override
 		public void registerStompEndpoints(StompEndpointRegistry registry) {
 			registry.addEndpoint("/submit").withSockJS();
+			registry.addEndpoint("/control").withSockJS();
+			registry.addEndpoint("/rankings").withSockJS();
 		}
 	}
 
@@ -246,16 +279,33 @@ public class AppConfig {
 		}
 
 		@Bean
-		@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000"))
+		public Comparator<File> comparator(){
+			// make sure pom.xml is read first
+			return new Comparator<File>() {
+
+				@Override
+				public int compare(File o1, File o2) {
+					if (o1.getName().equalsIgnoreCase("pom.xml"))
+						return -10;
+					return 10;
+				}
+				
+			};
+		}
+		
+		@Bean
+		@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000", maxMessagesPerPoll = "10"))
 		public MessageSource<File> fileReadingMessageSource() {
 			CompositeFileListFilter<File> filters = new CompositeFileListFilter<>();
-			filters.addFilter(new SimplePatternFileListFilter("*.java"));
+			filters.addFilter(new IgnoreHiddenFileListFilter());
+			filters.addFilter(new AssignmentFileFilter());
 			LastModifiedFileListFilter lastmodified = new LastModifiedFileListFilter();
 			lastmodified.setAge(1, TimeUnit.SECONDS);
 			filters.addFilter(lastmodified);
-			filters.addFilter(new AcceptOnceFileListFilter<>());
+			//filters.addFilter(new AcceptOnceFileListFilter<>());
 
-			FileReadingMessageSource source = new FileReadingMessageSource();
+			
+			FileReadingMessageSource source = new FileReadingMessageSource(comparator());
 			source.setUseWatchService(true);
 			source.setAutoCreateDirectory(true);
 			source.setDirectory(new File(DIRECTORY));
@@ -298,16 +348,16 @@ public class AppConfig {
 		}
 	}
 	
-	@Bean
-	public Properties properties() {
-		Properties prop = new Properties();
-		try {
-			prop.load(new FileInputStream(DIRECTORY + "/puzzle.properties"));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return prop;
-	}
+//	@Bean
+//	public Properties properties() {
+//		Properties prop = new Properties();
+//		try {
+//			prop.load(new FileInputStream(DIRECTORY + "/puzzle.properties"));
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		return prop;
+//	}
 
 }

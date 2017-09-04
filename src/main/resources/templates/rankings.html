@@ -1,0 +1,36 @@
+<html>
+<head>
+	<script src="/webjars/sockjs-client/sockjs.min.js"></script>
+	<script src="/webjars/stomp-websocket/stomp.min.js"></script>
+<script src="/webjars/jquery/jquery.min.js"></script>
+<script src="ranking.js"></script>
+<link href="ranking.css" rel="stylesheet" />
+</head>
+
+<header>
+	<h1>Rankings</h1>
+</header>
+<body onload = connect()>
+	<div class="container">
+		<div id="main" class="main">
+			<table id="table">
+				<tr>
+					<th COLSPAN="10">
+						<h3>
+							<br>SCORE BOARD
+						</h3>
+					</th>
+				</tr>
+				<th>Team</th>
+				<th th:each="assignment : ${assignments}" th:text="${assignment}"/>
+				<th>Total score</th>
+				<tr th:each="team : ${teamMapper.allTeams}">
+					<td th:text="${team.name}" />
+					<td th:each="result : ${team.results}" th:text="${result.score}"/>
+					<td th:text="${team.totalScore}"/>
+				</tr>
+			</table>
+		</div>
+	</div>
+</body>
+</html>
