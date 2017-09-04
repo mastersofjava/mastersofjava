@@ -48,6 +48,25 @@ public class TestService {
 			}
 		}, timed);
 	}
+	public Promise<TestResult> submit(CompileResult compileResult) {
+		return CompletableTask.supplyAsync(new Supplier<TestResult>() {
+			@Override
+			public TestResult get() {
+				if (compileResult.isSuccessful()) {
+					JUnitCore junit = new JUnitCore();
+					TestCollector testCollector = new TestCollector();
+					MyRunListener myRunListener = new MyRunListener(testCollector);
+					junit.addListener(myRunListener);
+
+					List<AssignmentFile> testFiles = assignmentService.getTestAndSubmitFiles();
+					testFiles.forEach((file) -> unittest(file, compileResult, junit));
+					return new TestResult(testCollector.getTestResults(),compileResult.getUser());					
+				} else {
+					return new TestResult(compileResult.getCompileResult(),compileResult.getUser());
+				}
+			}
+		}, timed);
+	}
 	
 
 	public Supplier<TestResult> tester(CompileResult compileResult) {

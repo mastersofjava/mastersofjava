@@ -56,4 +56,5 @@ public class AssignmentService {
 	public List<String> getEditableFileNames() {
 		return competition.getCurrentAssignment().getEditableFileNames();
 	}
+
 }

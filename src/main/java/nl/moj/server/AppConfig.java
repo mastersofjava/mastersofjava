@@ -3,11 +3,13 @@ package nl.moj.server;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Comparator;
+import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -180,16 +182,16 @@ public class AppConfig {
 
 		@Override
 		public void configureMessageBroker(MessageBrokerRegistry config) {
-			config.enableSimpleBroker("/topic", "/queue"); // ,"/user"
+			config.enableSimpleBroker("/topic", "/queue","/rankings"); // ,"/user"
 			config.setApplicationDestinationPrefixes("/app");
 			config.setUserDestinationPrefix("/user");
-			
 		}
 
 		@Override
 		public void registerStompEndpoints(StompEndpointRegistry registry) {
 			registry.addEndpoint("/submit").withSockJS();
 			registry.addEndpoint("/control").withSockJS();
+			registry.addEndpoint("/rankings").withSockJS();
 		}
 	}
 
