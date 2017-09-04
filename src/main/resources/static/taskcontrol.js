@@ -55,6 +55,12 @@
 		}));
 	}
 
+	function clearAssignment() {
+		var taskname = $( "input:checked" ).val();
+		console.log(taskname);
+		stompClient.send("/app/control/clearAssignment", {}, {});
+	}
+	
 	function showMessageOutput(messageOutput) {
 		console.log("show");
 		var response = document.getElementById('response');

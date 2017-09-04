@@ -20,21 +20,32 @@
 	<link rel="stylesheet" href="/webjars/codemirror/lib/codemirror.css">
 	
 	<link rel="stylesheet" href="/webjars/jquery-ui-themes/smoothness/jquery-ui.min.css"/>
-	
+	<link rel="stylesheet" href="index.css">
 	<title>Master of Java</title>
 </head>
 <body onload="connect();">
-<div id="tabs" >
+
+<div id="tabs" th:unless="${#lists.isEmpty(files)}" >
   <ul>
-    <li th:each="file : ${files}"><a href="#" th:attrappend="href=|${file.name}.tab|" th:text="|${file.filename}|" ></a></li>
+    <li th:each="file : ${files}">
+    	<a href="#" th:attrappend="href=|${file.name}.tab|" th:text="|${file.filename}|" ></a>
+    </li>
   </ul>
-  <div th:each="file : ${files}" th:attr="id=|${file.name}.tab|">
+  <div th:each="file : ${files}" th:attr="id=|${file.name}.tab|" >
   	<div th:attr="id=|${file.filename}|" ></div>
   </div>
 </div>
 
+<div th:if="${#lists.isEmpty(files)}" >
+	<p>
+		No assignment active right now;
+	</p>
+	
+</div>
 
-<div id="conversationDiv">
+
+
+<div id="conversationDiv" th:unless="${#lists.isEmpty(files)}">
 	<button id="compile" onclick="compile();">compile</button>
 	<button id="test" onclick="test();">test</button>
 	<button id="sendMessage" onclick="sendMessage();">Send</button>
@@ -44,11 +55,18 @@
 	<a href="/static/docs/api/index.html" target="_blank">javadoc</a>
 </div>
 
-<script type="text/javascript">
+<div>
+	<p id="status">
+	
+	</p>
+</div>
+
+
+<script type="text/javascript" th:unless="${#lists.isEmpty(files)}">
 $( "#tabs" ).tabs();
 </script>
-<script type="text/javascript" src="index.js"></script>
-<script type="text/javascript" src="app.js"></script>
+<script type="text/javascript" src="index.js" th:unless="${#lists.isEmpty(files)}"></script>
+<script type="text/javascript" src="app.js" ></script>
 </body>
 
 

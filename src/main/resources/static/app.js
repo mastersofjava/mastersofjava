@@ -15,7 +15,7 @@
     }  
       
 	function setConnected(connected) {
-		document.getElementById('response').innerHTML = '';
+		document.getElementById('status').innerHTML = 'connected';
 	}
 
 	function connect() {

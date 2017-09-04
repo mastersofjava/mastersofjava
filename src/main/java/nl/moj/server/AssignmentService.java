@@ -1,5 +1,6 @@
 package nl.moj.server;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ public class AssignmentService {
 	private Competition competition;
 	
 	public List<AssignmentFile> getJavaFiles() {
+		if (competition.getCurrentAssignment() == null) 
+			return new ArrayList<>();
 		return competition.getCurrentAssignment().getJavaFiles();
 	}
 

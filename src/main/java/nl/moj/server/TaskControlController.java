@@ -1,7 +1,5 @@
 package nl.moj.server;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -58,8 +56,6 @@ public class TaskControlController {
 	}
 
 	private void sendTaskTime() {
-		log.info("sending tasktime");
-		String time = new SimpleDateFormat("HH:mm").format(new Date());
 		TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
 		taskTimeMessage.setElapsedTime(String.valueOf(timer.getSeconds()));
 		template.convertAndSendToUser("team1", "/queue/feedback", taskTimeMessage);
@@ -68,10 +64,16 @@ public class TaskControlController {
 	@MessageMapping("/control/getsplit")
 	@SendToUser("/control/queue/feedback")
 	public String getSplit() {
-
 		int seconds = timer.getSeconds();
-
 		return String.valueOf(seconds);
+	}
+	
+	
+	@MessageMapping("/control/clearAssignment")
+	@SendToUser("/control/queue/feedback")
+	public void clearAssignment() {
+		competition.clearCurrentAssignment();
+		
 	}
 
 	@RequestMapping("/control")
