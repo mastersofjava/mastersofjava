@@ -84,6 +84,12 @@ public class Assignment {
 				.filter(f -> f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.TEST))
 				.collect(Collectors.toList());
 	}
+	
+	public List<AssignmentFile> getTestAndSubmitFiles() {
+		return assFiles.stream()
+				.filter(f -> f.getFileType().equals(FileType.TEST) || f.getFileType().equals(FileType.SUBMIT))
+				.collect(Collectors.toList());
+	}
 
 	public List<String> getTestFileNames() {
 		return Arrays.asList(properties.get("testClasses").toString().split(","));

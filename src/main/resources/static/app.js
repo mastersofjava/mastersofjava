@@ -65,6 +65,12 @@
 		}));
 	}
 
+	function submit() {
+		stompClient.send("/app/submit/submit", {}, JSON.stringify({
+			'team' : 'team1',
+			'source' : getContent()
+		}));
+	}
 	
 	function showMessageOutput(messageOutput) {
 		console.log("show");
