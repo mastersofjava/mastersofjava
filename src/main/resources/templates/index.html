@@ -16,11 +16,10 @@
 	<script src="/webjars/codemirror-minified/addon/hint/show-hint.js"></script>
 	<script src="/webjars/codemirror-minified/mode/clike/clike.js"></script>
 	
-	<link rel="stylesheet" href="/webjars/codemirror/addon/hint/show-hint.css">
-	<link rel="stylesheet" href="/webjars/codemirror/lib/codemirror.css">
-	
+	<link rel="stylesheet" href="/webjars/codemirror-minified/addon/hint/show-hint.css">
+	<link rel="stylesheet" href="/webjars/codemirror-minified/lib/codemirror.css">	
 	<link rel="stylesheet" href="/webjars/jquery-ui-themes/smoothness/jquery-ui.min.css"/>
-	<link rel="stylesheet" href="index.css">
+	<link rel="stylesheet" href="/css/index.css">
 	<title>Master of Java</title>
 </head>
 <body onload="init();">
@@ -66,7 +65,7 @@
 $( "#tabs" ).tabs();
 </script>
 <script type="text/javascript" src="index.js" th:unless="${#lists.isEmpty(files)}"></script>
-<script type="text/javascript" src="app.js" ></script>
+<script type="text/javascript" src="/js/app.js" ></script>
 </body>
 
 

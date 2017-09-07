@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 
-import nl.moj.server.AppConfig;
+import nl.moj.server.Application;
 import nl.moj.server.competition.Competition;
 
 public class FileProcessor {
@@ -25,7 +25,7 @@ public class FileProcessor {
 		File origFile = (File) msg.getHeaders().get(HEADER_FILE_ORIGINALFILE);
 		String origFilename = origFile.getAbsolutePath();
 
-		int beginIndex = origFilename.indexOf(AppConfig.DIRECTORY) + AppConfig.DIRECTORY.length() + 1;
+		int beginIndex = origFilename.indexOf(Application.AppConfig.DIRECTORY) + Application.AppConfig.DIRECTORY.length() + 1;
 		int indexOf = origFilename.indexOf("/", beginIndex);
 		String assignment = origFilename.substring(beginIndex, indexOf);
 
