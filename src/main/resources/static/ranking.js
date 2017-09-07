@@ -6,7 +6,7 @@ function connect() {
 	stompClient.debug = null;
 	stompClient.connect({}, function(frame) {
 		console.log('Connected to rankings');
-		stompClient.subscribe('/rankings', function(messageOutput) {
+		stompClient.subscribe('/queue/rankings', function(messageOutput) {
 			refresh();
 		});
 	});

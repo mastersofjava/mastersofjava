@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -91,6 +92,12 @@ public class Assignment {
 				.collect(Collectors.toList());
 	}
 
+	public List<AssignmentFile> getTaskFiles() {
+		return assFiles.stream()
+				.filter(f -> f.getFileType().equals(FileType.TASK))
+				.collect(Collectors.toList());
+	}
+	
 	public List<String> getTestFileNames() {
 		return Arrays.asList(properties.get("testClasses").toString().split(","));
 	}
@@ -107,6 +114,12 @@ public class Assignment {
 		return Arrays.asList(properties.get("editables").toString().split(","));
 	}
 
+	public Integer getSolutionTime() {
+		return Integer.valueOf(properties.get("solutiontime").toString());
+	}
+	
+	
+	
 	public void setAssignmentFiles(List<AssignmentFile> assFiles) {
 		this.assFiles = assFiles;
 	}
@@ -133,5 +146,7 @@ public class Assignment {
 	public void addFile(AssignmentFile file) {
 		assFiles.add(file);
 	}
+
+
 
 }

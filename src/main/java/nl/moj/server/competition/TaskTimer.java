@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.google.common.base.Stopwatch;
 
-@Service
+//@Service
 public class TaskTimer {
 
 	private String taskname;

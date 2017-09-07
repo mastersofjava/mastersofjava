@@ -2,7 +2,6 @@ package nl.moj.server.test;
 
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.junit.runner.JUnitCore;
@@ -13,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 import net.tascalate.concurrent.CompletableTask;
 import net.tascalate.concurrent.Promise;
-import nl.moj.server.AssignmentService;
+import nl.moj.server.competition.Competition;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.MemoryClassLoader;
 import nl.moj.server.files.AssignmentFile;
@@ -25,9 +24,9 @@ public class TestService {
 
 	@Autowired
 	private Executor timed;
-	
+
 	@Autowired
-	private AssignmentService assignmentService;
+	private Competition competition;
 
 	public Promise<TestResult> test(CompileResult compileResult) {
 		return CompletableTask.supplyAsync(new Supplier<TestResult>() {
@@ -39,76 +38,15 @@ public class TestService {
 					MyRunListener myRunListener = new MyRunListener(testCollector);
 					junit.addListener(myRunListener);
 
-					List<AssignmentFile> testFiles = assignmentService.getTestFiles();
+					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles();
 					testFiles.forEach((file) -> unittest(file, compileResult, junit));
-					return new TestResult(testCollector.getTestResults(),compileResult.getUser());					
+					return new TestResult(testCollector.getTestResults(), compileResult.getUser(),
+							!testCollector.isTestFailure());
 				} else {
-					return new TestResult(compileResult.getCompileResult(),compileResult.getUser());
+					return new TestResult(compileResult.getCompileResult(), compileResult.getUser(), false);
 				}
 			}
 		}, timed);
-	}
-	public Promise<TestResult> submit(CompileResult compileResult) {
-		return CompletableTask.supplyAsync(new Supplier<TestResult>() {
-			@Override
-			public TestResult get() {
-				if (compileResult.isSuccessful()) {
-					JUnitCore junit = new JUnitCore();
-					TestCollector testCollector = new TestCollector();
-					MyRunListener myRunListener = new MyRunListener(testCollector);
-					junit.addListener(myRunListener);
-
-					List<AssignmentFile> testFiles = assignmentService.getTestAndSubmitFiles();
-					testFiles.forEach((file) -> unittest(file, compileResult, junit));
-					return new TestResult(testCollector.getTestResults(),compileResult.getUser());					
-				} else {
-					return new TestResult(compileResult.getCompileResult(),compileResult.getUser());
-				}
-			}
-		}, timed);
-	}
-	
-
-	public Supplier<TestResult> tester(CompileResult compileResult) {
-		Supplier<TestResult> supplier = () -> {
-			JUnitCore junit = new JUnitCore();
-			TestCollector testCollector = new TestCollector();
-			MyRunListener myRunListener = new MyRunListener(testCollector);
-			junit.addListener(myRunListener);
-
-			List<AssignmentFile> testFiles = assignmentService.getTestFiles();
-			testFiles.forEach((file) -> unittest(file, compileResult, junit));
-			return new TestResult(testCollector.getTestResults(),compileResult.getUser());
-		};
-		return supplier;
-	}	
-	
-	public Function<CompileResult,TestResult> tester2(CompileResult compileResult) {
-		Function<CompileResult,TestResult> supplier = x -> {
-			JUnitCore junit = new JUnitCore();
-			TestCollector testCollector = new TestCollector();
-			MyRunListener myRunListener = new MyRunListener(testCollector);
-			junit.addListener(myRunListener);
-
-			List<AssignmentFile> testFiles = assignmentService.getTestFiles();
-			testFiles.forEach((file) -> unittest(file, compileResult, junit));
-			return new TestResult(testCollector.getTestResults(),compileResult.getUser());
-		};
-		return supplier;
-	}
-	
-	public Function<CompileResult,TestResult> tester3() {
-		TestCollector testCollector = new TestCollector();
-		Function<CompileResult,TestResult> supplier = compileResult -> {
-			JUnitCore junit = new JUnitCore();
-			MyRunListener myRunListener = new MyRunListener(testCollector);
-			junit.addListener(myRunListener);
-
-			List<AssignmentFile> testFiles = assignmentService.getTestFiles();
-			testFiles.forEach((file) -> unittest(file, compileResult, junit));
-			return new TestResult(testCollector.getTestResults(),compileResult.getUser());
-		};
-		return supplier;
 	}
 
 	private void unittest(AssignmentFile file, CompileResult compileResult, JUnitCore junit) {

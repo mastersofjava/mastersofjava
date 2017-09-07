@@ -32,9 +32,6 @@ public class LoginController {
 	private PasswordEncoder encoder;
 	
 	@Autowired
-	private RankingsController rankingsController;
-	
-	@Autowired
 	private Competition competition;
 	
     @GetMapping("/login")
@@ -65,7 +62,6 @@ public class LoginController {
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     	context.setAuthentication(authentication);
-    	rankingsController.refreshScoreBoard();
     	return "redirect:/";
     }
     

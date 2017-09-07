@@ -5,8 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.google.common.base.Stopwatch;
 
 import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
@@ -16,8 +20,19 @@ public class Competition {
 
 	private Assignment currentAssignment;
 	
+	private Stopwatch timer;
+	
 	private Map<String,Assignment> assignments;
+	
+	
+	public void startCurrentAssignment() {
+		timer = Stopwatch.createStarted();
+	}
 
+	public Integer getSecondsElapsed() {
+		return (int) timer.elapsed(TimeUnit.SECONDS);
+	}
+	
 	public Assignment getCurrentAssignment() {
 		return currentAssignment;
 	}

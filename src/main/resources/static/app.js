@@ -26,11 +26,8 @@
 		stompClient.connect({}, function(frame) {
 
 			setConnected(true);
-			console.log('Connected: ' + frame);
-			stompClient.subscribe('/topic/messages', function(messageOutput) {
-				console.log("topic messages")
-				showMessageOutput(JSON.parse(messageOutput.body));
-			});
+			console.log('Connected');
+
 			
 			stompClient.subscribe('/user/queue/feedback', function(messageOutput) {
 				console.log("user feedback")

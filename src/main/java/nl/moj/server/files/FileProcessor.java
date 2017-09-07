@@ -1,4 +1,4 @@
-package nl.moj.server;
+package nl.moj.server.files;
 
 import java.io.File;
 
@@ -7,9 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 
+import nl.moj.server.AppConfig;
 import nl.moj.server.competition.Competition;
-import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
 
 public class FileProcessor {
 

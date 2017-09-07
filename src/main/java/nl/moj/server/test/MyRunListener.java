@@ -33,10 +33,12 @@ public class MyRunListener extends RunListener {
 
     public void testFailure(Failure failure) throws Exception {
         testCollector.addTestResult("Failed: " + failure.getMessage() + "\n");
+        testCollector.setTestFailure(true);
     }
 
     public void testAssumptionFailure(Failure failure) {
         testCollector.addTestResult("FailedAssumption: " + failure.getMessage() + "\n");
+        testCollector.setTestFailure(true);
     }
 
     public void testIgnored(Description description) throws Exception {

@@ -26,8 +26,7 @@ public class TaskControlController {
 
 	static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
 	//Executors.newFixedThreadPool(2);
-	@Autowired
-	private TaskTimer timer;
+
 
 	@Autowired
 	private SimpMessagingTemplate template;
@@ -41,10 +40,10 @@ public class TaskControlController {
 	}
 
 	@MessageMapping("/control/starttask")
-	@SendToUser("/control/queue/feedback")
+	//@SendToUser("/control/queue/feedback")
 	public String startTask(StartTaskMessage message) {
 		competition.setCurrentAssignment(message.getTaskName());
-		timer.start(message.taskName);
+		competition.startCurrentAssignment();
 		final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() -> sendTaskTime(), 0, 1, TimeUnit.SECONDS);
 		ex.schedule(new Runnable() {
 			public void run() {
@@ -57,15 +56,8 @@ public class TaskControlController {
 
 	private void sendTaskTime() {
 		TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
-		taskTimeMessage.setElapsedTime(String.valueOf(timer.getSeconds()));
+		taskTimeMessage.setElapsedTime(String.valueOf(competition.getSecondsElapsed()));
 		template.convertAndSendToUser("team1", "/queue/feedback", taskTimeMessage);
-	}
-
-	@MessageMapping("/control/getsplit")
-	@SendToUser("/control/queue/feedback")
-	public String getSplit() {
-		int seconds = timer.getSeconds();
-		return String.valueOf(seconds);
 	}
 	
 	

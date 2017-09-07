@@ -3,13 +3,10 @@ package nl.moj.server;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Comparator;
-import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -42,7 +39,6 @@ import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.file.FileReadingMessageSource;
-import org.springframework.integration.file.filters.AcceptOnceFileListFilter;
 import org.springframework.integration.file.filters.CompositeFileListFilter;
 import org.springframework.integration.file.filters.IgnoreHiddenFileListFilter;
 import org.springframework.integration.file.filters.LastModifiedFileListFilter;
@@ -83,6 +79,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import nl.moj.server.async.CompletableExecutors;
 import nl.moj.server.async.TimedCompletables;
 import nl.moj.server.files.AssignmentFileFilter;
+import nl.moj.server.files.FileProcessor;
 import nz.net.ultraq.thymeleaf.LayoutDialect;
 import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 
@@ -110,9 +107,7 @@ public class AppConfig {
 		@Bean
 		public StandardJavaFileManager standardJavaFileManager(JavaCompiler javaCompiler,
 				DiagnosticCollector<JavaFileObject> diagnosticCollector) {
-			final Charset charset = StandardCharsets.UTF_8;
-
-			return javaCompiler.getStandardFileManager(diagnosticCollector, null, charset);
+			return javaCompiler.getStandardFileManager(diagnosticCollector, null, StandardCharsets.UTF_8);
 		}
 	}
 
@@ -182,7 +177,7 @@ public class AppConfig {
 
 		@Override
 		public void configureMessageBroker(MessageBrokerRegistry config) {
-			config.enableSimpleBroker("/topic", "/queue","/rankings"); // ,"/user"
+			config.enableSimpleBroker("/topic", "/queue"); // ,"/user"
 			config.setApplicationDestinationPrefixes("/app");
 			config.setUserDestinationPrefix("/user");
 		}
@@ -347,17 +342,4 @@ public class AppConfig {
 			return (ex, method, params) -> logger.error("Uncaught async error", ex);
 		}
 	}
-	
-//	@Bean
-//	public Properties properties() {
-//		Properties prop = new Properties();
-//		try {
-//			prop.load(new FileInputStream(DIRECTORY + "/puzzle.properties"));
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		return prop;
-//	}
-
 }

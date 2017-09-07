@@ -33,6 +33,7 @@ public class RankingsController {
 	@Autowired
 	private Competition competition;
 	
+	
 	@GetMapping("/rankings")
 	public String getRankings(Model model){
 		List<Team> teams = teamMapper.getAllTeams();//new ArrayList<>();
@@ -45,18 +46,5 @@ public class RankingsController {
 		return "rankings";
 	}
 	
-	public void updateScoreBoard(TestResult testResult){
-		String teamname = testResult.getUser();
-		String assignment = competition.getCurrentAssignment().getName();
-		Integer score = resultMapper.getScore(teamname, assignment);
-		if(score == null)
-			score = 0;
-		resultMapper.updateScore(teamname, assignment, score + 100);
-		refreshScoreBoard();
-	}
-	
-	public void refreshScoreBoard() {
-		log.info("refreshScoreBoard ");
-		template.convertAndSend("/rankings", "refresh");
-	}
+
 }

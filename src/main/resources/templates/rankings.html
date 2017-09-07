@@ -1,4 +1,5 @@
-<html>
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
 	<script src="/webjars/sockjs-client/sockjs.min.js"></script>
 	<script src="/webjars/stomp-websocket/stomp.min.js"></script>
@@ -16,14 +17,14 @@
 			<table id="table">
 				<tr>
 					<th COLSPAN="10">
-						<h3>
-							<br>SCORE BOARD
-						</h3>
+						<h3><br>SCORE BOARD</h3>
 					</th>
 				</tr>
-				<th>Team</th>
-				<th th:each="assignment : ${assignments}" th:text="${assignment}"/>
-				<th>Total score</th>
+				<tr>
+					<th>Team</th>
+					<th th:each="assignment : ${assignments}" th:text="${assignment}"/>
+					<th>Total score</th>
+				</tr>
 				<tr th:each="team : ${teamMapper.allTeams}">
 					<td th:text="${team.name}" />
 					<td th:each="result : ${team.results}" th:text="${result.score}"/>

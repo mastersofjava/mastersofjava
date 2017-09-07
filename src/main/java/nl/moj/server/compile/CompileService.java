@@ -19,9 +19,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import nl.moj.server.AssignmentService;
+import nl.moj.server.competition.Competition;
 import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
 
 @Service
 public class CompileService {
@@ -37,7 +36,7 @@ public class CompileService {
 	private MemoryJavaFileManager<StandardJavaFileManager> javaFileManager;
 
 	@Autowired
-	private AssignmentService assignmentService;
+	private Competition competition;
 
 	public Supplier<CompileResult> compile(Map<String, String> sources, String user) {
 		return compile(sources, user, false);
@@ -47,9 +46,9 @@ public class CompileService {
 		Supplier<CompileResult> supplier = () -> {
 			Collection<AssignmentFile> assignmentFiles;
 			if (withTest) {
-				assignmentFiles = assignmentService.getReadOnlyJavaAndTestFiles();
+				assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaAndTestFiles();
 			} else {
-				assignmentFiles = assignmentService.getReadOnlyJavaFiles();
+				assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaFiles();
 			}
 			
 			assignmentFiles.forEach(f -> System.out.println(f.getFilename()));
