@@ -61,6 +61,7 @@ public class SubmitController {
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
+		message.getSource().forEach((k, v) -> log.info("sources {},{}", k, v));
 		CompletableTask.supplyAsync(compileService.compile(message.getSource(), user.getName()), timed)
 				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
 	}
@@ -68,7 +69,7 @@ public class SubmitController {
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		message.getSource().forEach((k, v) -> log.info("{},{}", k, v));
+		message.getSource().forEach((k, v) -> log.info("sources {},{}", k, v));
 		CompletableTask.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), timed)
 				.thenComposeAsync(compileResult -> testService.test(compileResult), timed)
 				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
@@ -101,9 +102,7 @@ public class SubmitController {
 
 	private void updateScoreBoard(TestResult testResult) {
 		if (testResult.isSuccessful()) {
-			int solutiontime = competition.getCurrentAssignment().getSolutionTime();
-			int seconds =  competition.getSecondsElapsed();
-			int newscore = solutiontime - seconds;
+			int newscore = competition.getRemainingTime();
 			String teamname = testResult.getUser();
 			String assignment = competition.getCurrentAssignment().getName();
 			Integer score = resultMapper.getScore(teamname, assignment);

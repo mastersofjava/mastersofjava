@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import nl.moj.server.competition.Competition;
-import nl.moj.server.competition.TaskTimer;
 
 @Controller
 public class TaskControlController {
@@ -25,8 +24,6 @@ public class TaskControlController {
 	private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
 
 	static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
-	//Executors.newFixedThreadPool(2);
-
 
 	@Autowired
 	private SimpMessagingTemplate template;
@@ -40,32 +37,34 @@ public class TaskControlController {
 	}
 
 	@MessageMapping("/control/starttask")
-	//@SendToUser("/control/queue/feedback")
-	public String startTask(StartTaskMessage message) {
+	public void startTask(StartTaskMessage message) {
 		competition.setCurrentAssignment(message.getTaskName());
+		Integer solutiontime = competition.getCurrentAssignment().getSolutionTime();
 		competition.startCurrentAssignment();
-		final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() -> sendTaskTime(), 0, 1, TimeUnit.SECONDS);
+		sendStartToTeams(message.taskName);
+		final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
 		ex.schedule(new Runnable() {
 			public void run() {
 				handler.cancel(false);
 			}
-		}, 10000, TimeUnit.MILLISECONDS);
-
-		return "task started";
+		}, solutiontime, TimeUnit.SECONDS);
 	}
 
-	private void sendTaskTime() {
+	private void sendRemainingTime() {
 		TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
-		taskTimeMessage.setElapsedTime(String.valueOf(competition.getSecondsElapsed()));
-		template.convertAndSendToUser("team1", "/queue/feedback", taskTimeMessage);
+		taskTimeMessage.setRemainingTime(String.valueOf(competition.getRemainingTime()));
+		template.convertAndSend("/queue/time", taskTimeMessage);
 	}
-	
-	
+
+	private void sendStartToTeams(String taskname) {
+		template.convertAndSend("/queue/start", taskname);
+	}
+
 	@MessageMapping("/control/clearAssignment")
 	@SendToUser("/control/queue/feedback")
 	public void clearAssignment() {
 		competition.clearCurrentAssignment();
-		
+
 	}
 
 	@RequestMapping("/control")
@@ -91,14 +90,14 @@ public class TaskControlController {
 	}
 
 	public static class TaskTimeMessage {
-		private String elapsedTime;
+		private String remainingTime;
 
-		public String getElapsedTime() {
-			return elapsedTime;
+		public String getRemainingTime() {
+			return remainingTime;
 		}
 
-		public void setElapsedTime(String elapsedTime) {
-			this.elapsedTime = elapsedTime;
+		public void setRemainingTime(String remainingTime) {
+			this.remainingTime = remainingTime;
 		}
 	}
 

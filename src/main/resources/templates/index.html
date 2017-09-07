@@ -23,7 +23,7 @@
 	<link rel="stylesheet" href="index.css">
 	<title>Master of Java</title>
 </head>
-<body onload="connect();">
+<body onload="init();">
 
 <div id="tabs" th:unless="${#lists.isEmpty(files)}" >
   <ul>
@@ -48,18 +48,17 @@
 <div id="conversationDiv" th:unless="${#lists.isEmpty(files)}">
 	<button id="compile" onclick="compile();">compile</button>
 	<button id="test" onclick="test();">test</button>
-	<button id="sendMessage" onclick="sendMessage();">Send</button>
-	<button id="getFiles" onclick="getAssignmentFiles();">getAssignmentFiles</button>
 	<a href="/logout">Logout</a>
 	<a href="/static/docs/api/index.html" target="_blank">javadoc</a>
-	<button id="submit" onclick="submit();">SUBMIT</button>
+	<button id="submit" onclick="submit();">final SUBMIT</button>
 	<p id="response"></p>
 </div>
 
 <div>
-	<p id="status">
-	
-	</p>
+	<p id="tasktime" />
+</div>
+<div>
+	<p id="status" />
 </div>
 
 

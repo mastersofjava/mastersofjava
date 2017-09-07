@@ -28,9 +28,8 @@ public class FileProcessor {
 		int beginIndex = origFilename.indexOf(AppConfig.DIRECTORY) + AppConfig.DIRECTORY.length() + 1;
 		int indexOf = origFilename.indexOf("/", beginIndex);
 		String assignment = origFilename.substring(beginIndex, indexOf);
-		log.info("assignment: {}", assignment);
 
-		log.info("{} received", filename);
+		log.info("{} received for assignment {}", filename, assignment);
 		String type = filename.substring(filename.indexOf("."));
 		AssignmentFile file = null;
 		String content = msg.getPayload();
@@ -57,7 +56,7 @@ public class FileProcessor {
 			if (filename.equalsIgnoreCase("pom.xml")) {
 				file = new AssignmentFile(filename, content, FileType.POM, assignment, origFile);
 				competition.addAssignmentFile(file);
-				competition.setCurrentAssignment(assignment);
+				//competition.setCurrentAssignment(assignment);
 			}
 		default:
 			break;

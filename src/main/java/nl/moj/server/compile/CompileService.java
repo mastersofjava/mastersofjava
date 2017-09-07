@@ -25,7 +25,6 @@ import nl.moj.server.files.AssignmentFile;
 @Service
 public class CompileService {
 
-	
 	private static final Logger log = LoggerFactory.getLogger(CompileService.class);
 
 	@Autowired
@@ -41,7 +40,7 @@ public class CompileService {
 	public Supplier<CompileResult> compile(Map<String, String> sources, String user) {
 		return compile(sources, user, false);
 	}
-	
+
 	public Supplier<CompileResult> compile(Map<String, String> sources, String user, boolean withTest) {
 		Supplier<CompileResult> supplier = () -> {
 			Collection<AssignmentFile> assignmentFiles;
@@ -50,17 +49,17 @@ public class CompileService {
 			} else {
 				assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaFiles();
 			}
-			
-			assignmentFiles.forEach(f -> System.out.println(f.getFilename()));
-			List<JavaFileObject> javaFileObjects = assignmentFiles.stream()
-					.map(a -> {
-						JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(),
-								a.getContent());
-						return jfo;
-					}).collect(Collectors.toList());
 
-			sources.forEach((k,v) -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(k, v)));
-			sources.forEach((k,v) -> System.out.println(k));
+			assignmentFiles.forEach(f -> System.out.println(f.getFilename()));
+			List<JavaFileObject> javaFileObjects = assignmentFiles.stream().map(a -> {
+				JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(), a.getContent());
+				return jfo;
+			}).collect(Collectors.toList());
+
+			sources.forEach((k, v) -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(k, v)));
+			sources.forEach((k, v) -> {
+				System.out.println("source: " + k);
+			});
 			javaFileObjects.forEach(f -> System.out.println(f.getName()));
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();

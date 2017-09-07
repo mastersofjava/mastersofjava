@@ -18,6 +18,9 @@ public class IndexController {
 
 	@GetMapping("/")
 	public String index(Model model) {
+		if (competition.getCurrentAssignment() == null) {
+			return "index";
+		}
 		List<AssignmentFile> files = competition.getCurrentAssignment().getJavaFiles();
 		files.addAll(competition.getCurrentAssignment().getTaskFiles());
 		model.addAttribute("files", files);
@@ -26,6 +29,9 @@ public class IndexController {
 
 	@GetMapping(value = "index.js")
 	public String common(Model model) {
+		if (competition.getCurrentAssignment() == null) {
+			return "index";
+		}
 		List<AssignmentFile> files = competition.getCurrentAssignment().getJavaFiles();
 		files.addAll(competition.getCurrentAssignment().getTaskFiles());
 		model.addAttribute("files", files);

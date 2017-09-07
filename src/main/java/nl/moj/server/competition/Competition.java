@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Stopwatch;
@@ -32,6 +31,13 @@ public class Competition {
 	public Integer getSecondsElapsed() {
 		return (int) timer.elapsed(TimeUnit.SECONDS);
 	}
+	
+	public Integer getRemainingTime() {
+		int solutiontime = currentAssignment.getSolutionTime();
+		int seconds =  getSecondsElapsed();
+		return solutiontime - seconds;
+	}
+	
 	
 	public Assignment getCurrentAssignment() {
 		return currentAssignment;
