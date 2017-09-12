@@ -36,7 +36,7 @@ public class RankingsController {
 	
 	@GetMapping("/rankings")
 	public String getRankings(Model model){
-		List<Team> teams = teamMapper.getAllTeams();//new ArrayList<>();
+		List<Team> teams = teamMapper.getAllTeamsWithResults();//new ArrayList<>();
 //		for(String team : teamMapper.getAllUserNames()){
 //			teams.add(teamMapper.getTeam(team));
 //		}

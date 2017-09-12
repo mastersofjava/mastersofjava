@@ -33,4 +33,5 @@ public interface ResultMapper {
 	
 	@Select("SELECT (*) FROM RESULT WHERE team = #{team} AND assignment = #{assignment}")
 	public Result getResult(@Param ("team") String team, @Param("assignment") String assignment);
+
 }

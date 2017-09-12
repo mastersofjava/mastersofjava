@@ -200,19 +200,19 @@ public class AppConfig {
 		}
 	}
 
-	@Configuration
-	public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
-
-		protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
-			messages.simpDestMatchers("/*").authenticated();
-		}
-
-		@Override
-		protected boolean sameOriginDisabled() {
-			// disable CSRF for websockets for now...
-			return true;
-		}
-	}
+//	@Configuration
+//	public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
+//
+//		protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
+//			messages.simpDestMatchers("/*").authenticated();
+//		}
+//
+//		@Override
+//		protected boolean sameOriginDisabled() {
+//			// disable CSRF for websockets for now...
+//			return true;
+//		}
+//	}
 
 	@EnableWebMvc
 	@Configuration

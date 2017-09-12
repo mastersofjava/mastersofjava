@@ -22,9 +22,6 @@ public interface TeamMapper {
 	})
 	public Team getTeam(@Param("name") String name);
 	
-    @Select("SELECT id, team, assignment, score FROM result WHERE team = #{team}")
-    List<nl.moj.server.model.Result> getResults(String team);
-	
 	@Select("SELECT name, password, role FROM TEAM WHERE name = #{name}")
 	public Team findByName(@Param("name") String name);
 
@@ -48,5 +45,8 @@ public interface TeamMapper {
 			@Result(property="role", column="role"),
 			@Result(property="results", javaType=List.class, column="name", many=@Many(select="getResults"))
 	})
+	public List<Team> getAllTeamsWithResults();
+	
+	@Select("SELECT name, password, role FROM TEAM WHERE role='ROLE_USER'")
 	public List<Team> getAllTeams();
 }

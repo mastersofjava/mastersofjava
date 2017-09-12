@@ -9,6 +9,8 @@ import org.springframework.messaging.Message;
 
 import nl.moj.server.Application;
 import nl.moj.server.competition.Competition;
+import nl.moj.server.persistence.ResultMapper;
+import nl.moj.server.persistence.TeamMapper;
 
 public class FileProcessor {
 
@@ -19,6 +21,12 @@ public class FileProcessor {
 
 	@Autowired
 	private Competition competition;
+
+	@Autowired
+	private ResultMapper resultMapper;
+	
+	@Autowired
+	private TeamMapper teamMapper;
 
 	public void process(Message<String> msg) {
 		String filename = (String) msg.getHeaders().get(HEADER_FILE_NAME);
@@ -56,7 +64,7 @@ public class FileProcessor {
 			if (filename.equalsIgnoreCase("pom.xml")) {
 				file = new AssignmentFile(filename, content, FileType.POM, assignment, origFile);
 				competition.addAssignmentFile(file);
-				//competition.setCurrentAssignment(assignment);
+				teamMapper.getAllTeams().forEach(team -> resultMapper.insertResult(team.getName(), assignment));
 			}
 		default:
 			break;

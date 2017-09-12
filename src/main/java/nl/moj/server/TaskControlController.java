@@ -42,12 +42,12 @@ public class TaskControlController {
 		Integer solutiontime = competition.getCurrentAssignment().getSolutionTime();
 		competition.startCurrentAssignment();
 		sendStartToTeams(message.taskName);
-		final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
-		ex.schedule(new Runnable() {
-			public void run() {
-				handler.cancel(false);
-			}
-		}, solutiontime, TimeUnit.SECONDS);
+//		final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
+//		ex.schedule(new Runnable() {
+//			public void run() {
+//				handler.cancel(false);
+//			}
+//		}, solutiontime, TimeUnit.SECONDS);
 	}
 
 	private void sendRemainingTime() {
