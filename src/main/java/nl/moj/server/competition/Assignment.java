@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -64,20 +63,17 @@ public class Assignment {
 	}
 
 	public List<AssignmentFile> getTestFiles() {
-		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TEST))
-				.collect(Collectors.toList());
+		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TEST)).collect(Collectors.toList());
 	}
 
 	public List<AssignmentFile> getJavaAndTestFiles() {
-		return assFiles.stream()
-				.filter(f -> f.getFileType().equals(FileType.EDIT) || f.getFileType().equals(FileType.READONLY)
-						|| f.getFileType().equals(FileType.TEST))
+		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.EDIT)
+				|| f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.TEST))
 				.collect(Collectors.toList());
 	}
 
 	public List<AssignmentFile> getReadOnlyJavaFiles() {
-		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.READONLY))
-				.collect(Collectors.toList());
+		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.READONLY)).collect(Collectors.toList());
 	}
 
 	public List<AssignmentFile> getReadOnlyJavaAndTestFiles() {
@@ -85,7 +81,7 @@ public class Assignment {
 				.filter(f -> f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.TEST))
 				.collect(Collectors.toList());
 	}
-	
+
 	public List<AssignmentFile> getTestAndSubmitFiles() {
 		return assFiles.stream()
 				.filter(f -> f.getFileType().equals(FileType.TEST) || f.getFileType().equals(FileType.SUBMIT))
@@ -93,13 +89,16 @@ public class Assignment {
 	}
 
 	public List<AssignmentFile> getTaskFiles() {
-		return assFiles.stream()
-				.filter(f -> f.getFileType().equals(FileType.TASK))
-				.collect(Collectors.toList());
+		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TASK)).collect(Collectors.toList());
 	}
-	
+
 	public List<String> getTestFileNames() {
 		return Arrays.asList(properties.get("testClasses").toString().split(","));
+	}
+
+	public List<String> getTestNames() {
+		return Arrays.asList(properties.get("testClasses").toString().split(",")).stream()
+				.map(t -> t.substring(0, t.indexOf("."))).collect(Collectors.toList());
 	}
 
 	public List<String> getSubmitFileNames() {
@@ -117,9 +116,15 @@ public class Assignment {
 	public Integer getSolutionTime() {
 		return Integer.valueOf(properties.get("solutiontime").toString());
 	}
-	
-	
-	
+
+	public boolean hasTestPenalties() {
+		return Boolean.valueOf(properties.get("testpenalties").toString());
+	}
+
+	public boolean hasTestCredits() {
+		return Boolean.valueOf(properties.get("testcredits").toString());
+	}
+
 	public void setAssignmentFiles(List<AssignmentFile> assFiles) {
 		this.assFiles = assFiles;
 	}
@@ -146,7 +151,5 @@ public class Assignment {
 	public void addFile(AssignmentFile file) {
 		assFiles.add(file);
 	}
-
-
 
 }

@@ -3,7 +3,9 @@
 <mapper namespace="nl.moj.server.persistence.ResultMapper">
 
 	<select id="getAllResults" resultType="nl.moj.server.model.Result">
-		SELECT * FROM result
+		SELECT * 
+		 FROM result
+	 ORDER BY team
 	</select>
 
 </mapper>

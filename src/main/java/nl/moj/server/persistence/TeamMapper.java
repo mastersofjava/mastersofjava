@@ -12,15 +12,6 @@ import nl.moj.server.model.Team;
 public interface TeamMapper {
 	@Select("SELECT COUNT(*) FROM TEAM")
 	public int countTeams();
-
-	@Select("SELECT name, password, role FROM TEAM WHERE name = #{name}")
-	@Results(value={
-			@Result(property="name", column="name"),
-			@Result(property="password", column="password"),
-			@Result(property="role", column="role"),
-			@Result(property="results", javaType=List.class, column="name", many=@Many(select="getResults"))
-	})
-	public Team getTeam(@Param("name") String name);
 	
 	@Select("SELECT name, password, role FROM TEAM WHERE name = #{name}")
 	public Team findByName(@Param("name") String name);
@@ -37,15 +28,6 @@ public interface TeamMapper {
 
 	@Select("SELECT name FROM TEAM where role = 'ROLE_USER'")
 	public List<String> getAllUserNames();
-	
-	@Select("SELECT name, password, role FROM TEAM WHERE role='ROLE_USER'")
-	@Results(value={
-			@Result(property="name", column="name"),
-			@Result(property="password", column="password"),
-			@Result(property="role", column="role"),
-			@Result(property="results", javaType=List.class, column="name", many=@Many(select="getResults"))
-	})
-	public List<Team> getAllTeamsWithResults();
 	
 	@Select("SELECT name, password, role FROM TEAM WHERE role='ROLE_USER'")
 	public List<Team> getAllTeams();

@@ -11,7 +11,7 @@
 
 	<properties>
 		<editables>WorkloadbalancerImpl.java</editables>
-		<testClasses>WorkloadbalancerTester.java</testClasses>
+		<testClasses>WorkloadbalancerDaysinListTest.java,WorkloadbalancerOrderCountPerDayTest.java,WorkloadbalancerOrderSequenceTest.java</testClasses>
 		<submitClasses></submitClasses>
 		<testClassTimeout>60</testClassTimeout>
 		<submitClassTimeout>60</submitClassTimeout>
@@ -27,6 +27,8 @@
 		<hint>verzin iets</hint>
 		<category>Assembly</category>
 		<solutiontime>3600</solutiontime>
+		<testpenalties>true</testpenalties>
+		<testcredits>false</testcredits>
 	</properties>
 
 	<dependencies>

@@ -25,6 +25,9 @@ public class Competition {
 	
 	
 	public void startCurrentAssignment() {
+		if (currentAssignment == null) {
+			throw new RuntimeException("currentAssignment not set");
+		}
 		timer = Stopwatch.createStarted();
 	}
 

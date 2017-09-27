@@ -9,6 +9,8 @@ public class Result {
 	private String assignment;
 
 	private Integer score;
+	
+	private Integer penaltyPoints;
 
 	public int getId() {
 		return id;
@@ -40,6 +42,14 @@ public class Result {
 
 	public void setAssignment(String assignment) {
 		this.assignment = assignment;
+	}
+
+	public Integer getPenaltyPoints() {
+		return penaltyPoints;
+	}
+
+	public void setPenaltyPoints(Integer penaltyPoints) {
+		this.penaltyPoints = penaltyPoints;
 	}
 	
 	

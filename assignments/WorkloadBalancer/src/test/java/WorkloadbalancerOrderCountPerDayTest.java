@@ -54,22 +54,10 @@ Input:
 	4481 : processor 3					
 */
 
-public class WorkloadbalancerTester {
+public class WorkloadbalancerOrderCountPerDayTest {
 
 	@Rule
 	public ErrorCollector collector = new ErrorCollector();
-
-	@Test
-	public void testDaysinList() {
-		WorkloadbalancerImpl instance = new WorkloadbalancerImpl();
-		int threeDayJob = 3;
-		int twoDayJob = 2;
-		List<List<Order>> orders = null;
-		orders = instance.distributeOrders(threeDayJob, createTestData());
-		checkDaysinList(orders, threeDayJob);
-		orders = instance.distributeOrders(twoDayJob, createTestData());
-		checkDaysinList(orders, twoDayJob);
-	}
 
 	@Test
 	public void testOrderCountPerDay() {
@@ -81,18 +69,6 @@ public class WorkloadbalancerTester {
 		checkOrderCountPerDay(orders, threeDayJob);
 		orders = instance.distributeOrders(twoDayJob, createTestData());
 		checkOrderCountPerDay(orders, twoDayJob);
-	}
-
-	@Test
-	public void testOrderSequence() {
-		WorkloadbalancerImpl instance = new WorkloadbalancerImpl();
-		int threeDayJob = 3;
-		int twoDayJob = 2;
-		List<List<Order>> orders = null;
-		orders = instance.distributeOrders(threeDayJob, createTestData());
-		checkOrderSequence(orders, threeDayJob);
-		orders = instance.distributeOrders(twoDayJob, createTestData());
-		checkOrderSequence(orders, twoDayJob);
 	}
 
 	private boolean checkOrderSequence(List<List<Order>> actualResult, int days) {

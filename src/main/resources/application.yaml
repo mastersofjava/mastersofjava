@@ -24,7 +24,7 @@ spring:
     
 security.basic.enabled: false
 
-mybatis.mapper-locations: persistence/mapper.xml
+mybatis.mapper-locations: persistence/*
 
 logging.level.nl.moj.server.persistence.TeamMapper: DEBUG
 logging.level.nl.moj.server.persistence.ResultMapper: DEBUG

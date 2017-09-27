@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="nl.moj.server.persistence.RankingMapper">
+
+	<resultMap type="nl.moj.server.model.Ranking" id="Ranking">
+		<result column="name"  property="team"  />
+		<result column="scores" property="totalScore" />
+		<collection property="results"  resultMap="Result" />
+		
+	</resultMap>
+
+	<resultMap type="nl.moj.server.model.Result" id="Result">
+		<id column="id" property="id"/>
+		<result column="assignment" property="assignment" />
+		<result column="score" property="score" />		
+	</resultMap>
+
+	<select id="getRankings" resultMap="Ranking">
+		SELECT t.name, results.id, results.assignment, results.score, s.scores
+		 FROM team t,
+		 (SELECT *
+		    FROM result) as results,
+		 (SELECT sum(score) as scores
+		    FROM result) as s
+		WHERE results.team = t.name
+		      
+	</select>
+
+</mapper>

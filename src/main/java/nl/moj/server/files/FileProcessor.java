@@ -9,8 +9,10 @@ import org.springframework.messaging.Message;
 
 import nl.moj.server.Application;
 import nl.moj.server.competition.Competition;
+import nl.moj.server.model.Test;
 import nl.moj.server.persistence.ResultMapper;
 import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.persistence.TestMapper;
 
 public class FileProcessor {
 
@@ -24,7 +26,9 @@ public class FileProcessor {
 
 	@Autowired
 	private ResultMapper resultMapper;
-	
+
+	@Autowired
+	private TestMapper testMapper;
 	@Autowired
 	private TeamMapper teamMapper;
 
@@ -33,7 +37,8 @@ public class FileProcessor {
 		File origFile = (File) msg.getHeaders().get(HEADER_FILE_ORIGINALFILE);
 		String origFilename = origFile.getAbsolutePath();
 
-		int beginIndex = origFilename.indexOf(Application.AppConfig.DIRECTORY) + Application.AppConfig.DIRECTORY.length() + 1;
+		int beginIndex = origFilename.indexOf(Application.AppConfig.DIRECTORY)
+				+ Application.AppConfig.DIRECTORY.length() + 1;
 		int indexOf = origFilename.indexOf("/", beginIndex);
 		String assignment = origFilename.substring(beginIndex, indexOf);
 
@@ -47,6 +52,8 @@ public class FileProcessor {
 				file = new AssignmentFile(filename, content, FileType.EDIT, assignment, origFile);
 			} else if (competition.getAssignment(assignment).getTestFileNames().contains(filename)) {
 				file = new AssignmentFile(filename, content, FileType.TEST, assignment, origFile);
+				teamMapper.getAllTeams().forEach(team -> testMapper.insertTest(new Test(team.getName(), assignment,
+						filename.substring(0, filename.indexOf(".")), 0, 0)));
 			} else if (competition.getAssignment(assignment).getSubmitFileNames().contains(filename)) {
 				file = new AssignmentFile(filename, content, FileType.SUBMIT, assignment, origFile);
 			} else if (competition.getAssignment(assignment).getSolutionFileNames().contains(filename)) {
