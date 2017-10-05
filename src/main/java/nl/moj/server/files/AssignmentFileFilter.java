@@ -14,7 +14,7 @@ import org.springframework.integration.file.filters.AbstractFileListFilter;
 public class AssignmentFileFilter extends AbstractFileListFilter<File> {
 
 	@Override
-	protected boolean accept(File file) {
+	public boolean accept(File file) {
 		try {
 			if (file.getCanonicalPath().contains(".settings")) {
 				return false;
