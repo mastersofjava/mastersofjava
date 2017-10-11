@@ -99,7 +99,6 @@ public class AssignmentRepositoryService {
 
 				@Override
 				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-					System.out.println(dir);
 					if (dir.endsWith("assignments"))
 						return FileVisitResult.CONTINUE;
 					Files.delete(dir);

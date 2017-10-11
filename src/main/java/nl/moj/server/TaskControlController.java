@@ -3,6 +3,7 @@ package nl.moj.server;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import nl.moj.server.competition.AssignmentRepositoryService;
 import nl.moj.server.competition.Competition;
 
 @Controller
@@ -29,9 +29,6 @@ public class TaskControlController {
 	@Autowired
 	private Competition competition;
 	
-	@Autowired
-	private AssignmentRepositoryService repo;
-
 	@ModelAttribute(name = "assignmenNames")
 	public Set<String> assignments() {
 		return competition.getAssignmentNames();
@@ -72,7 +69,7 @@ public class TaskControlController {
 	@MessageMapping("/control/cloneAssignmentsRepo")
 	@SendToUser("/queue/feedback")
 	public String  cloneAssignmentsRepo() {
-		return repo.cloneRemoteGitRepository() ? "repo succesvol gedownload" : "repo downloaden mislukt";
+		return competition.cloneAssignmentsRepo();
 	}
 
 	@RequestMapping("/control")

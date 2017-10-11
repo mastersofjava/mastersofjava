@@ -27,7 +27,7 @@ security.basic.enabled: false
 
 mybatis.mapper-locations: persistence/*
 
-logging.level.nl.moj.server.persistence.TeamMapper: DEBUG
-logging.level.nl.moj.server.persistence.ResultMapper: DEBUG
+logging.level.nl.moj.server.persistence.TeamMapper: INFO
+logging.level.nl.moj.server.persistence.ResultMapper: INFO
 logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL
 ...

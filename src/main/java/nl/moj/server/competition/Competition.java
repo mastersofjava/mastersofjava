@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Stopwatch;
@@ -25,6 +26,13 @@ public class Competition {
 	private Stopwatch timer;
 	
 	private Map<String,Assignment> assignments;
+	
+	@Autowired
+	private AssignmentRepositoryService repo;
+
+	public String cloneAssignmentsRepo() {
+		return repo.cloneRemoteGitRepository() ? "repo succesvol gedownload" : "repo downloaden mislukt";
+	}
 	
 	
 	public void startCurrentAssignment() {
