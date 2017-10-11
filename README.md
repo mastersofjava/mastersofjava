@@ -36,3 +36,4 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 - voeg eventueel je ssh public key toe aan de Bitbucket assignment repo
 - open http://localhost:8080/control
 - click *Clone assignments repo* 
+
