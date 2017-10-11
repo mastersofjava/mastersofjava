@@ -29,7 +29,6 @@ import net.tascalate.concurrent.CompletableTask;
 import nl.moj.server.competition.ScoreService;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.CompileService;
-import nl.moj.server.persistence.ResultMapper;
 import nl.moj.server.test.TestResult;
 import nl.moj.server.test.TestService;
 

@@ -5,17 +5,22 @@ import java.io.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
+import org.springframework.stereotype.Component;
 
-import nl.moj.server.AppConfig;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.model.Test;
 import nl.moj.server.persistence.ResultMapper;
 import nl.moj.server.persistence.TeamMapper;
 import nl.moj.server.persistence.TestMapper;
 
+@Component
 public class FileProcessor {
 
+	@Value("${moj.server.assignmentDirectory}")
+	private String DIRECTORY;
+	
 	private static final Logger log = LoggerFactory.getLogger(FileProcessor.class);
 
 	private static final String HEADER_FILE_NAME = "file_name";
@@ -36,9 +41,11 @@ public class FileProcessor {
 		String filename = (String) msg.getHeaders().get(HEADER_FILE_NAME);
 		File origFile = (File) msg.getHeaders().get(HEADER_FILE_ORIGINALFILE);
 		String origFilename = origFile.getAbsolutePath();
-
-		int beginIndex = origFilename.indexOf(AppConfig.DIRECTORY)
-				+ AppConfig.DIRECTORY.length() + 1;
+		if (!origFilename.contains(DIRECTORY)) {
+			return;
+		}
+		int beginIndex = origFilename.indexOf(DIRECTORY)
+				+ DIRECTORY.length() + 1;
 		int indexOf = origFilename.indexOf("/", beginIndex);
 		String assignment = origFilename.substring(beginIndex, indexOf);
 

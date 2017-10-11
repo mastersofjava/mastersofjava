@@ -3,8 +3,6 @@ package nl.moj.server.competition;
 
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.stereotype.Service;
-
 import com.google.common.base.Stopwatch;
 
 //@Service

@@ -18,7 +18,6 @@ import nl.moj.server.competition.Competition;
 import nl.moj.server.model.Team;
 import nl.moj.server.persistence.ResultMapper;
 import nl.moj.server.persistence.TeamMapper;
-import nl.moj.server.rankings.RankingsController;
 
 @Controller
 public class LoginController {

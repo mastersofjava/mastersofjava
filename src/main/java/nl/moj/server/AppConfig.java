@@ -25,11 +25,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.CacheControl;
 import org.springframework.integration.annotation.InboundChannelAdapter;
@@ -83,12 +82,12 @@ import nl.moj.server.files.FileProcessor;
 //import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 
 @Configuration
-@EnableAspectJAutoProxy
-@Import(AppConfig.SecurityConfig.class)
+//@EnableAspectJAutoProxy
+//@Import(AppConfig.SecurityConfig.class)
 public class AppConfig {
 
-	public static final String DIRECTORY = "./assignments";
-
+	@Value("${moj.server.assignmentDirectory}")
+	public String DIRECTORY;
 
 	@Configuration
 	public class CompilerConfig {
@@ -261,6 +260,9 @@ public class AppConfig {
 
 	@Configuration
 	public class IntegrationConfig {
+		
+
+
 		@Bean
 		public IntegrationFlow processFileFlow() {
 			return IntegrationFlows.from("fileInputChannel").transform(fileToStringTransformer())
@@ -288,16 +290,13 @@ public class AppConfig {
 		}
 		
 		@Bean
-		@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000", maxMessagesPerPoll = "10"))
+		@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000", maxMessagesPerPoll = "1000"))
 		public MessageSource<File> fileReadingMessageSource() {
 			CompositeFileListFilter<File> filters = new CompositeFileListFilter<>();
 			filters.addFilter(new IgnoreHiddenFileListFilter());
 			filters.addFilter(new AssignmentFileFilter());
-			LastModifiedFileListFilter lastmodified = new LastModifiedFileListFilter();
-			lastmodified.setAge(1, TimeUnit.SECONDS);
-			filters.addFilter(lastmodified);
-			//filters.addFilter(new AcceptOnceFileListFilter<>());
 
+			System.out.println("DIRECTORY: " + DIRECTORY);
 			
 			FileReadingMessageSource source = new FileReadingMessageSource(comparator());
 			source.setUseWatchService(true);

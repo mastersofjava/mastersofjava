@@ -10,7 +10,6 @@
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>2.0.0.BUILD-SNAPSHOT</version>
 	</parent>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -110,7 +109,11 @@
 			<version>5.27.2</version>
 		</dependency>
 
-		
+		<dependency>
+			<groupId>org.eclipse.jgit</groupId>
+			<artifactId>org.eclipse.jgit</artifactId>
+			<version>4.8.0.201706111038-r</version>
+		</dependency>
 
 		<dependency>
 			<groupId>junit</groupId>
@@ -129,22 +132,26 @@
 			<version>3.5.0</version>
 		</dependency>
 
-<!-- 		<dependency> -->
-<!-- 			<groupId>org.projectlombok</groupId> -->
-<!-- 			<artifactId>lombok</artifactId> -->
-<!-- 		</dependency> -->
+		<!-- <dependency> -->
+		<!-- <groupId>org.projectlombok</groupId> -->
+		<!-- <artifactId>lombok</artifactId> -->
+		<!-- </dependency> -->
 
-<!-- 		<dependency> -->
-<!-- 			<groupId>nz.net.ultraq.thymeleaf</groupId> -->
-<!-- 			<artifactId>thymeleaf-layout-dialect</artifactId> -->
-<!-- 		</dependency> -->
+		<!-- <dependency> -->
+		<!-- <groupId>nz.net.ultraq.thymeleaf</groupId> -->
+		<!-- <artifactId>thymeleaf-layout-dialect</artifactId> -->
+		<!-- </dependency> -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+		</dependency>
 	</dependencies>
 
 
 	<properties>
-		<java.version>9</java.version>
-		<thymeleaf.version>3.0.7.RELEASE</thymeleaf.version>
-		<thymeleaf-layout-dialect.version>2.2.1</thymeleaf-layout-dialect.version>
+		<java.version>1.8</java.version>
+		<!-- <thymeleaf.version>3.0.7.RC1</thymeleaf.version> -->
+		<!-- <thymeleaf-layout-dialect.version>2.2.1</thymeleaf-layout-dialect.version> -->
 	</properties>
 
 	<build>
@@ -190,19 +197,19 @@
 		<repository>
 			<id>spring-snapshots</id>
 			<name>Spring Snapshots</name>
-			<url>https://repo.spring.io/snapshot</url>
+			<url>https://repo.spring.io/libs-snapshot</url>
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
-		<repository>
-			<id>spring-milestones</id>
-			<name>Spring Milestones</name>
-			<url>https://repo.spring.io/milestone</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
+		<!-- <repository> -->
+		<!-- <id>spring-milestones</id> -->
+		<!-- <name>Spring Milestones</name> -->
+		<!-- <url>https://repo.spring.io/milestone</url> -->
+		<!-- <snapshots> -->
+		<!-- <enabled>false</enabled> -->
+		<!-- </snapshots> -->
+		<!-- </repository> -->
 	</repositories>
 
 	<pluginRepositories>

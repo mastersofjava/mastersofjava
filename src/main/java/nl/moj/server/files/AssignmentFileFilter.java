@@ -19,7 +19,13 @@ public class AssignmentFileFilter extends AbstractFileListFilter<File> {
 			if (file.getCanonicalPath().contains(".settings")) {
 				return false;
 			}
+			if (file.getCanonicalPath().contains(".git")) {
+				return false;
+			}
 			if (file.getCanonicalPath().contains("target")) {
+				return false;
+			}
+			if (file.getCanonicalPath().contains("README.md")) {
 				return false;
 			}
 		} catch (IOException e) {

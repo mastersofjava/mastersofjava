@@ -26,7 +26,8 @@
 			
 			stompClient.subscribe('/user/queue/feedback', function(messageOutput) {
 				console.log("user feedback")
-				showMessageOutput(JSON.parse(messageOutput.body));
+				//showMessageOutput(JSON.parse(messageOutput.body));
+				showOutput(messageOutput.body);
 			});
 
 		});
@@ -59,6 +60,10 @@
 		var taskname = $( "input:checked" ).val();
 		console.log(taskname);
 		stompClient.send("/app/control/clearAssignment", {}, {});
+	}
+	
+	function cloneAssignmentsRepo() {
+		stompClient.send("/app/control/cloneAssignmentsRepo", {}, {});
 	}
 	
 	function showMessageOutput(messageOutput) {

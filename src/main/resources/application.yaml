@@ -1,14 +1,15 @@
----
-
 moj:
   server:
+    assignmentDirectory: /home/mhayen/Workspaces/workspace-moj/server/assignments
+    gitrepository: ssh://git@bitbucket.org/first8/2017-assignments.git
+    branch: origin/new_layout
     compiler:
       workDir: ./work
       outputDir: ./classes
       inheritClassPath: no
       classPath:
         - junit/junit/4.12/junit-4.12.jar
-        
+      
 spring:
   h2:
     console:

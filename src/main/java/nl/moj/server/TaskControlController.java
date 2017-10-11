@@ -3,9 +3,6 @@ package nl.moj.server;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import nl.moj.server.competition.AssignmentRepositoryService;
 import nl.moj.server.competition.Competition;
 
 @Controller
@@ -30,6 +28,9 @@ public class TaskControlController {
 
 	@Autowired
 	private Competition competition;
+	
+	@Autowired
+	private AssignmentRepositoryService repo;
 
 	@ModelAttribute(name = "assignmenNames")
 	public Set<String> assignments() {
@@ -42,12 +43,13 @@ public class TaskControlController {
 		Integer solutiontime = competition.getCurrentAssignment().getSolutionTime();
 		competition.startCurrentAssignment();
 		sendStartToTeams(message.taskName);
-//		final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
-//		ex.schedule(new Runnable() {
-//			public void run() {
-//				handler.cancel(false);
-//			}
-//		}, solutiontime, TimeUnit.SECONDS);
+		// final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() ->
+		// sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
+		// ex.schedule(new Runnable() {
+		// public void run() {
+		// handler.cancel(false);
+		// }
+		// }, solutiontime, TimeUnit.SECONDS);
 	}
 
 	private void sendRemainingTime() {
@@ -65,6 +67,12 @@ public class TaskControlController {
 	public void clearAssignment() {
 		competition.clearCurrentAssignment();
 
+	}
+
+	@MessageMapping("/control/cloneAssignmentsRepo")
+	@SendToUser("/queue/feedback")
+	public String  cloneAssignmentsRepo() {
+		return repo.cloneRemoteGitRepository() ? "repo succesvol gedownload" : "repo downloaden mislukt";
 	}
 
 	@RequestMapping("/control")
