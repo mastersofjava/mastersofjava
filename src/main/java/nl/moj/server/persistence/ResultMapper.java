@@ -2,6 +2,7 @@ package nl.moj.server.persistence;
 
 import java.util.List;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -40,5 +41,7 @@ public interface ResultMapper {
 	@Select("SELECT (*) FROM result WHERE team = #{team} AND assignment = #{assignment}")
 	public Result getResult(@Param ("team") String team, @Param("assignment") String assignment);
 
+	@Delete("DELETE FROM result WHERE assignment = #{assignment}")
+	public void deleteResultsByAssignment(@Param("assignment") String assignment);
 
 }

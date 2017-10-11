@@ -1,7 +1,6 @@
 package nl.moj.server.competition;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +16,8 @@ import com.google.common.base.Stopwatch;
 
 import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
+import nl.moj.server.persistence.ResultMapper;
+import nl.moj.server.persistence.TestMapper;
 
 @Service
 public class Competition {
@@ -30,7 +31,19 @@ public class Competition {
 	@Autowired
 	private AssignmentRepositoryService repo;
 
+	@Autowired
+	private TestMapper testMapper;
+	
+	@Autowired
+	private ResultMapper resultMapper;
+	
 	public String cloneAssignmentsRepo() {
+		// verwijder bestaande
+		assignments.keySet().forEach((k) -> {
+			testMapper.deleteTestsByAssignment(k);
+			resultMapper.deleteResultsByAssignment(k);
+		});
+		assignments.clear();
 		return repo.cloneRemoteGitRepository() ? "repo succesvol gedownload" : "repo downloaden mislukt";
 	}
 	
