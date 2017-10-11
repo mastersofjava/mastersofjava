@@ -6,4 +6,4 @@ web-based implementation based on Spring Boot.
 
 ### Starting the server
 The server requires javax.tools.JavaCompiler to be injected. This can currently only be achieved automatically by 
-starting the 
+starting the server from within the IDE.
