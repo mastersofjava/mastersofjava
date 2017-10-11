@@ -37,3 +37,7 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 - open http://localhost:8080/control
 - click *Clone assignments repo* 
 
+#### Ranking pagina
+
+- open http://localhost:8080/rankings
+
