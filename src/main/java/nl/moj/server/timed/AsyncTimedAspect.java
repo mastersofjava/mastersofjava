@@ -51,7 +51,6 @@ public class AsyncTimedAspect {
 			watch.stop();
 			log.info("Timed: {} ; {} ; Initiating Thread '{}' Executing Thread '{}'.", description, watch.toString(),
 					initiatingThread, executingThread);
-			System.out.println("Timed: " + description + " ; " + watch.toString());
 			return __;
 		});
 	}

@@ -294,9 +294,6 @@ public class AppConfig {
 			CompositeFileListFilter<File> filters = new CompositeFileListFilter<>();
 			filters.addFilter(new IgnoreHiddenFileListFilter());
 			filters.addFilter(new AssignmentFileFilter());
-
-			System.out.println("DIRECTORY: " + DIRECTORY);
-			
 			FileReadingMessageSource source = new FileReadingMessageSource(comparator());
 			source.setUseWatchService(true);
 			source.setAutoCreateDirectory(true);

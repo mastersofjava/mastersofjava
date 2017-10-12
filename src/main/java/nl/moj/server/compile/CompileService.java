@@ -50,17 +50,13 @@ public class CompileService {
 				assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaFiles();
 			}
 
-			assignmentFiles.forEach(f -> System.out.println(f.getFilename()));
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream().map(a -> {
 				JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(), a.getContent());
 				return jfo;
 			}).collect(Collectors.toList());
 
 			sources.forEach((k, v) -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(k, v)));
-			sources.forEach((k, v) -> {
-				System.out.println("source: " + k);
-			});
-			javaFileObjects.forEach(f -> System.out.println(f.getName()));
+
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();
 
@@ -76,7 +72,6 @@ public class CompileService {
 				for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics())
 					sb.append(report(diagnostic));
 				result = sb.toString();
-				System.out.println(result);
 				diagnosticCollector = new DiagnosticCollector<>();
 				return new CompileResult(result, javaFileManager.getMemoryMap(), user, false);
 			}

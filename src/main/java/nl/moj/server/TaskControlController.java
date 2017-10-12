@@ -144,9 +144,6 @@ public class TaskControlController {
 	public static class StartTaskMessage {
 		private String taskName;
 
-		public StartTaskMessage() {
-		}
-
 		public String getTaskName() {
 			return taskName;
 		}
