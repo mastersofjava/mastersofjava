@@ -5,16 +5,12 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Stopwatch;
 
-//@Service
 public class TaskTimer {
 
-	private String taskname;
-	
 	private Stopwatch timer;
 	
-	public void start(String taskname) {
+	public void start() {
 		timer = Stopwatch.createStarted();
-		this.taskname = taskname;
 	}
 	
 	public int getSeconds() {

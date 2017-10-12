@@ -2,8 +2,6 @@ package nl.moj.server.rankings;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,7 +13,6 @@ import nl.moj.server.persistence.RankingMapper;
 
 @Controller
 public class RankingsController {
-	private final static Logger log = LoggerFactory.getLogger(RankingsController.class);
 	
 	@Autowired
 	private RankingMapper rankingMapper;

@@ -11,7 +11,8 @@ public class MemoryClassLoader extends ClassLoader {
         this.classDefinitions = classDefinitions;
     }
 
-    @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	@Override
     public Class findClass(String name) throws ClassNotFoundException {
         byte[] b = classDefinitions.get(name);
         if (b == null)

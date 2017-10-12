@@ -1,7 +1,5 @@
 package nl.moj.server;
 
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -9,6 +7,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -61,13 +61,12 @@ public class TaskControlController {
 		Integer solutiontime = competition.getCurrentAssignment().getSolutionTime();
 		competition.startCurrentAssignment();
 		sendStartToTeams(message.taskName);
-		// final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() ->
-		// sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
-		// ex.schedule(new Runnable() {
-		// public void run() {
-		// handler.cancel(false);
-		// }
-		// }, solutiontime, TimeUnit.SECONDS);
+		final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
+		ex.schedule(new Runnable() {
+			public void run() {
+				handler.cancel(false);
+			}
+		}, solutiontime, TimeUnit.SECONDS);
 	}
 
 	private void sendRemainingTime() {
@@ -124,10 +123,12 @@ public class TaskControlController {
 			log.error("file empty");
 		}
 		try {
-			Reader in =  new InputStreamReader(file.getInputStream());
-			Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(ResultHeaders.class).withFirstRecordAsHeader().parse(in);
+			Reader in = new InputStreamReader(file.getInputStream());
+			Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(ResultHeaders.class).withFirstRecordAsHeader()
+					.parse(in);
 			for (CSVRecord record : records) {
-				Result r = new Result(record.get(0), record.get(1), Integer.valueOf(record.get(2)), Integer.valueOf(record.get(3)), Integer.valueOf(record.get(4)));
+				Result r = new Result(record.get(0), record.get(1), Integer.valueOf(record.get(2)),
+						Integer.valueOf(record.get(3)), Integer.valueOf(record.get(4)));
 				resultMapper.insertResult(r);
 			}
 		} catch (IllegalStateException | IOException e) {
