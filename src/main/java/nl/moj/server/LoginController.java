@@ -55,7 +55,7 @@ public class LoginController {
     	
     	teamMapper.addTeam(team.getName(), encoder.encode(team.getPassword()),"ROLE_USER");
     	for(String assignment : competition.getAssignmentNames()){
-    		resultMapper.insertResult(team.getName(), assignment);
+    		resultMapper.insertEmptyResult(team.getName(), assignment);
     	}
     	
     	SecurityContext context = SecurityContextHolder.getContext();

@@ -29,6 +29,10 @@
 	<button id="clear" onclick="clearAssignment();">clear</button>
 	<button id="clone" onclick="cloneAssignmentsRepo();">Clone assignments repo</button>
 	<p id="response"></p>
+	<form method="POST" action="/upload" enctype="multipart/form-data">
+	    <input type="file" name="file" /><br/><br/>
+	    <input type="submit" value="upload" />
+	</form>
 </div>
 
 

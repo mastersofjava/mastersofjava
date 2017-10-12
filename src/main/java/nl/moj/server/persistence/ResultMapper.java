@@ -33,7 +33,7 @@ public interface ResultMapper {
 	public void decrementCredit(@Param("team") String team, @Param("assignment") String assignment, @Param("penalty") Integer penalty);
 
 	@Insert("INSERT INTO result(team, assignment) VALUES (#{team}, #{assignment})")
-	public void insertResult(@Param("team") String team, @Param("assignment") String assignment);
+	public void insertEmptyResult(@Param("team") String team, @Param("assignment") String assignment);
 	
 	@Select("SELECT (*) FROM result WHERE team = #{team}")
 	public List<Result> getResults(@Param ("team") String team);
@@ -43,5 +43,8 @@ public interface ResultMapper {
 
 	@Delete("DELETE FROM result WHERE assignment = #{assignment}")
 	public void deleteResultsByAssignment(@Param("assignment") String assignment);
+
+	@Insert("INSERT INTO result(team, assignment, score, penalty, credit) VALUES (#{team}, #{assignment}, #{score}, #{penalty}, #{credit})")
+	public void insertResult(Result r);
 
 }
