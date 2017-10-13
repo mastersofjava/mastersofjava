@@ -22,7 +22,7 @@ spring:
     driver-class-name: org.h2.Driver              
   thymeleaf:
     mode: HTML
-    
+server.session.timeout: 36000
 security.basic.enabled: false
 
 mybatis.mapper-locations: persistence/*

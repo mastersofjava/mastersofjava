@@ -328,7 +328,7 @@ public class AppConfig {
 		@Bean(name = "timed")
 		public Executor timeoutExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("timed-%d").build();
-			return TimedCompletables.timed(Executors.newFixedThreadPool(THREADS, threadFactory), Duration.ofSeconds(2));
+			return TimedCompletables.timed(Executors.newFixedThreadPool(THREADS, threadFactory), Duration.ofNanos(2));
 		}
 
 		@Override

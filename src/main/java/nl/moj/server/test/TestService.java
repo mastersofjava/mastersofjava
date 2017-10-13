@@ -1,6 +1,7 @@
 package nl.moj.server.test;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
@@ -10,8 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import net.tascalate.concurrent.CompletableTask;
-import net.tascalate.concurrent.Promise;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.MemoryClassLoader;
@@ -28,8 +27,8 @@ public class TestService {
 	@Autowired
 	private Competition competition;
 
-	public Promise<TestResult> test(CompileResult compileResult) {
-		return CompletableTask.supplyAsync(new Supplier<TestResult>() {
+	public CompletableFuture<TestResult> test(CompileResult compileResult) {
+		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
 			public TestResult get() {
 				if (compileResult.isSuccessful()) {

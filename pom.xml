@@ -30,10 +30,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-integration</artifactId>
 		</dependency>
-		<!-- <dependency> -->
-		<!-- <groupId>org.springframework.boot</groupId> -->
-		<!-- <artifactId>spring-boot-starter-aop</artifactId> -->
-		<!-- </dependency> -->
 
 		<dependency>
 			<groupId>org.mybatis.spring.boot</groupId>
@@ -121,31 +117,16 @@
 		</dependency>
 
 		<dependency>
-			<groupId>net.tascalate.concurrent</groupId>
-			<artifactId>net.tascalate.concurrent.lib</artifactId>
-			<version>0.5.3</version>
-		</dependency>
-
-		<dependency>
 			<groupId>org.apache.maven</groupId>
 			<artifactId>maven-model</artifactId>
 			<version>3.5.0</version>
 		</dependency>
 
-		<!-- <dependency> -->
-		<!-- <groupId>org.projectlombok</groupId> -->
-		<!-- <artifactId>lombok</artifactId> -->
-		<!-- </dependency> -->
-
-		<!-- <dependency> -->
-		<!-- <groupId>nz.net.ultraq.thymeleaf</groupId> -->
-		<!-- <artifactId>thymeleaf-layout-dialect</artifactId> -->
-		<!-- </dependency> -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-csv</artifactId>
@@ -156,9 +137,7 @@
 
 
 	<properties>
-		<java.version>1.8</java.version>
-		<!-- <thymeleaf.version>3.0.7.RC1</thymeleaf.version> -->
-		<!-- <thymeleaf-layout-dialect.version>2.2.1</thymeleaf-layout-dialect.version> -->
+		<java.version>9</java.version>
 	</properties>
 
 	<build>
@@ -182,25 +161,18 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!-- <plugin> -->
-			<!-- <groupId>org.apache.maven.plugins</groupId> -->
-			<!-- <artifactId>maven-jdeps-plugin</artifactId> -->
-			<!-- <version>3.1.0</version> -->
-			<!-- </plugin> -->
 		</plugins>
 
-
-		<pluginManagement>
-			<plugins>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-jdeps-plugin</artifactId>
-					<version>3.1.0</version>
-				</plugin>
-			</plugins>
-		</pluginManagement>
 	</build>
 	<repositories>
+		<repository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/libs-milestone</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
 		<repository>
 			<id>spring-snapshots</id>
 			<name>Spring Snapshots</name>
@@ -209,14 +181,6 @@
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
-		<!-- <repository> -->
-		<!-- <id>spring-milestones</id> -->
-		<!-- <name>Spring Milestones</name> -->
-		<!-- <url>https://repo.spring.io/milestone</url> -->
-		<!-- <snapshots> -->
-		<!-- <enabled>false</enabled> -->
-		<!-- </snapshots> -->
-		<!-- </repository> -->
 	</repositories>
 
 	<pluginRepositories>

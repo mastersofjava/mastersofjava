@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import org.slf4j.Logger;
@@ -25,7 +26,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import net.tascalate.concurrent.CompletableTask;
 import nl.moj.server.competition.ScoreService;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.CompileService;
@@ -57,32 +57,30 @@ public class SubmitController {
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		// message.getSource().forEach((k, v) -> log.info("sources {},{}", k, v));
-		CompletableTask.supplyAsync(compileService.compile(message.getSource(), user.getName()), timed)
-				.thenAccept(testResult -> sendFeedbackMessage(testResult)).get();
+		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName()), timed)
+				.thenAccept(testResult -> sendFeedbackMessage(testResult));
 	}
 
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		// message.getSource().forEach((k, v) -> log.info("sources {},{}", k, v));
-		CompletableTask.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), timed)
-				.thenComposeAsync(compileResult -> testService.test(compileResult), timed).thenAccept(testResult -> {
-					sendFeedbackMessage(testResult);
-					applyTestPenalty(testResult);
-				}).get();
+		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), timed)
+		.thenComposeAsync(compileResult -> testService.test(compileResult), timed)
+		.thenAccept(testResult -> {
+			sendFeedbackMessage(testResult);
+			applyTestPenalty(testResult);
+		});
 	}
-
-
 
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		CompletableTask.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), timed)
-				.thenComposeAsync(compileResult -> testService.test(compileResult), timed).thenAccept(testResult -> {
-					setFinalAssignmentScore(testResult);
-					sendFeedbackMessage(testResult);
-				}).get();
+		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), timed)
+		.thenComposeAsync(compileResult -> testService.test(compileResult), timed)
+		.thenAccept(testResult -> {
+			setFinalAssignmentScore(testResult);
+			sendFeedbackMessage(testResult);
+		});
 	}
 
 	private void sendFeedbackMessage(CompileResult compileResult) {
@@ -104,9 +102,9 @@ public class SubmitController {
 			scoreService.applyTestPenaltyOrCredit(testResult.getUser());
 			template.convertAndSend("/queue/rankings", "refresh");
 		}
-		
+
 	}
-	
+
 	private void setFinalAssignmentScore(TestResult testResult) {
 		if (testResult.isSuccessful()) {
 			scoreService.subtractSpentSeconds(testResult.getUser());

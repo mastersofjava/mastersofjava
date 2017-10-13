@@ -11,8 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import net.tascalate.concurrent.CompletableTask;
-
 /**
  * Monitors a {@link CompletableFuture} and reports the time consumed to process
  * the {@link CompletableFuture}, the initiating and executing thread and a
@@ -55,7 +53,7 @@ public class AsyncTimedAspect {
 		});
 	}
 
-	private boolean isCompletableFuture(Object result) {
-		return CompletableTask.class.isAssignableFrom(result.getClass());
-	}
+//	private boolean isCompletableFuture(Object result) {
+//		return CompletableTask.class.isAssignableFrom(result.getClass());
+//	}
 }
