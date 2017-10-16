@@ -9,6 +9,7 @@ import org.junit.runner.JUnitCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.competition.Competition;
@@ -22,7 +23,8 @@ public class TestService {
 	private static final Logger log = LoggerFactory.getLogger(TestService.class);
 
 	@Autowired
-	private Executor timed;
+	@Qualifier("testing")
+	private Executor testing;
 
 	@Autowired
 	private Competition competition;
@@ -45,7 +47,7 @@ public class TestService {
 					return new TestResult(compileResult.getCompileResult(), compileResult.getUser(), false);
 				}
 			}
-		}, timed);
+		}, testing);
 	}
 
 	private void unittest(AssignmentFile file, CompileResult compileResult, JUnitCore junit) {

@@ -5,7 +5,6 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -73,8 +72,6 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-import nl.moj.server.async.CompletableExecutors;
-import nl.moj.server.async.TimedCompletables;
 import nl.moj.server.files.AssignmentFileFilter;
 import nl.moj.server.files.FileProcessor;
 //import nz.net.ultraq.thymeleaf.LayoutDialect;
@@ -322,13 +319,22 @@ public class AppConfig {
 		@Override
 		public Executor getAsyncExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("async-%d").build();
-			return CompletableExecutors.completable(Executors.newFixedThreadPool(THREADS, threadFactory));
+			return Executors.newFixedThreadPool(THREADS, threadFactory);
+			//return CompletableExecutors.completable(Executors.newFixedThreadPool(THREADS, threadFactory));
 		}
 
-		@Bean(name = "timed")
-		public Executor timeoutExecutor() {
-			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("timed-%d").build();
-			return TimedCompletables.timed(Executors.newFixedThreadPool(THREADS, threadFactory), Duration.ofNanos(2));
+		@Bean(name = "compiling")
+		public Executor compilingExecutor() {
+			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("compiling-%d").build();
+			return Executors.newFixedThreadPool(THREADS, threadFactory);
+			//return TimedCompletables.timed(Executors.newFixedThreadPool(THREADS, threadFactory), Duration.ofNanos(2));
+		}
+
+		@Bean(name = "testing")
+		public Executor testingExecutor() {
+			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("testing-%d").build();
+			return Executors.newFixedThreadPool(THREADS, threadFactory);
+			//return TimedCompletables.timed(Executors.newFixedThreadPool(THREADS, threadFactory), Duration.ofNanos(2));
 		}
 
 		@Override

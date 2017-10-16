@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,8 +46,12 @@ public class SubmitController {
 	private TestService testService;
 
 	@Autowired
-	@Qualifier("timed")
-	private Executor timed;
+	@Qualifier("compiling")
+	private Executor compiling;
+
+	@Autowired
+	@Qualifier("testing")
+	private Executor testing;
 
 	@Autowired
 	private SimpMessagingTemplate template;
@@ -57,30 +62,32 @@ public class SubmitController {
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName()), timed)
-				.thenAccept(testResult -> sendFeedbackMessage(testResult));
+		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName()), compiling)
+				.orTimeout(1, TimeUnit.SECONDS).thenAccept(testResult -> sendFeedbackMessage(testResult));
 	}
 
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), timed)
-		.thenComposeAsync(compileResult -> testService.test(compileResult), timed)
-		.thenAccept(testResult -> {
-			sendFeedbackMessage(testResult);
-			applyTestPenalty(testResult);
-		});
+		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), testing)
+				.orTimeout(1, TimeUnit.SECONDS)
+				.thenComposeAsync(compileResult -> testService.test(compileResult), testing)
+				.orTimeout(1, TimeUnit.SECONDS).thenAccept(testResult -> {
+					sendFeedbackMessage(testResult);
+					applyTestPenalty(testResult);
+				});
 	}
 
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), timed)
-		.thenComposeAsync(compileResult -> testService.test(compileResult), timed)
-		.thenAccept(testResult -> {
-			setFinalAssignmentScore(testResult);
-			sendFeedbackMessage(testResult);
-		});
+		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), testing)
+				.orTimeout(1, TimeUnit.SECONDS)
+				.thenComposeAsync(compileResult -> testService.test(compileResult), testing)
+				.orTimeout(1, TimeUnit.SECONDS).thenAccept(testResult -> {
+					setFinalAssignmentScore(testResult);
+					sendFeedbackMessage(testResult);
+				});
 	}
 
 	private void sendFeedbackMessage(CompileResult compileResult) {
