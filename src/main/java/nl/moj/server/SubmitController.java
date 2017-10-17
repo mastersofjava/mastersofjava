@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -58,6 +59,9 @@ public class SubmitController {
 
 	@Autowired
 	private ScoreService scoreService;
+	
+	@Value("${moj.server.timeout}")
+	private int TIMEOUT;
 
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
@@ -70,9 +74,9 @@ public class SubmitController {
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), testing)
-				.orTimeout(1, TimeUnit.SECONDS)
+				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.test(compileResult), testing)
-				.orTimeout(1, TimeUnit.SECONDS).thenAccept(testResult -> {
+				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(testResult -> {
 					sendFeedbackMessage(testResult);
 					applyTestPenalty(testResult);
 				});
@@ -82,9 +86,9 @@ public class SubmitController {
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), testing)
-				.orTimeout(1, TimeUnit.SECONDS)
+				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.test(compileResult), testing)
-				.orTimeout(1, TimeUnit.SECONDS).thenAccept(testResult -> {
+				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(testResult -> {
 					setFinalAssignmentScore(testResult);
 					sendFeedbackMessage(testResult);
 				});

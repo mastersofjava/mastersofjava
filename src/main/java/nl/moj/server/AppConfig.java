@@ -1,7 +1,5 @@
 package nl.moj.server;
 
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,7 +26,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
 import org.springframework.http.CacheControl;
 import org.springframework.integration.annotation.InboundChannelAdapter;
 import org.springframework.integration.annotation.Poller;
@@ -78,13 +75,17 @@ import nl.moj.server.files.FileProcessor;
 //import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 
 @Configuration
-//@EnableAspectJAutoProxy
-//@Import(AppConfig.SecurityConfig.class)
+// @EnableAspectJAutoProxy
+// @Import(AppConfig.SecurityConfig.class)
 public class AppConfig {
 
 	@Value("${moj.server.assignmentDirectory}")
 	public String DIRECTORY;
 
+	@Value("${moj.server.threads}")
+	private int THREADS;
+	
+	
 	@Configuration
 	public class CompilerConfig {
 		@Bean
@@ -93,7 +94,6 @@ public class AppConfig {
 		}
 
 		@Bean
-		@Scope(SCOPE_PROTOTYPE)
 		public DiagnosticCollector<JavaFileObject> diagnosticCollector() {
 			return new DiagnosticCollector<>();
 		}
@@ -105,64 +105,60 @@ public class AppConfig {
 		}
 	}
 
-
 	@EnableWebSecurity
 	@Configuration
-	public class SecurityConfig extends WebSecurityConfigurerAdapter{
+	public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		@Autowired
 		TeamDetailsService teamDetailsService = new TeamDetailsService();
+
 		@Bean
 		public PasswordEncoder passwordEncoder() {
-		    return new BCryptPasswordEncoder();
+			return new BCryptPasswordEncoder();
 		}
+
 		@Bean
 		public DaoAuthenticationProvider authProvider() {
-		    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-		    authProvider.setUserDetailsService(teamDetailsService);
-		    authProvider.setPasswordEncoder(passwordEncoder());
-		    return authProvider;
+			DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+			authProvider.setUserDetailsService(teamDetailsService);
+			authProvider.setPasswordEncoder(passwordEncoder());
+			return authProvider;
 		}
-	    @Override
-	    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-	        auth.authenticationProvider(authProvider());
-	    }
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            http.authorizeRequests()
-            .antMatchers("/login","/register").permitAll()
-            .antMatchers("/").hasRole("USER")
-            .antMatchers("/control").hasRole("CONTROL")
-            .and().formLogin()
-            .successHandler(new CustomAuthenticationSuccessHandler())
-            .loginPage("/login")
-            .and().logout()
-            .and().headers().frameOptions().disable()
-            .and().csrf().disable();
-        }
-        
-        public class CustomAuthenticationSuccessHandler  implements AuthenticationSuccessHandler {
 
-        	@Override
-        	public void onAuthenticationSuccess(HttpServletRequest request,
-        			HttpServletResponse response, Authentication authentication)
-        			throws IOException, ServletException {
-                //set our response to OK status
-                response.setStatus(HttpServletResponse.SC_OK);
-                boolean admin = false;
-                
-                for (GrantedAuthority auth : authentication.getAuthorities()) {
-                    if ("ROLE_CONTROL".equals(auth.getAuthority())){
-                    	admin = true;
-                    }
-                }
-                
-                if(admin){
-                	response.sendRedirect("/control");
-                }else{
-                	response.sendRedirect("/");
-                }
-        	}
-        }
+		@Override
+		protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+			auth.authenticationProvider(authProvider());
+		}
+
+		@Override
+		protected void configure(HttpSecurity http) throws Exception {
+			http.authorizeRequests().antMatchers("/login", "/register").permitAll().antMatchers("/").hasRole("USER")
+					.antMatchers("/control").hasRole("CONTROL").and().formLogin()
+					.successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login").and().logout().and()
+					.headers().frameOptions().disable().and().csrf().disable();
+		}
+
+		public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+
+			@Override
+			public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+					Authentication authentication) throws IOException, ServletException {
+				// set our response to OK status
+				response.setStatus(HttpServletResponse.SC_OK);
+				boolean admin = false;
+
+				for (GrantedAuthority auth : authentication.getAuthorities()) {
+					if ("ROLE_CONTROL".equals(auth.getAuthority())) {
+						admin = true;
+					}
+				}
+
+				if (admin) {
+					response.sendRedirect("/control");
+				} else {
+					response.sendRedirect("/");
+				}
+			}
+		}
 	}
 
 	@Configuration
@@ -184,19 +180,21 @@ public class AppConfig {
 		}
 	}
 
-//	@Configuration
-//	public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
-//
-//		protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
-//			messages.simpDestMatchers("/*").authenticated();
-//		}
-//
-//		@Override
-//		protected boolean sameOriginDisabled() {
-//			// disable CSRF for websockets for now...
-//			return true;
-//		}
-//	}
+	// @Configuration
+	// public class WebSocketSecurityConfig extends
+	// AbstractSecurityWebSocketMessageBrokerConfigurer {
+	//
+	// protected void configureInbound(MessageSecurityMetadataSourceRegistry
+	// messages) {
+	// messages.simpDestMatchers("/*").authenticated();
+	// }
+	//
+	// @Override
+	// protected boolean sameOriginDisabled() {
+	// // disable CSRF for websockets for now...
+	// return true;
+	// }
+	// }
 
 	@EnableWebMvc
 	@Configuration
@@ -237,7 +235,7 @@ public class AppConfig {
 
 		private ISpringTemplateEngine templateEngine(ITemplateResolver templateResolver) {
 			SpringTemplateEngine engine = new SpringTemplateEngine();
-			//engine.addDialect(new LayoutDialect(new GroupingStrategy()));
+			// engine.addDialect(new LayoutDialect(new GroupingStrategy()));
 			// engine.addDialect(new Java8TimeDialect());
 			engine.setTemplateResolver(templateResolver);
 			// engine.setTemplateEngineMessageSource(messageSource());
@@ -256,8 +254,6 @@ public class AppConfig {
 
 	@Configuration
 	public class IntegrationConfig {
-		
-
 
 		@Bean
 		public IntegrationFlow processFileFlow() {
@@ -271,7 +267,7 @@ public class AppConfig {
 		}
 
 		@Bean
-		public Comparator<File> comparator(){
+		public Comparator<File> comparator() {
 			// make sure pom.xml is read first
 			return new Comparator<File>() {
 
@@ -281,10 +277,10 @@ public class AppConfig {
 						return -10;
 					return 10;
 				}
-				
+
 			};
 		}
-		
+
 		@Bean
 		@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000", maxMessagesPerPoll = "1000"))
 		public MessageSource<File> fileReadingMessageSource() {
@@ -313,28 +309,25 @@ public class AppConfig {
 	@Configuration
 	@EnableAsync
 	public class AsyncConfig implements AsyncConfigurer {
-		private static final int THREADS = 10;
+		
 		protected final Log logger = LogFactory.getLog(getClass());
 
 		@Override
 		public Executor getAsyncExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("async-%d").build();
 			return Executors.newFixedThreadPool(THREADS, threadFactory);
-			//return CompletableExecutors.completable(Executors.newFixedThreadPool(THREADS, threadFactory));
 		}
 
 		@Bean(name = "compiling")
 		public Executor compilingExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("compiling-%d").build();
 			return Executors.newFixedThreadPool(THREADS, threadFactory);
-			//return TimedCompletables.timed(Executors.newFixedThreadPool(THREADS, threadFactory), Duration.ofNanos(2));
 		}
 
 		@Bean(name = "testing")
 		public Executor testingExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("testing-%d").build();
 			return Executors.newFixedThreadPool(THREADS, threadFactory);
-			//return TimedCompletables.timed(Executors.newFixedThreadPool(THREADS, threadFactory), Duration.ofNanos(2));
 		}
 
 		@Override
@@ -342,7 +335,7 @@ public class AppConfig {
 			return (ex, method, params) -> logger.error("Uncaught async error", ex);
 		}
 	}
-	
+
 	public class SecurityWebApplicationInitializer extends AbstractSecurityWebApplicationInitializer {
 
 		public SecurityWebApplicationInitializer() {
