@@ -1,8 +1,8 @@
 moj:
   server:
     assignmentDirectory: /home/mhayen/Workspaces/workspace-moj/server/assignments
-    gitrepository: ssh://git@bitbucket.org/first8/2017-assignments.git
-    branch: origin/new_layout
+    gitrepository: ssh://git@bitbucket.org/first8/practice-assignments.git
+    branch: origin/master
     threads: 20
     timeout: 10
     compiler:

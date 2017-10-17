@@ -27,8 +27,8 @@
 		<hint>verzin iets</hint>
 		<category>Assembly</category>
 		<solutiontime>3600</solutiontime>
-		<testpenalties>false</testpenalties>
-		<testcredits>true</testcredits>
+		<testpenalties>true</testpenalties>
+		<testcredits>false</testcredits>
 	</properties>
 
 	<dependencies>

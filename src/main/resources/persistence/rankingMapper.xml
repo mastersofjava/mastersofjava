@@ -12,11 +12,13 @@
 	<resultMap type="nl.moj.server.model.Result" id="Result">
 		<id column="id" property="id"/>
 		<result column="assignment" property="assignment" />
-		<result column="score" property="score" />		
+		<result column="score" property="score" />
+		<result column="penalty" property="penalty" />	
+		<result column="credit" property="credit" />	
 	</resultMap>
 
 	<select id="getRankings" resultMap="Ranking">
-		SELECT t.name, results.id, results.assignment, results.score, s.scores
+		SELECT t.name, results.id, results.assignment, results.score,results.penalty,results.credit, s.scores
 		 FROM team t,
 		 (SELECT *
 		    FROM result) as results,

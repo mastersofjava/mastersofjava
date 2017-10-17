@@ -23,31 +23,32 @@ import nl.moj.server.persistence.TestMapper;
 public class Competition {
 
 	private Assignment currentAssignment;
-	
+
 	private Stopwatch timer;
-	
-	private Map<String,Assignment> assignments;
-	
+
+	private Map<String, Assignment> assignments;
+
 	@Autowired
 	private AssignmentRepositoryService repo;
 
 	@Autowired
 	private TestMapper testMapper;
-	
+
 	@Autowired
 	private ResultMapper resultMapper;
-	
+
 	public String cloneAssignmentsRepo() {
-		// verwijder bestaande
-		assignments.keySet().forEach((k) -> {
-			testMapper.deleteTestsByAssignment(k);
-			resultMapper.deleteResultsByAssignment(k);
-		});
-		assignments.clear();
+		// verwijder bestaande als die bestaan
+		if (assignments != null) {
+			assignments.keySet().forEach((k) -> {
+				testMapper.deleteTestsByAssignment(k);
+				resultMapper.deleteResultsByAssignment(k);
+			});
+			assignments.clear();
+		}
 		return repo.cloneRemoteGitRepository() ? "repo succesvol gedownload" : "repo downloaden mislukt";
 	}
-	
-	
+
 	public void startCurrentAssignment() {
 		if (currentAssignment == null) {
 			throw new RuntimeException("currentAssignment not set");
@@ -58,14 +59,13 @@ public class Competition {
 	public Integer getSecondsElapsed() {
 		return (int) timer.elapsed(TimeUnit.SECONDS);
 	}
-	
+
 	public Integer getRemainingTime() {
 		int solutiontime = currentAssignment.getSolutionTime();
-		int seconds =  getSecondsElapsed();
+		int seconds = getSecondsElapsed();
 		return solutiontime - seconds;
 	}
-	
-	
+
 	public Assignment getCurrentAssignment() {
 		return currentAssignment;
 	}
@@ -73,18 +73,17 @@ public class Competition {
 	public void clearCurrentAssignment() {
 		this.currentAssignment = null;
 	}
-	
+
 	public void setCurrentAssignment(String assignmentName) {
 		if (assignments.containsKey(assignmentName)) {
-			this.currentAssignment = assignments.get(assignmentName);	
+			this.currentAssignment = assignments.get(assignmentName);
 		}
 	}
-	
+
 	public Assignment getAssignment(String name) {
 		return assignments.get(name);
 	}
-	
-	
+
 	public void addAssignmentFile(AssignmentFile file) {
 		if (assignments == null) {
 			assignments = new HashMap<>();
@@ -109,6 +108,6 @@ public class Competition {
 	}
 
 	public Set<String> getAssignmentNames() {
-		return Optional.ofNullable(assignments).orElse( Collections.emptyMap()).keySet();
+		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).keySet();
 	}
 }
