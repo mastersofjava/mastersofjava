@@ -12,7 +12,7 @@ public class TestVirtualCPU {
 	@Rule
     public ErrorCollector collector = new ErrorCollector();
 	
-	@Test
+	@Test(timeout=1000)
 	public void test1() {
 		CPUState state = new CPUState();
 		VirtualCPU.LD.exec(state, 0, 100);
@@ -45,7 +45,7 @@ public class TestVirtualCPU {
 		checkRegister(state, 7, 0);
 	}
 
-	@Test
+	@Test(timeout=1000)
 	public void test2() {
 		CPUState state = new CPUState();
 		VirtualCPU.LD.exec(state, 0, 75);
@@ -64,7 +64,7 @@ public class TestVirtualCPU {
 				& checkRegister(state, 5, 0) & checkRegister(state, 6, 0) & checkRegister(state, 7, 0);
 	}
 
-	@Test
+	@Test(timeout=1000)
 	public void test3() {
 		CPUState state = new CPUState();
 		VirtualCPU.LD.exec(state, 0, 255);
@@ -80,7 +80,7 @@ public class TestVirtualCPU {
 				& checkRegister(state, 5, 0) & checkRegister(state, 6, 0) & checkRegister(state, 7, 0);
 	}
 
-	@Test
+	@Test(timeout=1000)
 	public void test4() {
 		CPUState state = new CPUState();
 		VirtualCPU.LD.exec(state, 0, 10);

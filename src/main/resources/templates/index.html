@@ -12,72 +12,62 @@
 <script src="/webjars/codemirror-minified/lib/codemirror.js"></script>
 
 <script src="/webjars/codemirror-minified/addon/edit/matchbrackets.js"></script>
-<script
-	src="/webjars/codemirror-minified/addon/selection/active-line.js"></script>
+<script src="/webjars/codemirror-minified/addon/selection/active-line.js"></script>
 <script src="/webjars/codemirror-minified/addon/hint/show-hint.js"></script>
 <script src="/webjars/codemirror-minified/mode/clike/clike.js"></script>
 
-<link rel="stylesheet"
-	href="/webjars/codemirror-minified/addon/hint/show-hint.css">
-<link rel="stylesheet"
-	href="/webjars/codemirror-minified/lib/codemirror.css">
-<link rel="stylesheet"
-	href="/webjars/jquery-ui-themes/smoothness/jquery-ui.min.css" />
+<link rel="stylesheet" href="/webjars/codemirror-minified/addon/hint/show-hint.css">
+<link rel="stylesheet" href="/webjars/codemirror-minified/lib/codemirror.css">
+<link rel="stylesheet" href="/webjars/jquery-ui-themes/smoothness/jquery-ui.min.css" />
 <link rel="stylesheet" href="/css/index.css">
 <title>Master of Java</title>
 </head>
 <body onload="init();">
 
-	<div id="tabs" th:unless="${#lists.isEmpty(files)}">
-		<ul>
-			<li th:each="file : ${files}"><a href="#"
-				th:attrappend="href=|${file.name}.tab|" th:text="|${file.filename}|"></a>
-			</li>
-		</ul>
-		<div th:each="file : ${files}" th:attr="id=|${file.name}.tab|">
-			<div th:attr="id=|${file.filename}|"></div>
-		</div>
-	</div>
+ <div id="tabs" th:unless="${#lists.isEmpty(files)}">
+  <ul>
+   <li th:each="file : ${files}"><a href="#" th:attrappend="href=|${file.name}.tab|" th:text="|${file.filename}|"></a></li>
+  </ul>
+  <div th:each="file : ${files}" th:attr="id=|${file.name}.tab|">
+   <div th:attr="id=|${file.filename}|"></div>
+  </div>
+ </div>
 
-	<div th:if="${#lists.isEmpty(files)}">
-		<p>No assignment active right now;</p>
+ <div th:if="${#lists.isEmpty(files)}">
+  <p>No assignment active right now;</p>
 
-	</div>
+ </div>
 
-	<div>
-		<p id="tasktime" />
-	</div>
+ <div>
+  <p id="tasktime" />
+ </div>
 
-	<div>
-		<ul>
-			<li th:each="testname : ${testnames}">
-				<input name="test" type="radio" th:value="${testname}" /> 
-				<label th:text="${testname}">Wireframe</label>
-			</li>
-		</ul>
-	</div>
-	<div id="conversationDiv" th:unless="${#lists.isEmpty(files)}">
-		<button id="compile" onclick="compile();">compile</button>
-		<button id="test" onclick="test();">test</button>
-		<a href="/logout">Logout</a>
-		<button id="submit" onclick="submit();">final SUBMIT</button>
-		<a href="/static/docs/api/index.html" target="_blank">javadoc</a>
-	</div>
-	<div>
-		<p id="response"></p>
-	</div>
+ <div>
+  <ul>
+   <li th:each="testname : ${testnames}"><input name="test" type="radio" th:value="${testname}" /> <label th:text="${testname}">Wireframe</label>
+   </li>
+  </ul>
+ </div>
+ <div id="conversationDiv" th:unless="${#lists.isEmpty(files)}">
+  <button id="compile" onclick="compile();">compile</button>
+  <button id="test" onclick="test();">test</button>
+  <button id="submit" onclick="submit();">final SUBMIT</button>
+  <a href="http://download.java.net/java/jdk9/docs/api/overview-summary.html" target="_blank">javadoc</a>
+ </div>
+ <div>
+  <p id="response"></p>
+ </div>
 
-	<div>
-		<p id="status" />
-	</div>
+ <div>
+  <p id="status" />
+ </div>
 
 
-	<script type="text/javascript" th:unless="${#lists.isEmpty(files)}">
+ <script type="text/javascript" th:unless="${#lists.isEmpty(files)}">
 		$("#tabs").tabs();
 	</script>
-	<script type="text/javascript" src="index.js"
-		th:unless="${#lists.isEmpty(files)}"></script>
-	<script type="text/javascript" src="/js/app.js"></script>
+ <script type="text/javascript" src="index.js" th:unless="${#lists.isEmpty(files)}"></script>
+ <script type="text/javascript" src="/js/app.js"></script>
 </body>
 
 

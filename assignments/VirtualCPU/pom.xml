@@ -26,7 +26,7 @@
 		<difficulty>3/5</difficulty>
 		<hint>verzin iets</hint>
 		<category>Assembly</category>
-		<solutiontime>3600</solutiontime>
+		<solutiontime>900</solutiontime>
 		<testpenalties>true</testpenalties>
 		<testcredits>false</testcredits>
 	</properties>

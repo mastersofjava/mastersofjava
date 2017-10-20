@@ -3,6 +3,9 @@ package nl.moj.server;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -80,11 +83,14 @@ import nl.moj.server.files.FileProcessor;
 public class AppConfig {
 
 	@Value("${moj.server.assignmentDirectory}")
-	public String DIRECTORY;
+	public String directory;
 
 	@Value("${moj.server.threads}")
-	private int THREADS;
-	
+	private int threads;
+
+	@Value("${moj.server.compileBaseDirectory}")
+	private String compileBaseDirectory;
+
 	
 	@Configuration
 	public class CompilerConfig {
@@ -156,6 +162,15 @@ public class AppConfig {
 					response.sendRedirect("/control");
 				} else {
 					response.sendRedirect("/");
+					Path teamdir = Paths.get(compileBaseDirectory, authentication.getName());
+					if (!Files.exists(teamdir)) {
+						try {
+							Files.createDirectory(teamdir);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
 				}
 			}
 		}
@@ -290,7 +305,7 @@ public class AppConfig {
 			FileReadingMessageSource source = new FileReadingMessageSource(comparator());
 			source.setUseWatchService(true);
 			source.setAutoCreateDirectory(true);
-			source.setDirectory(new File(DIRECTORY));
+			source.setDirectory(new File(directory));
 			source.setFilter(filters);
 			return source;
 		}
@@ -309,33 +324,41 @@ public class AppConfig {
 	@Configuration
 	@EnableAsync
 	public class AsyncConfig implements AsyncConfigurer {
-		
+
 		protected final Log logger = LogFactory.getLog(getClass());
 
 		@Override
 		public Executor getAsyncExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("async-%d").build();
-			return Executors.newFixedThreadPool(THREADS, threadFactory);
+			return Executors.newFixedThreadPool(threads, threadFactory);
 		}
 
 		@Bean(name = "compiling")
 		public Executor compilingExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("compiling-%d").build();
-			return Executors.newFixedThreadPool(THREADS, threadFactory);
+			return Executors.newFixedThreadPool(threads, threadFactory);
 		}
 
 		@Bean(name = "testing")
 		public Executor testingExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("testing-%d").build();
-			return Executors.newFixedThreadPool(THREADS, threadFactory);
+
+			return Executors.newFixedThreadPool(threads, threadFactory);
 		}
 
 		@Override
 		public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
 			return (ex, method, params) -> logger.error("Uncaught async error", ex);
 		}
+
 	}
 
+	// class SimpleThreadFactory implements ThreadFactory {
+	// public Thread newThread(Runnable r) {
+	//
+	// return new Thread(r);
+	// }
+	// }
 	public class SecurityWebApplicationInitializer extends AbstractSecurityWebApplicationInitializer {
 
 		public SecurityWebApplicationInitializer() {

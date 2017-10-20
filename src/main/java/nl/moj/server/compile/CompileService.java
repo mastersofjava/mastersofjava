@@ -1,10 +1,13 @@
 package nl.moj.server.compile;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -14,9 +17,11 @@ import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.competition.Competition;
@@ -36,6 +41,10 @@ public class CompileService {
 
 	@Autowired
 	private Competition competition;
+	
+	@Value("${moj.server.compileBaseDirectory}")
+	private String compileBaseDirectory;
+
 
 	public Supplier<CompileResult> compile(Map<String, String> sources, String user) {
 		return compile(sources, user, false);
@@ -76,6 +85,16 @@ public class CompileService {
 				return new CompileResult(result, javaFileManager.getMemoryMap(), user, false);
 			}
 
+			
+			for (Entry<String, byte[]> entry : javaFileManager.getMemoryMap().entrySet()) {
+				File file = FileUtils.getFile(compileBaseDirectory, user, entry.getKey()+ ".class");
+				try {
+					FileUtils.writeByteArrayToFile(file , entry.getValue());
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}	
+			}
 			return new CompileResult(result, javaFileManager.getMemoryMap(), user, true);
 		};
 		return supplier;
