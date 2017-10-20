@@ -75,13 +75,14 @@ public class CompileService {
 			CompilationTask compilationTask = javaCompiler.getTask(err, javaFileManager, diagnosticCollector, options,
 					null, javaFileObjects);
 
-			String result = "Succes\n";
+			String result = "Success\n";
 			if (!compilationTask.call()) {
 				StringBuilder sb = new StringBuilder();
 				for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics())
 					sb.append(report(diagnostic));
 				result = sb.toString();
 				diagnosticCollector = new DiagnosticCollector<>();
+				log.debug("compileSuccess: {}", false);
 				return new CompileResult(result, javaFileManager.getMemoryMap(), user, false);
 			}
 
@@ -95,6 +96,7 @@ public class CompileService {
 					e.printStackTrace();
 				}	
 			}
+			log.debug("compileSuccess: {}", true);
 			return new CompileResult(result, javaFileManager.getMemoryMap(), user, true);
 		};
 		return supplier;

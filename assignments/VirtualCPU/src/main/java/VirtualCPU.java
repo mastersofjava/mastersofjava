@@ -13,6 +13,8 @@ public enum VirtualCPU {
 	public void exec(CPUState state, int oper1, int oper2) {
 		// Implementeer de virtual CPU
 		//System.exit(0);
-		//for (;;) System.out.println("test");
+		for (;;) {
+			System.out.println("test");
+		}
 	}
 }

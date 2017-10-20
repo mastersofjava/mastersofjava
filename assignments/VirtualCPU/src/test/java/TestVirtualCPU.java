@@ -1,4 +1,5 @@
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -9,9 +10,6 @@ public class TestVirtualCPU {
 
 	private static final String[] NAMES = new String[] { "Program 1", "Program 2", "Program 3", "Program 4" };
 
-	@Rule
-    public ErrorCollector collector = new ErrorCollector();
-	
 	@Test(timeout=1000)
 	public void test1() {
 		CPUState state = new CPUState();
@@ -19,7 +17,7 @@ public class TestVirtualCPU {
 		VirtualCPU.LD.exec(state, 1, 50);
 		VirtualCPU.ADD.exec(state, 0, 1);
 		VirtualCPU.OUT.exec(state, 0, 12);
-		boolean success = checkPort(state, 0, 0);
+		checkPort(state, 0, 0);
 		checkPort(state, 1, 0);
 		checkPort(state, 2, 0);
 		checkPort(state, 3, 0);
@@ -115,8 +113,8 @@ public class TestVirtualCPU {
 	}
 
 	private boolean checkPort(CPUState state, int port, int value) {
-		collector.checkThat("Port " + port + " heeft waarde " + state.getPort(port) + " terwijl " + value + " werd verwacht.", value, equalTo(state.getPort(port)));
-//		assertEquals("Port " + port + " heeft waarde " + state.getPort(port) + " terwijl " + value + " werd verwacht.", value, state.getPort(port));
+		//collector.checkThat("Port " + port + " heeft waarde " + state.getPort(port) + " terwijl " + value + " werd verwacht.", value, equalTo(state.getPort(port)));
+		assertEquals("Port " + port + " heeft waarde " + state.getPort(port) + " terwijl " + value + " werd verwacht.", value, state.getPort(port));
 //		if (state.getPort(port) != value) {
 //			System.err.println(
 //					"Port " + port + " heeft waarde " + state.getPort(port) + " terwijl " + value + " werd verwacht.");
@@ -127,8 +125,10 @@ public class TestVirtualCPU {
 	}
 
 	private boolean checkRegister(CPUState state, int register, int value) {
-		collector.checkThat("Register " + register + " heeft waarde " + state.getRegister(register) + " terwijl "
-				+ value + " werd verwacht.", value, equalTo(state.getRegister(register)));
+		assertEquals("Register " + register + " heeft waarde " + state.getRegister(register) + " terwijl "
+				+ value + " werd verwacht.", value, state.getRegister(register));
+		//collector.checkThat("Register " + register + " heeft waarde " + state.getRegister(register) + " terwijl "
+		//		+ value + " werd verwacht.", value, equalTo(state.getRegister(register)));
 //		if (state.getRegister(register) != value) {
 //			System.err.println("Register " + register + " heeft waarde " + state.getRegister(register) + " terwijl "
 //					+ value + " werd verwacht.");

@@ -75,8 +75,9 @@ public class SubmitController {
 			throws Exception {
 		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
-				.thenComposeAsync(compileResult -> testService.test(compileResult), testing)
-				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(testResult -> {
+				.thenComposeAsync(compileResult -> testService.test(compileResult,message.getTests()), testing)
+				//.orTimeout(TIMEOUT, TimeUnit.SECONDS)
+				.thenAccept(testResult -> {
 					sendFeedbackMessage(testResult);
 					applyTestPenalty(testResult);
 				});
@@ -87,8 +88,9 @@ public class SubmitController {
 			throws Exception {
 		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
-				.thenComposeAsync(compileResult -> testService.test(compileResult), testing)
-				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(testResult -> {
+				.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
+				//.orTimeout(TIMEOUT, TimeUnit.SECONDS)
+				.thenAccept(testResult -> {
 					setFinalAssignmentScore(testResult);
 					sendFeedbackMessage(testResult);
 				});
@@ -129,13 +131,15 @@ public class SubmitController {
 
 		private String team;
 		private Map<String, String> source;
-
+		private String tests;
+		
 		public SourceMessage() {
 		}
 
-		public SourceMessage(String team, Map<String, String> source) {
+		public SourceMessage(String team, Map<String, String> source, String tests) {
 			this.team = team;
 			this.source = source;
+			this.tests = tests;
 		}
 
 		public String getTeam() {
@@ -152,6 +156,14 @@ public class SubmitController {
 
 		public void setSource(Map<String, String> source) {
 			this.source = source;
+		}
+
+		public String getTests() {
+			return tests;
+		}
+
+		public void setTests(String tests) {
+			this.tests = tests;
 		}
 
 	}
@@ -208,7 +220,8 @@ public class SubmitController {
 					sources.put(sourceElement.get("filename").textValue(), sourceElement.get("content").textValue());
 				}
 			}
-			return new SubmitController.SourceMessage(team, sources);
+			String tests = node.get("tests").textValue();
+			return new SubmitController.SourceMessage(team, sources, tests);
 		}
 	}
 

@@ -91,7 +91,8 @@
 	}
 
 	function test() { 
-		var tests = $("input[name='test']:checked").val();
+		var tests = []
+		tests = $("input[name='test']:checked").val();
 		stompClient.send("/app/submit/test", {}, JSON.stringify({
 			'team' : 'team1',
 			'source' : getContent(),
