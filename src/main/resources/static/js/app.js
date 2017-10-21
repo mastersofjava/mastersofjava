@@ -4,6 +4,7 @@
 		connect();
 		connectControl();
 		connectTaskTime();
+		connectStop();
 	}
 	
     function getContent() {
@@ -69,7 +70,7 @@
 	function connectTaskTime() {
 
 		var socket = new SockJS('/control');
-		stompClientTaskTime = Stomp.over(socket);
+		var stompClientTaskTime = Stomp.over(socket);
 		stompClientTaskTime.debug = null;
 		stompClientTaskTime.connect({}, function(frame) {
 
@@ -86,12 +87,12 @@
 	function connectStop() {
 
 		var socket = new SockJS('/control');
-		stompClientTaskTime = Stomp.over(socket);
-		stompClientTaskTime.debug = null;
-		stompClientTaskTime.connect({}, function(frame) {
+		var stompClientStop = Stomp.over(socket);
+		stompClientStop.debug = null;
+		stompClientStop.connect({}, function(frame) {
 
 			console.log('Connected to /control/queue/stop');
-			stompClientTaskTime.subscribe('/queue/stop', function(taskTimeMessage) {
+			stompClientStop.subscribe('/queue/stop', function(taskTimeMessage) {
 				var message = JSON.parse(taskTimeMessage.body);
 				disable();
 			});

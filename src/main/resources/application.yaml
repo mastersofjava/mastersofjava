@@ -1,6 +1,6 @@
 moj:
   server:
-    basedir: /tmp/mojserver/
+    basedir: /tmp/mojserver
     compileDirectory: teams
     assignmentDirectory: assignments
     libDirectory: lib

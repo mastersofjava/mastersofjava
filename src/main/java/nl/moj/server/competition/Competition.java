@@ -53,9 +53,18 @@ public class Competition {
 		if (currentAssignment == null) {
 			throw new RuntimeException("currentAssignment not set");
 		}
+		currentAssignment.setRunning(true);
 		timer = Stopwatch.createStarted();
 	}
 
+	public void stopCurrentAssignment() {
+		if (currentAssignment == null) {
+			throw new RuntimeException("currentAssignment not set");
+		}
+		currentAssignment.setRunning(false);
+		timer = Stopwatch.createStarted();
+	}
+	
 	public Integer getSecondsElapsed() {
 		return (int) timer.elapsed(TimeUnit.SECONDS);
 	}

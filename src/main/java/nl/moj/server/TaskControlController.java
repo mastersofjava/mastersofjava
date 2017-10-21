@@ -50,18 +50,21 @@ public class TaskControlController {
 	@Autowired
 	private ResultMapper resultMapper;
 
+	
+	private ScheduledFuture<?> handler;
+	
 	@ModelAttribute(name = "assignmenNames")
 	public Set<String> assignments() {
 		return competition.getAssignmentNames();
 	}
 
 	@MessageMapping("/control/starttask")
-	public void startTask(StartTaskMessage message) {
+	public void startTask(TaskMessage message) {
 		competition.setCurrentAssignment(message.getTaskName());
 		Integer solutiontime = competition.getCurrentAssignment().getSolutionTime();
 		competition.startCurrentAssignment();
 		sendStartToTeams(message.taskName);
-		final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
+		handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
 		ex.schedule(new Runnable() {
 			public void run() {
 				sendStopToTeams(message.taskName);
@@ -71,7 +74,9 @@ public class TaskControlController {
 	}
 
 	@MessageMapping("/control/stoptask")
-	public void stopTask(StartTaskMessage message) {
+	public void stopTask(TaskMessage message) {
+		competition.stopCurrentAssignment();
+		handler.cancel(true);
 		sendStopToTeams(message.taskName);
 	}
 
@@ -86,7 +91,7 @@ public class TaskControlController {
 	}
 
 	private void sendStopToTeams(String taskname) {
-		template.convertAndSend("/queue/stop", taskname);
+		template.convertAndSend("/queue/stop", new TaskMessage(taskname));
 	}
 
 	@MessageMapping("/control/clearAssignment")
@@ -151,8 +156,15 @@ public class TaskControlController {
 		TEAM, ASSIGNMENT, SCORE, PENALTY, CREDIT
 	}
 
-	public static class StartTaskMessage {
+	public static class TaskMessage {
 		private String taskName;
+
+		public TaskMessage() {
+		}
+		
+		public TaskMessage(String taskName) {
+			this.taskName = taskName;
+		}
 
 		public String getTaskName() {
 			return taskName;

@@ -21,6 +21,8 @@ public class Assignment {
 
 	private String name;
 
+	private boolean running;
+
 	private List<String> filenames = new ArrayList<>();
 
 	private Properties properties = new Properties();
@@ -40,6 +42,14 @@ public class Assignment {
 		this.name = name;
 	}
 
+	public boolean isRunning() {
+		return running;
+	}
+
+	public void setRunning(boolean running) {
+		this.running = running;
+	}
+
 	public List<String> getFilenames() {
 		return filenames;
 	}
@@ -57,39 +67,69 @@ public class Assignment {
 	}
 
 	public List<AssignmentFile> getJavaFiles() {
-		return assFiles.stream()
-				.filter(f -> f.getFileType().equals(FileType.EDIT) || f.getFileType().equals(FileType.READONLY))
-				.collect(Collectors.toList());
+		if (isRunning()) {
+			return assFiles.stream()
+					.filter(f -> f.getFileType().equals(FileType.EDIT) || f.getFileType().equals(FileType.READONLY))
+					.collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
 	}
 
 	public List<AssignmentFile> getTestFiles() {
-		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TEST)).collect(Collectors.toList());
+		if (isRunning()) {
+			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TEST)).collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
 	}
 
 	public List<AssignmentFile> getJavaAndTestFiles() {
-		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.EDIT)
-				|| f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.TEST))
-				.collect(Collectors.toList());
+		if (isRunning()) {
+			return assFiles
+					.stream().filter(f -> f.getFileType().equals(FileType.EDIT)
+							|| f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.TEST))
+					.collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
 	}
 
 	public List<AssignmentFile> getReadOnlyJavaFiles() {
-		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.READONLY)).collect(Collectors.toList());
+		if (isRunning()) {
+			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.READONLY))
+					.collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
 	}
 
 	public List<AssignmentFile> getReadOnlyJavaAndTestFiles() {
-		return assFiles.stream()
-				.filter(f -> f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.TEST))
-				.collect(Collectors.toList());
+		if (isRunning()) {
+			return assFiles.stream()
+					.filter(f -> f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.TEST))
+					.collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
 	}
 
 	public List<AssignmentFile> getTestAndSubmitFiles() {
-		return assFiles.stream()
-				.filter(f -> f.getFileType().equals(FileType.TEST) || f.getFileType().equals(FileType.SUBMIT))
-				.collect(Collectors.toList());
+		if (isRunning()) {
+			return assFiles.stream()
+					.filter(f -> f.getFileType().equals(FileType.TEST) || f.getFileType().equals(FileType.SUBMIT))
+					.collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
 	}
 
 	public List<AssignmentFile> getTaskFiles() {
-		return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TASK)).collect(Collectors.toList());
+		if (isRunning()) {
+			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TASK)).collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
 	}
 
 	public List<String> getTestFileNames() {
