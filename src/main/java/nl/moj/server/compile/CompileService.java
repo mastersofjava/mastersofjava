@@ -16,6 +16,7 @@ import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
+import javax.tools.StandardLocation;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -36,14 +37,19 @@ public class CompileService {
 	private javax.tools.JavaCompiler javaCompiler;
 	@Autowired
 	private DiagnosticCollector<JavaFileObject> diagnosticCollector;
-	@Autowired
-	private MemoryJavaFileManager<StandardJavaFileManager> javaFileManager;
+	//@Autowired
+	//private MemoryJavaFileManager<StandardJavaFileManager> javaFileManager;
 
 	@Autowired
-	private Competition competition;
+	private StandardJavaFileManager standardFileManager;
 	
+	@Autowired
+	private Competition competition;
+
 	@Value("${moj.server.compileDirectory}")
 	private String compileDirectory;
+	@Value("${moj.server.libDirectory}")
+	private String libDirectory;
 
 	@Value("${moj.server.basedir}")
 	private String basedir;
@@ -73,8 +79,18 @@ public class CompileService {
 
 			PrintWriter err = new PrintWriter(System.err);
 			log.info("compiling {} classes", javaFileObjects.size());
+			List<File> files = new ArrayList<>();
+			files.add(FileUtils.getFile(basedir, compileDirectory, user));
+			
 			// Create a compilation task.
-			CompilationTask compilationTask = javaCompiler.getTask(err, javaFileManager, diagnosticCollector, options,
+			try {
+				standardFileManager.setLocation(StandardLocation.CLASS_OUTPUT, files );
+				standardFileManager.setLocation(StandardLocation.CLASS_PATH, makeClasspath(user));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			CompilationTask compilationTask = javaCompiler.getTask(err, standardFileManager, diagnosticCollector, options,
 					null, javaFileObjects);
 
 			String result = "Success\n";
@@ -85,21 +101,21 @@ public class CompileService {
 				result = sb.toString();
 				diagnosticCollector = new DiagnosticCollector<>();
 				log.debug("compileSuccess: {}", false);
-				return new CompileResult(result, javaFileManager.getMemoryMap(), user, false);
+				//standardFileManager.
+				return new CompileResult(result, null, user, false);
 			}
-
-			
-			for (Entry<String, byte[]> entry : javaFileManager.getMemoryMap().entrySet()) {
-				File file = FileUtils.getFile(basedir, compileDirectory, user, entry.getKey()+ ".class");
-				try {
-					FileUtils.writeByteArrayToFile(file , entry.getValue());
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}	
-			}
+//
+//			for (Entry<String, byte[]> entry : javaFileManager.getMemoryMap().entrySet()) {
+//				File file = FileUtils.getFile(basedir, compileDirectory, user, entry.getKey() + ".class");
+//				try {
+//					FileUtils.writeByteArrayToFile(file, entry.getValue());
+//				} catch (IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
 			log.debug("compileSuccess: {}", true);
-			return new CompileResult(result, javaFileManager.getMemoryMap(), user, true);
+			return new CompileResult(result, null, user, true);
 		};
 		return supplier;
 	}
@@ -112,6 +128,15 @@ public class CompileService {
 		options.add("-g:lines,vars");
 
 		return options;
+	}
+
+	private List<File> makeClasspath(String user) {
+		final List<File> classPath = new ArrayList<>();
+		classPath.add(FileUtils.getFile(basedir, compileDirectory, user));
+		classPath.add(FileUtils.getFile(basedir, libDirectory, "junit-4.12.jar"));
+		classPath.add(FileUtils.getFile(basedir, libDirectory, "hamcrest-all-1.3.jar"));
+		
+		return classPath;
 	}
 
 	private String report(Diagnostic<?> dg) {

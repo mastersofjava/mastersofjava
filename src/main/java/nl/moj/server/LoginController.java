@@ -38,6 +38,13 @@ public class LoginController {
 	@Autowired
 	private Competition competition;
 	
+	@Value("${moj.server.compileDirectory}")
+	private String compileDirectory;
+
+	@Value("${moj.server.basedir}")
+	private String basedir;
+
+	
     @GetMapping("/login")
     public String loginForm(Model model) {
         return "login";
@@ -66,6 +73,15 @@ public class LoginController {
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     	context.setAuthentication(authentication);
+    	Path teamdir = Paths.get(basedir, compileDirectory, authentication.getName());
+		if (!Files.exists(teamdir)) {
+			try {
+				Files.createDirectory(teamdir);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
     	return "redirect:/";
     }
     

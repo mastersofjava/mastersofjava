@@ -98,6 +98,9 @@ public class TestService {
 						"org.junit.runner.JUnitCore", file.getName());
 				File teamdir = FileUtils.getFile(basedir, compileDirectory, compileResult.getUser());
 				pb.directory(teamdir);
+				for (String s : pb.command()) {
+					System.out.println(s);
+				}
 				// pb.inheritIO();
 
 				Instant starttijd = Instant.now();
@@ -148,6 +151,7 @@ public class TestService {
 		sb.append(basedir +"/" + libDirectory + "/junit-4.12.jar")
 				.append(System.getProperty("path.separator"));
 		sb.append(basedir +"/" + libDirectory + "/hamcrest-all-1.3.jar");
+		System.out.println(sb.toString());
 		return sb.toString();
 	}
 
