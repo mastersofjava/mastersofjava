@@ -10,7 +10,8 @@ var [# th:utext="${file.name}"/] = new CodeMirror(document.getElementById([# th:
 filesArray.push({ filename:[# th:text="|${file.filename}|"/]
 				, cmEditor: [# th:utext="${file.name}"/]
 				, readonly: [# th:text="|${file.readOnly}|"/]
-				, fileType: [# th:text="|${file.fileType.name()}|"/]});
+				, fileType: [# th:text="|${file.fileType.name()}|"/]
+				});
 
 	
 [# th:utext="${file.name}"/].setValue([# th:text="${file.content}"/]);

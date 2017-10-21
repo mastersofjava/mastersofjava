@@ -101,6 +101,19 @@
 	}
 
 	function submit() {
+		// make readonly
+		for (i = 0; i < filesArray.length; i++) {
+			if (!filesArray[i].readonly ) {
+				console.log(filesArray[i]);
+				filesArray[i].cmEditor.setOption("readOnly", true);
+			}
+		}
+		// disable buttons
+		$('#compile').attr('disabled','disabled');
+		$('#test').attr('disabled','disabled');
+		$('#submit').attr('disabled','disabled');
+
+		
 		stompClient.send("/app/submit/submit", {}, JSON.stringify({
 			'team' : 'team1',
 			'source' : getContent()
