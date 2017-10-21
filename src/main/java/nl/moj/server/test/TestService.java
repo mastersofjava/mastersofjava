@@ -94,7 +94,7 @@ public class TestService {
 		try {
 			log.info("running unittest: {}", file.getName());
 			try {
-				ProcessBuilder pb = new ProcessBuilder("/usr/lib/jvm/java-9-oracle/bin/java", "-cp", makeClasspath(),
+				ProcessBuilder pb = new ProcessBuilder("/usr/lib/jvm/java-9-oracle/bin/java", "-cp", makeClasspath(compileResult.getUser()),
 						"org.junit.runner.JUnitCore", file.getName());
 				File teamdir = FileUtils.getFile(basedir, compileDirectory, compileResult.getUser());
 				pb.directory(teamdir);
@@ -140,9 +140,11 @@ public class TestService {
 		return null;
 	}
 
-	private String makeClasspath() {
+	private String makeClasspath(String user) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("./").append(System.getProperty("path.separator"));
+		File teamdir = FileUtils.getFile(basedir, compileDirectory, user);
+		sb.append(teamdir.getAbsolutePath());
+		sb.append(System.getProperty("path.separator"));
 		sb.append(basedir +"/" + libDirectory + "/junit-4.12.jar")
 				.append(System.getProperty("path.separator"));
 		sb.append(basedir +"/" + libDirectory + "/hamcrest-all-1.3.jar");
