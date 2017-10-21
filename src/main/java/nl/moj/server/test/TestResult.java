@@ -7,7 +7,12 @@ public class TestResult {
 	private boolean successful;
 
 	public TestResult(String testResult, String user, boolean successful) {
-		this.testResult = testResult;
+		if (testResult.length() > 10000) {
+			this.testResult = testResult.substring(0, 10000);	
+		} else {
+			this.testResult = testResult;
+		}
+		
 		this.user = user;
 		this.successful = successful;
 	}
@@ -17,7 +22,11 @@ public class TestResult {
 	}
 
 	public TestResult setTestResult(String testResult) {
-		this.testResult = testResult;
+		if (testResult.length() > 10000) {
+			this.testResult = testResult.substring(0, 10000);	
+		} else {
+			this.testResult = testResult;
+		}
 		return this;
 	}
 

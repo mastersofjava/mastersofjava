@@ -57,7 +57,7 @@
 		var stompClientControl = Stomp.over(socket);
 		stompClientControl.debug = null;
 		stompClientControl.connect({}, function(frame) {
-			console.log('Connected to control');
+			console.log('Connected to /control/queue/start');
 			stompClientControl.subscribe('/queue/start', function(messageOutput) {
 				console.log("/queue/start")
 				window.location.reload();
@@ -73,7 +73,7 @@
 		stompClientTaskTime.debug = null;
 		stompClientTaskTime.connect({}, function(frame) {
 
-			console.log('Connected to tasktime');
+			console.log('Connected to /control/queue/time');
 			stompClientTaskTime.subscribe('/queue/time', function(taskTimeMessage) {
 				var message = JSON.parse(taskTimeMessage.body);
 				var p = document.getElementById('tasktime');
@@ -82,7 +82,23 @@
 
 		});
 	}	
-		
+
+	function connectStop() {
+
+		var socket = new SockJS('/control');
+		stompClientTaskTime = Stomp.over(socket);
+		stompClientTaskTime.debug = null;
+		stompClientTaskTime.connect({}, function(frame) {
+
+			console.log('Connected to /control/queue/stop');
+			stompClientTaskTime.subscribe('/queue/stop', function(taskTimeMessage) {
+				var message = JSON.parse(taskTimeMessage.body);
+				disable();
+			});
+
+		});
+	}
+	
 	function compile() {
 		stompClient.send("/app/submit/compile", {}, JSON.stringify({
 			'team' : 'team1',
@@ -100,7 +116,7 @@
 		}));
 	}
 
-	function submit() {
+	function disable() {
 		// make readonly
 		for (i = 0; i < filesArray.length; i++) {
 			if (!filesArray[i].readonly ) {
@@ -112,8 +128,10 @@
 		$('#compile').attr('disabled','disabled');
 		$('#test').attr('disabled','disabled');
 		$('#submit').attr('disabled','disabled');
-
-		
+	}
+	
+	function submit() {
+		disable();
 		stompClient.send("/app/submit/submit", {}, JSON.stringify({
 			'team' : 'team1',
 			'source' : getContent()

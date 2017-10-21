@@ -64,6 +64,7 @@ public class TaskControlController {
 		final ScheduledFuture<?> handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
 		ex.schedule(new Runnable() {
 			public void run() {
+				sendStopToTeams(message.taskName);
 				handler.cancel(false);
 			}
 		}, solutiontime, TimeUnit.SECONDS);
@@ -77,6 +78,10 @@ public class TaskControlController {
 
 	private void sendStartToTeams(String taskname) {
 		template.convertAndSend("/queue/start", taskname);
+	}
+
+	private void sendStopToTeams(String taskname) {
+		template.convertAndSend("/queue/stop", taskname);
 	}
 
 	@MessageMapping("/control/clearAssignment")
