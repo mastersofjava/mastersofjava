@@ -142,7 +142,7 @@ public class TestService {
 
 	private String makeClasspath() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(".").append(System.getProperty("path.separator"));
+		sb.append("./").append(System.getProperty("path.separator"));
 		sb.append(basedir +"/" + libDirectory + "/junit-4.12.jar")
 				.append(System.getProperty("path.separator"));
 		sb.append(basedir +"/" + libDirectory + "/hamcrest-all-1.3.jar");
