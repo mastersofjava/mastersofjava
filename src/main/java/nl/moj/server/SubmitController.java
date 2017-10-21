@@ -220,7 +220,11 @@ public class SubmitController {
 					sources.put(sourceElement.get("filename").textValue(), sourceElement.get("content").textValue());
 				}
 			}
-			String tests = node.get("tests").textValue();
+			String tests = null;
+			if (node.get("tests") != null) {
+				 tests = node.get("tests").asText();	
+			}
+			
 			return new SubmitController.SourceMessage(team, sources, tests);
 		}
 	}
