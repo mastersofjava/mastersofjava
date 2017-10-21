@@ -36,8 +36,14 @@ public class TestService {
 	@Value("${moj.server.timeout}")
 	private int timeout;
 
-	@Value("${moj.server.compileBaseDirectory}")
-	private String compileBaseDirectory;
+	@Value("${moj.server.compileDirectory}")
+	private String compileDirectory;
+
+	@Value("${moj.server.libDirectory}")
+	private String libDirectory;
+
+	@Value("${moj.server.basedir}")
+	private String basedir;
 
 	@Autowired
 	private Competition competition;
@@ -90,7 +96,7 @@ public class TestService {
 			try {
 				ProcessBuilder pb = new ProcessBuilder("/usr/lib/jvm/java-9-oracle/bin/java", "-cp", makeClasspath(),
 						"org.junit.runner.JUnitCore", file.getName());
-				File teamdir = FileUtils.getFile(compileBaseDirectory, compileResult.getUser());
+				File teamdir = FileUtils.getFile(basedir, compileDirectory, compileResult.getUser());
 				pb.directory(teamdir);
 				// pb.inheritIO();
 
@@ -137,9 +143,9 @@ public class TestService {
 	private String makeClasspath() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(".").append(System.getProperty("path.separator"));
-		sb.append("/home/mhayen/Workspaces/workspace-moj/server/lib/junit-4.12.jar")
+		sb.append(basedir +"/" + libDirectory + "/junit-4.12.jar")
 				.append(System.getProperty("path.separator"));
-		sb.append("/home/mhayen/Workspaces/workspace-moj/server/lib/hamcrest-all-1.3.jar");
+		sb.append(basedir +"/" + libDirectory + "/hamcrest-all-1.3.jar");
 		return sb.toString();
 	}
 

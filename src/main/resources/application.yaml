@@ -1,7 +1,9 @@
 moj:
   server:
-    compileBaseDirectory: /home/mhayen/Workspaces/workspace-moj/server/teams
-    assignmentDirectory: /home/mhayen/Workspaces/workspace-moj/server/assignments
+    basedir: /tmp/mojserver/
+    compileDirectory: teams
+    assignmentDirectory: assignments
+    libDirectory: lib
     gitrepository: ssh://git@bitbucket.org/first8/practice-assignments.git
     branch: origin/master
     threads: 20

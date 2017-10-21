@@ -29,6 +29,9 @@ public class AssignmentRepositoryService {
 	@Value("${moj.server.assignmentDirectory}")
 	private String assignmentDirectory;
 
+	@Value("${moj.server.basedir}")
+	private String basedir;
+
 	public boolean cloneRemoteGitRepository()  {
 		File tmpPath;
 		try {
@@ -37,7 +40,7 @@ public class AssignmentRepositoryService {
 				log.error("Could not delete temporary file " + tmpPath);
 			}
 			// then clone
-			log.info("Cloning from " + gitrepository + " to " + tmpPath);
+			log.info("Cloning from " +basedir + "/" + gitrepository + " to " + tmpPath);
 
 			Git result;
 			try {
@@ -48,7 +51,7 @@ public class AssignmentRepositoryService {
 				log.error(e.getMessage(), e);
 				return false;
 			}
-			File assignmentDir = new File(assignmentDirectory);
+			File assignmentDir = new File(basedir, assignmentDirectory);
 			// make sure its empty
 			emptyDir(assignmentDir);
 			// copy to assignments dir

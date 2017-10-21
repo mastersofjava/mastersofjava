@@ -83,15 +83,17 @@ import nl.moj.server.files.FileProcessor;
 public class AppConfig {
 
 	@Value("${moj.server.assignmentDirectory}")
-	public String directory;
+	public String assignmentDirectory;
 
 	@Value("${moj.server.threads}")
 	private int threads;
 
-	@Value("${moj.server.compileBaseDirectory}")
-	private String compileBaseDirectory;
+	@Value("${moj.server.compileDirectory}")
+	private String compileDirectory;
 
-	
+	@Value("${moj.server.basedir}")
+	private String basedir;
+
 	@Configuration
 	public class CompilerConfig {
 		@Bean
@@ -162,7 +164,7 @@ public class AppConfig {
 					response.sendRedirect("/control");
 				} else {
 					response.sendRedirect("/");
-					Path teamdir = Paths.get(compileBaseDirectory, authentication.getName());
+					Path teamdir = Paths.get(basedir, compileDirectory, authentication.getName());
 					if (!Files.exists(teamdir)) {
 						try {
 							Files.createDirectory(teamdir);
@@ -305,7 +307,7 @@ public class AppConfig {
 			FileReadingMessageSource source = new FileReadingMessageSource(comparator());
 			source.setUseWatchService(true);
 			source.setAutoCreateDirectory(true);
-			source.setDirectory(new File(directory));
+			source.setDirectory(new File(basedir, assignmentDirectory));
 			source.setFilter(filters);
 			return source;
 		}

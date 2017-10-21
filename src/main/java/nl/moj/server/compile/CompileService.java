@@ -42,9 +42,11 @@ public class CompileService {
 	@Autowired
 	private Competition competition;
 	
-	@Value("${moj.server.compileBaseDirectory}")
-	private String compileBaseDirectory;
+	@Value("${moj.server.compileDirectory}")
+	private String compileDirectory;
 
+	@Value("${moj.server.basedir}")
+	private String basedir;
 
 	public Supplier<CompileResult> compile(Map<String, String> sources, String user) {
 		return compile(sources, user, false);
@@ -88,7 +90,7 @@ public class CompileService {
 
 			
 			for (Entry<String, byte[]> entry : javaFileManager.getMemoryMap().entrySet()) {
-				File file = FileUtils.getFile(compileBaseDirectory, user, entry.getKey()+ ".class");
+				File file = FileUtils.getFile(basedir, compileDirectory, user, entry.getKey()+ ".class");
 				try {
 					FileUtils.writeByteArrayToFile(file , entry.getValue());
 				} catch (IOException e) {
