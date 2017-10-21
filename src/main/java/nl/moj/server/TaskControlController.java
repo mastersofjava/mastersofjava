@@ -70,6 +70,11 @@ public class TaskControlController {
 		}, solutiontime, TimeUnit.SECONDS);
 	}
 
+	@MessageMapping("/control/stoptask")
+	public void stopTask(StartTaskMessage message) {
+		sendStopToTeams(message.taskName);
+	}
+
 	private void sendRemainingTime() {
 		TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
 		taskTimeMessage.setRemainingTime(String.valueOf(competition.getRemainingTime()));

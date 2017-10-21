@@ -50,9 +50,11 @@
 		}));
 	}
 
-	function getSplit() {
-		stompClient.send("/app/control/getsplit", {}, JSON.stringify({
-			'taskName' : 'task1'
+	function stopTask() {
+		var taskname = $( "input:checked" ).val();
+		console.log(taskname);
+		stompClient.send("/app/control/stoptask", {}, JSON.stringify({
+			'taskName' : taskname
 		}));
 	}
 
