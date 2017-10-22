@@ -22,7 +22,9 @@ public class IndexController {
 			return "index";
 		}
 		List<AssignmentFile> files = competition.getCurrentAssignment().getJavaFiles();
+		List<AssignmentFile> testfiles = competition.getCurrentAssignment().getTestFiles();
 		files.addAll(competition.getCurrentAssignment().getTaskFiles());
+		files.addAll(testfiles);
 		model.addAttribute("testnames", competition.getCurrentAssignment().getTestNames());
 		model.addAttribute("files", files);
 		return "index";

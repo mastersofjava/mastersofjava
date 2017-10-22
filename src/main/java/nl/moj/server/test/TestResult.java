@@ -5,8 +5,9 @@ public class TestResult {
 	private String testResult;
 	private String user;
 	private boolean successful;
+	private String testname;
 
-	public TestResult(String testResult, String user, boolean successful) {
+	public TestResult(String testResult, String user, boolean successful, String testname) {
 		if (testResult.length() > 10000) {
 			this.testResult = testResult.substring(0, 10000);	
 		} else {
@@ -15,6 +16,7 @@ public class TestResult {
 		
 		this.user = user;
 		this.successful = successful;
+		this.testname = testname;
 	}
 
 	public String getTestResult() {
@@ -44,6 +46,14 @@ public class TestResult {
 
 	public void setSuccessful(boolean successful) {
 		this.successful = successful;
+	}
+
+	public String getTestname() {
+		return testname;
+	}
+
+	public void setTestname(String testname) {
+		this.testname = testname;
 	}
 
 }

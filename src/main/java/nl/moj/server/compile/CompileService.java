@@ -81,7 +81,9 @@ public class CompileService {
 			PrintWriter err = new PrintWriter(System.err);
 			log.info("compiling {} classes", javaFileObjects.size());
 			List<File> files = new ArrayList<>();
-			files.add(FileUtils.getFile(basedir, teamDirectory, user));
+			File file = FileUtils.getFile(basedir, teamDirectory, user);
+			FileUtils.listFiles(file, new String[] {"class"}, true).stream().forEach(f -> FileUtils.deleteQuietly(f));
+			files.add(file);
 			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null, null);
 			// Create a compilation task.
 			try {

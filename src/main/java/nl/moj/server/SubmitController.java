@@ -75,12 +75,11 @@ public class SubmitController {
 			throws Exception {
 		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
-				.thenComposeAsync(compileResult -> testService.test(compileResult), testing)
+				.thenComposeAsync(compileResult -> testService.testAll(compileResult), testing);
 				//.orTimeout(TIMEOUT, TimeUnit.SECONDS)
-				.thenAccept(testResult -> {
-					sendFeedbackMessage(testResult);
-					applyTestPenalty(testResult);
-				});
+				//.thenAccept(testResult -> {
+				//	applyTestPenalty(testResult);
+				//});
 	}
 
 	@MessageMapping("/submit")
@@ -92,7 +91,6 @@ public class SubmitController {
 				//.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenAccept(testResult -> {
 					setFinalAssignmentScore(testResult);
-					sendFeedbackMessage(testResult);
 				});
 	}
 
@@ -103,12 +101,6 @@ public class SubmitController {
 				new FeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), time));
 	}
 
-	private void sendFeedbackMessage(TestResult testResult) {
-		log.info("sending testResult feedback");
-		String time = new SimpleDateFormat("HH:mm").format(new Date());
-		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback",
-				new FeedbackMessage(testResult.getUser(), testResult.getTestResult(), time));
-	}
 
 	private void applyTestPenalty(TestResult testResult) {
 		if (testResult.isSuccessful()) {
@@ -196,24 +188,6 @@ public class SubmitController {
 		}
 	}
 
-	public class TestFeedbackMessage {
-
-		private Map<String, String> testMessage = new HashMap<>();
-
-		
-		public Map<String, String> getTestMessage() {
-			return testMessage;
-		}
-
-		public void setTestMessage(Map<String, String> testMessage) {
-			this.testMessage = testMessage;
-		}
-		
-		
-
-		
-		
-	}
 	public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
 		@Override
 		public SourceMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)

@@ -2,8 +2,11 @@ package nl.moj.server.test;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -22,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.FeedbackController;
+import nl.moj.server.SubmitController.FeedbackMessage;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.files.AssignmentFile;
@@ -51,6 +55,8 @@ public class TestService {
 
 	@Autowired
 	private FeedbackController feedback;
+	
+	
 
 	public CompletableFuture<TestResult> test(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
@@ -65,14 +71,36 @@ public class TestService {
 						testresult = tr.isSuccessful();
 						sb.append(tr.getTestResult());
 					}
-					return new TestResult(sb.toString(), compileResult.getUser(), testresult);
+					return new TestResult(sb.toString(), compileResult.getUser(), testresult, "");
 				} else {
-					return new TestResult(compileResult.getCompileResult(), compileResult.getUser(), false);
+					return new TestResult(compileResult.getCompileResult(), compileResult.getUser(), false ,"");
 				}
 			}
 		}, testing);// .orTimeout(1, TimeUnit.SECONDS);
 	}
 
+	public CompletableFuture<List<TestResult>> testAll(CompileResult compileResult) {
+		return CompletableFuture.supplyAsync(new Supplier<List<TestResult>>() {
+			@Override
+			public List<TestResult> get() {
+				if (compileResult.isSuccessful()) {
+					List<TestResult> result = new ArrayList<>();
+					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles();
+					for (AssignmentFile assignmentFile : testFiles) {
+						TestResult tr = unittest(assignmentFile, compileResult);
+						result.add(tr);
+						feedback.sendFeedbackMessage(tr);
+
+						
+					}
+					return result;
+				} else {
+					return new ArrayList<>();
+				}
+			}
+		}, testing);// .orTimeout(1, TimeUnit.SECONDS);
+	}
+	
 	public CompletableFuture<TestResult> testSubmit(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
@@ -84,9 +112,9 @@ public class TestService {
 					for (AssignmentFile assignmentFile : testFiles) {
 						sb.append(unittest(assignmentFile, compileResult));
 					}
-					return new TestResult(sb.toString(), compileResult.getUser(), true);
+					return new TestResult(sb.toString(), compileResult.getUser(), true, "submit");
 				} else {
-					return new TestResult(compileResult.getCompileResult(), compileResult.getUser(), false);
+					return new TestResult(compileResult.getCompileResult(), compileResult.getUser(), false, "submit");
 				}
 			}
 		}, testing).orTimeout(1, TimeUnit.SECONDS);
@@ -135,10 +163,8 @@ public class TestService {
 					output = StringUtils.join(collected, '\n');
 				}
 
-				feedback.sendTestFeedback(compileResult.getUser(), file.getName(),
-						start.exitValue() == 0 ? true : false);
 				return new TestResult(output.length() > 0 ? output : erroroutput, compileResult.getUser(),
-						start.exitValue() == 0 ? true : false);
+						start.exitValue() == 0 ? true : false, file.getName());
 				// return output + erroroutput;
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -160,5 +186,7 @@ public class TestService {
 		System.out.println(sb.toString());
 		return sb.toString();
 	}
+
+
 
 }

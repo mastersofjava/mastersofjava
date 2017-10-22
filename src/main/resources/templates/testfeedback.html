@@ -5,21 +5,29 @@
 <script src="/webjars/stomp-websocket/stomp.min.js"></script>
 <script src="/webjars/jquery/jquery.min.js"></script>
 <script src="/js/testfeedback.js"></script>
-<link href="/css/ranking.css" rel="stylesheet" />
+<link href="/css/testfeedback.css" rel="stylesheet" />
 </head>
 
 <header>
-	<h1 id="tasktime">Test Feedback</h1>
+ <h1 id="tasktime">Test Feedback</h1>
 </header>
 
-<body onload=connect()>
-	<div class="container">
-		<div id="main" class="main">
-           <div th:each="team : ${teams}" >
-             <p th:text="${team.name}" />
-               <pre th:id="${team.name}+'-'+${test}" th:each="test : ${tests}" th:text="${test}"></pre>
-           </div>
-		</div>
-	</div>
+<body onload=init()>
+ <div class="container">
+  <div id="main" class="main">
+
+   <th:block th:each="team : ${teams}">
+    <table style="display: inline-block;">
+     <tr>
+      <td th:colspan="${#lists.size(tests)}" th:text="${team.name}">Row 1: Col 1</td>
+     </tr>
+     <tr>
+      <td th:id="${team.name}+'-'+${test}" th:each="test : ${tests}">O</td>
+     </tr>
+    </table>
+   </th:block>
+
+  </div>
+ </div>
 </body>
 </html>

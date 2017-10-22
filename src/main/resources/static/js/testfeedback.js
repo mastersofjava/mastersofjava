@@ -29,9 +29,11 @@ function refresh(testfeedback){
 	var id = testfeedback.team + '-' + testfeedback.test;
 	var elem = $('#' + id);
 	if (testfeedback.success) {
-		elem.css( "border", "3px solid green" );	
+		elem.text('V');
+		elem.css( "background-color", "green" );	
 	} else {
-		elem.css( "border", "3px solid red" );
+		elem.text('X');
+		elem.css( "background-color", "red" );
 	}
 }
 
