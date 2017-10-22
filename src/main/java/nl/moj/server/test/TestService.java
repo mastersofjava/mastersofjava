@@ -48,18 +48,17 @@ public class TestService {
 
 	@Autowired
 	private Competition competition;
-	
+
 	@Autowired
 	private FeedbackController feedback;
 
-	public CompletableFuture<TestResult> test(CompileResult compileResult, String test) {
+	public CompletableFuture<TestResult> test(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
 			public TestResult get() {
 				if (compileResult.isSuccessful()) {
 					boolean testresult = false;
-					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles().stream()
-							.filter(f -> f.getName().equalsIgnoreCase(test)).collect(Collectors.toList());
+					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles();
 					StringBuilder sb = new StringBuilder();
 					for (AssignmentFile assignmentFile : testFiles) {
 						TestResult tr = unittest(assignmentFile, compileResult);
@@ -71,7 +70,7 @@ public class TestService {
 					return new TestResult(compileResult.getCompileResult(), compileResult.getUser(), false);
 				}
 			}
-		}, testing);//.orTimeout(1, TimeUnit.SECONDS);
+		}, testing);// .orTimeout(1, TimeUnit.SECONDS);
 	}
 
 	public CompletableFuture<TestResult> testSubmit(CompileResult compileResult) {
@@ -98,8 +97,8 @@ public class TestService {
 		try {
 			log.info("running unittest: {}", file.getName());
 			try {
-				ProcessBuilder pb = new ProcessBuilder("/usr/lib/jvm/java-9-oracle/bin/java", "-cp", makeClasspath(compileResult.getUser()),
-						"org.junit.runner.JUnitCore", file.getName());
+				ProcessBuilder pb = new ProcessBuilder("/usr/lib/jvm/java-9-oracle/bin/java", "-cp",
+						makeClasspath(compileResult.getUser()), "org.junit.runner.JUnitCore", file.getName());
 				File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
 				pb.directory(teamdir);
 				for (String s : pb.command()) {
@@ -129,11 +128,15 @@ public class TestService {
 					output = output.substring("JUnit version 4.12".length());
 					String[] split = output.split("\n");
 					List<String> list = Arrays.asList(split);
-					List<String> collected = list.stream().filter(line -> !line.trim().startsWith("at")).collect(Collectors.toList());
+					List<String> collected = list.stream()
+							.filter(line -> !line.trim().startsWith("at"))
+							.filter(line -> !line.trim().startsWith("."))
+							.collect(Collectors.toList());
 					output = StringUtils.join(collected, '\n');
 				}
-				
-				feedback.sendTestFeedback(compileResult.getUser(), file.getName(), start.exitValue() == 0 ? true : false);
+
+				feedback.sendTestFeedback(compileResult.getUser(), file.getName(),
+						start.exitValue() == 0 ? true : false);
 				return new TestResult(output.length() > 0 ? output : erroroutput, compileResult.getUser(),
 						start.exitValue() == 0 ? true : false);
 				// return output + erroroutput;
@@ -152,9 +155,8 @@ public class TestService {
 		File teamdir = FileUtils.getFile(basedir, teamDirectory, user);
 		sb.append(teamdir.getAbsolutePath());
 		sb.append(System.getProperty("path.separator"));
-		sb.append(basedir +"/" + libDirectory + "/junit-4.12.jar")
-				.append(System.getProperty("path.separator"));
-		sb.append(basedir +"/" + libDirectory + "/hamcrest-all-1.3.jar");
+		sb.append(basedir + "/" + libDirectory + "/junit-4.12.jar").append(System.getProperty("path.separator"));
+		sb.append(basedir + "/" + libDirectory + "/hamcrest-all-1.3.jar");
 		System.out.println(sb.toString());
 		return sb.toString();
 	}

@@ -3,7 +3,6 @@
 	function init() {
 		connect();
 		connectControl();
-		connectTaskTime();
 		connectStop();
 	}
 	
@@ -67,23 +66,6 @@
 		});
 	}
 	
-	function connectTaskTime() {
-
-		var socket = new SockJS('/control');
-		var stompClientTaskTime = Stomp.over(socket);
-		stompClientTaskTime.debug = null;
-		stompClientTaskTime.connect({}, function(frame) {
-
-			console.log('Connected to /control/queue/time');
-			stompClientTaskTime.subscribe('/queue/time', function(taskTimeMessage) {
-				var message = JSON.parse(taskTimeMessage.body);
-				var p = document.getElementById('tasktime');
-				p.innerHTML = message.remainingTime;
-			});
-
-		});
-	}	
-
 	function connectStop() {
 
 		var socket = new SockJS('/control');
@@ -108,12 +90,11 @@
 	}
 
 	function test() { 
-		var tests = []
-		tests = $("input[name='test']:checked").val();
+		//var tests = []
+		//tests = $("input[name='test']:checked").val();
 		stompClient.send("/app/submit/test", {}, JSON.stringify({
 			'team' : 'team1',
-			'source' : getContent(),
-			'tests' : tests
+			'source' : getContent()
 		}));
 	}
 

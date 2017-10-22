@@ -35,19 +35,8 @@
 
  <div th:if="${#lists.isEmpty(files)}">
   <p>No assignment active right now;</p>
-
  </div>
 
- <div>
-  <p id="tasktime" />
- </div>
-
- <div>
-  <ul>
-   <li th:each="testname : ${testnames}"><input name="test" type="radio" th:value="${testname}" /> <label th:text="${testname}">Wireframe</label>
-   </li>
-  </ul>
- </div>
  <div id="conversationDiv" th:unless="${#lists.isEmpty(files)}">
   <button id="compile" onclick="compile();">compile</button>
   <button id="test" onclick="test();">test</button>

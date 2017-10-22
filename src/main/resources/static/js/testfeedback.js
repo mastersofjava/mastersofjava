@@ -1,8 +1,13 @@
-var stompClient = null;
+function init() {
+	connect();
+	connectTaskTime();
+}
+
+
 function connect() {
 
 	var socket = new SockJS('/feedback');
-	stompClient = Stomp.over(socket);
+	var stompClient = Stomp.over(socket);
 	stompClient.debug = null;
 	stompClient.connect({}, function(frame) {
 		console.log('Connected to rankings');
@@ -28,7 +33,21 @@ function refresh(testfeedback){
 	} else {
 		elem.css( "border", "3px solid red" );
 	}
-	 
-	
-	
 }
+
+function connectTaskTime() {
+
+	var socket = new SockJS('/control');
+	var stompClientTaskTime = Stomp.over(socket);
+	stompClientTaskTime.debug = null;
+	stompClientTaskTime.connect({}, function(frame) {
+
+		console.log('Connected to /control/queue/time');
+		stompClientTaskTime.subscribe('/queue/time', function(taskTimeMessage) {
+			var message = JSON.parse(taskTimeMessage.body);
+			var p = document.getElementById('tasktime');
+			p.innerHTML = message.remainingTime;
+		});
+
+	});
+}	

@@ -75,7 +75,7 @@ public class SubmitController {
 			throws Exception {
 		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
-				.thenComposeAsync(compileResult -> testService.test(compileResult,message.getTests()), testing)
+				.thenComposeAsync(compileResult -> testService.test(compileResult), testing)
 				//.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenAccept(testResult -> {
 					sendFeedbackMessage(testResult);
@@ -131,15 +131,13 @@ public class SubmitController {
 
 		private String team;
 		private Map<String, String> source;
-		private String tests;
 		
 		public SourceMessage() {
 		}
 
-		public SourceMessage(String team, Map<String, String> source, String tests) {
+		public SourceMessage(String team, Map<String, String> source) {
 			this.team = team;
 			this.source = source;
-			this.tests = tests;
 		}
 
 		public String getTeam() {
@@ -156,14 +154,6 @@ public class SubmitController {
 
 		public void setSource(Map<String, String> source) {
 			this.source = source;
-		}
-
-		public String getTests() {
-			return tests;
-		}
-
-		public void setTests(String tests) {
-			this.tests = tests;
 		}
 
 	}
@@ -206,6 +196,24 @@ public class SubmitController {
 		}
 	}
 
+	public class TestFeedbackMessage {
+
+		private Map<String, String> testMessage = new HashMap<>();
+
+		
+		public Map<String, String> getTestMessage() {
+			return testMessage;
+		}
+
+		public void setTestMessage(Map<String, String> testMessage) {
+			this.testMessage = testMessage;
+		}
+		
+		
+
+		
+		
+	}
 	public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
 		@Override
 		public SourceMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
@@ -220,12 +228,7 @@ public class SubmitController {
 					sources.put(sourceElement.get("filename").textValue(), sourceElement.get("content").textValue());
 				}
 			}
-			String tests = null;
-			if (node.get("tests") != null) {
-				 tests = node.get("tests").asText();	
-			}
-			
-			return new SubmitController.SourceMessage(team, sources, tests);
+			return new SubmitController.SourceMessage(team, sources);
 		}
 	}
 

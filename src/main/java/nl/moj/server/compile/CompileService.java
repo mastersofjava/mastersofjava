@@ -41,8 +41,8 @@ public class CompileService {
 	//@Autowired
 	//private MemoryJavaFileManager<StandardJavaFileManager> javaFileManager;
 
-	@Autowired
-	private StandardJavaFileManager standardFileManager;
+	//@Autowired
+	//private StandardJavaFileManager standardFileManager;
 	
 	@Autowired
 	private Competition competition;
@@ -82,7 +82,7 @@ public class CompileService {
 			log.info("compiling {} classes", javaFileObjects.size());
 			List<File> files = new ArrayList<>();
 			files.add(FileUtils.getFile(basedir, teamDirectory, user));
-			
+			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null, null);
 			// Create a compilation task.
 			try {
 				standardFileManager.setLocation(StandardLocation.CLASS_OUTPUT, files );
@@ -105,16 +105,6 @@ public class CompileService {
 				//standardFileManager.
 				return new CompileResult(result, null, user, false);
 			}
-//
-//			for (Entry<String, byte[]> entry : javaFileManager.getMemoryMap().entrySet()) {
-//				File file = FileUtils.getFile(basedir, teamDirectory, user, entry.getKey() + ".class");
-//				try {
-//					FileUtils.writeByteArrayToFile(file, entry.getValue());
-//				} catch (IOException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
 			log.debug("compileSuccess: {}", true);
 			return new CompileResult(result, null, user, true);
 		};
