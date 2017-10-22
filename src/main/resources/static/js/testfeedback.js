@@ -7,7 +7,7 @@ function connect() {
 	stompClient.connect({}, function(frame) {
 		console.log('Connected to rankings');
 		stompClient.subscribe('/queue/testfeedback', function(messageOutput) {
-			refresh();
+			refresh(JSON.parse(messageOutput.body));
 		});
 	});
 }
@@ -19,7 +19,16 @@ function disconnect() {
 
 }
 
-function refresh(){
+function refresh(testfeedback){
 	console.log("Refreshing");
-	$('#table').load(document.URL +  ' #table');
+	var id = testfeedback.team + '-' + testfeedback.test;
+	var elem = $('#' + id);
+	if (testfeedback.success) {
+		elem.css( "border", "3px solid green" );	
+	} else {
+		elem.css( "border", "3px solid red" );
+	}
+	 
+	
+	
 }

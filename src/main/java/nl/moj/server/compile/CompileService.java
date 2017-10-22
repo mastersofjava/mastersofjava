@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -46,8 +47,8 @@ public class CompileService {
 	@Autowired
 	private Competition competition;
 
-	@Value("${moj.server.compileDirectory}")
-	private String compileDirectory;
+	@Value("${moj.server.teamDirectory}")
+	private String teamDirectory;
 	@Value("${moj.server.libDirectory}")
 	private String libDirectory;
 
@@ -80,7 +81,7 @@ public class CompileService {
 			PrintWriter err = new PrintWriter(System.err);
 			log.info("compiling {} classes", javaFileObjects.size());
 			List<File> files = new ArrayList<>();
-			files.add(FileUtils.getFile(basedir, compileDirectory, user));
+			files.add(FileUtils.getFile(basedir, teamDirectory, user));
 			
 			// Create a compilation task.
 			try {
@@ -106,7 +107,7 @@ public class CompileService {
 			}
 //
 //			for (Entry<String, byte[]> entry : javaFileManager.getMemoryMap().entrySet()) {
-//				File file = FileUtils.getFile(basedir, compileDirectory, user, entry.getKey() + ".class");
+//				File file = FileUtils.getFile(basedir, teamDirectory, user, entry.getKey() + ".class");
 //				try {
 //					FileUtils.writeByteArrayToFile(file, entry.getValue());
 //				} catch (IOException e) {
@@ -132,10 +133,16 @@ public class CompileService {
 
 	private List<File> makeClasspath(String user) {
 		final List<File> classPath = new ArrayList<>();
-		classPath.add(FileUtils.getFile(basedir, compileDirectory, user));
+		classPath.add(FileUtils.getFile(basedir, teamDirectory, user));
 		classPath.add(FileUtils.getFile(basedir, libDirectory, "junit-4.12.jar"));
 		classPath.add(FileUtils.getFile(basedir, libDirectory, "hamcrest-all-1.3.jar"));
-		
+		for (File file : classPath) {
+			if (!file.exists()) {
+				System.out.println("not found: " + file.getAbsolutePath());
+			} else {
+				System.out.println("found: " + file.getAbsolutePath());
+			}
+		}
 		return classPath;
 	}
 

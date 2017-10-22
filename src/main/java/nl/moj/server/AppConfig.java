@@ -88,8 +88,8 @@ public class AppConfig {
 	@Value("${moj.server.threads}")
 	private int threads;
 
-	@Value("${moj.server.compileDirectory}")
-	private String compileDirectory;
+	@Value("${moj.server.teamDirectory}")
+	private String teamDirectory;
 
 	@Value("${moj.server.basedir}")
 	private String basedir;
@@ -139,8 +139,12 @@ public class AppConfig {
 
 		@Override
 		protected void configure(HttpSecurity http) throws Exception {
-			http.authorizeRequests().antMatchers("/login", "/register").permitAll().antMatchers("/").hasRole("USER")
-					.antMatchers("/control").hasRole("CONTROL").and().formLogin()
+			http.authorizeRequests() //
+			.antMatchers("/login", "/register", "/feedback").permitAll()//
+			.antMatchers("/").hasRole("USER") //
+			.antMatchers("/control").hasRole("CONTROL") //
+			
+			.and().formLogin()
 					.successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login").and().logout().and()
 					.headers().frameOptions().disable().and().csrf().disable();
 		}
@@ -164,7 +168,7 @@ public class AppConfig {
 					response.sendRedirect("/control");
 				} else {
 					response.sendRedirect("/");
-					Path teamdir = Paths.get(basedir, compileDirectory, authentication.getName());
+					Path teamdir = Paths.get(basedir, teamDirectory, authentication.getName());
 					if (!Files.exists(teamdir)) {
 						try {
 							Files.createDirectory(teamdir);
@@ -194,6 +198,7 @@ public class AppConfig {
 			registry.addEndpoint("/submit").withSockJS();
 			registry.addEndpoint("/control").withSockJS();
 			registry.addEndpoint("/rankings").withSockJS();
+			registry.addEndpoint("/feedback").withSockJS();
 		}
 	}
 

@@ -38,8 +38,8 @@ public class LoginController {
 	@Autowired
 	private Competition competition;
 	
-	@Value("${moj.server.compileDirectory}")
-	private String compileDirectory;
+	@Value("${moj.server.teamDirectory}")
+	private String teamDirectory;
 
 	@Value("${moj.server.basedir}")
 	private String basedir;
@@ -73,7 +73,7 @@ public class LoginController {
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     	context.setAuthentication(authentication);
-    	Path teamdir = Paths.get(basedir, compileDirectory, authentication.getName());
+    	Path teamdir = Paths.get(basedir, teamDirectory, authentication.getName());
 		if (!Files.exists(teamdir)) {
 			try {
 				Files.createDirectory(teamdir);

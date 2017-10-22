@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import nl.moj.server.FeedbackController;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.files.AssignmentFile;
@@ -36,8 +37,8 @@ public class TestService {
 	@Value("${moj.server.timeout}")
 	private int timeout;
 
-	@Value("${moj.server.compileDirectory}")
-	private String compileDirectory;
+	@Value("${moj.server.teamDirectory}")
+	private String teamDirectory;
 
 	@Value("${moj.server.libDirectory}")
 	private String libDirectory;
@@ -47,6 +48,9 @@ public class TestService {
 
 	@Autowired
 	private Competition competition;
+	
+	@Autowired
+	private FeedbackController feedback;
 
 	public CompletableFuture<TestResult> test(CompileResult compileResult, String test) {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
@@ -96,7 +100,7 @@ public class TestService {
 			try {
 				ProcessBuilder pb = new ProcessBuilder("/usr/lib/jvm/java-9-oracle/bin/java", "-cp", makeClasspath(compileResult.getUser()),
 						"org.junit.runner.JUnitCore", file.getName());
-				File teamdir = FileUtils.getFile(basedir, compileDirectory, compileResult.getUser());
+				File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
 				pb.directory(teamdir);
 				for (String s : pb.command()) {
 					System.out.println(s);
@@ -129,7 +133,7 @@ public class TestService {
 					output = StringUtils.join(collected, '\n');
 				}
 				
-				
+				feedback.sendTestFeedback(compileResult.getUser(), file.getName(), start.exitValue() == 0 ? true : false);
 				return new TestResult(output.length() > 0 ? output : erroroutput, compileResult.getUser(),
 						start.exitValue() == 0 ? true : false);
 				// return output + erroroutput;
@@ -145,7 +149,7 @@ public class TestService {
 
 	private String makeClasspath(String user) {
 		StringBuilder sb = new StringBuilder();
-		File teamdir = FileUtils.getFile(basedir, compileDirectory, user);
+		File teamdir = FileUtils.getFile(basedir, teamDirectory, user);
 		sb.append(teamdir.getAbsolutePath());
 		sb.append(System.getProperty("path.separator"));
 		sb.append(basedir +"/" + libDirectory + "/junit-4.12.jar")
