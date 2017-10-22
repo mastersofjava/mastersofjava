@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<script src="/webjars/sockjs-client/sockjs.min.js"></script>
+<script src="/webjars/stomp-websocket/stomp.min.js"></script>
+<script src="/webjars/jquery/jquery.min.js"></script>
+<script src="/js/testfeedback.js"></script>
+<link href="/css/ranking.css" rel="stylesheet" />
+</head>
+
+<header>
+	<h1>Test Feedback</h1>
+</header>
+<body onload=connect()>
+	<div class="container">
+		<div id="main" class="main">
+           <div th:each="team : ${teams}" >
+             <p th:text="${team.name}" />
+             <ol>
+               <li th:id="${team.name}+'-'+${test}" th:each="test : ${tests}" th:text="${test}"></li>
+             </ol>
+           </div>
+		</div>
+	</div>
+</body>
+</html>
