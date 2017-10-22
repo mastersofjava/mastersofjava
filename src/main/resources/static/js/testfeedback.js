@@ -1,6 +1,7 @@
 function init() {
 	connect();
 	connectTaskTime();
+	connectControl();
 }
 
 
@@ -12,20 +13,27 @@ function connect() {
 	stompClient.connect({}, function(frame) {
 		console.log('Connected to rankings');
 		stompClient.subscribe('/queue/testfeedback', function(messageOutput) {
-			refresh(JSON.parse(messageOutput.body));
+			process(JSON.parse(messageOutput.body));
 		});
 	});
 }
-function disconnect() {
 
-	if (stompClient != null) {
-		stompClient.disconnect();
-	}
+function connectControl() {
 
+	var socket = new SockJS('/control');
+	var stompClientControl = Stomp.over(socket);
+	stompClientControl.debug = null;
+	stompClientControl.connect({}, function(frame) {
+		console.log('Connected to /control/queue/start');
+		stompClientControl.subscribe('/queue/start', function(messageOutput) {
+			console.log("/queue/start")
+			window.location.reload();
+		});
+
+	});
 }
 
-function refresh(testfeedback){
-	console.log("Refreshing");
+function process(testfeedback){
 	var id = testfeedback.team + '-' + testfeedback.test;
 	var elem = $('#' + id);
 	if (testfeedback.success) {
@@ -48,7 +56,10 @@ function connectTaskTime() {
 		stompClientTaskTime.subscribe('/queue/time', function(taskTimeMessage) {
 			var message = JSON.parse(taskTimeMessage.body);
 			var p = document.getElementById('tasktime');
-			p.innerHTML = message.remainingTime;
+			var date = new Date(null);
+			date.setSeconds(message.remainingTime); // specify value for SECONDS here
+			var result = date.toISOString().substr(11, 8);
+			p.innerHTML = result;
 		});
 
 	});

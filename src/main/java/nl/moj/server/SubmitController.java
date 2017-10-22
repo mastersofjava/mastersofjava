@@ -2,8 +2,6 @@ package nl.moj.server;
 
 import java.io.IOException;
 import java.security.Principal;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -67,7 +65,7 @@ public class SubmitController {
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName()), compiling)
-				.orTimeout(1, TimeUnit.SECONDS).thenAccept(testResult -> sendFeedbackMessage(testResult));
+				.orTimeout(1, TimeUnit.SECONDS).thenAccept(compileResult -> sendFeedbackMessage(compileResult));
 	}
 
 	@MessageMapping("/test")
@@ -96,9 +94,8 @@ public class SubmitController {
 
 	private void sendFeedbackMessage(CompileResult compileResult) {
 		log.info("sending compileResult feedback");
-		String time = new SimpleDateFormat("HH:mm").format(new Date());
-		template.convertAndSendToUser(compileResult.getUser(), "/queue/feedback",
-				new FeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), time));
+		template.convertAndSendToUser(compileResult.getUser(), "/queue/compilefeedback",
+				new FeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), compileResult.isSuccessful()));
 	}
 
 
@@ -154,13 +151,13 @@ public class SubmitController {
 
 		private String team;
 		private String text;
-		private String time;
+		private boolean succuess;
 
-		public FeedbackMessage(String team, String text, String time) {
+		public FeedbackMessage(String team, String text, boolean succuess) {
 			super();
 			this.team = team;
 			this.text = text;
-			this.time = time;
+			this.setSuccuess(succuess);
 		}
 
 		public String getTeam() {
@@ -179,13 +176,14 @@ public class SubmitController {
 			this.text = text;
 		}
 
-		public String getTime() {
-			return time;
+		public boolean isSuccuess() {
+			return succuess;
 		}
 
-		public void setTime(String time) {
-			this.time = time;
+		public void setSuccuess(boolean succuess) {
+			this.succuess = succuess;
 		}
+
 	}
 
 	public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {

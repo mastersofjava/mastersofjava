@@ -1,7 +1,7 @@
-	var stompClient = null;
-
+var stompClientControl = null;
 	function init() {
-		connect();
+		connectTestFeedback();
+		connectCompileFeedback();
 		connectControl();
 		connectStop();
 	}
@@ -22,30 +22,49 @@
 		return editables;
     }  
       
-	function connect() {
+	function connectTestFeedback() {
 
 		var socket = new SockJS('/submit');
-		stompClient = Stomp.over(socket);
-		stompClient.debug = null;
-		stompClient.connect({}, function(frame) {
+		var stompTestFeedbackClient = Stomp.over(socket);
+		stompTestFeedbackClient.debug = null;
+		stompTestFeedbackClient.connect({}, function(frame) {
 			document.getElementById('status').innerHTML = 'connected';
 			console.log('Connected');
-			stompClient.subscribe('/user/queue/feedback', function(messageOutput) {
+			stompTestFeedbackClient.subscribe('/user/queue/feedback', function(messageOutput) {
 				console.log("user feedback");
 				var message = JSON.parse(messageOutput.body);
-				var response = document.getElementById('response');
-				response.insertBefore(document.createElement('hr'), response.firstElementChild);
-				var p = document.createElement('p');
-				p.appendChild(document.createTextNode(message.time));
-				response.insertBefore(p, response.firstElementChild);
+				var response = document.getElementById(message.test);
+				response.innerHTML = "<pre>" + message.text + "</pre>";
+				if (message.success) {
+					$('#' + message.test + '-li').find("a").css("color", "green");	
+				} else {
+					$('#' + message.test + '-li').find("a").css("color", "red");
+				}
 				
-				var pre = document.createElement('pre');
-				pre.appendChild(document.createTextNode(message.text));
-				response.insertBefore(pre, response.firstElementChild);
+			});
+
+		});
+	}
+
+	function connectCompileFeedback() {
+
+		var socket = new SockJS('/submit');
+		var stompCompileFeedbacClient = Stomp.over(socket);
+		stompCompileFeedbacClient.debug = null;
+		stompCompileFeedbacClient.connect({}, function(frame) {
+			document.getElementById('status').innerHTML = 'connected';
+			console.log('Connected');
+			stompCompileFeedbacClient.subscribe('/user/queue/compilefeedback', function(messageOutput) {
+				console.log("user feedback");
+				var message = JSON.parse(messageOutput.body);
+				var response = document.getElementById("outputarea");
+				response.innerHTML = "<pre>" + message.text + "</pre>";
+				if (message.success) {
+					$('#outputarea').css("color", "green");	
+				} else {
+					$('#outputarea').css("color", "red");
+				}
 				
-				p = document.createElement('p');
-				p.appendChild(document.createTextNode(message.team + ": "));
-				response.insertBefore(p, response.firstElementChild);
 			});
 
 		});
@@ -54,7 +73,7 @@
 	function connectControl() {
 
 		var socket = new SockJS('/control');
-		var stompClientControl = Stomp.over(socket);
+		stompClientControl = Stomp.over(socket);
 		stompClientControl.debug = null;
 		stompClientControl.connect({}, function(frame) {
 			console.log('Connected to /control/queue/start');
@@ -83,7 +102,7 @@
 	}
 	
 	function compile() {
-		stompClient.send("/app/submit/compile", {}, JSON.stringify({
+		stompClientControl.send("/app/submit/compile", {}, JSON.stringify({
 			'team' : 'team1',
 			'source' :  getContent()
 		}));
@@ -92,7 +111,7 @@
 	function test() { 
 		//var tests = []
 		//tests = $("input[name='test']:checked").val();
-		stompClient.send("/app/submit/test", {}, JSON.stringify({
+		stompClientControl.send("/app/submit/test", {}, JSON.stringify({
 			'team' : 'team1',
 			'source' : getContent()
 		}));
@@ -114,7 +133,7 @@
 	
 	function submit() {
 		disable();
-		stompClient.send("/app/submit/submit", {}, JSON.stringify({
+		stompClientControl.send("/app/submit/submit", {}, JSON.stringify({
 			'team' : 'team1',
 			'source' : getContent()
 		}));

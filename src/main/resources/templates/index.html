@@ -26,10 +26,14 @@
 
  <div id="tabs" th:unless="${#lists.isEmpty(files)}">
   <ul>
-   <li th:each="file : ${files}"><a href="#" th:attrappend="href=|${file.name}.tab|" th:text="|${file.filename}|"></a></li>
+   <li th:attr="id=|${file.name}-li|" th:each="file : ${files}"><a href="#" th:attrappend="href=|${file.name}.tab|" th:text="|${file.filename}|"></a></li>
+   <li id="output" ><a href="#output.tab">output</a></li>
   </ul>
   <div th:each="file : ${files}" th:attr="id=|${file.name}.tab|">
-   <div th:attr="id=|${file.filename}|"></div>
+   <div th:attr="id=|${file.name}|"></div>
+  </div>
+  <div id="output.tab">
+     <div id="outputarea"></div>
   </div>
  </div>
 
