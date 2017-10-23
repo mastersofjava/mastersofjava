@@ -17,7 +17,7 @@ import nl.moj.server.persistence.TestMapper;
 
 @Component
 public class FileProcessor {
-
+	
 	@Value("${moj.server.assignmentDirectory}")
 	private String DIRECTORY;
 	
@@ -46,7 +46,7 @@ public class FileProcessor {
 		}
 		int beginIndex = origFilename.indexOf(DIRECTORY)
 				+ DIRECTORY.length() + 1;
-		int indexOf = origFilename.indexOf("/", beginIndex);
+		int indexOf = origFilename.indexOf(System.getProperty("file.separator"), beginIndex);
 		String assignment = origFilename.substring(beginIndex, indexOf);
 
 		log.info("{} received for assignment {}", filename, assignment);
