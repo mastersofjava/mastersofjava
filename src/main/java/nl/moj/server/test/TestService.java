@@ -177,16 +177,24 @@ public class TestService {
 	}
 
 	private String makeClasspath(String user) {
+		final List<File> classPath = new ArrayList<>();
+		classPath.add(FileUtils.getFile(basedir, teamDirectory, user));
+		classPath.add(FileUtils.getFile(basedir, libDirectory, "junit-4.12.jar"));
+		classPath.add(FileUtils.getFile(basedir, libDirectory, "hamcrest-all-1.3.jar"));
+		for (File file : classPath) {
+			if (!file.exists()) {
+				System.out.println("not found: " + file.getAbsolutePath());
+			} else {
+				System.out.println("found: " + file.getAbsolutePath());
+			}
+		}
 		StringBuilder sb = new StringBuilder();
-		File teamdir = FileUtils.getFile(basedir, teamDirectory, user);
-		sb.append(teamdir.getAbsolutePath());
-		sb.append(System.getProperty("path.separator"));
-		sb.append(basedir + "/" + libDirectory + "/junit-4.12.jar").append(System.getProperty("path.separator"));
-		sb.append(basedir + "/" + libDirectory + "/hamcrest-all-1.3.jar");
-		System.out.println(sb.toString());
+		for (File file : classPath) {
+			sb.append(file.getAbsolutePath());
+			sb.append(System.getProperty("path.separator"));
+		}
 		return sb.toString();
 	}
-
 
 
 }
