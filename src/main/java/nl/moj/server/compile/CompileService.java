@@ -5,10 +5,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -56,16 +54,28 @@ public class CompileService {
 	private String basedir;
 
 	public Supplier<CompileResult> compile(Map<String, String> sources, String user) {
-		return compile(sources, user, false);
+		return compile(sources, user, false, false);
 	}
 
-	public Supplier<CompileResult> compile(Map<String, String> sources, String user, boolean withTest) {
+	public Supplier<CompileResult> compileWithTest(Map<String, String> sources, String user) {
+		return compile(sources, user, true, false);
+	}
+	
+	public Supplier<CompileResult> compileForSubmit(Map<String, String> sources, String user) {
+		return compile(sources, user, false, true);
+	}
+	
+	public Supplier<CompileResult> compile(Map<String, String> sources, String user, boolean withTest, boolean forSubmit) {
 		Supplier<CompileResult> supplier = () -> {
 			Collection<AssignmentFile> assignmentFiles;
 			if (withTest) {
 				assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaAndTestFiles();
 			} else {
-				assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaFiles();
+				if (forSubmit) {
+					assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaAndSubmitFiles();
+				} else {
+					assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaFiles();
+				}
 			}
 
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream().map(a -> {

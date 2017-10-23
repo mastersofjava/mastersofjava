@@ -2,11 +2,9 @@ package nl.moj.server.test;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -25,7 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.FeedbackController;
-import nl.moj.server.SubmitController.FeedbackMessage;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.files.AssignmentFile;
@@ -35,8 +32,6 @@ public class TestService {
 
 	private static final Logger log = LoggerFactory.getLogger(TestService.class);
 
-	private static String OS = System.getProperty("os.name").toLowerCase();
-	
 	@Autowired
 	@Qualifier("testing")
 	private Executor testing;
@@ -51,6 +46,9 @@ public class TestService {
 
 	@Value("${moj.server.basedir}")
 	private String basedir;
+
+	@Value("${moj.server.javaExecutable}")
+	private String javaExecutable;
 
 	@Autowired
 	private Competition competition;
@@ -90,10 +88,8 @@ public class TestService {
 					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles();
 					for (AssignmentFile assignmentFile : testFiles) {
 						TestResult tr = unittest(assignmentFile, compileResult);
-						result.add(tr);
+						tr.setSubmit(false);
 						feedback.sendFeedbackMessage(tr);
-
-						
 					}
 					return result;
 				} else {
@@ -108,16 +104,15 @@ public class TestService {
 			@Override
 			public TestResult get() {
 				if (compileResult.isSuccessful()) {
-
-					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestAndSubmitFiles();
-					StringBuilder sb = new StringBuilder();
-					for (AssignmentFile assignmentFile : testFiles) {
-						sb.append(unittest(assignmentFile, compileResult));
-					}
-					return new TestResult(sb.toString(), compileResult.getUser(), true, "submit");
-				} else {
-					return new TestResult(compileResult.getCompileResult(), compileResult.getUser(), false, "submit");
+					TestResult tr = null;
+					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
+					// there should be only 1;
+					tr = unittest(testFiles.get(0), compileResult);
+					tr.setSubmit(true);
+					feedback.sendFeedbackMessage(tr);
+					return tr;
 				}
+				return null; 
 			}
 		}, testing).orTimeout(1, TimeUnit.SECONDS);
 
@@ -127,8 +122,7 @@ public class TestService {
 		try {
 			log.info("running unittest: {}", file.getName());
 			try {
-				System.getProperty("os.name");
-				ProcessBuilder pb = new ProcessBuilder("/usr/lib/jvm/java-9-oracle/bin/java", "-cp",
+				ProcessBuilder pb = new ProcessBuilder(javaExecutable, "-cp",
 						makeClasspath(compileResult.getUser()), "org.junit.runner.JUnitCore", file.getName());
 				File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
 				pb.directory(teamdir);

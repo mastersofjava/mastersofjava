@@ -6,7 +6,8 @@ public class TestResult {
 	private String user;
 	private boolean successful;
 	private String testname;
-
+	private boolean submit;
+	
 	public TestResult(String testResult, String user, boolean successful, String testname) {
 		if (testResult.length() > 10000) {
 			this.testResult = testResult.substring(0, 10000);	
@@ -54,6 +55,14 @@ public class TestResult {
 
 	public void setTestname(String testname) {
 		this.testname = testname;
+	}
+
+	public boolean isSubmit() {
+		return submit;
+	}
+
+	public void setSubmit(boolean submit) {
+		this.submit = submit;
 	}
 
 }

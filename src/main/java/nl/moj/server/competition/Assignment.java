@@ -114,6 +114,26 @@ public class Assignment {
 		}
 	}
 
+	public List<AssignmentFile> getReadOnlyJavaAndSubmitFiles() {
+		if (isRunning()) {
+			return assFiles.stream()
+					.filter(f -> f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.SUBMIT))
+					.collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
+	}
+	
+	public List<AssignmentFile> getSubmitFiles() {
+		if (isRunning()) {
+			return assFiles.stream()
+					.filter(f -> f.getFileType().equals(FileType.SUBMIT))
+					.collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
+	}
+
 	public List<AssignmentFile> getTestAndSubmitFiles() {
 		if (isRunning()) {
 			return assFiles.stream()

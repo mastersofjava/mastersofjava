@@ -71,7 +71,7 @@ public class SubmitController {
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), testing)
+		CompletableFuture.supplyAsync(compileService.compileWithTest(message.getSource(), user.getName()), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testAll(compileResult), testing);
 				//.orTimeout(TIMEOUT, TimeUnit.SECONDS)
@@ -83,7 +83,7 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName(), true), testing)
+		CompletableFuture.supplyAsync(compileService.compileForSubmit(message.getSource(), user.getName()), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
 				//.orTimeout(TIMEOUT, TimeUnit.SECONDS)

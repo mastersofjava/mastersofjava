@@ -6,19 +6,6 @@ var stompClientControl = null;
 		connectStop();
 	}
 	
-    function getContent() {
-		var editables = [];
-		for(let i = 0; i < filesArray.length; i++){
-			if (filesArray[i] != null && !filesArray[i].readonly &&  filesArray[i].fileType === 'EDIT') { 
-				console.log('in');
-				var file = {filename: filesArray[i].filename, content: filesArray[i].cmEditor.getValue()}
-				editables.push(file);				
-			}
-		}
-		
-		return editables;
-    }  
-      
 	function connectTestFeedback() {
 
 		var socket = new SockJS('/submit');
@@ -114,10 +101,13 @@ var stompClientControl = null;
 		}));
 	}
 
+	function cleartests() {
+	}	
+	
 	function disable() {
 		// make readonly
 		for (i = 0; i < filesArray.length; i++) {
-			if (!filesArray[i].readonly ) {
+			if (filesArray[i] != null && !filesArray[i].readonly ) {
 				console.log(filesArray[i]);
 				filesArray[i].cmEditor.setOption("readOnly", true);
 			}
@@ -128,6 +118,18 @@ var stompClientControl = null;
 		$('#submit').attr('disabled','disabled');
 	}
 	
+    function getContent() {
+		var editables = [];
+		for(let i = 0; i < filesArray.length; i++){
+			if (filesArray[i] != null && !filesArray[i].readonly &&  filesArray[i].fileType === 'EDIT') { 
+				console.log('in');
+				var file = {filename: filesArray[i].filename, content: filesArray[i].cmEditor.getValue()}
+				editables.push(file);				
+			}
+		}
+		
+		return editables;
+    }  
 	function submit() {
 		disable();
 		stompClientControl.send("/app/submit/submit", {}, JSON.stringify({
