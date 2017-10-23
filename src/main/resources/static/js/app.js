@@ -7,12 +7,9 @@ var stompClientControl = null;
 	}
 	
     function getContent() {
-		var curTab = $('.ui-state-active');
-		console.log(curTab.index());
 		var editables = [];
 		for(let i = 0; i < filesArray.length; i++){
-			console.log('type:' + filesArray[i].fileType)
-			if (!filesArray[i].readonly &&  filesArray[i].fileType === 'EDIT') { 
+			if (filesArray[i] != null && !filesArray[i].readonly &&  filesArray[i].fileType === 'EDIT') { 
 				console.log('in');
 				var file = {filename: filesArray[i].filename, content: filesArray[i].cmEditor.getValue()}
 				editables.push(file);				

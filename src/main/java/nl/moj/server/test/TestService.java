@@ -35,6 +35,8 @@ public class TestService {
 
 	private static final Logger log = LoggerFactory.getLogger(TestService.class);
 
+	private static String OS = System.getProperty("os.name").toLowerCase();
+	
 	@Autowired
 	@Qualifier("testing")
 	private Executor testing;
@@ -125,6 +127,7 @@ public class TestService {
 		try {
 			log.info("running unittest: {}", file.getName());
 			try {
+				System.getProperty("os.name");
 				ProcessBuilder pb = new ProcessBuilder("/usr/lib/jvm/java-9-oracle/bin/java", "-cp",
 						makeClasspath(compileResult.getUser()), "org.junit.runner.JUnitCore", file.getName());
 				File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());

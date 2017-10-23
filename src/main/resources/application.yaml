@@ -9,6 +9,8 @@ moj:
     threads: 20
     timeout: 1
     compiler:
+      javaLocationWindows: C:\Program Files\Java\jdk-9\bin\java.exe
+      javaLocationLinux: /usr/lib/jvm/java-9-oracle/bin/java
       workDir: ./work
       outputDir: ./classes
       inheritClassPath: no
@@ -35,6 +37,7 @@ security.basic.enabled: false
 mybatis.mapper-locations: persistence/*
 logging.file: mojserver.log
 logging.level.nl.moj.server: DEBUG
+logging.level.nl.moj.server.persistence: INFO
 logging.level.nl.moj.server.persistence.TeamMapper: INFO
 logging.level.nl.moj.server.persistence.ResultMapper: INFO
 logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL

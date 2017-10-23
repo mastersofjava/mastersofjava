@@ -44,8 +44,7 @@ public class FileProcessor {
 		if (!origFilename.contains(DIRECTORY)) {
 			return;
 		}
-		int beginIndex = origFilename.indexOf(DIRECTORY)
-				+ DIRECTORY.length() + 1;
+		int beginIndex = origFilename.indexOf(DIRECTORY)+ DIRECTORY.length() + 1;
 		int indexOf = origFilename.indexOf(System.getProperty("file.separator"), beginIndex);
 		String assignment = origFilename.substring(beginIndex, indexOf);
 
