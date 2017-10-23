@@ -171,7 +171,7 @@ public class AppConfig {
 					Path teamdir = Paths.get(basedir, teamDirectory, authentication.getName());
 					if (!Files.exists(teamdir)) {
 						try {
-							Files.createDirectory(teamdir);
+							Files.createDirectories(teamdir);
 						} catch (IOException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();

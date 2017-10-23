@@ -33,6 +33,9 @@ public class Application {
 
 	@PostConstruct
 	public void init() {
+		if (!FileUtils.getFile(basedir).exists()) {
+			FileUtils.getFile(basedir).mkdir();
+		}
 		if (!FileUtils.getFile(basedir, teamDirectory).exists()) {
 			FileUtils.getFile(basedir, teamDirectory).mkdir();
 		}

@@ -52,6 +52,16 @@ public class IndexController {
 		files.addAll(competition.getCurrentAssignment().getTaskFiles());
 		List<AssignmentFile> testfiles = competition.getCurrentAssignment().getTestFiles();
 		files.addAll(testfiles);
+		files.sort(new Comparator<AssignmentFile>() {
+
+			@Override
+			public int compare(AssignmentFile arg0, AssignmentFile arg1) {
+				if (arg0.getFileType().equals(FileType.TASK)) {
+					return -10;
+				}
+				return 10;
+			}
+		});
 		model.addAttribute("files", files);
 		return "index.js";
 	}

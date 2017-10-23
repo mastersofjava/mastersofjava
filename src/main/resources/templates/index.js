@@ -22,11 +22,11 @@ if ([# th:text="|${file.fileType.name()}|"/] == 'EDIT'  || [# th:text="|${file.f
 	[# th:utext="${file.name}"/].setSize('100%', 500);
 	
 } else {
+	filesArray.push(null);
 		
 	if ([# th:text="|${file.fileType.name()}|"/] == 'TASK') {
 		var x = document.getElementById([# th:text="|${file.name}|"/]);
 		x.innerHTML = "<pre>" + [# th:text="|${file.content}|"/] + "</pre>";
-
 	} else {
 		testsArray.push([# th:text="|${file.name}|"/]);
 		var x = document.getElementById([# th:text="|${file.name}|"/]);
@@ -37,11 +37,8 @@ if ([# th:text="|${file.fileType.name()}|"/] == 'EDIT'  || [# th:text="|${file.f
 [/]  
 
 $('#tabs').bind('tabsactivate',function(e, ui) {
-	var curTab = $('.ui-tabs-tab');
-	console.log('hier');
-	if (filesArray[curTab.index()] !=  null) {
-		console.log('hierook');
-		filesArray[curTab.index()].cmEditor.refresh();
+	if (filesArray[ui.newTab.index()] !=  null) {
+		filesArray[ui.newTab.index()].cmEditor.refresh();
 	}
 });
 	

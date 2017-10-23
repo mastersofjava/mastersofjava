@@ -1,5 +1,8 @@
 package nl.moj.server;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +32,11 @@ public class FeedbackController {
 	public ModelAndView feedback() {
 		ModelAndView model = new ModelAndView("testfeedback");
 		model.addObject("teams", teamMapper.getAllTeams());
-		model.addObject("tests", competition.getCurrentAssignment().getTestNames());
+		List<String> testNames = new ArrayList<>();
+		if (competition.getCurrentAssignment() != null) {
+			testNames = competition.getCurrentAssignment().getTestNames();	
+		} 
+		model.addObject("tests", testNames);
 
 		return model;
 	}
