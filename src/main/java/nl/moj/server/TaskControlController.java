@@ -54,7 +54,7 @@ public class TaskControlController {
 	private ScheduledFuture<?> handler;
 	
 	@ModelAttribute(name = "assignmenNames")
-	public Set<String> assignments() {
+	public List<String> assignments() {
 		return competition.getAssignmentNames();
 	}
 

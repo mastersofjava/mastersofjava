@@ -21,11 +21,13 @@
 		SELECT t.name, results.id, results.assignment, results.score,results.penalty,results.credit, s.scores
 		 FROM team t,
 		 (SELECT *
-		    FROM result) as results,
-		 (SELECT sum(score) as scores
-		    FROM result) as s
+		    FROM result
+		   ORDER BY assignment) as results,
+		 (SELECT sum(score) as scores, team
+		    FROM result
+		   GROUP BY team) as s
 		WHERE results.team = t.name
-		      
+		  AND s.team = t.name
 	</select>
 
 </mapper>

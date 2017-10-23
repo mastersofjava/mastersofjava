@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,7 +124,7 @@ public class Competition {
 		}
 	}
 
-	public Set<String> getAssignmentNames() {
-		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).keySet();
+	public List<String> getAssignmentNames() {
+		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).keySet().stream().sorted().collect(Collectors.toList());
 	}
 }
