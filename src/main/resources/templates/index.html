@@ -24,24 +24,27 @@
 </head>
 <body onload="init();">
 
- <div id="tabs" th:unless="${#lists.isEmpty(files)}">
+ <div id="tabs" th:if="${running} and not ${finished}">
   <ul>
-   <li th:attr="id=|${file.name}-li|" th:each="file : ${files}"><a href="#" th:attrappend="href=|${file.name}.tab|" th:text="|${file.filename}|"></a></li>
-   <li id="output" ><a href="#output.tab">output</a></li>
+   <li th:attr="id=|${file.name}-li|" th:each="file : ${files}"><a href="#" th:attrappend="href=|${file.name}-tab|" th:text="|${file.filename}|"></a></li>
+   <li id="output" ><a href="#output-tab">output</a></li>
   </ul>
-  <div th:each="file : ${files}" th:attr="id=|${file.name}.tab|">
+  <div th:each="file : ${files}" th:attr="id=|${file.name}-tab|">
    <div th:attr="id=|${file.name}|"></div>
   </div>
-  <div id="output.tab">
+  <div id="output-tab">
      <div id="outputarea"></div>
   </div>
  </div>
 
- <div th:if="${#lists.isEmpty(files)}">
+ <div th:unless="${running}">
   <p>No assignment active right now;</p>
  </div>
+ <div th:if="${finished}">
+  <p>You have allready submitted your assignment;</p>
+ </div>
 
- <div id="conversationDiv" th:unless="${#lists.isEmpty(files)}">
+ <div id="conversationDiv" th:if="${running} and not ${finished}">
   <button id="compile" onclick="compile();">compile</button>
   <button id="test" onclick="test();">test</button>
   <button id="submit" onclick="submit();">final SUBMIT</button>

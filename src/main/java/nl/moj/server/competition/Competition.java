@@ -9,6 +9,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,9 @@ import nl.moj.server.persistence.TestMapper;
 
 @Service
 public class Competition {
+
+	
+	private static final Logger log = LoggerFactory.getLogger(Competition.class);
 
 	private Assignment currentAssignment;
 
@@ -55,6 +60,7 @@ public class Competition {
 		}
 		currentAssignment.setRunning(true);
 		timer = Stopwatch.createStarted();
+		log.info("assignment started {}", currentAssignment.getName());
 	}
 
 	public void stopCurrentAssignment() {
@@ -62,7 +68,8 @@ public class Competition {
 			throw new RuntimeException("currentAssignment not set");
 		}
 		currentAssignment.setRunning(false);
-		timer = Stopwatch.createStarted();
+		timer.stop();
+		log.info("assignment stopped {}", currentAssignment.getName());
 	}
 	
 	public Integer getSecondsElapsed() {

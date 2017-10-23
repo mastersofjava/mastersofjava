@@ -74,10 +74,6 @@ public class SubmitController {
 		CompletableFuture.supplyAsync(compileService.compileWithTest(message.getSource(), user.getName()), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testAll(compileResult), testing);
-				//.orTimeout(TIMEOUT, TimeUnit.SECONDS)
-				//.thenAccept(testResult -> {
-				//	applyTestPenalty(testResult);
-				//});
 	}
 
 	@MessageMapping("/submit")
@@ -86,7 +82,6 @@ public class SubmitController {
 		CompletableFuture.supplyAsync(compileService.compileForSubmit(message.getSource(), user.getName()), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
-				//.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenAccept(testResult -> {
 					setFinalAssignmentScore(testResult);
 				});
@@ -104,7 +99,6 @@ public class SubmitController {
 			scoreService.applyTestPenaltyOrCredit(testResult.getUser());
 			template.convertAndSend("/queue/rankings", "refresh");
 		}
-
 	}
 
 	private void setFinalAssignmentScore(TestResult testResult) {

@@ -41,12 +41,12 @@ public class FeedbackController {
 		return model;
 	}
 
-	public void sendFeedbackMessage(TestResult testResult) {
+	public void sendFeedbackMessage(TestResult testResult, Boolean submit) {
 		log.info("sending testResult feedback");
 		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback", new TestFeedbackMessage(
-				testResult.getUser(), testResult.getTestname(), testResult.getTestResult(), testResult.isSuccessful()));
+				testResult.getUser(), testResult.getTestname(), testResult.getTestResult(), testResult.isSuccessful(), submit));
 		template.convertAndSend("/queue/testfeedback", new TestFeedbackMessage(testResult.getUser(),
-				testResult.getTestname(), null, testResult.isSuccessful()));
+				testResult.getTestname(), null, testResult.isSuccessful(), submit));
 	}
 
 	public static class TestFeedbackMessage {
@@ -54,16 +54,18 @@ public class FeedbackController {
 		private String test;
 		private String text;
 		private Boolean success;
+		private Boolean submit;
 
 		public TestFeedbackMessage() {
 		}
 
-		public TestFeedbackMessage(String team, String test, String text, Boolean success) {
+		public TestFeedbackMessage(String team, String test, String text, Boolean success, Boolean submit) {
 			super();
 			this.team = team;
 			this.test = test;
 			this.text = text;
 			this.success = success;
+			this.submit = submit;
 		}
 
 		public String getTeam() {
@@ -96,6 +98,14 @@ public class FeedbackController {
 
 		public void setSuccess(Boolean success) {
 			this.success = success;
+		}
+
+		public Boolean getSubmit() {
+			return submit;
+		}
+
+		public void setSubmit(Boolean submit) {
+			this.submit = submit;
 		}
 
 	}

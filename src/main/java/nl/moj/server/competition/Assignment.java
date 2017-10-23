@@ -29,11 +29,21 @@ public class Assignment {
 
 	private List<AssignmentFile> assFiles = new ArrayList<>();
 
+	private List<String> finishedTeams = new ArrayList<>();;
+	
 	public Assignment(String name) {
 		super();
 		this.name = name;
 	}
 
+	public void addFinishedTeam(String team) {
+		finishedTeams.add(team);
+	}
+	
+	public boolean isTeamFinished(String team) {
+		return finishedTeams.contains(team);
+	}
+	
 	public String getName() {
 		return name;
 	}

@@ -55,29 +55,6 @@ public class TestService {
 
 	@Autowired
 	private FeedbackController feedback;
-	
-	
-
-	public CompletableFuture<TestResult> test(CompileResult compileResult) {
-		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
-			@Override
-			public TestResult get() {
-				if (compileResult.isSuccessful()) {
-					boolean testresult = false;
-					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles();
-					StringBuilder sb = new StringBuilder();
-					for (AssignmentFile assignmentFile : testFiles) {
-						TestResult tr = unittest(assignmentFile, compileResult);
-						testresult = tr.isSuccessful();
-						sb.append(tr.getTestResult());
-					}
-					return new TestResult(sb.toString(), compileResult.getUser(), testresult, "");
-				} else {
-					return new TestResult(compileResult.getCompileResult(), compileResult.getUser(), false ,"");
-				}
-			}
-		}, testing);// .orTimeout(1, TimeUnit.SECONDS);
-	}
 
 	public CompletableFuture<List<TestResult>> testAll(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<List<TestResult>>() {
@@ -89,32 +66,33 @@ public class TestService {
 					for (AssignmentFile assignmentFile : testFiles) {
 						TestResult tr = unittest(assignmentFile, compileResult);
 						tr.setSubmit(false);
-						feedback.sendFeedbackMessage(tr);
+						feedback.sendFeedbackMessage(tr, false);
 					}
 					return result;
 				} else {
 					return new ArrayList<>();
 				}
 			}
-		}, testing);// .orTimeout(1, TimeUnit.SECONDS);
+		}, testing);
 	}
 	
 	public CompletableFuture<TestResult> testSubmit(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
 			public TestResult get() {
+				competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser());
 				if (compileResult.isSuccessful()) {
 					TestResult tr = null;
 					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
 					// there should be only 1;
 					tr = unittest(testFiles.get(0), compileResult);
 					tr.setSubmit(true);
-					feedback.sendFeedbackMessage(tr);
+					feedback.sendFeedbackMessage(tr, true);
 					return tr;
 				}
 				return null; 
 			}
-		}, testing).orTimeout(1, TimeUnit.SECONDS);
+		}, testing);
 
 	}
 
@@ -127,21 +105,20 @@ public class TestService {
 				File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
 				pb.directory(teamdir);
 				for (String s : pb.command()) {
-					System.out.println(s);
+					log.debug(s);
 				}
-				// pb.inheritIO();
-
 				Instant starttijd = Instant.now();
 				starttijd = starttijd.plusSeconds(2);
 				Process start = pb.start();
 				String output = IOUtils.toString(start.getInputStream(), Charset.defaultCharset());
 				String erroroutput = IOUtils.toString(start.getErrorStream(), Charset.defaultCharset());
-				// CompletableFuture<Process> onExit = start.onExit();
+				log.info("is alive: {} ", start.isAlive());
 				while (start.isAlive() && Instant.now().isBefore(starttijd.plusSeconds(2))) {
 					Thread.sleep(1000);
 				}
-				log.info("is alive: {} ", start.isAlive());
+				
 				if (start.isAlive()) {
+					log.info("still alive, killing: {} ", start.isAlive());
 					start.destroyForcibly();
 					log.info("exitValue " + start.exitValue());
 				} else {
@@ -162,10 +139,8 @@ public class TestService {
 
 				return new TestResult(output.length() > 0 ? output : erroroutput, compileResult.getUser(),
 						start.exitValue() == 0 ? true : false, file.getName());
-				// return output + erroroutput;
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				log.error(e.getMessage(), e);
 			}
 		} catch (SecurityException se) {
 			log.error(se.getMessage(), se);

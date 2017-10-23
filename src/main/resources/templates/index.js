@@ -1,6 +1,8 @@
 var filesArray = [];
 var testsArray = [];
 
+
+[# th:if="${running} and not ${finished}"]
 [# th:each="file : ${files}"]
 
 if ([# th:text="|${file.fileType.name()}|"/] == 'EDIT'  || [# th:text="|${file.fileType.name()}|"/] == 'READONLY') {
@@ -15,6 +17,7 @@ if ([# th:text="|${file.fileType.name()}|"/] == 'EDIT'  || [# th:text="|${file.f
 					, cmEditor: [# th:utext="${file.name}"/]
 					, readonly: [# th:text="|${file.readOnly}|"/]
 					, fileType: [# th:text="|${file.fileType.name()}|"/]
+					, name: [# th:text="${file.name}"/]
 					});
 
 		
@@ -35,13 +38,13 @@ if ([# th:text="|${file.fileType.name()}|"/] == 'EDIT'  || [# th:text="|${file.f
 }
 
 [/]  
-
 $('#tabs').bind('tabsactivate',function(e, ui) {
 	if (filesArray[ui.newTab.index()] !=  null) {
 		filesArray[ui.newTab.index()].cmEditor.refresh();
 	}
 });
 	
+[/]  
 	
 //var mac = CodeMirror.keyMap.default == CodeMirror.keyMap.macDefault;
 //CodeMirror.keyMap.default[(mac ? "Cmd" : "Ctrl") + "-Space"] = "autocomplete";

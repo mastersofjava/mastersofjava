@@ -15,16 +15,17 @@ var stompClientControl = null;
 			document.getElementById('status').innerHTML = 'connected';
 			console.log('Connected');
 			stompTestFeedbackClient.subscribe('/user/queue/feedback', function(messageOutput) {
-				console.log("user feedback");
+				console.log("test feedback");
 				var message = JSON.parse(messageOutput.body);
-				var response = document.getElementById(message.test);
-				response.innerHTML = "<pre>" + message.text + "</pre>";
-				if (message.success) {
-					$('#' + message.test + '-li').find("a").css("color", "green");	
-				} else {
-					$('#' + message.test + '-li').find("a").css("color", "red");
-				}
-				
+				if (!message.submit) {
+					var response = document.getElementById(message.test);
+					response.innerHTML = "<pre>" + message.text + "</pre>";
+					if (message.success) {
+						$('#' + message.test + '-li').find("a").css("color", "green");	
+					} else {
+						$('#' + message.test + '-li').find("a").css("color", "red");
+					}
+				}				
 			});
 
 		});
@@ -37,9 +38,8 @@ var stompClientControl = null;
 		stompCompileFeedbacClient.debug = null;
 		stompCompileFeedbacClient.connect({}, function(frame) {
 			document.getElementById('status').innerHTML = 'connected';
-			console.log('Connected');
 			stompCompileFeedbacClient.subscribe('/user/queue/compilefeedback', function(messageOutput) {
-				console.log("user feedback");
+				console.log("compilefeedback");
 				var message = JSON.parse(messageOutput.body);
 				var response = document.getElementById("outputarea");
 				response.innerHTML = "<pre>" + message.text + "</pre>";
@@ -107,9 +107,12 @@ var stompClientControl = null;
 	function disable() {
 		// make readonly
 		for (i = 0; i < filesArray.length; i++) {
-			if (filesArray[i] != null && !filesArray[i].readonly ) {
+			if (filesArray[i] != null) {
 				console.log(filesArray[i]);
 				filesArray[i].cmEditor.setOption("readOnly", true);
+				console.log('#' + filesArray[i].name + '-tab');
+				console.log($('#' + filesArray[i].name + '-tab .cm-s-default'));
+				$('#' + filesArray[i].name + '-tab .cm-s-default').css( "background-color", "grey" );	
 			}
 		}
 		// disable buttons
