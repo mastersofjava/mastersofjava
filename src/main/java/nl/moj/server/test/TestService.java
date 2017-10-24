@@ -131,8 +131,10 @@ public class TestService {
 					output = output.substring("JUnit version 4.12".length());
 					String[] split = output.split("\n");
 					List<String> list = Arrays.asList(split);
-					List<String> collected = list.stream().filter(line -> !line.trim().startsWith("at"))
-							.filter(line -> !line.trim().startsWith(".")).collect(Collectors.toList());
+					List<String> collected = list.stream() //
+							//.filter(line -> !line.trim().startsWith("at")) //
+							.filter(line -> !line.trim().startsWith(".")) //
+							.collect(Collectors.toList());
 					output = StringUtils.join(collected, '\n');
 				}
 				String testResult = output.length() > 0 ? output : erroroutput;
