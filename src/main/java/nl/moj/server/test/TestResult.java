@@ -7,14 +7,9 @@ public class TestResult {
 	private boolean successful;
 	private String testname;
 	private boolean submit;
-	
+
 	public TestResult(String testResult, String user, boolean successful, String testname) {
-		if (testResult.length() > 10000) {
-			this.testResult = testResult.substring(0, 10000);	
-		} else {
-			this.testResult = testResult;
-		}
-		
+		this.testResult = testResult;
 		this.user = user;
 		this.successful = successful;
 		this.testname = testname;
@@ -26,7 +21,7 @@ public class TestResult {
 
 	public TestResult setTestResult(String testResult) {
 		if (testResult.length() > 10000) {
-			this.testResult = testResult.substring(0, 10000);	
+			this.testResult = testResult.substring(0, 10000);
 		} else {
 			this.testResult = testResult;
 		}

@@ -62,7 +62,9 @@ public class TestService {
 			public List<TestResult> get() {
 				if (compileResult.isSuccessful()) {
 					List<TestResult> result = new ArrayList<>();
-					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles();
+					List<String> tests = compileResult.getTests();
+					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles().stream()
+							.filter(f -> tests.contains(f.getName())).collect(Collectors.toList());
 					for (AssignmentFile assignmentFile : testFiles) {
 						TestResult tr = unittest(assignmentFile, compileResult);
 						tr.setSubmit(false);
@@ -75,7 +77,7 @@ public class TestService {
 			}
 		}, testing);
 	}
-	
+
 	public CompletableFuture<TestResult> testSubmit(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
@@ -90,7 +92,7 @@ public class TestService {
 					feedback.sendFeedbackMessage(tr, true);
 					return tr;
 				}
-				return null; 
+				return null;
 			}
 		}, testing);
 
@@ -100,8 +102,8 @@ public class TestService {
 		try {
 			log.info("running unittest: {}", file.getName());
 			try {
-				ProcessBuilder pb = new ProcessBuilder(javaExecutable, "-cp",
-						makeClasspath(compileResult.getUser()), "org.junit.runner.JUnitCore", file.getName());
+				ProcessBuilder pb = new ProcessBuilder(javaExecutable, "-cp", makeClasspath(compileResult.getUser()),
+						"org.junit.runner.JUnitCore", file.getName());
 				File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
 				pb.directory(teamdir);
 				for (String s : pb.command()) {
@@ -116,7 +118,7 @@ public class TestService {
 				while (start.isAlive() && Instant.now().isBefore(starttijd.plusSeconds(2))) {
 					Thread.sleep(1000);
 				}
-				
+
 				if (start.isAlive()) {
 					log.info("still alive, killing: {} ", start.isAlive());
 					start.destroyForcibly();
@@ -125,20 +127,23 @@ public class TestService {
 					log.info("exitValue " + start.exitValue());
 				}
 				log.info("finished unittest: {}", file.getName());
-				// log.info("output {} {}", output, erroroutput);
 				if (output != null && output.length() > 0 && output.contains("JUnit version 4.12")) {
 					output = output.substring("JUnit version 4.12".length());
 					String[] split = output.split("\n");
 					List<String> list = Arrays.asList(split);
-					List<String> collected = list.stream()
-							.filter(line -> !line.trim().startsWith("at"))
-							.filter(line -> !line.trim().startsWith("."))
-							.collect(Collectors.toList());
+					List<String> collected = list.stream().filter(line -> !line.trim().startsWith("at"))
+							.filter(line -> !line.trim().startsWith(".")).collect(Collectors.toList());
 					output = StringUtils.join(collected, '\n');
 				}
-
-				return new TestResult(output.length() > 0 ? output : erroroutput, compileResult.getUser(),
-						start.exitValue() == 0 ? true : false, file.getName());
+				String testResult = output.length() > 0 ? output : erroroutput;
+				String result = null;
+				if (testResult.length() > 10000) {
+					result = testResult.substring(0, 10000);
+				} else {
+					result = testResult;
+				}
+				return new TestResult(result, compileResult.getUser(), start.exitValue() == 0 ? true : false,
+						file.getName());
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
 			}
@@ -156,8 +161,6 @@ public class TestService {
 		for (File file : classPath) {
 			if (!file.exists()) {
 				System.out.println("not found: " + file.getAbsolutePath());
-			} else {
-				System.out.println("found: " + file.getAbsolutePath());
 			}
 		}
 		StringBuilder sb = new StringBuilder();
@@ -167,6 +170,5 @@ public class TestService {
 		}
 		return sb.toString();
 	}
-
 
 }

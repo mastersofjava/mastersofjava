@@ -2,7 +2,9 @@ package nl.moj.server;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -64,14 +66,15 @@ public class SubmitController {
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		CompletableFuture.supplyAsync(compileService.compile(message.getSource(), user.getName()), compiling)
+		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
 				.orTimeout(1, TimeUnit.SECONDS).thenAccept(compileResult -> sendFeedbackMessage(compileResult));
 	}
 
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		CompletableFuture.supplyAsync(compileService.compileWithTest(message.getSource(), user.getName()), testing)
+		message.setTeam(user.getName());
+		CompletableFuture.supplyAsync(compileService.compileWithTest(message), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testAll(compileResult), testing);
 	}
@@ -79,7 +82,7 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		CompletableFuture.supplyAsync(compileService.compileForSubmit(message.getSource(), user.getName()), testing)
+		CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
 				.thenAccept(testResult -> {
@@ -114,13 +117,15 @@ public class SubmitController {
 
 		private String team;
 		private Map<String, String> source;
+		private List<String> tests;
 		
 		public SourceMessage() {
 		}
 
-		public SourceMessage(String team, Map<String, String> source) {
+		public SourceMessage(String team, Map<String, String> source, List<String> tests) {
 			this.team = team;
 			this.source = source;
+			this.tests = tests;
 		}
 
 		public String getTeam() {
@@ -138,6 +143,16 @@ public class SubmitController {
 		public void setSource(Map<String, String> source) {
 			this.source = source;
 		}
+
+		public List<String> getTests() {
+			return tests;
+		}
+
+		public void setTests(List<String> tests) {
+			this.tests = tests;
+		}
+
+
 
 	}
 
@@ -194,7 +209,12 @@ public class SubmitController {
 					sources.put(sourceElement.get("filename").textValue(), sourceElement.get("content").textValue());
 				}
 			}
-			return new SubmitController.SourceMessage(team, sources);
+			List<String> tests = new ArrayList<>();
+			if (node.get("tests") != null && node.get("tests").isArray()) {
+				ArrayNode jsonTests = (ArrayNode) node.get("tests");
+				jsonTests.forEach( t -> tests.add(t.asText()));
+			}
+			return new SourceMessage(team, sources,tests);
 		}
 	}
 

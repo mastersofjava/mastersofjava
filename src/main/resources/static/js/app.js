@@ -93,11 +93,14 @@ var stompClientControl = null;
 	}
 
 	function test() { 
-		//var tests = []
-		//tests = $("input[name='test']:checked").val();
+		var tests = $("input:checkbox:checked").map(function(){
+		      return $(this).val();
+		    }).get();
+		
 		stompClientControl.send("/app/submit/test", {}, JSON.stringify({
 			'team' : 'team1',
-			'source' : getContent()
+			'source' : getContent(),
+			'tests' : tests
 		}));
 	}
 

@@ -44,6 +44,13 @@
   <p>You have allready submitted your assignment;</p>
  </div>
 
+ <div>
+  <ul>
+   <li th:each="testname : ${testnames}"><input name="test" type="checkbox" th:value="${testname}" /> <label th:text="${testname}">Wireframe</label>
+   </li>
+  </ul>
+ </div>
+ 
  <div id="conversationDiv" th:if="${running} and not ${finished}">
   <button id="compile" onclick="compile();">compile</button>
   <button id="test" onclick="test();">test</button>

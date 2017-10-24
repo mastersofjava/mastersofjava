@@ -1,20 +1,21 @@
 package nl.moj.server.compile;
 
+import java.util.List;
 import java.util.Map;
 
 public class CompileResult {
 
 	private String compileResult;
 
-	private Map<String, byte[]> memoryMap;
+	private List<String> tests;
 
 	private String user;
 	
 	private Boolean successful;
 	
-	public CompileResult(String compileResult, Map<String, byte[]> memoryMap, String user, Boolean successful) {
+	public CompileResult(String compileResult,  List<String> tests, String user, Boolean successful) {
 		this.compileResult = compileResult;
-		this.memoryMap = memoryMap;
+		this.setTests(tests);
 		this.user = user;
 		this.setSuccessful(successful);
 	}
@@ -28,12 +29,12 @@ public class CompileResult {
 		return this;
 	}
 
-	public Map<String, byte[]> getMemoryMap() {
-		return memoryMap;
+	public List<String> getTests() {
+		return tests;
 	}
 
-	public void setMemoryMap(Map<String, byte[]> memoryMap) {
-		this.memoryMap = memoryMap;
+	public void setTests(List<String> tests) {
+		this.tests = tests;
 	}
 
 	public String getUser() {

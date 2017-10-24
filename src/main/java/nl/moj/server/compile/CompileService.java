@@ -6,7 +6,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -24,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import nl.moj.server.SubmitController.SourceMessage;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.files.AssignmentFile;
 
@@ -36,12 +36,12 @@ public class CompileService {
 	private javax.tools.JavaCompiler javaCompiler;
 	@Autowired
 	private DiagnosticCollector<JavaFileObject> diagnosticCollector;
-	//@Autowired
-	//private MemoryJavaFileManager<StandardJavaFileManager> javaFileManager;
+	// @Autowired
+	// private MemoryJavaFileManager<StandardJavaFileManager> javaFileManager;
 
-	//@Autowired
-	//private StandardJavaFileManager standardFileManager;
-	
+	// @Autowired
+	// private StandardJavaFileManager standardFileManager;
+
 	@Autowired
 	private Competition competition;
 
@@ -53,23 +53,24 @@ public class CompileService {
 	@Value("${moj.server.basedir}")
 	private String basedir;
 
-	public Supplier<CompileResult> compile(Map<String, String> sources, String user) {
-		return compile(sources, user, false, false);
+	public Supplier<CompileResult> compile(SourceMessage message) {
+		return compile(message, false, false);
 	}
 
-	public Supplier<CompileResult> compileWithTest(Map<String, String> sources, String user) {
-		return compile(sources, user, true, false);
+	public Supplier<CompileResult> compileForSubmit(SourceMessage message) {
+		return compile(message, false, true);
 	}
-	
-	public Supplier<CompileResult> compileForSubmit(Map<String, String> sources, String user) {
-		return compile(sources, user, false, true);
+
+	public Supplier<CompileResult> compileWithTest(SourceMessage message) {
+		return compile(message, true, false);
 	}
-	
-	public Supplier<CompileResult> compile(Map<String, String> sources, String user, boolean withTest, boolean forSubmit) {
+
+	public Supplier<CompileResult> compile(SourceMessage message, boolean withTest, boolean forSubmit) {
 		Supplier<CompileResult> supplier = () -> {
 			Collection<AssignmentFile> assignmentFiles;
 			if (withTest) {
 				assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaAndTestFiles();
+				assignmentFiles.forEach(f -> log.debug(f.getName()));
 			} else {
 				if (forSubmit) {
 					assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaAndSubmitFiles();
@@ -83,7 +84,8 @@ public class CompileService {
 				return jfo;
 			}).collect(Collectors.toList());
 
-			sources.forEach((k, v) -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(k, v)));
+			message.getSource()
+					.forEach((k, v) -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(k, v)));
 
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();
@@ -91,20 +93,21 @@ public class CompileService {
 			PrintWriter err = new PrintWriter(System.err);
 			log.info("compiling {} classes", javaFileObjects.size());
 			List<File> files = new ArrayList<>();
-			File file = FileUtils.getFile(basedir, teamDirectory, user);
-			FileUtils.listFiles(file, new String[] {"class"}, true).stream().forEach(f -> FileUtils.deleteQuietly(f));
+			File file = FileUtils.getFile(basedir, teamDirectory, message.getTeam());
+			FileUtils.listFiles(file, new String[] { "class" }, true).stream().forEach(f -> FileUtils.deleteQuietly(f));
 			files.add(file);
-			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null, null);
+			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
+					null);
 			// Create a compilation task.
 			try {
-				standardFileManager.setLocation(StandardLocation.CLASS_OUTPUT, files );
-				standardFileManager.setLocation(StandardLocation.CLASS_PATH, makeClasspath(user));
+				standardFileManager.setLocation(StandardLocation.CLASS_OUTPUT, files);
+				standardFileManager.setLocation(StandardLocation.CLASS_PATH, makeClasspath(message.getTeam()));
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			CompilationTask compilationTask = javaCompiler.getTask(err, standardFileManager, diagnosticCollector, options,
-					null, javaFileObjects);
+			CompilationTask compilationTask = javaCompiler.getTask(err, standardFileManager, diagnosticCollector,
+					options, null, javaFileObjects);
 
 			String result = "Success\n";
 			if (!compilationTask.call()) {
@@ -114,11 +117,11 @@ public class CompileService {
 				result = sb.toString();
 				diagnosticCollector = new DiagnosticCollector<>();
 				log.debug("compileSuccess: {}", false);
-				//standardFileManager.
-				return new CompileResult(result, null, user, false);
+				// standardFileManager.
+				return new CompileResult(result, null, message.getTeam(), false);
 			}
 			log.debug("compileSuccess: {}", true);
-			return new CompileResult(result, null, user, true);
+			return new CompileResult(result, message.getTests(), message.getTeam(), true);
 		};
 		return supplier;
 	}
