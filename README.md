@@ -15,8 +15,8 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 
 - pas in de application.yaml de property 'basedir' aan naar een pad op je lokale systeem, pas ook de 'datasource.url' property aan.
 - maak een lib directory in de basedir, zet daar deze 2 jars in:
-wget http://central.maven.org/maven2/junit/junit/4.12/junit-4.12.jar
-wget http://central.maven.org/maven2/org/hamcrest/hamcrest-all/1.3/hamcrest-all-1.3.jar
+- wget http://central.maven.org/maven2/junit/junit/4.12/junit-4.12.jar
+- wget http://central.maven.org/maven2/org/hamcrest/hamcrest-all/1.3/hamcrest-all-1.3.jar
 
 
 ### Gebruik
