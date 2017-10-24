@@ -46,5 +46,3 @@ $('#tabs').bind('tabsactivate',function(e, ui) {
 	
 [/]  
 	
-//var mac = CodeMirror.keyMap.default == CodeMirror.keyMap.macDefault;
-//CodeMirror.keyMap.default[(mac ? "Cmd" : "Ctrl") + "-Space"] = "autocomplete";

@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -29,6 +28,8 @@ import nl.moj.server.files.AssignmentFile;
 
 @Service
 public class TestService {
+
+	private static final int MAX_FEEDBACK_SIZE = 10000;
 
 	private static final Logger log = LoggerFactory.getLogger(TestService.class);
 
@@ -68,7 +69,7 @@ public class TestService {
 					for (AssignmentFile assignmentFile : testFiles) {
 						TestResult tr = unittest(assignmentFile, compileResult);
 						tr.setSubmit(false);
-						feedback.sendFeedbackMessage(tr, false);
+						feedback.sendTestFeedbackMessage(tr, false);
 					}
 					return result;
 				} else {
@@ -89,7 +90,7 @@ public class TestService {
 					// there should be only 1;
 					tr = unittest(testFiles.get(0), compileResult);
 					tr.setSubmit(true);
-					feedback.sendFeedbackMessage(tr, true);
+					feedback.sendTestFeedbackMessage(tr, true);
 					return tr;
 				}
 				return null;
@@ -114,38 +115,42 @@ public class TestService {
 				Process start = pb.start();
 				String output = IOUtils.toString(start.getInputStream(), Charset.defaultCharset());
 				String erroroutput = IOUtils.toString(start.getErrorStream(), Charset.defaultCharset());
-				log.info("is alive: {} ", start.isAlive());
+				log.debug("is alive: {} ", start.isAlive());
 				while (start.isAlive() && Instant.now().isBefore(starttijd.plusSeconds(2))) {
-					Thread.sleep(1000);
+					Thread.sleep(100);
 				}
-
 				if (start.isAlive()) {
-					log.info("still alive, killing: {} ", start.isAlive());
+					log.debug("still alive, killing: {} ", start.isAlive());
 					start.destroyForcibly();
-					log.info("exitValue " + start.exitValue());
-				} else {
-					log.info("exitValue " + start.exitValue());
 				}
-				log.info("finished unittest: {}", file.getName());
-				if (output != null && output.length() > 0 && output.contains("JUnit version 4.12")) {
-					output = output.substring("JUnit version 4.12".length());
-					String[] split = output.split("\n");
-					List<String> list = Arrays.asList(split);
-					List<String> collected = list.stream() //
-							//.filter(line -> !line.trim().startsWith("at")) //
-							.filter(line -> !line.trim().startsWith(".")) //
-							.collect(Collectors.toList());
-					output = StringUtils.join(collected, '\n');
-				}
-				String testResult = output.length() > 0 ? output : erroroutput;
+				log.debug("exitValue {}", start.exitValue());
+				int exitvalue = start.exitValue();
+				boolean success = false;
 				String result = null;
-				if (testResult.length() > 10000) {
-					result = testResult.substring(0, 10000);
-				} else {
-					result = testResult;
+				if (output == null) {
+					return new TestResult(result, compileResult.getUser(), success, file.getName());
 				}
-				return new TestResult(result, compileResult.getUser(), start.exitValue() == 0 ? true : false,
-						file.getName());
+				if (output.length() > MAX_FEEDBACK_SIZE) {
+					result = output.substring(0, MAX_FEEDBACK_SIZE);
+				} else {
+					result = output;
+				}
+				if (result.length() >= 0) {
+					result = result.substring("JUnit version 4.12\n".length());
+					result = result.substring(".".length());
+					// if we still have some output left and exitvalue = 0
+					if (result.length() > 0 && exitvalue == 0 ? true : false) {
+						success = true;
+						// result = filteroutput(output);
+					}
+				} else {
+					System.out.print(result);
+					result = erroroutput;
+					success = exitvalue == 0 ? true : false;
+				}
+				log.debug("success {}", success);
+				log.info("finished unittest: {}", file.getName());
+				return new TestResult(result, compileResult.getUser(), success, file.getName());
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
 			}
@@ -153,6 +158,16 @@ public class TestService {
 			log.error(se.getMessage(), se);
 		}
 		return null;
+	}
+
+	private String filteroutput(String output) {
+		String[] split = output.split("\n");
+		List<String> list = Arrays.asList(split);
+		List<String> collected = list.stream() //
+				// .filter(line -> !line.trim().startsWith("at")) //
+				.filter(line -> !line.trim().startsWith(".")) //
+				.collect(Collectors.toList());
+		return StringUtils.join(collected, '\n');
 	}
 
 	private String makeClasspath(String user) {

@@ -1,7 +1,7 @@
 var stompClientControl = null;
 	function init() {
 		connectTestFeedback();
-		//connectCompileFeedback();
+		connectCompileFeedback();
 		connectControl();
 		connectStop();
 	}
@@ -26,21 +26,6 @@ var stompClientControl = null;
 					}
 				}				
 			});
-			
-			stompTestFeedbackClient.subscribe('/user/queue/compilefeedback', function(messageOutput) {
-				console.log("compilefeedback");
-				var message = JSON.parse(messageOutput.body);
-				var response = document.getElementById("outputarea");
-				response.innerHTML = "<pre>" + message.text + "</pre>";
-				if (message.success) {
-					$('#outputarea').css("color", "green");	
-				} else {
-					$('#outputarea').css("color", "red");
-				}
-				
-			});
-			
-
 		});
 	}
 
@@ -104,6 +89,7 @@ var stompClientControl = null;
 	}
 
 	function test() { 
+		cleartests();
 		var tests = $("input:checkbox:checked").map(function(){
 		      return $(this).val();
 		    }).get();
@@ -116,6 +102,9 @@ var stompClientControl = null;
 	}
 
 	function cleartests() {
+		var curTab = $('.ui-state-active');
+		$('.ui-tabs-anchor').css("color", "black");	
+
 	}	
 	
 	function disable() {
