@@ -2,13 +2,7 @@
 
 This project is a rebuild of the famous original Masters of Java software orginally built by Erik Hooijmeijer in 2004. 
 This project takes the original concept, but instead of a classical client/server Swing application, it is a completely 
-web-based implementation based on Spring Boot.
-
-### Starting the server
-The server requires javax.tools.JavaCompiler to be injected. This can currently only be achieved automatically by 
-starting the server from within the IDE.
-
-
+web-based implementation based on Spring Boot and Java 9.
 
 ## moj assignment server
 
@@ -17,13 +11,21 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 - starten in Eclipse via Run as > Spring Boot App
 - commandline: java - jar server-0.0.1-SNAPSHOT.jar
 
+### Voorbereiding
+
+- pas in de application.yaml de property 'basedir' aan naar een pad op je lokale systeem, pas ook de 'datasource.url' property aan.
+- maak een lib directory in de basedir, zet daar deze 2 jars in:
+wget http://central.maven.org/maven2/junit/junit/4.12/junit-4.12.jar
+wget http://central.maven.org/maven2/org/hamcrest/hamcrest-all/1.3/hamcrest-all-1.3.jar
+
+
 ### Gebruik
 
 #### Start opgave
 - open http://localhost:8080/control
 - login met control/control
 - als er opgaven staan, selecteer er 1 en klik 'start Task'
-
+- anders klik *Clone assignments repo*
 
 
 #### Maak opgave
@@ -41,3 +43,5 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 
 - open http://localhost:8080/rankings
 
+#### Feedback pagina
+- open http://localhost:8080/feedback
