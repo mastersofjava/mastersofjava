@@ -1,6 +1,7 @@
 package nl.moj.server;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -39,11 +40,15 @@ public class IndexController {
 	}
 
 	private void addModel(Model model, Principal user) {
-		List<AssignmentFile> files = competition.getCurrentAssignment().getJavaFiles();
-		List<AssignmentFile> testfiles = competition.getCurrentAssignment().getTestFiles();
+		List<AssignmentFile> files = new ArrayList<>();
+		if (competition.getCurrentAssignment().isRunning() && !competition.getCurrentAssignment().isTeamFinished(user.getName())) {
+			files.addAll(competition.getBackupFilesForTeam(user.getName()));
+		} else {
+			files.addAll(competition.getCurrentAssignment().getEditableFiles());
+		}
+		files.addAll(competition.getCurrentAssignment().getReadOnlyJavaFiles());
+		files.addAll(competition.getCurrentAssignment().getTestFiles());
 		files.addAll(competition.getCurrentAssignment().getTaskFiles());
-		files.addAll(testfiles);
-
 		files.sort(new Comparator<AssignmentFile>() {
 
 			@Override

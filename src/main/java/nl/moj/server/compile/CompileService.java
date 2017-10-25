@@ -83,6 +83,7 @@ public class CompileService {
 			}
 			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
 					null);
+			String assignment = competition.getCurrentAssignment().getName();
 			File teamdir = FileUtils.getFile(basedir, teamDirectory, message.getTeam());
 
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream().map(a -> {
@@ -96,7 +97,7 @@ public class CompileService {
 			}
 			message.getSource().forEach((k, v) -> {
 				try {
-					FileUtils.writeStringToFile(FileUtils.getFile(teamdir, "sources", k), v, Charset.defaultCharset());
+					FileUtils.writeStringToFile(FileUtils.getFile(teamdir, "sources",assignment, k), v, Charset.defaultCharset());
 				} catch (IOException e) {
 					log.error("error while writing sourcefiles to teamdir",e);
 				}

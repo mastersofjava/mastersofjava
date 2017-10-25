@@ -86,6 +86,16 @@ public class Assignment {
 		}
 	}
 
+	public List<AssignmentFile> getEditableFiles() {
+		if (isRunning()) {
+			return assFiles.stream()
+					.filter(f -> f.getFileType().equals(FileType.EDIT))
+					.collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
+	}
+	
 	public List<AssignmentFile> getTestFiles() {
 		if (isRunning()) {
 			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TEST)).collect(Collectors.toList());
