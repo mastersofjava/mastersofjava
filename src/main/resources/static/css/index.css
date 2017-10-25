@@ -1,7 +1,37 @@
-#status {
-background: #CCC;
-    display: inline-block; 
-    position: fixed;
-    bottom: 0;
-    left: 0;
+body {
+    margin-bottom: 50px;
+}
+
+.CodeMirror {
+    height: 800px;
+}
+
+.footer {
+    border-top: 1px solid #aaaaaa;
+    background-color: white;
+}
+
+#assignment-clock .clock {
+    position: relative;
+    float: left;
+}
+
+#assignment-clock .time {
+    position: absolute;
+}
+
+/*#assignment-clock h2 {*/
+    /*position: absolute;*/
+    /*margin: auto 0px;*/
+/*}*/
+
+svg {
+    -webkit-transform: rotate(-90deg);
+    transform: rotate(-90deg);
+}
+
+.circle_animation {
+    stroke-dasharray: 440; /* this value is the pixel circumference of the circle */
+    stroke-dashoffset: 440;
+    transition: all 1s linear;
 }

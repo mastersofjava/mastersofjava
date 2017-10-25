@@ -1,15 +1,16 @@
 package nl.moj.server;
 
-import java.io.IOException;
-import java.security.Principal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import nl.moj.server.competition.ScoreService;
+import nl.moj.server.compile.CompileResult;
+import nl.moj.server.compile.CompileService;
+import nl.moj.server.test.TestResult;
+import nl.moj.server.test.TestService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,18 +22,15 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-
-import nl.moj.server.competition.ScoreService;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.compile.CompileService;
-import nl.moj.server.test.TestResult;
-import nl.moj.server.test.TestService;
+import java.io.IOException;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 @Controller
 @MessageMapping("/submit")
@@ -67,7 +65,7 @@ public class SubmitController {
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
-				.orTimeout(1, TimeUnit.SECONDS).thenAccept(compileResult -> sendFeedbackMessage(compileResult));
+				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(compileResult -> sendFeedbackMessage(compileResult));
 	}
 
 	@MessageMapping("/test")
