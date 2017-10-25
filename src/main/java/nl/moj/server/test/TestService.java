@@ -4,7 +4,6 @@ import static java.lang.Math.min;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -14,7 +13,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -194,17 +192,7 @@ public class TestService {
             result.delete(0, JUNIT_PREFIX.length());
         }
     }
-
-	private String filteroutput(String output) {
-		String[] split = output.split("\n");
-		List<String> list = Arrays.asList(split);
-		List<String> collected = list.stream() //
-				// .filter(line -> !line.trim().startsWith("at")) //
-				.filter(line -> !line.trim().startsWith(".")) //
-				.collect(Collectors.toList());
-		return StringUtils.join(collected, '\n');
-	}
-
+    
 	private String makeClasspath(String user) {
 		final List<File> classPath = new ArrayList<>();
 		classPath.add(FileUtils.getFile(basedir, teamDirectory, user));
