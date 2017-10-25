@@ -25,6 +25,7 @@ public class FeedbackController {
 
 	@Autowired
 	private Competition competition;
+	
 	@Autowired
 	private SimpMessagingTemplate template;
 
@@ -41,7 +42,7 @@ public class FeedbackController {
 		return model;
 	}
 
-	public void sendFeedbackMessage(TestResult testResult, Boolean submit) {
+	public void sendTestFeedbackMessage(TestResult testResult, Boolean submit) {
 		log.info("sending testResult feedback");
 		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback", new TestFeedbackMessage(
 				testResult.getUser(), testResult.getTestname(), testResult.getTestResult(), testResult.isSuccessful(), submit));

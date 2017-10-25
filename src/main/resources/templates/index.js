@@ -29,11 +29,11 @@ if ([# th:text="|${file.fileType.name()}|"/] == 'EDIT'  || [# th:text="|${file.f
 		
 	if ([# th:text="|${file.fileType.name()}|"/] == 'TASK') {
 		var x = document.getElementById([# th:text="|${file.name}|"/]);
-		x.innerHTML = "<pre>" + [# th:text="|${file.content}|"/] + "</pre>";
+		x.innerHTML = "<textarea rows='30' cols='100'>" + [# th:text="|${file.content}|"/] + "</textarea>";
 	} else {
 		testsArray.push([# th:text="|${file.name}|"/]);
 		var x = document.getElementById([# th:text="|${file.name}|"/]);
-		x.innerHTML = '<textarea></textarea>';
+		x.innerHTML = '<pre></pre>';
 	}
 }
 
@@ -46,5 +46,3 @@ $('#tabs').bind('tabsactivate',function(e, ui) {
 	
 [/]  
 	
-//var mac = CodeMirror.keyMap.default == CodeMirror.keyMap.macDefault;
-//CodeMirror.keyMap.default[(mac ? "Cmd" : "Ctrl") + "-Space"] = "autocomplete";

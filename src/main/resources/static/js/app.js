@@ -12,8 +12,7 @@ var stompClientControl = null;
 		var stompTestFeedbackClient = Stomp.over(socket);
 		stompTestFeedbackClient.debug = null;
 		stompTestFeedbackClient.connect({}, function(frame) {
-			document.getElementById('status').innerHTML = 'connected';
-			console.log('Connected');
+			console.log('Connected feedback');
 			stompTestFeedbackClient.subscribe('/user/queue/feedback', function(messageOutput) {
 				console.log("test feedback");
 				var message = JSON.parse(messageOutput.body);
@@ -27,7 +26,6 @@ var stompClientControl = null;
 					}
 				}				
 			});
-
 		});
 	}
 
@@ -37,7 +35,7 @@ var stompClientControl = null;
 		var stompCompileFeedbacClient = Stomp.over(socket);
 		stompCompileFeedbacClient.debug = null;
 		stompCompileFeedbacClient.connect({}, function(frame) {
-			document.getElementById('status').innerHTML = 'connected';
+			console.log('Connected compilefeedback');
 			stompCompileFeedbacClient.subscribe('/user/queue/compilefeedback', function(messageOutput) {
 				console.log("compilefeedback");
 				var message = JSON.parse(messageOutput.body);
@@ -55,7 +53,6 @@ var stompClientControl = null;
 	}
 
 	function connectControl() {
-
 		var socket = new SockJS('/control');
 		stompClientControl = Stomp.over(socket);
 		stompClientControl.debug = null;
@@ -70,15 +67,14 @@ var stompClientControl = null;
 	}
 	
 	function connectStop() {
-
 		var socket = new SockJS('/control');
 		var stompClientStop = Stomp.over(socket);
 		stompClientStop.debug = null;
 		stompClientStop.connect({}, function(frame) {
-
 			console.log('Connected to /control/queue/stop');
 			stompClientStop.subscribe('/queue/stop', function(taskTimeMessage) {
 				var message = JSON.parse(taskTimeMessage.body);
+				console.log("/queue/stop")
 				disable();
 			});
 
@@ -93,6 +89,7 @@ var stompClientControl = null;
 	}
 
 	function test() { 
+		cleartests();
 		var tests = $("input:checkbox:checked").map(function(){
 		      return $(this).val();
 		    }).get();
@@ -105,6 +102,9 @@ var stompClientControl = null;
 	}
 
 	function cleartests() {
+		var curTab = $('.ui-state-active');
+		$('.ui-tabs-anchor').css("color", "black");	
+
 	}	
 	
 	function disable() {
