@@ -46,7 +46,7 @@ public class TestService {
 
 	private static final Logger log = LoggerFactory.getLogger(TestService.class);
 
-    private static final String JUNIT_PREFIX = "JUnit version 4.12\n.";
+    private static final String JUNIT_PREFIX = "JUnit version 4.12\n.\n";
 
 	@Autowired
 	@Qualifier("testing")
@@ -121,6 +121,10 @@ public class TestService {
 
 	        log.info("running unittest: {}", file.getName());
 	        File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
+	        File policy = FileUtils.getFile(basedir, libDirectory, "securityPolicyForUnitTests.policy");
+	        if (!policy.exists()) {
+	        	throw new RuntimeException("security policy file not found");
+	        }
 	        int exitvalue=0;
 	            final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(
 	                    MAX_FEEDBACK_LINES,
@@ -134,7 +138,7 @@ public class TestService {
 	            exitvalue = new ProcessExecutor().command(javaExecutable,
 	                    "-cp", makeClasspath(compileResult.getUser()),
 	                    "-Djava.security.manager",
-	                    "-Djava.security.policy="+basedir+"/"+ libDirectory + "/securityPolicyForUnitTests.policy",
+	                    "-Djava.security.policy=" + policy.getAbsolutePath(),
 	                    "org.junit.runner.JUnitCore", file.getName()
 	                    )
 	                    .directory( teamdir )
@@ -158,7 +162,9 @@ public class TestService {
 	        final boolean success;
 	        final String result;
             if (jUnitOutput.length() > 0) {
+            	log.trace("before strip {}" , jUnitOutput.length());
 	            stripJUnitPrefix( jUnitOutput.getOutput() );
+	            log.trace("after strip {} [{}]" , jUnitOutput.length(), jUnitOutput.toString());
 	            // if we still have some output left and exitvalue = 0
 	            if (jUnitOutput.length() > 0 && exitvalue == 0) {
 	                success = true;
