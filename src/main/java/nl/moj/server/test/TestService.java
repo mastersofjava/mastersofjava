@@ -33,6 +33,8 @@ public class TestService {
 
 	private static final Logger log = LoggerFactory.getLogger(TestService.class);
 
+    private static final String JUNIT_PREFIX = "JUnit version 4.12\n.";
+
 	@Autowired
 	@Qualifier("testing")
 	private Executor testing;
@@ -139,8 +141,8 @@ public class TestService {
 					result = output;
 				}
 				if (result.length() > 0) {
-					result = result.substring("JUnit version 4.12\n".length());
-					result = result.substring(".".length());
+
+				    result = stripJUnitPrefix(result);
 					// if we still have some output left and exitvalue = 0
 					if (result.length() > 0 && exitvalue == 0 ? true : false) {
 						success = true;
@@ -162,6 +164,13 @@ public class TestService {
 		}
 		return null;
 	}
+
+    private String stripJUnitPrefix(String result) {
+        if (result.startsWith(JUNIT_PREFIX)) {
+            return result.substring(JUNIT_PREFIX.length());
+        }
+        return result;
+    }
 
 	private String filteroutput(String output) {
 		String[] split = output.split("\n");
