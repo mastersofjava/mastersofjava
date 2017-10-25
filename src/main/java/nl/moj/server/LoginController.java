@@ -57,7 +57,7 @@ public class LoginController {
     		return "register";
     	}
     	if(teamMapper.findByName(team.getName()) != null){
-    		model.addAttribute("errors", "Name allready in use");
+    		model.addAttribute("errors", "Name already in use");
     		return "register";
     	}
     	if(!team.getCpassword().equals(team.getPassword())){
