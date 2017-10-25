@@ -135,7 +135,7 @@ public class TestService {
 				} else {
 					result = output;
 				}
-				if (result.length() >= 0) {
+				if (result.length() > 0) {
 					result = result.substring("JUnit version 4.12\n".length());
 					result = result.substring(".".length());
 					// if we still have some output left and exitvalue = 0
