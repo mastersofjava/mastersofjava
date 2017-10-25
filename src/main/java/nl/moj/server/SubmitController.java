@@ -91,7 +91,7 @@ public class SubmitController {
 	}
 
 	private void sendFeedbackMessage(CompileResult compileResult) {
-		log.info("sending compileResult feedback");
+		log.info("sending compileResult feedback, {}", compileResult.isSuccessful());
 		template.convertAndSendToUser(compileResult.getUser(), "/queue/compilefeedback",
 				new FeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), compileResult.isSuccessful()));
 	}
@@ -160,13 +160,13 @@ public class SubmitController {
 
 		private String team;
 		private String text;
-		private boolean succuess;
+		private boolean success;
 
-		public FeedbackMessage(String team, String text, boolean succuess) {
+		public FeedbackMessage(String team, String text, boolean success) {
 			super();
 			this.team = team;
 			this.text = text;
-			this.setSuccuess(succuess);
+			this.success = success;
 		}
 
 		public String getTeam() {
@@ -185,14 +185,13 @@ public class SubmitController {
 			this.text = text;
 		}
 
-		public boolean isSuccuess() {
-			return succuess;
+		public boolean isSuccess() {
+			return success;
 		}
 
-		public void setSuccuess(boolean succuess) {
-			this.succuess = succuess;
+		public void setSuccess(boolean success) {
+			this.success = success;
 		}
-
 	}
 
 	public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {

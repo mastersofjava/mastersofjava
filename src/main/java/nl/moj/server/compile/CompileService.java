@@ -90,6 +90,7 @@ public class CompileService {
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();
 
+			
 			PrintWriter err = new PrintWriter(System.err);
 			log.info("compiling {} classes", javaFileObjects.size());
 			List<File> files = new ArrayList<>();
@@ -103,26 +104,23 @@ public class CompileService {
 				standardFileManager.setLocation(StandardLocation.CLASS_OUTPUT, files);
 				standardFileManager.setLocation(StandardLocation.CLASS_PATH, makeClasspath(message.getTeam()));
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				log.error(e.getMessage(),e);
 			}
 			CompilationTask compilationTask = javaCompiler.getTask(err, standardFileManager, diagnosticCollector,
 					options, null, javaFileObjects);
 
-			String result = "Success\n";
 			if (!compilationTask.call()) {
 				StringBuilder sb = new StringBuilder();
 				for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics()) {
                     sb.append(report(diagnostic));
                 }
-				result = sb.toString();
+				String result = sb.toString();
 				diagnosticCollector = new DiagnosticCollector<>();
 				log.debug("compileSuccess: {}\n{}", false, result);
-				// standardFileManager.
 				return new CompileResult(result, null, message.getTeam(), false);
 			}
 			log.debug("compileSuccess: {}", true);
-			return new CompileResult(result, message.getTests(), message.getTeam(), true);
+			return new CompileResult("Success\n", message.getTests(), message.getTeam(), true);
 		};
 		return supplier;
 	}
@@ -132,7 +130,7 @@ public class CompileService {
 		// enable all recommended warnings.
 		options.add("-Xlint:all");
 		// enable debugging for line numbers and local variables.
-		options.add("-g:lines,vars");
+		options.add("-g:source,lines,vars");
 
 		return options;
 	}
@@ -156,11 +154,11 @@ public class CompileService {
 		StringBuilder sb = new StringBuilder();
 		sb.append(dg.getKind() + "> Line=" + dg.getLineNumber() + ", Column=" + dg.getColumnNumber() + "\n");
 		sb.append("Message> " + dg.getMessage(null) + "\n");
-		sb.append("Cause> " + dg.getCode() + "\n");
-		JavaFileObject jfo = (JavaFileObject) dg.getSource();
-		if (jfo != null) {
-			sb.append(jfo.getName() + "\n");
-		}
+		//sb.append("Cause> " + dg.getCode() + "\n");
+		//JavaFileObject jfo = (JavaFileObject) dg.getSource();
+		//if (jfo != null) {
+		//	sb.append(jfo.getName() + "\n");
+		//}
 		return sb.toString();
 	}
 }

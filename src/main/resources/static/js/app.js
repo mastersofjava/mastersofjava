@@ -42,9 +42,9 @@ var stompClientControl = null;
 				var response = document.getElementById("outputarea");
 				response.innerHTML = "<pre>" + message.text + "</pre>";
 				if (message.success) {
-					$('#outputarea').css("color", "green");	
+					$('#outputarea-li > a').css("color", "green");	
 				} else {
-					$('#outputarea').css("color", "red");
+					$('#outputarea-li > a').css("color", "red");
 				}
 				
 			});
@@ -104,7 +104,9 @@ var stompClientControl = null;
 	function cleartests() {
 		var curTab = $('.ui-state-active');
 		$('.ui-tabs-anchor').css("color", "black");	
-
+		console.log($('#outputarea > pre'));
+		
+		$('#outputarea > pre').replaceWith('<pre></pre>');
 	}	
 	
 	function disable() {
