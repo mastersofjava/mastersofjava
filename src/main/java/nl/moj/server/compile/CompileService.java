@@ -3,6 +3,9 @@ package nl.moj.server.compile;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -13,6 +16,7 @@ import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 
@@ -77,15 +81,27 @@ public class CompileService {
 					assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaFiles();
 				}
 			}
+			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
+					null);
+			File teamdir = FileUtils.getFile(basedir, teamDirectory, message.getTeam());
 
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream().map(a -> {
-				JavaFileObject jfo = MemoryJavaFileManager.createJavaFileObject(a.getFilename(), a.getContent());
+				JavaFileObject jfo = createJavaFileObject(a.getFilename(), a.getContent());
 				return jfo;
 			}).collect(Collectors.toList());
-
-			message.getSource()
-					.forEach((k, v) -> javaFileObjects.add(MemoryJavaFileManager.createJavaFileObject(k, v)));
-
+			try {
+				FileUtils.cleanDirectory(teamdir);
+			} catch (IOException e) {
+				log.error("error while cleaning teamdir",e);
+			}
+			message.getSource().forEach((k, v) -> {
+				try {
+					FileUtils.writeStringToFile(FileUtils.getFile(teamdir, "sources", k), v, Charset.defaultCharset());
+				} catch (IOException e) {
+					log.error("error while writing sourcefiles to teamdir",e);
+				}
+				javaFileObjects.add(createJavaFileObject(k, v));
+			});
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();
 
@@ -93,11 +109,8 @@ public class CompileService {
 			PrintWriter err = new PrintWriter(System.err);
 			log.info("compiling {} classes", javaFileObjects.size());
 			List<File> files = new ArrayList<>();
-			File file = FileUtils.getFile(basedir, teamDirectory, message.getTeam());
-			FileUtils.listFiles(file, new String[] { "class" }, true).stream().forEach(f -> FileUtils.deleteQuietly(f));
-			files.add(file);
-			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
-					null);
+			FileUtils.listFiles(teamdir, new String[] { "class" }, true).stream().forEach(f -> FileUtils.deleteQuietly(f));
+			files.add(teamdir);
 			// Create a compilation task.
 			try {
 				standardFileManager.setLocation(StandardLocation.CLASS_OUTPUT, files);
@@ -163,5 +176,50 @@ public class CompileService {
 		//	sb.append(jfo.getName() + "\n");
 		//}
 		return sb.toString();
+	}
+	
+	private final static String JAVA_SOURCE_EXTENSION = ".java";
+	
+	protected static JavaFileObject createJavaFileObject(String className, String sourceCode) {
+		return new SourceJavaFileObject(className, sourceCode);
+	}
+	
+	private static URI toURI(String name) {
+		File file = new File(name);
+		if (file.exists())
+			return file.toURI();
+		else {
+			try {
+				final StringBuilder newUri = new StringBuilder();
+				newUri.append("mfm:///");
+				newUri.append(name.replace('.', '/'));
+
+				if (name.endsWith(JAVA_SOURCE_EXTENSION))
+					newUri.replace(newUri.length() - JAVA_SOURCE_EXTENSION.length(), newUri.length(),
+							JAVA_SOURCE_EXTENSION);
+
+				return URI.create(newUri.toString());
+			} catch (Exception exp) {
+				return URI.create("mfm:///org/patrodyne/scripting/java/java_source");
+			}
+		}
+	}
+	/**
+	 * A subclass of JavaFileObject used to represent Java source coming from a
+	 * string.
+	 * 
+	 * Removed unused method: public Reader openReader().
+	 */
+	private static class SourceJavaFileObject extends SimpleJavaFileObject {
+		private final String sourceCode;
+
+		protected SourceJavaFileObject(String name, String sourceCode) {
+			super(toURI(name), Kind.SOURCE);
+			this.sourceCode = sourceCode;
+		}
+
+		public CharBuffer getCharContent(boolean ignoreEncodingErrors) {
+			return CharBuffer.wrap(sourceCode);
+		}
 	}
 }
