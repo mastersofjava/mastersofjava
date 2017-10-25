@@ -24,7 +24,8 @@ var stompClientControl = null;
 					} else {
 						$('#' + message.test + '-li > a').css("color", "red");
 					}
-				}				
+				}
+				makeTablinksBlackAgainAfter10Seconds();
 			});
 		});
 	}
@@ -46,7 +47,7 @@ var stompClientControl = null;
 				} else {
 					$('#outputarea-li > a').css("color", "red");
 				}
-				
+				makeTablinksBlackAgainAfter10Seconds();
 			});
 
 		});
@@ -102,9 +103,7 @@ var stompClientControl = null;
 	}
 
 	function cleartests() {
-		var curTab = $('.ui-state-active');
 		$('.ui-tabs-anchor').css("color", "black");	
-		console.log($('#outputarea > pre'));
 		$('.test-output').replaceWith('');
 		$('#outputarea > pre').replaceWith('<pre></pre>');
 	}	
@@ -113,10 +112,7 @@ var stompClientControl = null;
 		// make readonly
 		for (i = 0; i < filesArray.length; i++) {
 			if (filesArray[i] != null) {
-				console.log(filesArray[i]);
 				filesArray[i].cmEditor.setOption("readOnly", true);
-				console.log('#' + filesArray[i].name + '-tab');
-				console.log($('#' + filesArray[i].name + '-tab .cm-s-default'));
 				$('#' + filesArray[i].name + '-tab .cm-s-default').css( "background-color", "grey" );	
 			}
 		}
@@ -130,7 +126,6 @@ var stompClientControl = null;
 		var editables = [];
 		for(let i = 0; i < filesArray.length; i++){
 			if (filesArray[i] != null && !filesArray[i].readonly &&  filesArray[i].fileType === 'EDIT') { 
-				console.log('in');
 				var file = {filename: filesArray[i].filename, content: filesArray[i].cmEditor.getValue()}
 				editables.push(file);				
 			}
@@ -138,6 +133,7 @@ var stompClientControl = null;
 		
 		return editables;
     }  
+    
 	function submit() {
 		disable();
 		stompClientControl.send("/app/submit/submit", {}, JSON.stringify({
@@ -145,3 +141,18 @@ var stompClientControl = null;
 			'source' : getContent()
 		}));
 	}
+	
+	function timeout(ms) {
+	    return new Promise(resolve => setTimeout(resolve, ms));
+	}
+	
+	async function makeTablinksBlackAgainAfter10Seconds() {
+	    await timeout(10000);
+	    backtoblack();
+	}	
+	
+	function backtoblack() {
+		$('.ui-tabs-anchor').css("color", "black");	
+	}	
+	
+	
