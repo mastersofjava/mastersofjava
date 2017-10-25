@@ -103,7 +103,10 @@ public class TestService {
 		try {
 			log.info("running unittest: {}", file.getName());
 			try {
-				ProcessBuilder pb = new ProcessBuilder(javaExecutable, "-cp", makeClasspath(compileResult.getUser()),
+				ProcessBuilder pb = new ProcessBuilder(javaExecutable,
+				        "-cp", makeClasspath(compileResult.getUser()),
+				        "-Djava.security.manager",
+				        "-Djava.security.policy="+basedir+"/"+ libDirectory + "/securityPolicyForUnitTests.policy",
 						"org.junit.runner.JUnitCore", file.getName());
 				File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
 				pb.directory(teamdir);
@@ -135,7 +138,7 @@ public class TestService {
 				} else {
 					result = output;
 				}
-				if (result.length() >= 0) {
+				if (result.length() > 0) {
 					result = result.substring("JUnit version 4.12\n".length());
 					result = result.substring(".".length());
 					// if we still have some output left and exitvalue = 0

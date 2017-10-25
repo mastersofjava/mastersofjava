@@ -112,11 +112,12 @@ public class CompileService {
 			String result = "Success\n";
 			if (!compilationTask.call()) {
 				StringBuilder sb = new StringBuilder();
-				for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics())
-					sb.append(report(diagnostic));
+				for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics()) {
+                    sb.append(report(diagnostic));
+                }
 				result = sb.toString();
 				diagnosticCollector = new DiagnosticCollector<>();
-				log.debug("compileSuccess: {}", false);
+				log.debug("compileSuccess: {}\n{}", false, result);
 				// standardFileManager.
 				return new CompileResult(result, null, message.getTeam(), false);
 			}
@@ -127,7 +128,7 @@ public class CompileService {
 	}
 
 	private List<String> createCompilerOptions() {
-		List<String> options = new ArrayList<String>();
+		List<String> options = new ArrayList<>();
 		// enable all recommended warnings.
 		options.add("-Xlint:all");
 		// enable debugging for line numbers and local variables.

@@ -18,6 +18,7 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 - wget http://central.maven.org/maven2/junit/junit/4.12/junit-4.12.jar
 - wget http://central.maven.org/maven2/org/hamcrest/hamcrest-all/1.3/hamcrest-all-1.3.jar
 - pas de 'moj.server.javaExecutable' property aan
+- copieer src/main/resources/securityPolicyForUnitTests.policy uit het project naar de lib directory
 
 ### Gebruik
 
