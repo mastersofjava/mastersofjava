@@ -103,7 +103,10 @@ public class TestService {
 		try {
 			log.info("running unittest: {}", file.getName());
 			try {
-				ProcessBuilder pb = new ProcessBuilder(javaExecutable, "-cp", makeClasspath(compileResult.getUser()),
+				ProcessBuilder pb = new ProcessBuilder(javaExecutable,
+				        "-cp", makeClasspath(compileResult.getUser()),
+				        "-Djava.security.manager",
+				        "-Djava.security.policy="+basedir+"/"+ libDirectory + "/securityPolicyForUnitTests.policy",
 						"org.junit.runner.JUnitCore", file.getName());
 				File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
 				pb.directory(teamdir);
