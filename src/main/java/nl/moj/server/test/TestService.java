@@ -152,7 +152,7 @@ public class TestService {
 	        catch (SecurityException se) {
 	            log.error(se.getMessage(), se);
 	        }
-	        log.debug("exitValue {}{}", exitvalue, jUnitOutput.toString());
+	        log.debug("exitValue {}", exitvalue);
 
 
 	        final boolean success;
