@@ -11,6 +11,7 @@ import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.CompileService;
 import nl.moj.server.test.TestResult;
 import nl.moj.server.test.TestService;
+import nl.moj.server.util.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,8 +65,12 @@ public class SubmitController {
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
+		log.info("Compile job submitted for: {}", user.getName());
 		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
-				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(compileResult -> sendFeedbackMessage(compileResult));
+				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(compileResult -> {
+					log.info("compile result: {}", JsonUtil.toString(compileResult));
+					sendFeedbackMessage(compileResult);
+				});
 	}
 
 	@MessageMapping("/test")
@@ -197,22 +202,27 @@ public class SubmitController {
 		@Override
 		public SourceMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
 				throws IOException {
-			JsonNode node = jsonParser.getCodec().readTree(jsonParser);
-			String team = node.get("team").textValue();
-			Map<String, String> sources = new HashMap<>();
-			if (node.get("source").isArray()) {
-				ArrayNode sourceArray = (ArrayNode) node.get("source");
-				for (int i = 0; i < sourceArray.size(); i++) {
-					JsonNode sourceElement = sourceArray.get(i);
-					sources.put(sourceElement.get("filename").textValue(), sourceElement.get("content").textValue());
+			try {
+				JsonNode node = jsonParser.getCodec().readTree(jsonParser);
+				String team = node.get("team").textValue();
+				Map<String, String> sources = new HashMap<>();
+				if (node.get("source").isArray()) {
+					ArrayNode sourceArray = (ArrayNode) node.get("source");
+					for (int i = 0; i < sourceArray.size(); i++) {
+						JsonNode sourceElement = sourceArray.get(i);
+						sources.put(sourceElement.get("filename").textValue(), sourceElement.get("content").textValue());
+					}
 				}
+				List<String> tests = new ArrayList<>();
+				if (node.get("tests") != null && node.get("tests").isArray()) {
+					ArrayNode jsonTests = (ArrayNode) node.get("tests");
+					jsonTests.forEach(t -> tests.add(t.asText()));
+				}
+				return new SourceMessage(team, sources, tests);
+			} catch( IOException e ) {
+				log.error("Could not read message.", e);
+				throw e;
 			}
-			List<String> tests = new ArrayList<>();
-			if (node.get("tests") != null && node.get("tests").isArray()) {
-				ArrayNode jsonTests = (ArrayNode) node.get("tests");
-				jsonTests.forEach( t -> tests.add(t.asText()));
-			}
-			return new SourceMessage(team, sources,tests);
 		}
 	}
 

@@ -2,6 +2,10 @@ body {
     margin-bottom: 50px;
 }
 
+.btn:hover {
+    cursor: pointer;
+}
+
 .CodeMirror {
     height: 800px;
 }
@@ -20,11 +24,6 @@ body {
     position: absolute;
 }
 
-/*#assignment-clock h2 {*/
-    /*position: absolute;*/
-    /*margin: auto 0px;*/
-/*}*/
-
 svg {
     -webkit-transform: rotate(-90deg);
     transform: rotate(-90deg);
@@ -34,4 +33,8 @@ svg {
     stroke-dasharray: 440; /* this value is the pixel circumference of the circle */
     stroke-dashoffset: 440;
     transition: all 1s linear;
+}
+
+#tabs .nav-link {
+    color: black;
 }
