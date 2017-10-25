@@ -58,6 +58,9 @@ public class Competition {
 	public List<AssignmentFile> getBackupFilesForTeam(String team) {
 		File teamdir = FileUtils.getFile(basedir, teamDirectory, team);
 		File sourcesdir = FileUtils.getFile(teamdir, "sources", currentAssignment.getName());
+		if (!sourcesdir.exists()) {
+			return new ArrayList<>();
+		}
 		Collection<File> files = FileUtils.listFiles(sourcesdir, new IOFileFilter() {
 
 			@Override

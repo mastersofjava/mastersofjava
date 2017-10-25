@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import nl.moj.server.competition.ScoreService;
-import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.CompileService;
 import nl.moj.server.test.TestResult;
 import nl.moj.server.test.TestService;
@@ -66,6 +65,7 @@ public class SubmitController {
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
+		message.setTeam(user.getName());
 		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
 				.orTimeout(1, TimeUnit.SECONDS).thenAccept(compileResult -> log.debug(compileResult.getCompileResult()));
 	}
@@ -82,22 +82,13 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
+		message.setTeam(user.getName());
 		CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
 				.thenAccept(testResult -> {
 					setFinalAssignmentScore(testResult);
 				});
-	}
-
-
-
-
-	private void applyTestPenalty(TestResult testResult) {
-		if (testResult.isSuccessful()) {
-			scoreService.applyTestPenaltyOrCredit(testResult.getUser());
-			template.convertAndSend("/queue/rankings", "refresh");
-		}
 	}
 
 	private void setFinalAssignmentScore(TestResult testResult) {
@@ -120,6 +111,11 @@ public class SubmitController {
 
 		public SourceMessage(String team, Map<String, String> source, List<String> tests) {
 			this.team = team;
+			this.source = source;
+			this.tests = tests;
+		}
+
+		public SourceMessage(Map<String, String> source, List<String> tests) {
 			this.source = source;
 			this.tests = tests;
 		}
@@ -156,10 +152,9 @@ public class SubmitController {
 		public SourceMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
 				throws IOException {
 			JsonNode node = jsonParser.getCodec().readTree(jsonParser);
-			String team = node.get("team").textValue();
 			Map<String, String> sources = new HashMap<>();
-			if (node.get("source").isArray()) {
-				ArrayNode sourceArray = (ArrayNode) node.get("source");
+			if (node.get("sources") != null && node.get("sources").isArray()) {
+				ArrayNode sourceArray = (ArrayNode) node.get("sources");
 				for (int i = 0; i < sourceArray.size(); i++) {
 					JsonNode sourceElement = sourceArray.get(i);
 					sources.put(sourceElement.get("filename").textValue(), sourceElement.get("content").textValue());
@@ -170,7 +165,7 @@ public class SubmitController {
 				ArrayNode jsonTests = (ArrayNode) node.get("tests");
 				jsonTests.forEach( t -> tests.add(t.asText()));
 			}
-			return new SourceMessage(team, sources,tests);
+			return new SourceMessage(sources,tests);
 		}
 	}
 

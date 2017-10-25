@@ -83,9 +83,9 @@ var stompClientControl = null;
 	}
 	
 	function compile() {
+		cleartests();
 		stompClientControl.send("/app/submit/compile", {}, JSON.stringify({
-			'team' : 'team1',
-			'source' :  getContent()
+			'sources' :  getContent()
 		}));
 	}
 
@@ -96,12 +96,18 @@ var stompClientControl = null;
 		    }).get();
 		
 		stompClientControl.send("/app/submit/test", {}, JSON.stringify({
-			'team' : 'team1',
-			'source' : getContent(),
+			'sources' : getContent(),
 			'tests' : tests
 		}));
 	}
 
+	function submit() {
+		disable();
+		stompClientControl.send("/app/submit/submit", {}, JSON.stringify({
+			'sources' : getContent()
+		}));
+	}
+	
 	function cleartests() {
 		$('.ui-tabs-anchor').css("color", "black");	
 		$('.test-output').replaceWith('');
@@ -134,13 +140,7 @@ var stompClientControl = null;
 		return editables;
     }  
     
-	function submit() {
-		disable();
-		stompClientControl.send("/app/submit/submit", {}, JSON.stringify({
-			'team' : 'team1',
-			'source' : getContent()
-		}));
-	}
+
 	
 	function timeout(ms) {
 	    return new Promise(resolve => setTimeout(resolve, ms));

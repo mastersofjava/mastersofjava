@@ -42,7 +42,12 @@ public class IndexController {
 	private void addModel(Model model, Principal user) {
 		List<AssignmentFile> files = new ArrayList<>();
 		if (competition.getCurrentAssignment().isRunning() && !competition.getCurrentAssignment().isTeamFinished(user.getName())) {
-			files.addAll(competition.getBackupFilesForTeam(user.getName()));
+			List<AssignmentFile> backupFiles = competition.getBackupFilesForTeam(user.getName());
+			if (!backupFiles.isEmpty()) {
+				files.addAll(backupFiles);	
+			} else {
+				files.addAll(competition.getCurrentAssignment().getEditableFiles());
+			}
 		} else {
 			files.addAll(competition.getCurrentAssignment().getEditableFiles());
 		}
