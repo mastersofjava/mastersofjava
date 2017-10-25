@@ -28,6 +28,7 @@ grant {
 
     // Access declared members required by JUnit to function
     permission java.lang.RuntimePermission "accessDeclaredMembers", "";
+    permission java.lang.RuntimePermission "getStackTrace", "";
 
 };
 
