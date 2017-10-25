@@ -33,7 +33,7 @@ if ([# th:text="|${file.fileType.name()}|"/] == 'EDIT'  || [# th:text="|${file.f
 	} else {
 		testsArray.push([# th:text="|${file.name}|"/]);
 		var x = document.getElementById([# th:text="|${file.name}|"/]);
-		x.innerHTML = '<pre></pre>';
+		x.innerHTML = '<pre class="test-output"></pre>';
 	}
 }
 

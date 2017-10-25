@@ -67,7 +67,7 @@ public class SubmitController {
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
-				.orTimeout(1, TimeUnit.SECONDS).thenAccept(compileResult -> sendFeedbackMessage(compileResult));
+				.orTimeout(1, TimeUnit.SECONDS).thenAccept(compileResult -> log.debug(compileResult.getCompileResult()));
 	}
 
 	@MessageMapping("/test")
@@ -90,11 +90,7 @@ public class SubmitController {
 				});
 	}
 
-	private void sendFeedbackMessage(CompileResult compileResult) {
-		log.info("sending compileResult feedback, {}", compileResult.isSuccessful());
-		template.convertAndSendToUser(compileResult.getUser(), "/queue/compilefeedback",
-				new FeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), compileResult.isSuccessful()));
-	}
+
 
 
 	private void applyTestPenalty(TestResult testResult) {
@@ -151,48 +147,9 @@ public class SubmitController {
 		public void setTests(List<String> tests) {
 			this.tests = tests;
 		}
-
-
-
 	}
 
-	public class FeedbackMessage {
 
-		private String team;
-		private String text;
-		private boolean success;
-
-		public FeedbackMessage(String team, String text, boolean success) {
-			super();
-			this.team = team;
-			this.text = text;
-			this.success = success;
-		}
-
-		public String getTeam() {
-			return team;
-		}
-
-		public void setTeam(String team) {
-			this.team = team;
-		}
-
-		public String getText() {
-			return text;
-		}
-
-		public void setText(String text) {
-			this.text = text;
-		}
-
-		public boolean isSuccess() {
-			return success;
-		}
-
-		public void setSuccess(boolean success) {
-			this.success = success;
-		}
-	}
 
 	public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
 		@Override

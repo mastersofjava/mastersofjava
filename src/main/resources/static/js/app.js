@@ -18,11 +18,11 @@ var stompClientControl = null;
 				var message = JSON.parse(messageOutput.body);
 				if (!message.submit) {
 					var response = document.getElementById(message.test);
-					response.innerHTML = "<pre>" + message.text + "</pre>";
+					response.innerHTML = '<pre class="test-output">' + message.text + '</pre>';
 					if (message.success) {
-						$('#' + message.test + '-li').find("a").css("color", "green");	
+						$('#' + message.test + '-li > a').css("color", "green");	
 					} else {
-						$('#' + message.test + '-li').find("a").css("color", "red");
+						$('#' + message.test + '-li > a').css("color", "red");
 					}
 				}				
 			});
@@ -105,7 +105,7 @@ var stompClientControl = null;
 		var curTab = $('.ui-state-active');
 		$('.ui-tabs-anchor').css("color", "black");	
 		console.log($('#outputarea > pre'));
-		
+		$('.test-output').replaceWith('');
 		$('#outputarea > pre').replaceWith('<pre></pre>');
 	}	
 	

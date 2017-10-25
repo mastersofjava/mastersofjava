@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import nl.moj.server.FeedbackController;
 import nl.moj.server.SubmitController.SourceMessage;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.files.AssignmentFile;
@@ -36,12 +37,10 @@ public class CompileService {
 	private javax.tools.JavaCompiler javaCompiler;
 	@Autowired
 	private DiagnosticCollector<JavaFileObject> diagnosticCollector;
-	// @Autowired
-	// private MemoryJavaFileManager<StandardJavaFileManager> javaFileManager;
 
-	// @Autowired
-	// private StandardJavaFileManager standardFileManager;
-
+	@Autowired
+	private FeedbackController feedbackController;
+	
 	@Autowired
 	private Competition competition;
 
@@ -108,7 +107,7 @@ public class CompileService {
 			}
 			CompilationTask compilationTask = javaCompiler.getTask(err, standardFileManager, diagnosticCollector,
 					options, null, javaFileObjects);
-
+			CompileResult compileResult;
 			if (!compilationTask.call()) {
 				StringBuilder sb = new StringBuilder();
 				for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics()) {
@@ -117,10 +116,14 @@ public class CompileService {
 				String result = sb.toString();
 				diagnosticCollector = new DiagnosticCollector<>();
 				log.debug("compileSuccess: {}\n{}", false, result);
-				return new CompileResult(result, null, message.getTeam(), false);
+				compileResult = new CompileResult(result, null, message.getTeam(), false);
+				feedbackController.sendCompileFeedbackMessage(compileResult);
+				return compileResult;
 			}
 			log.debug("compileSuccess: {}", true);
-			return new CompileResult("Success\n", message.getTests(), message.getTeam(), true);
+			compileResult = new CompileResult("Success\n", message.getTests(), message.getTeam(), true);
+			feedbackController.sendCompileFeedbackMessage(compileResult);
+			return compileResult;
 		};
 		return supplier;
 	}
