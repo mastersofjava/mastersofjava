@@ -42,7 +42,6 @@ public class IndexController {
 			files.addAll(competition.getCurrentAssignment().getEditableFiles());
 		}
 		files.addAll(competition.getCurrentAssignment().getReadOnlyJavaFiles());
-		files.addAll(competition.getCurrentAssignment().getTestFiles());
 		files.addAll(competition.getCurrentAssignment().getTaskFiles());
 		files.sort(new Comparator<AssignmentFile>() {
 
