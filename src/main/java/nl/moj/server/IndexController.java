@@ -23,6 +23,7 @@ public class IndexController {
 	@GetMapping("/")
 	public String index(Model model, @AuthenticationPrincipal Principal user) {
 		if (competition.getCurrentAssignment() == null) {
+			model.addAttribute("team", user.getName());
 			return "index";
 		}
 		addModel(model, user);

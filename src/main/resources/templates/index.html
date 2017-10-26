@@ -14,15 +14,15 @@
 
 </head>
 
-<body>
-<div class="container-fluid pl-4 p-2">
+<body class="p-2">
+<div class="container-fluid">
     <!-- header -->
 
     <!-- content -->
     <div class="row">
         <div class="col-9">
             <!--/*@thymesVar id="running" type="java.lang.Boolean"*/-->
-            <div class="text-center" th:unless="${running}">
+            <div class="text-center mt-5" th:unless="${running}">
                 <h1>No active assignment</h1>
                 <p>At the moment there is no assignment active. Once an assignment is started you will automatically be
                     shown he assignment.</p>
@@ -124,7 +124,10 @@
             <img th:src="@{/images/logo_first8_150x39.png}" class="img-fluid"
                  src="/static/images/logo_first8_150x39.png"/>
         </div>
-        <div class="ml-auto p-2 align-self-center" id="status"></div>
+        <div class="ml-auto pr-2 align-self-center" id="status"></div>
+        <div class="pr-2 align-self-center">
+            <a th:href="@{/logout}" class="btn btn-danger">Disconnect</a>
+        </div>
     </div>
 </div>
 

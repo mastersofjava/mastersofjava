@@ -36,6 +36,7 @@ function connectControl() {
     stomp = Stomp.over(socket);
     stomp.debug = null;
     stomp.connect({}, function (frame) {
+        $('#status').append('<span>Connected</span>');
         stomp.subscribe('/queue/start', function (msg) {
             window.location.reload();
         });
