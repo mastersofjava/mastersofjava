@@ -270,7 +270,7 @@ public class TestService {
 				if (maxAppendFromLineLimit > 0) {
 					final boolean isLineTruncated = maxAppendFromLineLimit < line.length();
 					if (isLineTruncated) {
-						buffer.append(line.substring(0, maxAppendFromLineLimit - TRUNC_LINE_MESSAGE.length())).append(TRUNC_LINE_MESSAGE);
+						buffer.append(line.substring(0, maxAppendFromLineLimit)).append(TRUNC_LINE_MESSAGE);
 					} else {
 						buffer.append(line);
 					}
