@@ -1,5 +1,18 @@
 package nl.moj.server.compile;
 
+import nl.moj.server.FeedbackController;
+import nl.moj.server.SubmitController.SourceMessage;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.files.AssignmentFile;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import javax.tools.*;
+import javax.tools.JavaCompiler.CompilationTask;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -11,26 +24,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import javax.tools.Diagnostic;
-import javax.tools.DiagnosticCollector;
-import javax.tools.JavaCompiler.CompilationTask;
-import javax.tools.JavaFileObject;
-import javax.tools.SimpleJavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.StandardLocation;
-
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import nl.moj.server.FeedbackController;
-import nl.moj.server.SubmitController.SourceMessage;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.files.AssignmentFile;
 
 @Service
 public class CompileService {
@@ -135,7 +128,7 @@ public class CompileService {
 				return compileResult;
 			}
 			log.debug("compileSuccess: {}", true);
-			compileResult = new CompileResult("Success\n", message.getTests(), message.getTeam(), true);
+			compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(), message.getTeam(), true);
 			feedbackController.sendCompileFeedbackMessage(compileResult);
 			return compileResult;
 		};

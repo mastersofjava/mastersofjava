@@ -26,10 +26,7 @@ public class AssignmentFile {
 		this.fileType = fileType;
 		this.assignment = assignment;
 		this.file = file;
-		if (fileType.equals(FileType.READONLY) || fileType.equals(FileType.TASK))
-			this.readOnly = true;
-		else
-			this.readOnly = false;
+		this.readOnly = fileType != FileType.EDIT;
 	}
 
 	public String getName() {

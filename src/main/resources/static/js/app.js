@@ -1,158 +1,213 @@
-var stompClientControl = null;
-	function init() {
-		connectTestFeedback();
-		connectCompileFeedback();
-		connectControl();
-		connectStop();
-	}
-	
-	function connectTestFeedback() {
+var stomp = null;
+var editors = [];
 
-		var socket = new SockJS('/submit');
-		var stompTestFeedbackClient = Stomp.over(socket);
-		stompTestFeedbackClient.debug = null;
-		stompTestFeedbackClient.connect({}, function(frame) {
-			console.log('Connected feedback');
-			stompTestFeedbackClient.subscribe('/user/queue/feedback', function(messageOutput) {
-				console.log("test feedback");
-				var message = JSON.parse(messageOutput.body);
-				if (!message.submit) {
-					var response = document.getElementById(message.test);
-					response.innerHTML = '<pre class="test-output">' + message.text + '</pre>';
-					if (message.success) {
-						$('#' + message.test + '-li > a').css("color", "green");	
-					} else {
-						$('#' + message.test + '-li > a').css("color", "red");
-					}
-				}
-				makeTablinksBlackAgainAfter10Seconds();
-			});
-		});
-	}
+$(document).ready(function () {
+    connectFeedback();
+    connectControl();
+    connectButtons();
+    initializeAssignmentClock();
+    initializeCodeMirrors();
+});
 
-	function connectCompileFeedback() {
+function connectFeedback() {
+    var socket = new SockJS('/submit');
+    var stompTestFeedbackClient = Stomp.over(socket);
+    stompTestFeedbackClient.debug = null;
+    stompTestFeedbackClient.connect({}, function (frame) {
+        console.log('Connected to feedback channel.');
+        stompTestFeedbackClient.subscribe('/user/queue/feedback', function (msg) {
+            console.log("Received test feedback.");
+            var message = JSON.parse(msg.body);
+            if (!message.submit) {
+                appendOutput(message.text);
+                updateOutputHeaderColor(message.success);
+            }
+        });
+        stompTestFeedbackClient.subscribe('/user/queue/compilefeedback', function (msg) {
+            console.log("Received compiler feedback.");
+            var message = JSON.parse(msg.body);
+            appendOutput(message.text);
+            updateOutputHeaderColor(message.success);
+        });
+    });
+}
 
-		var socket = new SockJS('/submit');
-		var stompCompileFeedbacClient = Stomp.over(socket);
-		stompCompileFeedbacClient.debug = null;
-		stompCompileFeedbacClient.connect({}, function(frame) {
-			console.log('Connected compilefeedback');
-			stompCompileFeedbacClient.subscribe('/user/queue/compilefeedback', function(messageOutput) {
-				console.log("compilefeedback");
-				var message = JSON.parse(messageOutput.body);
-				var response = document.getElementById("outputarea");
-				response.innerHTML = "<pre>" + message.text + "</pre>";
-				if (message.success) {
-					$('#outputarea-li > a').css("color", "green");	
-				} else {
-					$('#outputarea-li > a').css("color", "red");
-				}
-				makeTablinksBlackAgainAfter10Seconds();
-			});
+function connectControl() {
+    var socket = new SockJS('/control');
+    stomp = Stomp.over(socket);
+    stomp.debug = null;
+    stomp.connect({}, function (frame) {
+        console.log('Connected to control channel.');
+        stomp.subscribe('/queue/start', function (msg) {
+            console.log("Received assignment start.", msg)
+            window.location.reload();
+        });
+        stomp.subscribe("/queue/stop", function (msg) {
+            console.log("Received assignment stop.", msg)
+            disable();
+        })
+    });
+}
 
-		});
-	}
+function connectButtons() {
+    $('#compile').click(function (e) {
+        compile();
+        e.preventDefault();
+    });
+    $('#test').click(function (e) {
+        $('#test-modal').modal('hide');
+        test();
+        e.preventDefault();
+    });
+    $('#submit').click(function (e) {
+        submit();
+        e.preventDefault();
+    });
+}
 
-	function connectControl() {
-		var socket = new SockJS('/control');
-		stompClientControl = Stomp.over(socket);
-		stompClientControl.debug = null;
-		stompClientControl.connect({}, function(frame) {
-			console.log('Connected to /control/queue/start');
-			stompClientControl.subscribe('/queue/start', function(messageOutput) {
-				console.log("/queue/start")
-				window.location.reload();
-			});
 
-		});
-	}
-	
-	function connectStop() {
-		var socket = new SockJS('/control');
-		var stompClientStop = Stomp.over(socket);
-		stompClientStop.debug = null;
-		stompClientStop.connect({}, function(frame) {
-			console.log('Connected to /control/queue/stop');
-			stompClientStop.subscribe('/queue/stop', function(taskTimeMessage) {
-				var message = JSON.parse(taskTimeMessage.body);
-				console.log("/queue/stop")
-				disable();
-			});
+function initializeCodeMirrors() {
+    $('textarea[data-cm]').each(function (idx) {
+        var cm = CodeMirror.fromTextArea(this, {
+            lineNumbers: true,
+            mode: "text/x-java",
+            matchBrackets: true,
+            readOnly: $(this).attr('data-cm-readonly') === 'true'
+        });
+        editors.push({
+            'cm': cm,
+            'readonly': cm.isReadOnly(),
+            'filename': $(this).attr('data-cm-filename'),
+            'textarea': this
+        });
 
-		});
-	}
-	
-	function compile() {
-		cleartests();
-		stompClientControl.send("/app/submit/compile", {}, JSON.stringify({
-			'sources' :  getContent()
-		}));
-	}
+        $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab', function (e) {
+            cm.refresh();
+        });
+    });
+}
 
-	function test() { 
-		cleartests();
-		var tests = $("input:checkbox:checked").map(function(){
-		      return $(this).val();
-		    }).get();
-		
-		stompClientControl.send("/app/submit/test", {}, JSON.stringify({
-			'sources' : getContent(),
-			'tests' : tests
-		}));
-	}
+function initializeAssignmentClock() {
 
-	function submit() {
-		disable();
-		stompClientControl.send("/app/submit/submit", {}, JSON.stringify({
-			'sources' : getContent()
-		}));
-	}
-	
-	function cleartests() {
-		$('.ui-tabs-anchor').css("color", "black");	
-		$('.test-output').replaceWith('');
-		$('#outputarea > pre').replaceWith('<pre></pre>');
-	}	
-	
-	function disable() {
-		// make readonly
-		for (i = 0; i < filesArray.length; i++) {
-			if (filesArray[i] != null) {
-				filesArray[i].cmEditor.setOption("readOnly", true);
-				$('#' + filesArray[i].name + '-tab .cm-s-default').css( "background-color", "grey" );	
-			}
-		}
-		// disable buttons
-		$('#compile').attr('disabled','disabled');
-		$('#test').attr('disabled','disabled');
-		$('#submit').attr('disabled','disabled');
-	}
-	
-    function getContent() {
-		var editables = [];
-		for(let i = 0; i < filesArray.length; i++){
-			if (filesArray[i] != null && !filesArray[i].readonly &&  filesArray[i].fileType === 'EDIT') { 
-				var file = {filename: filesArray[i].filename, content: filesArray[i].cmEditor.getValue()}
-				editables.push(file);				
-			}
-		}
-		
-		return editables;
-    }  
-    
+    var time = 30 * 60; // in seconds
+    var initialOffset = '440';
+    var t = 1;
+    var $assignmentClock = $('#assignment-clock');
 
-	
-	function timeout(ms) {
-	    return new Promise(resolve => setTimeout(resolve, ms));
-	}
-	
-	async function makeTablinksBlackAgainAfter10Seconds() {
-	    await timeout(10000);
-	    backtoblack();
-	}	
-	
-	function backtoblack() {
-		$('.ui-tabs-anchor').css("color", "black");	
-	}	
-	
-	
+    /* Need initial run as interval hasn't yet occured... */
+    $assignmentClock.css('stroke-dashoffset', initialOffset - (initialOffset / time));
+
+    function renderTime(i) {
+        var remaining = time - i - 1;
+        var minutes = Math.floor(remaining / 60);
+        var seconds = ("0" + remaining % 60).slice(-2);
+
+        $('h2', $assignmentClock).text(minutes + ":" + seconds);
+        $assignmentClock.css('stroke-dashoffset', initialOffset - ((i + 1) * (initialOffset / time)));
+
+        var fraction = i / time;
+        if (fraction > 0.5) {
+            if (fraction > 0.8) {
+                $assignmentClock.css('stroke', 'red');
+            } else {
+                $assignmentClock.css('stroke', 'orange');
+            }
+        }
+    }
+
+    var interval = setInterval(function () {
+        if (t === time) {
+            clearInterval(interval);
+            return;
+        } else {
+            renderTime(t);
+        }
+
+
+        t++;
+    }, 1000);
+}
+
+function resetOutput() {
+    $('#output').removeClass('failure','success');
+    $('#output-content').empty();
+}
+
+function updateOutputHeaderColor(success) {
+    var $output = $('#output');
+    if (success && !$output.hasClass('failure')) {
+        $output.removeClass('failure');
+        $output.addClass('success');
+    } else {
+        $output.removeClass('success');
+        $output.addClass('failure');
+    }
+}
+
+function appendOutput(txt) {
+    $('#output-content').append('<pre>' + escape(txt) + '</pre>');
+    $('#content').tab('show');
+}
+
+function escape( txt ) {
+    var htmlEscapes = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '/': '&#x2F;'
+    };
+
+    // Regex containing the keys listed immediately above.
+    var htmlEscaper = /[&<>"'\/]/g;
+
+    // Escape a string for HTML interpolation.
+    return ('' + txt).replace(htmlEscaper, function(match) {
+            return htmlEscapes[match];
+    });
+}
+
+function compile() {
+    resetOutput();
+    stomp.send("/app/submit/compile", {}, JSON.stringify({
+        'sources': getContent()
+    }));
+}
+
+function test() {
+    resetOutput();
+    var tests = $("#test-modal input:checkbox:checked").map(function () {
+        return $(this).val();
+    }).get();
+
+    stomp.send("/app/submit/test", {}, JSON.stringify({
+        'sources': getContent(),
+        'tests': tests
+    }));
+}
+
+function disable() {
+    $('#compile').attr('disabled', 'disabled');
+    $('#test').attr('disabled', 'disabled');
+    $('#show-tests').attr('disabled', 'disabled');
+    $('#submit').attr('disabled', 'disabled');
+}
+
+function getContent() {
+    var editables = [];
+    $.each(editors, function (idx, val) {
+        if (!val.readonly) {
+            var file = {filename: val.filename, content: val.cm.getValue()};
+            editables.push(file);
+        }
+    });
+    return editables;
+}
+
+function submit() {
+    disable();
+    stomp.send("/app/submit/submit", {}, JSON.stringify({
+        'sources': getContent()
+    }));
+}

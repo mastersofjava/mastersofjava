@@ -1,6 +1,18 @@
 package nl.moj.server.test;
 
-import static java.lang.Math.min;
+import nl.moj.server.FeedbackController;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.compile.CompileResult;
+import nl.moj.server.files.AssignmentFile;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.stream.LogOutputStream;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -14,20 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.stream.LogOutputStream;
-
-import nl.moj.server.FeedbackController;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.files.AssignmentFile;
+import static java.lang.Math.min;
 
 @Service
 public class TestService {

@@ -1,19 +1,18 @@
 package nl.moj.server;
 
-import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
+import nl.moj.server.competition.Competition;
+import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import nl.moj.server.competition.Competition;
-import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 @Controller
 public class IndexController {
@@ -30,21 +29,12 @@ public class IndexController {
 		return "index";
 	}
 
-	@GetMapping(value = "index.js")
-	public String common(Model model, @AuthenticationPrincipal Principal user) {
-		if (competition.getCurrentAssignment() == null) {
-			return "index.js";
-		}
-		addModel(model, user);
-		return "index.js";
-	}
-
 	private void addModel(Model model, Principal user) {
 		List<AssignmentFile> files = new ArrayList<>();
 		if (competition.getCurrentAssignment().isRunning() && !competition.getCurrentAssignment().isTeamFinished(user.getName())) {
 			List<AssignmentFile> backupFiles = competition.getBackupFilesForTeam(user.getName());
 			if (!backupFiles.isEmpty()) {
-				files.addAll(backupFiles);	
+				files.addAll(backupFiles);
 			} else {
 				files.addAll(competition.getCurrentAssignment().getEditableFiles());
 			}
