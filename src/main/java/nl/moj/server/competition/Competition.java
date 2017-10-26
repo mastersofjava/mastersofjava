@@ -1,18 +1,10 @@
 package nl.moj.server.competition;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Stopwatch;
+import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
+import nl.moj.server.persistence.ResultMapper;
+import nl.moj.server.persistence.TestMapper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.slf4j.Logger;
@@ -21,12 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Stopwatch;
-
-import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
-import nl.moj.server.persistence.ResultMapper;
-import nl.moj.server.persistence.TestMapper;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class Competition {
@@ -130,14 +122,14 @@ public class Competition {
 		return currentAssignment;
 	}
 
-	public void clearCurrentAssignment() {
-		this.currentAssignment = null;
-	}
-
 	public void setCurrentAssignment(String assignmentName) {
 		if (assignments.containsKey(assignmentName)) {
 			this.currentAssignment = assignments.get(assignmentName);
 		}
+	}
+
+	public void clearCurrentAssignment() {
+		this.currentAssignment = null;
 	}
 
 	public Assignment getAssignment(String name) {
