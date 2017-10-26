@@ -57,6 +57,7 @@ function connectButtons() {
         e.preventDefault();
     });
     $('#submit').click(function (e) {
+    		$('#confirm-submit-modal').modal('hide');
         submit();
         e.preventDefault();
     });
