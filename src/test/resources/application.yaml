@@ -24,6 +24,8 @@ moj:
         lineTruncatedMessage: "...<b>...</b>||"
         outputTruncMessage: "...<b>{output truncated}</b>"
         testTimoutTermination: "...{terminated: test time expired}"
+    competition:
+       bonusForSuccessfulSubmission: 400
 
 spring:
   datasource:
