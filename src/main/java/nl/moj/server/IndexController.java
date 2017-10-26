@@ -53,6 +53,10 @@ public class IndexController {
 				return 10;
 			}
 		});
+		model.addAttribute("assignment", competition.getCurrentAssignment().getName());
+		model.addAttribute("team", user.getName());
+		model.addAttribute("timeLeft", competition.getRemainingTime());
+		model.addAttribute("time", competition.getCurrentAssignment().getSolutionTime());
 		model.addAttribute("testnames", competition.getCurrentAssignment().getTestNames());
 		model.addAttribute("files", files);
 		model.addAttribute("running", competition.getCurrentAssignment().isRunning());

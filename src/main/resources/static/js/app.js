@@ -14,9 +14,7 @@ function connectFeedback() {
     var stompTestFeedbackClient = Stomp.over(socket);
     stompTestFeedbackClient.debug = null;
     stompTestFeedbackClient.connect({}, function (frame) {
-        console.log('Connected to feedback channel.');
         stompTestFeedbackClient.subscribe('/user/queue/feedback', function (msg) {
-            console.log("Received test feedback.");
             var message = JSON.parse(msg.body);
             if (!message.submit) {
                 appendOutput(message.text);
@@ -24,10 +22,11 @@ function connectFeedback() {
             }
         });
         stompTestFeedbackClient.subscribe('/user/queue/compilefeedback', function (msg) {
-            console.log("Received compiler feedback.");
             var message = JSON.parse(msg.body);
-            appendOutput(message.text);
-            updateOutputHeaderColor(message.success);
+            if (!message.submit) {
+                appendOutput(message.text);
+                updateOutputHeaderColor(message.success);
+            }
         });
     });
 }
@@ -37,13 +36,10 @@ function connectControl() {
     stomp = Stomp.over(socket);
     stomp.debug = null;
     stomp.connect({}, function (frame) {
-        console.log('Connected to control channel.');
         stomp.subscribe('/queue/start', function (msg) {
-            console.log("Received assignment start.", msg)
             window.location.reload();
         });
         stomp.subscribe("/queue/stop", function (msg) {
-            console.log("Received assignment stop.", msg)
             disable();
         })
     });
@@ -89,13 +85,15 @@ function initializeCodeMirrors() {
 
 function initializeAssignmentClock() {
 
-    var time = 30 * 60; // in seconds
-    var initialOffset = '440';
-    var t = 1;
     var $assignmentClock = $('#assignment-clock');
+    var $circle = $('.circle_animation', $assignmentClock);
+    var time = $assignmentClock.attr('data-time');
+    var initialOffset = '440';
+    var t = time - $assignmentClock.attr('data-time-left');
+
 
     /* Need initial run as interval hasn't yet occured... */
-    $assignmentClock.css('stroke-dashoffset', initialOffset - (initialOffset / time));
+    $circle.css('stroke-dashoffset', initialOffset - (initialOffset / time));
 
     function renderTime(i) {
         var remaining = time - i - 1;
@@ -103,14 +101,14 @@ function initializeAssignmentClock() {
         var seconds = ("0" + remaining % 60).slice(-2);
 
         $('h2', $assignmentClock).text(minutes + ":" + seconds);
-        $assignmentClock.css('stroke-dashoffset', initialOffset - ((i + 1) * (initialOffset / time)));
+        $circle.css('stroke-dashoffset', initialOffset - ((i + 1) * (initialOffset / time)));
 
         var fraction = i / time;
         if (fraction > 0.5) {
             if (fraction > 0.8) {
-                $assignmentClock.css('stroke', 'red');
+                $circle.css('stroke', 'red');
             } else {
-                $assignmentClock.css('stroke', 'orange');
+                $circle.css('stroke', 'orange');
             }
         }
     }
@@ -210,4 +208,12 @@ function submit() {
     stomp.send("/app/submit/submit", {}, JSON.stringify({
         'sources': getContent()
     }));
+    showSubmitDetails();
+}
+
+function showSubmitDetails() {
+    $('#alert-container')
+        .empty()
+        .append('<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Submitted</h4><p>Well done!. You have submitted the assignment for final review. ' +
+            'Chill out and wait until the next assignment starts.</p></div>');
 }
