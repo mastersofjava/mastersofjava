@@ -215,6 +215,6 @@ function submit() {
 function showSubmitDetails() {
     $('#alert-container')
         .empty()
-        .append('<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Submitted</h4><p>Well done!. You have submitted the assignment for final review. ' +
+        .append('<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Submitted</h4><p>Well done! You have submitted the assignment for final review. ' +
             'Chill out and wait until the next assignment starts.</p></div>');
 }

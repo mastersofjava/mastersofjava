@@ -1,16 +1,18 @@
 package nl.moj.server.compile;
 
-import nl.moj.server.SubmitController;
-import nl.moj.server.TaskControlController;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import nl.moj.server.SubmitController;
+import nl.moj.server.TaskControlController;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -23,6 +25,7 @@ public class CompileServiceTest {
     private CompileService compileService;
 
     @Test
+    @Ignore
     public void doesNotCompileUncompilableCode() {
 
         taskControlController.cloneAssignmentsRepo();

@@ -1,18 +1,6 @@
 package nl.moj.server.test;
 
-import nl.moj.server.FeedbackController;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.files.AssignmentFile;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.stream.LogOutputStream;
+import static java.lang.Math.min;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -26,7 +14,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static java.lang.Math.min;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.stream.LogOutputStream;
+
+import nl.moj.server.FeedbackController;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.compile.CompileResult;
+import nl.moj.server.files.AssignmentFile;
 
 @Service
 public class TestService {
@@ -83,6 +84,12 @@ public class TestService {
 	private FeedbackController feedback;
 
 
+	/**
+	 * Tests all normal unit tests. The Submit test will NOT be tested.
+	 *
+	 * @param compileResult
+	 * @return
+	 */
 	public CompletableFuture<List<TestResult>> testAll(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<List<TestResult>>() {
 			@Override
@@ -105,6 +112,11 @@ public class TestService {
 		}, testing);
 	}
 
+	/**
+	 * Test the solution provided by the team agains the Submit tests. Note that the 'normal' unit tests are not tested again.
+	 * @param compileResult
+	 * @return
+	 */
 	public CompletableFuture<TestResult> testSubmit(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
@@ -177,7 +189,7 @@ public class TestService {
 			if (jUnitOutput.length() > 0) {
 				stripJUnitPrefix(jUnitOutput.getBuffer());
 				// if we still have some output left and exitvalue = 0
-				if (jUnitOutput.length() > 0 && exitvalue == 0) {
+				if (jUnitOutput.length() > 0 && exitvalue == 0  && !isRunTerminated) {
 					success = true;
 					// result = filteroutput(output);
 				} else {
@@ -187,7 +199,7 @@ public class TestService {
 			} else {
 				log.debug(jUnitOutput.toString());
 				result = jUnitError.toString();
-				success = (exitvalue == 0);
+				success = (exitvalue == 0) && !isRunTerminated;
 			}
 
 			log.debug("success {}", success);
@@ -251,6 +263,7 @@ public class TestService {
 
 		@Override
 		protected void processLine(String line) {
+		    log.info(line);
 			if (lineCount < maxLines) {
 				final int maxAppendFromBufferSize = min(line.length(), maxSize - buffer.length() + 1);
 				final int maxAppendFromLineLimit = min(maxAppendFromBufferSize, maxLineLenght);
