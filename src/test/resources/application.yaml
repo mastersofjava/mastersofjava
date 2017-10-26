@@ -16,7 +16,11 @@ moj:
       inheritClassPath: no
       classPath:
         - junit/junit/4.12/junit-4.12.jar
-   
+    limits:
+      unitTestOutput:
+        maxLines: 900
+        maxChars: 100000
+        maxLineLen: 1000
 spring:
   datasource:
     url: jdbc:h2:mem:db;DB_CLOSE_DELAY=-1

@@ -128,7 +128,7 @@ public class CompileService {
 				return compileResult;
 			}
 			log.debug("compileSuccess: {}", true);
-			compileResult = new CompileResult("Success\n", message.getTests(), message.getTeam(), true);
+			compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(), message.getTeam(), true);
 			feedbackController.sendCompileFeedbackMessage(compileResult);
 			return compileResult;
 		};

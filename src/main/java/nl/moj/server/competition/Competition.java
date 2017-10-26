@@ -122,14 +122,14 @@ public class Competition {
 		return currentAssignment;
 	}
 
-	public void clearCurrentAssignment() {
-		this.currentAssignment = null;
-	}
-
 	public void setCurrentAssignment(String assignmentName) {
 		if (assignments.containsKey(assignmentName)) {
 			this.currentAssignment = assignments.get(assignmentName);
 		}
+	}
+
+	public void clearCurrentAssignment() {
+		this.currentAssignment = null;
 	}
 
 	public Assignment getAssignment(String name) {

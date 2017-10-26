@@ -145,8 +145,27 @@ function updateOutputHeaderColor(success) {
 }
 
 function appendOutput(txt) {
-    $('#output-content').append('<pre>' + txt + '</pre>');
+    $('#output-content').append('<pre>' + escape(txt) + '</pre>');
     $('#content').tab('show');
+}
+
+function escape( txt ) {
+    var htmlEscapes = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '/': '&#x2F;'
+    };
+
+    // Regex containing the keys listed immediately above.
+    var htmlEscaper = /[&<>"'\/]/g;
+
+    // Escape a string for HTML interpolation.
+    return ('' + txt).replace(htmlEscaper, function(match) {
+            return htmlEscapes[match];
+    });
 }
 
 function compile() {
