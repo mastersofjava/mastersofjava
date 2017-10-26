@@ -31,10 +31,9 @@ import nl.moj.server.files.AssignmentFile;
 
 @Service
 public class TestService {
-    private static final String TRUNCATED = "...{truncated}";
-    private static final String TERMINATED = "...{terminated: test time expired}";
-    private static final Pattern JUNIT_PREFIX_P = Pattern.compile( "^(JUnit version 4.12)?\\s*\\.?", Pattern.MULTILINE|Pattern.CASE_INSENSITIVE|Pattern.DOTALL );
+    private static final Logger log = LoggerFactory.getLogger(TestService.class);
 
+    private static final Pattern JUNIT_PREFIX_P = Pattern.compile( "^(JUnit version 4.12)?\\s*\\.?", Pattern.MULTILINE|Pattern.CASE_INSENSITIVE|Pattern.DOTALL );
 
     @Value("${moj.server.limits.unitTestOutput.maxChars}")
     private int MAX_FEEDBACK_SIZE;
@@ -45,7 +44,18 @@ public class TestService {
     @Value("${moj.server.limits.unitTestOutput.maxLineLen}")
     private int MAX_FEEDBACK_LINES_LENGTH;
 
-	private static final Logger log = LoggerFactory.getLogger(TestService.class);
+    @Value("${moj.server.limits.unitTestTimeoutSeconds}")
+    private int MAX_UNIT_TEST_TIME_OUT;
+
+    @Value("${moj.server.limits.unitTestOutput.lineTruncatedMessage}")
+    private String TRUNC_LINE_MESSAGE;
+
+    @Value("${moj.server.limits.unitTestOutput.outputTruncMessage}")
+    private String TRUNC_OUTPUT_MESSAGE;
+
+    @Value("${moj.server.limits.unitTestOutput.testTimoutTermination}")
+    private String TEST_TEMINATED_MESSAGE;
+
 
 
 	@Autowired
@@ -144,7 +154,7 @@ public class TestService {
 	                    "org.junit.runner.JUnitCore", file.getName()
 	                    )
 	                    .directory( teamdir )
-	                    .timeout( 2+2, TimeUnit.SECONDS )
+	                    .timeout( MAX_UNIT_TEST_TIME_OUT, TimeUnit.SECONDS )
 	                    .redirectOutput( jUnitOutput )
 	                    .redirectError( jUnitError )
 	                    .execute()
@@ -160,9 +170,8 @@ public class TestService {
 	        }
 	        log.debug("exitValue {}", exitvalue);
 	        if (isRunTerminated) {
-	            jUnitOutput.getOutput().append('\n').append(TERMINATED);
+	            jUnitOutput.getOutput().append('\n').append( TEST_TEMINATED_MESSAGE );
 	        }
-
 
 	        final boolean success;
 	        final String result;
@@ -228,7 +237,7 @@ public class TestService {
      *
      * @author hartmut
      */
-    private final static class LengthLimitedOutputCatcher extends LogOutputStream {
+    private final class LengthLimitedOutputCatcher extends LogOutputStream {
         private final StringBuilder buffer;
         private final int maxSize;
         private final int maxLines;
@@ -250,14 +259,14 @@ public class TestService {
                 if (maxAppendFromLineLimit>0) {
                     final boolean isLineTruncated = maxAppendFromLineLimit < line.length();
                     if (isLineTruncated) {
-                        buffer.append(line.substring(0, maxAppendFromLineLimit-TRUNCATED.length())).append(TRUNCATED);
+                        buffer.append(line.substring(0, maxAppendFromLineLimit-TRUNC_LINE_MESSAGE.length())).append(TRUNC_LINE_MESSAGE);
                     } else {
                         buffer.append( line );
                     }
                     buffer.append('\n');
                 }
             } else if (lineCount == maxLines) {
-                buffer.append(TRUNCATED);
+                buffer.append(TRUNC_OUTPUT_MESSAGE);
             }
             lineCount++;
         }
