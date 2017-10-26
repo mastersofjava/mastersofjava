@@ -84,6 +84,12 @@ public class TestService {
 	private FeedbackController feedback;
 
 
+	/**
+	 * Tests all normal unit tests. The Submit test will NOT be tested.
+	 *
+	 * @param compileResult
+	 * @return
+	 */
 	public CompletableFuture<List<TestResult>> testAll(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<List<TestResult>>() {
 			@Override
@@ -106,6 +112,11 @@ public class TestService {
 		}, testing);
 	}
 
+	/**
+	 * Test the solution provided by the team agains the Submit tests. Note that the 'normal' unit tests are not tested again.
+	 * @param compileResult
+	 * @return
+	 */
 	public CompletableFuture<TestResult> testSubmit(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
