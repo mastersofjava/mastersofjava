@@ -1,27 +1,5 @@
 package nl.moj.server;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import nl.moj.server.competition.ScoreService;
-import nl.moj.server.compile.CompileService;
-import nl.moj.server.test.TestResult;
-import nl.moj.server.test.TestService;
-import nl.moj.server.util.JsonUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
-
 import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -41,14 +19,17 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.competition.Competition;
 import nl.moj.server.competition.ScoreService;
 import nl.moj.server.compile.CompileService;
 import nl.moj.server.test.TestResult;
@@ -82,6 +63,10 @@ public class SubmitController {
 	@Value("${moj.server.timeout}")
 	private int TIMEOUT;
 
+	@Autowired
+	private Competition competition;
+
+
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
@@ -112,18 +97,20 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
+	    int scoreAtSubmissionTime = competition.getRemainingTime();
+
 		message.setTeam(user.getName());
 		CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
 				.thenAccept(testResult -> {
-					setFinalAssignmentScore(testResult);
+					setFinalAssignmentScore(testResult, scoreAtSubmissionTime);
 				});
 	}
 
-	private void setFinalAssignmentScore(TestResult testResult) {
+	private void setFinalAssignmentScore(TestResult testResult, int scoreAtSubmissionTime) {
 		if (testResult.isSuccessful()) {
-			scoreService.subtractSpentSeconds(testResult.getUser());
+			scoreService.registerScoreAtSubmission(testResult.getUser(), scoreAtSubmissionTime);
 			template.convertAndSend("/queue/rankings", "refresh");
 		}
 	}

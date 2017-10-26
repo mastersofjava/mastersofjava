@@ -22,10 +22,12 @@ moj:
         maxLines: 900
         maxChars: 100000
         maxLineLen: 1000
-        lineTruncatedMessage: "...<b>...</b>||"
-        outputTruncMessage: "...<b>{output truncated}</b>"
+        lineTruncatedMessage: "...truncated}</b>"
+        outputTruncMessage: "...{output truncated}"
         testTimoutTermination: "...{terminated: test time expired}"
-    
+
+    competition:
+       bonusForSuccessfulSubmission: 300    
 
 spring:
   h2:

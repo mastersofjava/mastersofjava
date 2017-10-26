@@ -1,5 +1,8 @@
 package nl.moj.server.test;
 
+import lombok.Data;
+
+@Data
 public class TestResult {
 
 	private String testResult;
@@ -13,51 +16,6 @@ public class TestResult {
 		this.user = user;
 		this.successful = successful;
 		this.testname = testname;
-	}
-
-	public String getTestResult() {
-		return testResult;
-	}
-
-	public TestResult setTestResult(String testResult) {
-		if (testResult.length() > 10000) {
-			this.testResult = testResult.substring(0, 10000);
-		} else {
-			this.testResult = testResult;
-		}
-		return this;
-	}
-
-	public String getUser() {
-		return user;
-	}
-
-	public void setUser(String user) {
-		this.user = user;
-	}
-
-	public boolean isSuccessful() {
-		return successful;
-	}
-
-	public void setSuccessful(boolean successful) {
-		this.successful = successful;
-	}
-
-	public String getTestname() {
-		return testname;
-	}
-
-	public void setTestname(String testname) {
-		this.testname = testname;
-	}
-
-	public boolean isSubmit() {
-		return submit;
-	}
-
-	public void setSubmit(boolean submit) {
-		this.submit = submit;
 	}
 
 }
