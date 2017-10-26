@@ -10,17 +10,21 @@ moj:
     threads: 20
     timeout: 1
     compiler:
-      
       workDir: ./work
       outputDir: ./classes
       inheritClassPath: no
       classPath:
         - junit/junit/4.12/junit-4.12.jar
     limits:
+      unitTestTimeoutSeconds: 4
       unitTestOutput:
         maxLines: 900
         maxChars: 100000
         maxLineLen: 1000
+        lineTruncatedMessage: "...<b>...</b>||"
+        outputTruncMessage: "...<b>{output truncated}</b>"
+        testTimoutTermination: "...{terminated: test time expired}"
+
 spring:
   datasource:
     url: jdbc:h2:mem:db;DB_CLOSE_DELAY=-1
@@ -39,4 +43,3 @@ logging.level.nl.moj.server.persistence: INFO
 logging.level.nl.moj.server.persistence.TeamMapper: INFO
 logging.level.nl.moj.server.persistence.ResultMapper: INFO
 logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL
-...

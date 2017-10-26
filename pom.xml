@@ -156,13 +156,13 @@
 		    <version>1.10</version>
 		</dependency>
 
+        <!-- removed for now, still 
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<scope>provided</scope>
 		</dependency>
-
-        
+		-->
 	</dependencies>
 
 

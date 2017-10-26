@@ -1,6 +1,18 @@
 package nl.moj.server.test;
 
-import static java.lang.Math.min;
+import nl.moj.server.FeedbackController;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.compile.CompileResult;
+import nl.moj.server.files.AssignmentFile;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.stream.LogOutputStream;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -14,53 +26,35 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.stream.LogOutputStream;
-
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.FeedbackController;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.files.AssignmentFile;
+import static java.lang.Math.min;
 
 @Service
-@Slf4j
 public class TestService {
 
 
-    private static final Pattern JUNIT_PREFIX_P = Pattern.compile( "^(JUnit version 4.12)?\\s*\\.?", Pattern.MULTILINE|Pattern.CASE_INSENSITIVE|Pattern.DOTALL );
+	public static final String SECURITY_POLICY_FOR_UNIT_TESTS = "securityPolicyForUnitTests.policy";
+	private static final Logger log = LoggerFactory.getLogger(TestService.class);
+	private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+	@Value("${moj.server.limits.unitTestOutput.maxChars}")
+	private int MAX_FEEDBACK_SIZE;
 
-    public static final String SECURITY_POLICY_FOR_UNIT_TESTS = "securityPolicyForUnitTests.policy";
+	@Value("${moj.server.limits.unitTestOutput.maxLines}")
+	private int MAX_FEEDBACK_LINES;
 
-    @Value("${moj.server.limits.unitTestOutput.maxChars}")
-    private int MAX_FEEDBACK_SIZE;
+	@Value("${moj.server.limits.unitTestOutput.maxLineLen}")
+	private int MAX_FEEDBACK_LINES_LENGTH;
 
-    @Value("${moj.server.limits.unitTestOutput.maxLines}")
-    private int MAX_FEEDBACK_LINES;
+	@Value("${moj.server.limits.unitTestTimeoutSeconds}")
+	private int MAX_UNIT_TEST_TIME_OUT;
 
-    @Value("${moj.server.limits.unitTestOutput.maxLineLen}")
-    private int MAX_FEEDBACK_LINES_LENGTH;
+	@Value("${moj.server.limits.unitTestOutput.lineTruncatedMessage}")
+	private String TRUNC_LINE_MESSAGE;
 
-    @Value("${moj.server.limits.unitTestTimeoutSeconds}")
-    private int MAX_UNIT_TEST_TIME_OUT;
+	@Value("${moj.server.limits.unitTestOutput.outputTruncMessage}")
+	private String TRUNC_OUTPUT_MESSAGE;
 
-    @Value("${moj.server.limits.unitTestOutput.lineTruncatedMessage}")
-    private String TRUNC_LINE_MESSAGE;
-
-    @Value("${moj.server.limits.unitTestOutput.outputTruncMessage}")
-    private String TRUNC_OUTPUT_MESSAGE;
-
-    @Value("${moj.server.limits.unitTestOutput.testTimoutTermination}")
-    private String TEST_TEMINATED_MESSAGE;
-
+	@Value("${moj.server.limits.unitTestOutput.testTimoutTermination}")
+	private String TEST_TEMINATED_MESSAGE;
 
 
 	@Autowired
@@ -133,90 +127,88 @@ public class TestService {
 
 	private TestResult unittest(AssignmentFile file, CompileResult compileResult) {
 
-	    log.info("running unittest: {}", file.getName());
-	    File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
-	    File policy = FileUtils.getFile(basedir, libDirectory, SECURITY_POLICY_FOR_UNIT_TESTS);
-	    if (!policy.exists()) {
-	        throw new RuntimeException("security policy file not found");
-	    }
+		log.info("running unittest: {}", file.getName());
+		File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
+		File policy = FileUtils.getFile(basedir, libDirectory, SECURITY_POLICY_FOR_UNIT_TESTS);
+		if (!policy.exists()) {
+			throw new RuntimeException("security policy file not found");
+		}
 
-	    try {
-	        boolean isRunTerminated = false;
-	        int exitvalue=0;
-	            final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(
-	                    MAX_FEEDBACK_LINES,
-	                    MAX_FEEDBACK_SIZE,
-	                    MAX_FEEDBACK_LINES_LENGTH);
-	            final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(
-	                    MAX_FEEDBACK_LINES,
-	                    MAX_FEEDBACK_SIZE,
-	                    MAX_FEEDBACK_LINES_LENGTH);
-	            try {
-	            final ProcessExecutor jUnitCommand = new ProcessExecutor().command(javaExecutable,
-                            "-cp", makeClasspath(compileResult.getUser()),
-                            "-Djava.security.manager",
-                            "-Djava.security.policy=" + policy.getAbsolutePath(),
-                            "org.junit.runner.JUnitCore", file.getName()
-                            );
-	            log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
-                exitvalue = jUnitCommand
-	                    .directory( teamdir )
-	                    .timeout( MAX_UNIT_TEST_TIME_OUT, TimeUnit.SECONDS )
-	                    .redirectOutput( jUnitOutput )
-	                    .redirectError( jUnitError )
-	                    .execute()
-	                    .getExitValue();
-	        }
-	        catch (TimeoutException e) {
-	            // process is automatically destroyed
-	            log.debug("Unit test for {} timed out and got killed", compileResult.getUser());
-	            isRunTerminated = true;
-	        }
-	        catch (SecurityException se) {
-	            log.error(se.getMessage(), se);
-	        }
-	        log.debug("exitValue {}", exitvalue);
-	        if (isRunTerminated) {
-	            jUnitOutput.getBuffer().append('\n').append( TEST_TEMINATED_MESSAGE );
-	        }
+		try {
+			boolean isRunTerminated = false;
+			int exitvalue = 0;
+			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(
+					MAX_FEEDBACK_LINES,
+					MAX_FEEDBACK_SIZE,
+					MAX_FEEDBACK_LINES_LENGTH);
+			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(
+					MAX_FEEDBACK_LINES,
+					MAX_FEEDBACK_SIZE,
+					MAX_FEEDBACK_LINES_LENGTH);
+			try {
+				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(javaExecutable,
+						"-cp", makeClasspath(compileResult.getUser()),
+						"-Djava.security.manager",
+						"-Djava.security.policy=" + policy.getAbsolutePath(),
+						"org.junit.runner.JUnitCore", file.getName()
+				);
+				log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
+				exitvalue = jUnitCommand
+						.directory(teamdir)
+						.timeout(MAX_UNIT_TEST_TIME_OUT, TimeUnit.SECONDS)
+						.redirectOutput(jUnitOutput)
+						.redirectError(jUnitError)
+						.execute()
+						.getExitValue();
+			} catch (TimeoutException e) {
+				// process is automatically destroyed
+				log.debug("Unit test for {} timed out and got killed", compileResult.getUser());
+				isRunTerminated = true;
+			} catch (SecurityException se) {
+				log.error(se.getMessage(), se);
+			}
+			log.debug("exitValue {}", exitvalue);
+			if (isRunTerminated) {
+				jUnitOutput.getBuffer().append('\n').append(TEST_TEMINATED_MESSAGE);
+			}
 
-	        final boolean success;
-	        final String result;
-            if (jUnitOutput.length() > 0) {
-	            stripJUnitPrefix( jUnitOutput.getBuffer() );
-	            // if we still have some output left and exitvalue = 0
-	            if (jUnitOutput.length() > 0 && exitvalue == 0) {
-	                success = true;
-	                // result = filteroutput(output);
-	            } else {
-	                success = false;
-	            }
-	            result = jUnitOutput.toString();
-	        } else {
-	            log.debug( jUnitOutput.toString() );
-	            result = jUnitError.toString();
-	            success = (exitvalue == 0);
-	        }
+			final boolean success;
+			final String result;
+			if (jUnitOutput.length() > 0) {
+				stripJUnitPrefix(jUnitOutput.getBuffer());
+				// if we still have some output left and exitvalue = 0
+				if (jUnitOutput.length() > 0 && exitvalue == 0) {
+					success = true;
+					// result = filteroutput(output);
+				} else {
+					success = false;
+				}
+				result = jUnitOutput.toString();
+			} else {
+				log.debug(jUnitOutput.toString());
+				result = jUnitError.toString();
+				success = (exitvalue == 0);
+			}
 
-	        log.debug("success {}", success);
-	        log.info("finished unittest: {}", file.getName());
-	        return new TestResult(result, compileResult.getUser(), success, file.getName());
-	    } catch (Exception e) {
-	        log.error(e.getMessage(), e);
-	    }
-	    return null;
+			log.debug("success {}", success);
+			log.info("finished unittest: {}", file.getName());
+			return new TestResult(result, compileResult.getUser(), success, file.getName());
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+		}
+		return null;
 	}
 
 
-    private void stripJUnitPrefix(StringBuilder result) {
-        final Matcher matcher = JUNIT_PREFIX_P.matcher(result);
-        if (matcher.find()) {
-            log.debug("stipped '{}'", matcher.group());
-            result.delete(0, matcher.end());
-        } else {
-            log.debug("stripped nothing of '{}'", result.subSequence(0, 50));
-        }
-    }
+	private void stripJUnitPrefix(StringBuilder result) {
+		final Matcher matcher = JUNIT_PREFIX_P.matcher(result);
+		if (matcher.find()) {
+			log.debug("stipped '{}'", matcher.group());
+			result.delete(0, matcher.end());
+		} else {
+			log.debug("stripped nothing of '{}'", result.subSequence(0, 50));
+		}
+	}
 
 	private String makeClasspath(String user) {
 		final List<File> classPath = new ArrayList<>();
@@ -238,50 +230,77 @@ public class TestService {
 
 
 	/**
-     * Support class to capture a limited shard of potentially huge output.
-     * The output is limited to a maximum number of lines, a maximum number of chars per line,
-     * and a total maximum number of characters.
-     *
-     * @author hartmut
-     */
-	@Data
-	@EqualsAndHashCode(callSuper=false)
-	@RequiredArgsConstructor
-    private final class LengthLimitedOutputCatcher extends LogOutputStream {
-        private final StringBuilder buffer = new StringBuilder();
-        private final int maxSize;
-        private final int maxLines;
-        private final int maxLineLenght;
-        private int lineCount=0;
+	 * Support class to capture a limited shard of potentially huge output.
+	 * The output is limited to a maximum number of lines, a maximum number of chars per line,
+	 * and a total maximum number of characters.
+	 *
+	 * @author hartmut
+	 */
+	private final class LengthLimitedOutputCatcher extends LogOutputStream {
+		private final StringBuilder buffer = new StringBuilder();
+		private final int maxSize;
+		private final int maxLines;
+		private final int maxLineLenght;
+		private int lineCount = 0;
 
-        @Override
-        protected void processLine(String line) {
-            if (lineCount < maxLines) {
-                final int maxAppendFromBufferSize = min( line.length(), maxSize-buffer.length()+1 );
-                final int maxAppendFromLineLimit = min( maxAppendFromBufferSize, maxLineLenght );
-                if (maxAppendFromLineLimit>0) {
-                    final boolean isLineTruncated = maxAppendFromLineLimit < line.length();
-                    if (isLineTruncated) {
-                        buffer.append(line.substring(0, maxAppendFromLineLimit-TRUNC_LINE_MESSAGE.length())).append(TRUNC_LINE_MESSAGE);
-                    } else {
-                        buffer.append( line );
-                    }
-                    buffer.append('\n');
-                }
-            } else if (lineCount == maxLines) {
-                buffer.append(TRUNC_OUTPUT_MESSAGE);
-            }
-            lineCount++;
-        }
+		public LengthLimitedOutputCatcher(int maxSize, int maxLines, int maxLineLenght) {
+			this.maxSize = maxSize;
+			this.maxLines = maxLines;
+			this.maxLineLenght = maxLineLenght;
+		}
 
-        @Override
-        public String toString() {
-            return buffer.toString();
-        }
+		@Override
+		protected void processLine(String line) {
+			if (lineCount < maxLines) {
+				final int maxAppendFromBufferSize = min(line.length(), maxSize - buffer.length() + 1);
+				final int maxAppendFromLineLimit = min(maxAppendFromBufferSize, maxLineLenght);
+				if (maxAppendFromLineLimit > 0) {
+					final boolean isLineTruncated = maxAppendFromLineLimit < line.length();
+					if (isLineTruncated) {
+						buffer.append(line.substring(0, maxAppendFromLineLimit - TRUNC_LINE_MESSAGE.length())).append(TRUNC_LINE_MESSAGE);
+					} else {
+						buffer.append(line);
+					}
+					buffer.append('\n');
+				}
+			} else if (lineCount == maxLines) {
+				buffer.append(TRUNC_OUTPUT_MESSAGE);
+			}
+			lineCount++;
+		}
 
-        public int length() {
-            return buffer.length();
-        }
-    }
+		public StringBuilder getBuffer() {
+			return buffer;
+		}
+
+		public int getMaxSize() {
+			return maxSize;
+		}
+
+		public int getMaxLines() {
+			return maxLines;
+		}
+
+		public int getMaxLineLenght() {
+			return maxLineLenght;
+		}
+
+		public int getLineCount() {
+			return lineCount;
+		}
+
+		public void setLineCount(int lineCount) {
+			this.lineCount = lineCount;
+		}
+
+		@Override
+		public String toString() {
+			return buffer.toString();
+		}
+
+		public int length() {
+			return buffer.length();
+		}
+	}
 
 }
