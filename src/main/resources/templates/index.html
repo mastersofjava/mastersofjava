@@ -78,7 +78,7 @@
                      src="/static/images/moj_logo_128x97_2017.png"/>
             </div>
             <div class="p-2 align-self-center">
-                <h2>Team: ${team}</h2>
+                <h2 th:text="'Team: ' + ${team}"></h2>
             </div>
             <div th:if="${running}" class="p-2 align-self-center">
                 <div class="text-center">
@@ -99,7 +99,7 @@
             </div>
             <div th:if="${running} and not ${finished}" class="mt-5 p-2 text-center">
                 <a class="btn w-50 btn-warning text-white"
-                   href="http://download.java.net/java/jdk9/docs/api/overview-summary.html"
+                   href="https://docs.oracle.com/javase/9/docs/api/overview-summary.html"
                    target="_blank">Javadoc</a>
             </div>
             <div th:if="${running} and not ${finished}" class="p-2 text-center">
