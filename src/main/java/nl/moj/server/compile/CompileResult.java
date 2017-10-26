@@ -1,7 +1,6 @@
 package nl.moj.server.compile;
 
 import java.util.List;
-import java.util.Map;
 
 public class CompileResult {
 
@@ -11,13 +10,13 @@ public class CompileResult {
 
 	private String user;
 	
-	private Boolean successful;
+	private boolean successful;
 	
-	public CompileResult(String compileResult,  List<String> tests, String user, Boolean successful) {
+	public CompileResult(String compileResult,  List<String> tests, String user, boolean successful) {
 		this.compileResult = compileResult;
 		this.setTests(tests);
 		this.user = user;
-		this.setSuccessful(successful);
+		this.successful = successful;
 	}
 
 	public String getCompileResult() {
@@ -45,11 +44,11 @@ public class CompileResult {
 		this.user = user;
 	}
 
-	public Boolean isSuccessful() {
+	public boolean isSuccessful() {
 		return successful;
 	}
 
-	public void setSuccessful(Boolean successful) {
+	public void setSuccessful(boolean successful) {
 		this.successful = successful;
 	}
 

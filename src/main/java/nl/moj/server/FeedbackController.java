@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
 
 import nl.moj.server.competition.Competition;
+import nl.moj.server.compile.CompileResult;
 import nl.moj.server.persistence.TeamMapper;
 import nl.moj.server.test.TestResult;
 
@@ -50,6 +51,12 @@ public class FeedbackController {
 				testResult.getTestname(), null, testResult.isSuccessful(), submit));
 	}
 
+	public void sendCompileFeedbackMessage(CompileResult compileResult) {
+		log.info("sending compileResult feedback, {}", compileResult.isSuccessful());
+		template.convertAndSendToUser(compileResult.getUser(), "/queue/compilefeedback",
+				new CompileFeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), compileResult.isSuccessful()));
+	}
+	
 	public static class TestFeedbackMessage {
 		private String team;
 		private String test;
@@ -109,5 +116,43 @@ public class FeedbackController {
 			this.submit = submit;
 		}
 
+	}
+	
+	public class CompileFeedbackMessage {
+
+		private String team;
+		private String text;
+		private boolean success;
+
+		public CompileFeedbackMessage(String team, String text, boolean success) {
+			super();
+			this.team = team;
+			this.text = text;
+			this.success = success;
+		}
+
+		public String getTeam() {
+			return team;
+		}
+
+		public void setTeam(String team) {
+			this.team = team;
+		}
+
+		public String getText() {
+			return text;
+		}
+
+		public void setText(String text) {
+			this.text = text;
+		}
+
+		public boolean isSuccess() {
+			return success;
+		}
+
+		public void setSuccess(boolean success) {
+			this.success = success;
+		}
 	}
 }

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import nl.moj.server.competition.ScoreService;
-import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.CompileService;
 import nl.moj.server.test.TestResult;
 import nl.moj.server.test.TestService;
@@ -66,11 +65,9 @@ public class SubmitController {
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		log.info("Compile job submitted for: {}", user.getName());
+		message.setTeam(user.getName());
 		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
-				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(compileResult -> {
-					log.info("compile result: {}", JsonUtil.toString(compileResult));
-					sendFeedbackMessage(compileResult);
-				});
+				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(compileResult -> log.debug(compileResult.getCompileResult()));
 	}
 
 	@MessageMapping("/test")
@@ -85,6 +82,7 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
+		message.setTeam(user.getName());
 		CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
@@ -93,24 +91,9 @@ public class SubmitController {
 				});
 	}
 
-	private void sendFeedbackMessage(CompileResult compileResult) {
-		log.info("sending compileResult feedback");
-		template.convertAndSendToUser(compileResult.getUser(), "/queue/compilefeedback",
-				new FeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), compileResult.isSuccessful()));
-	}
-
-
-	private void applyTestPenalty(TestResult testResult) {
-		if (testResult.isSuccessful()) {
-			scoreService.applyTestPenaltyOrCredit(testResult.getUser());
-			template.convertAndSend("/queue/rankings", "refresh");
-		}
-	}
-
 	private void setFinalAssignmentScore(TestResult testResult) {
 		if (testResult.isSuccessful()) {
 			scoreService.subtractSpentSeconds(testResult.getUser());
-			log.info("refreshScoreBoard ");
 			template.convertAndSend("/queue/rankings", "refresh");
 		}
 	}
@@ -127,6 +110,11 @@ public class SubmitController {
 
 		public SourceMessage(String team, Map<String, String> source, List<String> tests) {
 			this.team = team;
+			this.source = source;
+			this.tests = tests;
+		}
+
+		public SourceMessage(Map<String, String> source, List<String> tests) {
 			this.source = source;
 			this.tests = tests;
 		}
@@ -154,76 +142,29 @@ public class SubmitController {
 		public void setTests(List<String> tests) {
 			this.tests = tests;
 		}
-
-
-
 	}
 
-	public class FeedbackMessage {
 
-		private String team;
-		private String text;
-		private boolean succuess;
-
-		public FeedbackMessage(String team, String text, boolean succuess) {
-			super();
-			this.team = team;
-			this.text = text;
-			this.setSuccuess(succuess);
-		}
-
-		public String getTeam() {
-			return team;
-		}
-
-		public void setTeam(String team) {
-			this.team = team;
-		}
-
-		public String getText() {
-			return text;
-		}
-
-		public void setText(String text) {
-			this.text = text;
-		}
-
-		public boolean isSuccuess() {
-			return succuess;
-		}
-
-		public void setSuccuess(boolean succuess) {
-			this.succuess = succuess;
-		}
-
-	}
 
 	public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
 		@Override
 		public SourceMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
 				throws IOException {
-			try {
-				JsonNode node = jsonParser.getCodec().readTree(jsonParser);
-				String team = node.get("team").textValue();
-				Map<String, String> sources = new HashMap<>();
-				if (node.get("source").isArray()) {
-					ArrayNode sourceArray = (ArrayNode) node.get("source");
-					for (int i = 0; i < sourceArray.size(); i++) {
-						JsonNode sourceElement = sourceArray.get(i);
-						sources.put(sourceElement.get("filename").textValue(), sourceElement.get("content").textValue());
-					}
+			JsonNode node = jsonParser.getCodec().readTree(jsonParser);
+			Map<String, String> sources = new HashMap<>();
+			if (node.get("sources") != null && node.get("sources").isArray()) {
+				ArrayNode sourceArray = (ArrayNode) node.get("sources");
+				for (int i = 0; i < sourceArray.size(); i++) {
+					JsonNode sourceElement = sourceArray.get(i);
+					sources.put(sourceElement.get("filename").textValue(), sourceElement.get("content").textValue());
 				}
-				List<String> tests = new ArrayList<>();
-				if (node.get("tests") != null && node.get("tests").isArray()) {
-					ArrayNode jsonTests = (ArrayNode) node.get("tests");
-					jsonTests.forEach(t -> tests.add(t.asText()));
-				}
-				return new SourceMessage(team, sources, tests);
-			} catch( IOException e ) {
-				log.error("Could not read message.", e);
-				throw e;
 			}
+			List<String> tests = new ArrayList<>();
+			if (node.get("tests") != null && node.get("tests").isArray()) {
+				ArrayNode jsonTests = (ArrayNode) node.get("tests");
+				jsonTests.forEach( t -> tests.add(t.asText()));
+			}
+			return new SourceMessage(sources,tests);
 		}
 	}
-
 }

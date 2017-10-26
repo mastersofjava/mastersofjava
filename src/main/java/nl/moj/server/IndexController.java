@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -27,13 +28,22 @@ public class IndexController {
 		addModel(model, user);
 		return "index";
 	}
-	
-	private void addModel(Model model, Principal user) {
-		List<AssignmentFile> files = competition.getCurrentAssignment().getJavaFiles();
-		List<AssignmentFile> testfiles = competition.getCurrentAssignment().getTestFiles();
-		files.addAll(competition.getCurrentAssignment().getTaskFiles());
-		files.addAll(testfiles);
 
+	private void addModel(Model model, Principal user) {
+		List<AssignmentFile> files = new ArrayList<>();
+		if (competition.getCurrentAssignment().isRunning() && !competition.getCurrentAssignment().isTeamFinished(user.getName())) {
+			List<AssignmentFile> backupFiles = competition.getBackupFilesForTeam(user.getName());
+			if (!backupFiles.isEmpty()) {
+				files.addAll(backupFiles);
+			} else {
+				files.addAll(competition.getCurrentAssignment().getEditableFiles());
+			}
+		} else {
+			files.addAll(competition.getCurrentAssignment().getEditableFiles());
+		}
+		files.addAll(competition.getCurrentAssignment().getReadOnlyJavaFiles());
+		files.addAll(competition.getCurrentAssignment().getTestFiles());
+		files.addAll(competition.getCurrentAssignment().getTaskFiles());
 		files.sort(new Comparator<AssignmentFile>() {
 
 			@Override

@@ -1,5 +1,11 @@
 package nl.moj.server.competition;
 
+import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -9,13 +15,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
-import org.apache.maven.model.Model;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-
-import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
 
 public class Assignment {
 
@@ -86,6 +85,16 @@ public class Assignment {
 		}
 	}
 
+	public List<AssignmentFile> getEditableFiles() {
+		if (isRunning()) {
+			return assFiles.stream()
+					.filter(f -> f.getFileType().equals(FileType.EDIT))
+					.collect(Collectors.toList());
+		} else {
+			return new ArrayList<AssignmentFile>();
+		}
+	}
+	
 	public List<AssignmentFile> getTestFiles() {
 		if (isRunning()) {
 			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TEST)).collect(Collectors.toList());

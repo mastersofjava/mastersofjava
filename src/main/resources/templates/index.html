@@ -43,7 +43,9 @@
                     <ul class="nav nav-tabs" role="tablist">
                         <!--/*@thymesVar id="files" type="java.util.List<nl.moj.server.files.AssignmentFile>"*/-->
                         <li class="nav-item" th:each="file,status : ${files}">
-                            <a class="nav-link" th:classappend="${status.index==0?'active':''}" th:id="${file.name}"
+                            <a class="nav-link"
+                               th:classappend="${(status.index==0?'active':'') + (file.readOnly?'':' editable')}"
+                               th:id="${file.name}"
                                th:href="${'#'+file.name + '-tab'}" data-toggle="tab"
                                th:text="${file.filename}"></a>
                         </li>
@@ -62,7 +64,7 @@
                             </div>
                         </div>
                         <div class="tab-pane fade" role="tabpanel" id="output-tab">
-                            <div id="#output-content" class="output-content">
+                            <div id="output-content" class="output-content">
                             </div>
                         </div>
                     </div>
@@ -101,20 +103,14 @@
                    target="_blank">Javadoc</a>
             </div>
             <div th:if="${running} and not ${finished}" class="p-2 text-center">
-                <form>
-                    <button id="compile" class="btn w-50 btn-success">Compile</button>
-                </form>
+                <button id="compile" class="btn w-50 btn-success">Compile</button>
             </div>
             <div th:if="${running} and not ${finished}" class="p-2  text-center">
-                <form>
-                    <button id="show-tests" class="btn w-50 btn-success" data-toggle="modal" data-target="#test-modal">Test
-                    </button>
-                </form>
+                <button id="show-tests" class="btn w-50 btn-success" data-toggle="modal" data-target="#test-modal">Test
+                </button>
             </div>
             <div th:if="${running} and not ${finished}" class="mt-5 p-2  text-center">
-                <form>
-                    <button id="submit" class="btn w-50 btn-danger">SUBMIT</button>
-                </form>
+                <button id="submit" class="btn w-50 btn-danger">SUBMIT</button>
             </div>
 
         </div>

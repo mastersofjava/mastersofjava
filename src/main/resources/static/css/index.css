@@ -38,3 +38,12 @@ svg {
 #tabs .nav-link {
     color: black;
 }
+
+#tabs .nav-link.editable {
+    text-decoration: underline;
+}
+
+.output-content {
+    height: 800px;
+    overflow-y: scroll;
+}

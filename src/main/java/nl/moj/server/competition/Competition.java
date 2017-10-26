@@ -1,31 +1,28 @@
 package nl.moj.server.competition;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.google.common.base.Stopwatch;
-
 import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
 import nl.moj.server.persistence.ResultMapper;
 import nl.moj.server.persistence.TestMapper;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class Competition {
 
-	
 	private static final Logger log = LoggerFactory.getLogger(Competition.class);
 
 	private Assignment currentAssignment;
@@ -42,6 +39,44 @@ public class Competition {
 
 	@Autowired
 	private ResultMapper resultMapper;
+
+	@Value("${moj.server.teamDirectory}")
+	private String teamDirectory;
+
+	@Value("${moj.server.basedir}")
+	private String basedir;
+
+	public List<AssignmentFile> getBackupFilesForTeam(String team) {
+		File teamdir = FileUtils.getFile(basedir, teamDirectory, team);
+		File sourcesdir = FileUtils.getFile(teamdir, "sources", currentAssignment.getName());
+		if (!sourcesdir.exists()) {
+			return new ArrayList<>();
+		}
+		Collection<File> files = FileUtils.listFiles(sourcesdir, new IOFileFilter() {
+
+			@Override
+			public boolean accept(File dir, String name) {
+				return true;
+			}
+
+			@Override
+			public boolean accept(File file) {
+				// TODO Auto-generated method stub
+				return true;
+			}
+		}, null);
+
+		return files.stream().map(f -> {
+			try {
+				return new AssignmentFile(f.getName(), FileUtils.readFileToString(f, Charset.defaultCharset()),
+						FileType.EDIT, currentAssignment.getName(), f);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return null;
+		}).collect(Collectors.toList());
+	}
 
 	public String cloneAssignmentsRepo() {
 		// verwijder bestaande als die bestaan
@@ -72,7 +107,7 @@ public class Competition {
 		timer.stop();
 		log.info("assignment stopped {}", currentAssignment.getName());
 	}
-	
+
 	public Integer getSecondsElapsed() {
 		return (int) timer.elapsed(TimeUnit.SECONDS);
 	}
@@ -125,6 +160,7 @@ public class Competition {
 	}
 
 	public List<String> getAssignmentNames() {
-		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).keySet().stream().sorted().collect(Collectors.toList());
+		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).keySet().stream().sorted()
+				.collect(Collectors.toList());
 	}
 }

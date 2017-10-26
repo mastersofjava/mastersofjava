@@ -45,6 +45,7 @@ import org.springframework.web.servlet.resource.WebJarsResourceResolver;
 import org.springframework.web.socket.config.annotation.AbstractWebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 import org.thymeleaf.spring5.ISpringTemplateEngine;
 import org.thymeleaf.spring5.SpringTemplateEngine;
 import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
@@ -106,9 +107,17 @@ public class AppConfig {
 		}
 	}
 
-	@EnableWebSecurity
-	@Configuration
-	public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Bean
+    public ServletServerContainerFactoryBean createServletServerContainerFactoryBean() {
+        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+        container.setMaxTextMessageBufferSize(100000);
+        container.setMaxBinaryMessageBufferSize(100000);
+        return container;
+    }
+
+    @EnableWebSecurity
+    @Configuration
+    public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		@Autowired
 		TeamDetailsService teamDetailsService = new TeamDetailsService();
 
