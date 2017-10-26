@@ -1,27 +1,61 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Masters of Java</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<link rel="stylesheet" href="/css/registration.css" />
+    <meta charset="UTF-8"/>
+    <title>Master of Java 2017</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
+          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
+    <link rel="stylesheet" th:href="@{/css/login.css}" href="/static/css/login.css"/>
 </head>
-<body>
-	<div class="container">
-		<div class="main">
-			<h1>Welcome!</h1>
-			<p th:if="${param.logout}" class="alert">You have been logged out</p>
-			<p th:if="${param.error}" class="alert alert-error">There was an
-				error, please try again</p>
-			<h2>Login to Masters of Java</h2>
-				
-			<form name="form" class="form" th:action="@{/login}" action="/login" method="POST">
-				<input type="text" name="username" value="" placeholder="Username" />
-				<input type="password" name="password" placeholder="Password" /> 
-				<input type="submit" id="login" value="Login" class="btn btn-primary" />
-				<a href="/register">Register</a>
-			</form>
-		</div>
-	</div>
+
+<body class="p-5">
+<div class="container">
+    <div class="row">
+        <div class="col text-center">
+            <img th:src="@{/images/moj_logo_319x243_2017.png}" src="/static/images/moj_logo_319x243_2017.png"/>
+        </div>
+    </div>
+    <div class="row pt-4">
+        <div class="col text-center">
+            <span>Powered By</span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col text-center">
+            <img th:src="@{/images/logo_first8_150x39.png}" src="/static/images/logo_first8_150x39.png"/>
+        </div>
+    </div>
+    <div class="row mt-5">
+        <div class="col text-center">
+        <p th:if="${param.logout}" class="alert">You have been logged out</p>
+        <p th:if="${param.error}" class="alert alert-error">Login failed, please try again.</p>
+        </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="login-container">
+            <form method="post" th:action="@{/login}">
+                <div class="form-group">
+                    <label for="username">Team</label>
+                    <input type="text" class="form-control" id="username" name="username" placeholder="">
+                    <small id="usernameHelp" class="form-text text-muted">This will show up everywhere.</small>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="">
+                </div>
+                <div class="d-flex flex-row-reverse">
+                    <button type="submit" id="login" class="btn btn-primary ml-2">Login</button>
+                    <a class="btn btn-outline-primary ml-2" th:href="@{/register}">Register</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/dist/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+
 </body>
 </html>
-

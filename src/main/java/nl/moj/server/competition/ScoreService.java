@@ -1,28 +1,38 @@
 package nl.moj.server.competition;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import nl.moj.server.persistence.ResultMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ScoreService {
 
-	@Autowired
-	private Competition competition;
-	
-	@Autowired
-	private ResultMapper resultMapper;
-	
-	public void subtractSpentSeconds(String teamname) {
-		int newscore = competition.getRemainingTime();
-		String assignment = competition.getCurrentAssignment().getName();
-		Integer score = resultMapper.getScore(teamname, assignment);
-		if (score == null)
-			score = 0;
-		resultMapper.updateScore(teamname, assignment, score + newscore);
+	private static final Logger log = LoggerFactory.getLogger(ScoreService.class);
+	private final Competition competition;
+	private final ResultMapper resultMapper;
 
+    @Value("${moj.server.competition.bonusForSuccessfulSubmission}")
+	private int bonusForSuccessfulSubmission;
+
+	public ScoreService(Competition competition, ResultMapper resultMapper) {
+		this.competition = competition;
+		this.resultMapper = resultMapper;
 	}
+
+	public void registerScoreAtSubmission(String teamname, int scoreAtSubmissionTime) {
+		String assignment = competition.getCurrentAssignment().getName();
+		Integer oldScore = resultMapper.getScore(teamname, assignment);
+		if (oldScore == null) {
+            oldScore = 0;
+        }
+		final int newScore = oldScore + scoreAtSubmissionTime + bonusForSuccessfulSubmission;
+		log.info("Team {} submitted {}. Previous score {} + assignment score {} + bonus {} = {}",
+		        teamname, assignment, oldScore, scoreAtSubmissionTime, bonusForSuccessfulSubmission, newScore );
+        resultMapper.updateScore(teamname, assignment, newScore);
+	}
+
 
 	public void applyTestPenaltyOrCredit(String teamname) {
 		if (competition.getCurrentAssignment().hasTestPenalties()) {
@@ -31,8 +41,8 @@ public class ScoreService {
 		if (competition.getCurrentAssignment().hasTestCredits()) {
 			resultMapper.decrementCredit(teamname, competition.getCurrentAssignment().getName(), 1);
 		}
-		
+
 	}
-	
-	
+
+
 }

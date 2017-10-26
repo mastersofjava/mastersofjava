@@ -1,26 +1,66 @@
-<html>
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-<title>Registration Masters of Java</title>
-<meta name="robots" content="noindex, nofollow">
-<!-- Include CSS File Here -->
-<link rel="stylesheet" href="/css/registration.css" />
+    <meta charset="UTF-8"/>
+    <title>Master of Java 2017</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
+          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
+    <link rel="stylesheet" th:href="@{/css/registration.css}" href="/static/css/registration.css"/>
 </head>
-<body>
-	<div class="container">
-		<div class="main">
-		    <form action="#" th:action="@{/register}" th:object="${team}" method="post">
-				<h2>Welcome to Masters of Java!</h2>
-			    <div th:each="error : ${errors}">
-			    	<p><a class="alert alert-error" th:text="${error}"></a>
-			    	<a class="alert alert-error">, please try again</a></p>
-				</div>
-				<h4>Register please:</h4>
-		    	<p>Name: <input type="text" th:field="*{name}" /></p>
-		        <p>Password: <input type="password" th:field="*{password}" /></p>
-		        <p>Confirm Password: <input type="password" th:field="*{cpassword}" /></p>
-		        <p><input type="submit" value="Submit" /> <input type="reset" value="Reset" /></p>
-		    </form>
-		</div>
-	</div>
+
+<body class="p-5">
+<div class="container">
+    <div class="row">
+        <div class="col text-center">
+            <img th:src="@{/images/moj_logo_319x243_2017.png}" src="/static/images/moj_logo_319x243_2017.png"/>
+        </div>
+    </div>
+    <div class="row pt-4">
+        <div class="col text-center">
+            <span>Powered By</span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col text-center">
+            <img th:src="@{/images/logo_first8_150x39.png}" src="/static/images/logo_first8_150x39.png"/>
+        </div>
+    </div>
+    <div class="row mt-5">
+        <div class="col text-center" th:if="${errors}">
+            <th:block th:each="error : ${errors}">
+                <p th:text="${error}"></p>
+            </th:block>
+        </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="register-container">
+            <form action="#" th:action="@{/register}" th:object="${team}" method="post">
+                <div class="form-group">
+                    <label for="name">Team</label>
+                    <input type="text" class="form-control" id="name" th:field="*{name}" placeholder="">
+                    <small id="usernameHelp" class="form-text text-muted">This will show up everywhere.</small>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" th:field="*{password}" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label for="rpassword">Confirm Password</label>
+                    <input type="password" class="form-control" id="rpassword" th:field="*{cpassword}" placeholder="">
+                </div>
+                <div class="d-flex flex-row-reverse">
+                    <button type="submit" id="login" class="btn btn-primary ml-2">Register</button>
+                    <a class="btn btn-outline-primary ml-2" th:href="@{/}">Back</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/dist/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+
 </body>
 </html>

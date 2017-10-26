@@ -14,3 +14,7 @@ mojserver.log
 *.ipr
 *.iws
 .idea/
+
+# moj data
+moj-data/
+**/application-local.yaml

@@ -19,13 +19,8 @@ public class TestResult {
 		return testResult;
 	}
 
-	public TestResult setTestResult(String testResult) {
-		if (testResult.length() > 10000) {
-			this.testResult = testResult.substring(0, 10000);
-		} else {
-			this.testResult = testResult;
-		}
-		return this;
+	public void setTestResult(String testResult) {
+		this.testResult = testResult;
 	}
 
 	public String getUser() {
@@ -59,5 +54,4 @@ public class TestResult {
 	public void setSubmit(boolean submit) {
 		this.submit = submit;
 	}
-
 }
