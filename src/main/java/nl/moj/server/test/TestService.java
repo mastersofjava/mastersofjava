@@ -117,14 +117,16 @@ public class TestService {
 	}
 
 	private TestResult unittest(AssignmentFile file, CompileResult compileResult) {
-	    try {
 
-	        log.info("running unittest: {}", file.getName());
-	        File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
-	        File policy = FileUtils.getFile(basedir, libDirectory, "securityPolicyForUnitTests.policy");
-	        if (!policy.exists()) {
-	        	throw new RuntimeException("security policy file not found");
-	        }
+	    log.info("running unittest: {}", file.getName());
+	    File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
+	    File policy = FileUtils.getFile(basedir, libDirectory, "securityPolicyForUnitTests.policy");
+	    if (!policy.exists()) {
+	        throw new RuntimeException("security policy file not found");
+	    }
+
+	    try {
+	        boolean isRunTerminated = false;
 	        int exitvalue=0;
 	            final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(
 	                    MAX_FEEDBACK_LINES,
@@ -151,12 +153,15 @@ public class TestService {
 	        catch (TimeoutException e) {
 	            // process is automatically destroyed
 	            log.debug("Unit test for {} timed out and got killed", compileResult.getUser());
-	            jUnitOutput.getOutput().append('\n').append(TERMINATED);
+	            isRunTerminated = true;
 	        }
 	        catch (SecurityException se) {
 	            log.error(se.getMessage(), se);
 	        }
 	        log.debug("exitValue {}", exitvalue);
+	        if (isRunTerminated) {
+	            jUnitOutput.getOutput().append('\n').append(TERMINATED);
+	        }
 
 
 	        final boolean success;
@@ -176,6 +181,7 @@ public class TestService {
 	            result = jUnitError.toString();
 	            success = (exitvalue == 0);
 	        }
+
 	        log.debug("success {}", success);
 	        log.info("finished unittest: {}", file.getName());
 	        return new TestResult(result, compileResult.getUser(), success, file.getName());
