@@ -215,7 +215,7 @@ public class TestService {
 	private void stripJUnitPrefix(StringBuilder result) {
 		final Matcher matcher = JUNIT_PREFIX_P.matcher(result);
 		if (matcher.find()) {
-			log.debug("stipped '{}'", matcher.group());
+			log.debug("stripped '{}'", matcher.group());
 			result.delete(0, matcher.end());
 		} else {
 			log.debug("stripped nothing of '{}'", result.subSequence(0, 50));

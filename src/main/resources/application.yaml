@@ -22,7 +22,7 @@ moj:
         maxLines: 900
         maxChars: 100000
         maxLineLen: 1000
-        lineTruncatedMessage: "...truncated}</b>"
+        lineTruncatedMessage: "...{truncated}"
         outputTruncMessage: "...{output truncated}"
         testTimoutTermination: "...{terminated: test time expired}"
 
