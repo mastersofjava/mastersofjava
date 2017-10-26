@@ -27,7 +27,7 @@ moj:
         testTimoutTermination: "...{terminated: test time expired}"
 
     competition:
-       bonusForSuccessfulSubmission: 300    
+       bonusForSuccessfulSubmission: 400    
 
 spring:
   h2:
