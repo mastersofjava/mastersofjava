@@ -146,12 +146,14 @@ public class TestService {
 	                    MAX_FEEDBACK_SIZE,
 	                    MAX_FEEDBACK_LINES_LENGTH);
 	            try {
-	            exitvalue = new ProcessExecutor().command(javaExecutable,
-	                    "-cp", makeClasspath(compileResult.getUser()),
-	                    "-Djava.security.manager",
-	                    "-Djava.security.policy=" + policy.getAbsolutePath(),
-	                    "org.junit.runner.JUnitCore", file.getName()
-	                    )
+	            final ProcessExecutor jUnitCommand = new ProcessExecutor().command(javaExecutable,
+                            "-cp", makeClasspath(compileResult.getUser()),
+                            "-Djava.security.manager",
+                            "-Djava.security.policy=" + policy.getAbsolutePath(),
+                            "org.junit.runner.JUnitCore", file.getName()
+                            );
+	            log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
+                exitvalue = jUnitCommand
 	                    .directory( teamdir )
 	                    .timeout( MAX_UNIT_TEST_TIME_OUT, TimeUnit.SECONDS )
 	                    .redirectOutput( jUnitOutput )
