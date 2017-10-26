@@ -10,6 +10,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
@@ -31,6 +33,7 @@ import nl.moj.server.files.AssignmentFile;
 public class TestService {
     private static final String TRUNCATED = "...{truncated}";
     private static final String TERMINATED = "...{terminated: test time expired}";
+    private static final Pattern JUNIT_PREFIX_P = Pattern.compile( "^(JUnit version 4.12)?\\s*\\.?", Pattern.MULTILINE|Pattern.CASE_INSENSITIVE|Pattern.DOTALL );
 
 
     @Value("${moj.server.limits.unitTestOutput.maxChars}")
@@ -44,7 +47,6 @@ public class TestService {
 
 	private static final Logger log = LoggerFactory.getLogger(TestService.class);
 
-    private static final String JUNIT_PREFIX = "JUnit version 4.12\n.\n";
 
 	@Autowired
 	@Qualifier("testing")
@@ -160,9 +162,7 @@ public class TestService {
 	        final boolean success;
 	        final String result;
             if (jUnitOutput.length() > 0) {
-            	log.trace("before strip {}" , jUnitOutput.length());
 	            stripJUnitPrefix( jUnitOutput.getOutput() );
-	            log.trace("after strip {} [{}]" , jUnitOutput.length(), jUnitOutput.toString());
 	            // if we still have some output left and exitvalue = 0
 	            if (jUnitOutput.length() > 0 && exitvalue == 0) {
 	                success = true;
@@ -187,12 +187,15 @@ public class TestService {
 
 
     private void stripJUnitPrefix(StringBuilder result) {
-        final int indexOf = result.indexOf(JUNIT_PREFIX);
-        if (indexOf>=0) {
-            result.delete(0, JUNIT_PREFIX.length());
+        final Matcher matcher = JUNIT_PREFIX_P.matcher(result);
+        if (matcher.find()) {
+            log.debug("stipped '{}'", matcher.group());
+            result.delete(0, matcher.end());
+        } else {
+            log.debug("stripped nothing of '{}'", result.subSequence(0, 50));
         }
     }
-    
+
 	private String makeClasspath(String user) {
 		final List<File> classPath = new ArrayList<>();
 		classPath.add(FileUtils.getFile(basedir, teamDirectory, user));
