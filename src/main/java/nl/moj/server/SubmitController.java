@@ -32,11 +32,32 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.competition.ScoreService;
+import nl.moj.server.compile.CompileService;
+import nl.moj.server.test.TestResult;
+import nl.moj.server.test.TestService;
+
 @Controller
 @MessageMapping("/submit")
+@Slf4j
 public class SubmitController {
-
-	private static final Logger log = LoggerFactory.getLogger(SubmitController.class);
 
 	@Autowired
 	private CompileService compileService;
@@ -57,7 +78,7 @@ public class SubmitController {
 
 	@Autowired
 	private ScoreService scoreService;
-	
+
 	@Value("${moj.server.timeout}")
 	private int TIMEOUT;
 
@@ -79,6 +100,15 @@ public class SubmitController {
 				.thenComposeAsync(compileResult -> testService.testAll(compileResult), testing);
 	}
 
+	/**
+	 * Submits the final solution of the team and closes the assignment for the submitting team.
+	 * The submitting team cannot work with the assignment after closing.
+	 *
+	 * @param message
+	 * @param user
+	 * @param mesg
+	 * @throws Exception
+	 */
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
@@ -98,48 +128,17 @@ public class SubmitController {
 		}
 	}
 
+	@Data
+	@AllArgsConstructor
 	@JsonDeserialize(using = SourceMessageDeserializer.class)
 	public static class SourceMessage {
 
 		private String team;
 		private Map<String, String> source;
 		private List<String> tests;
-		
-		public SourceMessage() {
-		}
-
-		public SourceMessage(String team, Map<String, String> source, List<String> tests) {
-			this.team = team;
-			this.source = source;
-			this.tests = tests;
-		}
 
 		public SourceMessage(Map<String, String> source, List<String> tests) {
 			this.source = source;
-			this.tests = tests;
-		}
-
-		public String getTeam() {
-			return team;
-		}
-
-		public void setTeam(String team) {
-			this.team = team;
-		}
-
-		public Map<String, String> getSource() {
-			return source;
-		}
-
-		public void setSource(Map<String, String> source) {
-			this.source = source;
-		}
-
-		public List<String> getTests() {
-			return tests;
-		}
-
-		public void setTests(List<String> tests) {
 			this.tests = tests;
 		}
 	}

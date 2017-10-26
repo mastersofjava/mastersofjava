@@ -3,30 +3,28 @@ package nl.moj.server;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.persistence.TeamMapper;
 import nl.moj.server.test.TestResult;
 
 @Controller
+@Slf4j
 public class FeedbackController {
-
-	private static final Logger log = LoggerFactory.getLogger(FeedbackController.class);
 
 	@Autowired
 	private TeamMapper teamMapper;
 
 	@Autowired
 	private Competition competition;
-	
+
 	@Autowired
 	private SimpMessagingTemplate template;
 
@@ -36,8 +34,8 @@ public class FeedbackController {
 		model.addObject("teams", teamMapper.getAllTeams());
 		List<String> testNames = new ArrayList<>();
 		if (competition.getCurrentAssignment() != null) {
-			testNames = competition.getCurrentAssignment().getTestNames();	
-		} 
+			testNames = competition.getCurrentAssignment().getTestNames();
+		}
 		model.addObject("tests", testNames);
 
 		return model;
@@ -56,7 +54,7 @@ public class FeedbackController {
 		template.convertAndSendToUser(compileResult.getUser(), "/queue/compilefeedback",
 				new CompileFeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), compileResult.isSuccessful()));
 	}
-	
+
 	public static class TestFeedbackMessage {
 		private String team;
 		private String test;
@@ -117,7 +115,7 @@ public class FeedbackController {
 		}
 
 	}
-	
+
 	public class CompileFeedbackMessage {
 
 		private String team;

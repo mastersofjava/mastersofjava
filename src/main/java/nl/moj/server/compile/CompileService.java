@@ -1,18 +1,5 @@
 package nl.moj.server.compile;
 
-import nl.moj.server.FeedbackController;
-import nl.moj.server.SubmitController.SourceMessage;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.files.AssignmentFile;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import javax.tools.*;
-import javax.tools.JavaCompiler.CompilationTask;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -25,29 +12,52 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-@Service
-public class CompileService {
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler.CompilationTask;
+import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.StandardLocation;
 
-	private static final Logger log = LoggerFactory.getLogger(CompileService.class);
+import org.apache.commons.io.FileUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.FeedbackController;
+import nl.moj.server.SubmitController.SourceMessage;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.files.AssignmentFile;
+
+@Service
+@Slf4j
+public class CompileService {
+    private final static String JAVA_SOURCE_EXTENSION = ".java";
+
 
 	@Autowired
 	private javax.tools.JavaCompiler javaCompiler;
+
 	@Autowired
 	private DiagnosticCollector<JavaFileObject> diagnosticCollector;
 
 	@Autowired
 	private FeedbackController feedbackController;
-	
+
 	@Autowired
 	private Competition competition;
 
 	@Value("${moj.server.teamDirectory}")
 	private String teamDirectory;
+
 	@Value("${moj.server.libDirectory}")
 	private String libDirectory;
 
 	@Value("${moj.server.basedir}")
 	private String basedir;
+
 
 	public Supplier<CompileResult> compile(SourceMessage message) {
 		return compile(message, false, false);
@@ -99,7 +109,7 @@ public class CompileService {
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();
 
-			
+
 			PrintWriter err = new PrintWriter(System.err);
 			log.info("compiling {} classes", javaFileObjects.size());
 			List<File> files = new ArrayList<>();
@@ -171,26 +181,25 @@ public class CompileService {
 		//}
 		return sb.toString();
 	}
-	
-	private final static String JAVA_SOURCE_EXTENSION = ".java";
-	
+
 	protected static JavaFileObject createJavaFileObject(String className, String sourceCode) {
 		return new SourceJavaFileObject(className, sourceCode);
 	}
-	
+
 	private static URI toURI(String name) {
 		File file = new File(name);
-		if (file.exists())
-			return file.toURI();
-		else {
+		if (file.exists()) {
+            return file.toURI();
+        } else {
 			try {
 				final StringBuilder newUri = new StringBuilder();
 				newUri.append("mfm:///");
 				newUri.append(name.replace('.', '/'));
 
-				if (name.endsWith(JAVA_SOURCE_EXTENSION))
-					newUri.replace(newUri.length() - JAVA_SOURCE_EXTENSION.length(), newUri.length(),
+				if (name.endsWith(JAVA_SOURCE_EXTENSION)) {
+                    newUri.replace(newUri.length() - JAVA_SOURCE_EXTENSION.length(), newUri.length(),
 							JAVA_SOURCE_EXTENSION);
+                }
 
 				return URI.create(newUri.toString());
 			} catch (Exception exp) {
@@ -198,10 +207,12 @@ public class CompileService {
 			}
 		}
 	}
+
+
 	/**
 	 * A subclass of JavaFileObject used to represent Java source coming from a
 	 * string.
-	 * 
+	 *
 	 * Removed unused method: public Reader openReader().
 	 */
 	private static class SourceJavaFileObject extends SimpleJavaFileObject {
@@ -212,7 +223,8 @@ public class CompileService {
 			this.sourceCode = sourceCode;
 		}
 
-		public CharBuffer getCharContent(boolean ignoreEncodingErrors) {
+		@Override
+        public CharBuffer getCharContent(boolean ignoreEncodingErrors) {
 			return CharBuffer.wrap(sourceCode);
 		}
 	}

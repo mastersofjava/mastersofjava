@@ -1,18 +1,6 @@
 package nl.moj.server.test;
 
-import nl.moj.server.FeedbackController;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.files.AssignmentFile;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.stream.LogOutputStream;
+import static java.lang.Math.min;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -26,13 +14,31 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static java.lang.Math.min;
+import org.apache.commons.io.FileUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.stream.LogOutputStream;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.FeedbackController;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.compile.CompileResult;
+import nl.moj.server.files.AssignmentFile;
 
 @Service
+@Slf4j
 public class TestService {
-    private static final Logger log = LoggerFactory.getLogger(TestService.class);
+
 
     private static final Pattern JUNIT_PREFIX_P = Pattern.compile( "^(JUnit version 4.12)?\\s*\\.?", Pattern.MULTILINE|Pattern.CASE_INSENSITIVE|Pattern.DOTALL );
+
+    public static final String SECURITY_POLICY_FOR_UNIT_TESTS = "securityPolicyForUnitTests.policy";
 
     @Value("${moj.server.limits.unitTestOutput.maxChars}")
     private int MAX_FEEDBACK_SIZE;
@@ -129,7 +135,7 @@ public class TestService {
 
 	    log.info("running unittest: {}", file.getName());
 	    File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
-	    File policy = FileUtils.getFile(basedir, libDirectory, "securityPolicyForUnitTests.policy");
+	    File policy = FileUtils.getFile(basedir, libDirectory, SECURITY_POLICY_FOR_UNIT_TESTS);
 	    if (!policy.exists()) {
 	        throw new RuntimeException("security policy file not found");
 	    }
@@ -171,13 +177,13 @@ public class TestService {
 	        }
 	        log.debug("exitValue {}", exitvalue);
 	        if (isRunTerminated) {
-	            jUnitOutput.getOutput().append('\n').append( TEST_TEMINATED_MESSAGE );
+	            jUnitOutput.getBuffer().append('\n').append( TEST_TEMINATED_MESSAGE );
 	        }
 
 	        final boolean success;
 	        final String result;
             if (jUnitOutput.length() > 0) {
-	            stripJUnitPrefix( jUnitOutput.getOutput() );
+	            stripJUnitPrefix( jUnitOutput.getBuffer() );
 	            // if we still have some output left and exitvalue = 0
 	            if (jUnitOutput.length() > 0 && exitvalue == 0) {
 	                success = true;
@@ -238,19 +244,15 @@ public class TestService {
      *
      * @author hartmut
      */
+	@Data
+	@EqualsAndHashCode(callSuper=false)
+	@RequiredArgsConstructor
     private final class LengthLimitedOutputCatcher extends LogOutputStream {
-        private final StringBuilder buffer;
+        private final StringBuilder buffer = new StringBuilder();
         private final int maxSize;
         private final int maxLines;
         private final int maxLineLenght;
         private int lineCount=0;
-
-        private LengthLimitedOutputCatcher(int maxLines, int maxSize, int maxLineLenght) {
-            this.buffer = new StringBuilder();
-            this.maxSize = maxSize;
-            this.maxLines = maxLines;
-            this.maxLineLenght = maxLineLenght;
-        }
 
         @Override
         protected void processLine(String line) {
@@ -272,10 +274,6 @@ public class TestService {
             lineCount++;
         }
 
-        public StringBuilder getOutput() {
-            return buffer;
-        }
-
         @Override
         public String toString() {
             return buffer.toString();
@@ -285,6 +283,5 @@ public class TestService {
             return buffer.length();
         }
     }
-
 
 }

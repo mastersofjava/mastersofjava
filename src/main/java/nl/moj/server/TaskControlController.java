@@ -1,23 +1,5 @@
 package nl.moj.server;
 
-import nl.moj.server.competition.Competition;
-import nl.moj.server.model.Result;
-import nl.moj.server.persistence.ResultMapper;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.CSVRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.annotation.SendToUser;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -27,10 +9,32 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-@Controller
-public class TaskControlController {
+import javax.servlet.http.HttpServletResponse;
 
-	private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SendToUser;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.model.Result;
+import nl.moj.server.persistence.ResultMapper;
+
+@Controller
+@Slf4j
+public class TaskControlController {
 
 	static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
 
@@ -43,9 +47,9 @@ public class TaskControlController {
 	@Autowired
 	private ResultMapper resultMapper;
 
-	
+
 	private ScheduledFuture<?> handler;
-	
+
 	@ModelAttribute(name = "assignmenNames")
 	public List<String> assignments() {
 		return competition.getAssignmentNames();
@@ -59,7 +63,8 @@ public class TaskControlController {
 		sendStartToTeams(message.taskName);
 		handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
 		ex.schedule(new Runnable() {
-			public void run() {
+			@Override
+            public void run() {
 				sendStopToTeams(message.taskName);
 				handler.cancel(false);
 			}
@@ -154,7 +159,7 @@ public class TaskControlController {
 
 		public TaskMessage() {
 		}
-		
+
 		public TaskMessage(String taskName) {
 			this.taskName = taskName;
 		}
