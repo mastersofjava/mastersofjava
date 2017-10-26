@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import nl.moj.server.competition.Competition;
 import nl.moj.server.competition.ScoreService;
 import nl.moj.server.compile.CompileService;
 import nl.moj.server.test.TestResult;
@@ -60,6 +61,10 @@ public class SubmitController {
 	@Value("${moj.server.timeout}")
 	private int TIMEOUT;
 
+	@Autowired
+	private Competition competition;
+
+
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
@@ -90,18 +95,20 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
+		int scoreAtSubmissionTime = competition.getRemainingTime();
+
 		message.setTeam(user.getName());
 		CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
 				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
 				.thenAccept(testResult -> {
-					setFinalAssignmentScore(testResult);
+					setFinalAssignmentScore(testResult, scoreAtSubmissionTime);
 				});
 	}
 
-	private void setFinalAssignmentScore(TestResult testResult) {
+	private void setFinalAssignmentScore(TestResult testResult, int scoreAtSubmissionTime) {
 		if (testResult.isSuccessful()) {
-			scoreService.subtractSpentSeconds(testResult.getUser());
+			scoreService.registerScoreAtSubmission(testResult.getUser(), scoreAtSubmissionTime);
 			template.convertAndSend("/queue/rankings", "refresh");
 		}
 	}
@@ -150,7 +157,6 @@ public class SubmitController {
 	}
 
 
-
 	public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
 		@Override
 		public SourceMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
@@ -167,9 +173,9 @@ public class SubmitController {
 			List<String> tests = new ArrayList<>();
 			if (node.get("tests") != null && node.get("tests").isArray()) {
 				ArrayNode jsonTests = (ArrayNode) node.get("tests");
-				jsonTests.forEach( t -> tests.add(t.asText()));
+				jsonTests.forEach(t -> tests.add(t.asText()));
 			}
-			return new SourceMessage(sources,tests);
+			return new SourceMessage(sources, tests);
 		}
 	}
 }
