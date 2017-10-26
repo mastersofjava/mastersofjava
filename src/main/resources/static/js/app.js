@@ -16,26 +16,18 @@ function connectFeedback() {
     stompTestFeedbackClient.connect({}, function (frame) {
         console.log('Connected to feedback channel.');
         stompTestFeedbackClient.subscribe('/user/queue/feedback', function (msg) {
-            console.log("Received test feedback.", msg);
+            console.log("Received test feedback.");
             var message = JSON.parse(msg.body);
             if (!message.submit) {
                 appendOutput(message.text);
-                if (message.success) {
-                    $('#' + message.test + '-li').find("a").css("color", "green");
-                } else {
-                    $('#' + message.test + '-li').find("a").css("color", "red");
-                }
+                updateOutputHeaderColor(message.success);
             }
         });
         stompTestFeedbackClient.subscribe('/user/queue/compilefeedback', function (msg) {
             console.log("Received compiler feedback.");
             var message = JSON.parse(msg.body);
             appendOutput(message.text);
-            if (message.success) {
-                $('#output').css("background-color", "#28a745").css('color', 'white');
-            } else {
-                $('#output').css("background-color", "#dc3545").css('color', 'white');
-            }
+            updateOutputHeaderColor(message.success);
         });
     });
 }
@@ -82,9 +74,6 @@ function initializeCodeMirrors() {
             matchBrackets: true,
             readOnly: $(this).attr('data-cm-readonly') === 'true'
         });
-
-        console.log("Created CM", cm, 'for', $(this).attr('data-cm-filename'),'readOnly', cm.isReadOnly());
-
         editors.push({
             'cm': cm,
             'readonly': cm.isReadOnly(),
@@ -107,7 +96,6 @@ function initializeAssignmentClock() {
 
     /* Need initial run as interval hasn't yet occured... */
     $assignmentClock.css('stroke-dashoffset', initialOffset - (initialOffset / time));
-
 
     function renderTime(i) {
         var remaining = time - i - 1;
@@ -141,12 +129,24 @@ function initializeAssignmentClock() {
 }
 
 function resetOutput() {
-    $('#tabs .nav-link').css("background-color", "transparent").css("color", "black");
+    $('#output').removeClass('failure','success');
     $('#output-content').empty();
+}
+
+function updateOutputHeaderColor(success) {
+    var $output = $('#output');
+    if (success && !$output.hasClass('failure')) {
+        $output.removeClass('failure');
+        $output.addClass('success');
+    } else {
+        $output.removeClass('success');
+        $output.addClass('failure');
+    }
 }
 
 function appendOutput(txt) {
     $('#output-content').append('<pre>' + txt + '</pre>');
+    $('#content').tab('show');
 }
 
 function compile() {
@@ -168,13 +168,6 @@ function test() {
     }));
 }
 
-function cleartests() {
-    //$('.test-output').replaceWith('');
-    //$('#outputarea > pre').replaceWith('<pre></pre>');
-
-
-}
-
 function disable() {
     $('#compile').attr('disabled', 'disabled');
     $('#test').attr('disabled', 'disabled');
@@ -190,7 +183,6 @@ function getContent() {
             editables.push(file);
         }
     });
-    console.log(editables);
     return editables;
 }
 
@@ -200,12 +192,3 @@ function submit() {
         'sources': getContent()
     }));
 }
-
-function makeTablinksBlackAgainAfter10Seconds() {
-    setTimeout(backtoblack, 10000);
-}
-
-function backtoblack() {
-    $('.ui-tabs-anchor').css("color", "black");
-}
-	

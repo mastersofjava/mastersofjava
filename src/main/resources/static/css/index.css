@@ -43,6 +43,16 @@ svg {
     text-decoration: underline;
 }
 
+#tabs .nav-link.success {
+    background-color: #28a745;
+    color: white;
+}
+
+#tabs .nav-link.failure {
+    background-color: #dc3545;
+    color: white;
+}
+
 .output-content {
     height: 800px;
     overflow-y: scroll;
