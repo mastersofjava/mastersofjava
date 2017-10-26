@@ -32,7 +32,7 @@ public class TaskControlController {
 
 	private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
 
-	static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
+	private static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
 
 	@Autowired
 	private SimpMessagingTemplate template;
@@ -146,7 +146,7 @@ public class TaskControlController {
 		return "control";
 	}
 
-	enum ResultHeaders {
+	private enum ResultHeaders {
 		TEAM, ASSIGNMENT, SCORE, PENALTY, CREDIT
 	}
 
@@ -170,7 +170,7 @@ public class TaskControlController {
 
 	}
 
-	public static class TaskTimeMessage {
+	private static class TaskTimeMessage {
 		private String remainingTime;
 
 		public String getRemainingTime() {

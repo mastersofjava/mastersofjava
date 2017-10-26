@@ -29,7 +29,7 @@ public class TeamDetailsService implements UserDetailsService {
 		return new User(teamname, team.getPassword(), true, true, true, true, getAuthorities(team));
 	}
 
-	public Collection<? extends GrantedAuthority> getAuthorities(Team team) {
+	private Collection<? extends GrantedAuthority> getAuthorities(Team team) {
 		List<GrantedAuthority> authList = new ArrayList<>();
 		SimpleGrantedAuthority sGA = new SimpleGrantedAuthority(team.getRole());
 		authList.add(sGA);

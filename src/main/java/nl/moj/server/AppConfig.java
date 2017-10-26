@@ -77,7 +77,7 @@ import java.util.concurrent.TimeUnit;
 public class AppConfig {
 
 	@Value("${moj.server.assignmentDirectory}")
-	public String assignmentDirectory;
+	private String assignmentDirectory;
 
 	@Value("${moj.server.threads}")
 	private int threads;
@@ -118,7 +118,7 @@ public class AppConfig {
     @EnableWebSecurity
     @Configuration
     public class SecurityConfig extends WebSecurityConfigurerAdapter {
-		@Autowired
+		private @Autowired
 		TeamDetailsService teamDetailsService = new TeamDetailsService();
 
 		@Bean
@@ -126,8 +126,7 @@ public class AppConfig {
 			return new BCryptPasswordEncoder();
 		}
 
-		@Bean
-		public DaoAuthenticationProvider authProvider() {
+		private DaoAuthenticationProvider authProvider() {
 			DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
 			authProvider.setUserDetailsService(teamDetailsService);
 			authProvider.setPasswordEncoder(passwordEncoder());
@@ -151,7 +150,7 @@ public class AppConfig {
 					.headers().frameOptions().disable().and().csrf().disable();
 		}
 
-		public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+		private class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
 			@Override
 			public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,

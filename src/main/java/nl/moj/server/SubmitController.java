@@ -157,7 +157,7 @@ public class SubmitController {
 	}
 
 
-	public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
+	private class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
 		@Override
 		public SourceMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
 				throws IOException {

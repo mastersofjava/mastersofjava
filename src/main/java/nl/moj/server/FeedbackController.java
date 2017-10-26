@@ -117,7 +117,7 @@ public class FeedbackController {
 
 	}
 
-	public class CompileFeedbackMessage {
+	private class CompileFeedbackMessage {
 
 		private String team;
 		private String text;

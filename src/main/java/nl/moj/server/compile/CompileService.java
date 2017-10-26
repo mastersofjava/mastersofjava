@@ -176,7 +176,7 @@ public class CompileService {
 		return sb.toString();
 	}
 
-	protected static JavaFileObject createJavaFileObject(String className, String sourceCode) {
+	private static JavaFileObject createJavaFileObject(String className, String sourceCode) {
 		return new SourceJavaFileObject(className, sourceCode);
 	}
 
