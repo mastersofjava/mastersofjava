@@ -12,40 +12,43 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import nl.moj.server.AssignmentRepoConfiguration;
+import nl.moj.server.AssignmentRepoConfiguration.Repo;
 
 @Service
 public class AssignmentRepositoryService {
 
 	private static final Logger log = LoggerFactory.getLogger(AssignmentRepositoryService.class);
 
-	@Value("${moj.server.gitrepository}")
-	private String gitrepository;
-
-	@Value("${moj.server.branch}")
-	private String branch;
-
 	@Value("${moj.server.assignmentDirectory}")
 	private String assignmentDirectory;
 
 	@Value("${moj.server.basedir}")
 	private String basedir;
+	
+	@Autowired
+	private AssignmentRepoConfiguration repos;
 
-	public boolean cloneRemoteGitRepository()  {
+	public boolean cloneRemoteGitRepository(String repoName)  {
 		File tmpPath;
 		try {
 			tmpPath = File.createTempFile("gitrepo", "");
 			if (!tmpPath.delete()) {
 				log.error("Could not delete temporary file " + tmpPath);
 			}
+			Repo repo = repos.getRepos().stream().filter(r -> r.getName().equalsIgnoreCase(repoName)).findFirst().get();
 			// then clone
-			log.info("Cloning from " +basedir + "/" + gitrepository + " to " + tmpPath);
+			log.info("Cloning from " +basedir + "/" + repo.getUrl() + " to " + tmpPath);
 
 			Git result;
 			try {
-				result = Git.cloneRepository().setURI(gitrepository).setDirectory(tmpPath).call();
-				result.checkout().setName(branch).call();
+				result = Git.cloneRepository().setURI(repo.getUrl()).setDirectory(tmpPath).call();
+				
+				result.checkout().setName(repo.getBranch()).call();
 				result.close();
 			} catch (GitAPIException e) {
 				log.error(e.getMessage(), e);
@@ -102,7 +105,7 @@ public class AssignmentRepositoryService {
 
 				@Override
 				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-					if (dir.endsWith("assignments"))
+					if (dir.endsWith(assignmentDirectory))
 						return FileVisitResult.CONTINUE;
 					Files.delete(dir);
 					return FileVisitResult.CONTINUE;

@@ -43,7 +43,7 @@
 	}
 
 	function startTask() {
-		var taskname = $( "input:checked" ).val();
+		var taskname = $("input[name='assignment']:checked").val();
 		console.log(taskname);
 		stompClient.send("/app/control/starttask", {}, JSON.stringify({
 			'taskName' : taskname
@@ -51,7 +51,7 @@
 	}
 
 	function stopTask() {
-		var taskname = $( "input:checked" ).val();
+		var taskname = $("input[name='assignment']:checked").val();
 		console.log(taskname);
 		stompClient.send("/app/control/stoptask", {}, JSON.stringify({
 			'taskName' : taskname
@@ -59,13 +59,14 @@
 	}
 
 	function clearAssignment() {
-		var taskname = $( "input:checked" ).val();
+		var taskname = $("input[name='assignment']:checked").val();
 		console.log(taskname);
 		stompClient.send("/app/control/clearAssignment", {}, {});
 	}
 	
 	function cloneAssignmentsRepo() {
-		stompClient.send("/app/control/cloneAssignmentsRepo", {}, {});
+		var repo = $("input[name='repo']:checked").val();
+		stompClient.send("/app/control/cloneAssignmentsRepo", {}, repo);
 	}
 	
 	function showMessageOutput(messageOutput) {

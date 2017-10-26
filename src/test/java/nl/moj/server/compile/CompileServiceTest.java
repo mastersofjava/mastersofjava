@@ -28,7 +28,7 @@ public class CompileServiceTest {
     @Ignore
     public void doesNotCompileUncompilableCode() {
 
-        taskControlController.cloneAssignmentsRepo();
+       //taskControlController.cloneAssignmentsRepo("practice-assignments");
         taskControlController.startTask(new TaskControlController.TaskMessage("VirtualCPU"));
 
         Map<String, String> source = new HashMap<>();

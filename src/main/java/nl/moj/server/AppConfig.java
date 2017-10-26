@@ -1,8 +1,26 @@
 package nl.moj.server;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import nl.moj.server.files.AssignmentFileFilter;
-import nl.moj.server.files.FileProcessor;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
@@ -53,21 +71,10 @@ import org.thymeleaf.spring5.view.ThymeleafViewResolver;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ITemplateResolver;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.tools.*;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import nl.moj.server.files.AssignmentFileFilter;
+import nl.moj.server.files.FileProcessor;
 //import nz.net.ultraq.thymeleaf.LayoutDialect;
 //import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
 
@@ -107,19 +114,18 @@ public class AppConfig {
 		}
 	}
 
-    @Bean
-    public ServletServerContainerFactoryBean createServletServerContainerFactoryBean() {
-        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
-        container.setMaxTextMessageBufferSize(100000);
-        container.setMaxBinaryMessageBufferSize(100000);
-        return container;
-    }
+	@Bean
+	public ServletServerContainerFactoryBean createServletServerContainerFactoryBean() {
+		ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+		container.setMaxTextMessageBufferSize(100000);
+		container.setMaxBinaryMessageBufferSize(100000);
+		return container;
+	}
 
-    @EnableWebSecurity
-    @Configuration
-    public class SecurityConfig extends WebSecurityConfigurerAdapter {
-		private @Autowired
-		TeamDetailsService teamDetailsService = new TeamDetailsService();
+	@EnableWebSecurity
+	@Configuration
+	public class SecurityConfig extends WebSecurityConfigurerAdapter {
+		private @Autowired TeamDetailsService teamDetailsService = new TeamDetailsService();
 
 		@Bean
 		public PasswordEncoder passwordEncoder() {
@@ -141,13 +147,12 @@ public class AppConfig {
 		@Override
 		protected void configure(HttpSecurity http) throws Exception {
 			http.authorizeRequests() //
-			.antMatchers("/login", "/register", "/feedback").permitAll()//
-			.antMatchers("/").hasRole("USER") //
-			.antMatchers("/control").hasRole("CONTROL") //
-			
-			.and().formLogin()
-					.successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login").and().logout().and()
-					.headers().frameOptions().disable().and().csrf().disable();
+					.antMatchers("/login", "/register", "/feedback").permitAll()//
+					.antMatchers("/").hasRole("USER") //
+					.antMatchers("/control").hasRole("CONTROL") //
+
+					.and().formLogin().successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login")
+					.and().logout().and().headers().frameOptions().disable().and().csrf().disable();
 		}
 
 		private class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
@@ -373,4 +378,6 @@ public class AppConfig {
 			super(AppConfig.SecurityConfig.class);
 		}
 	}
+
+
 }

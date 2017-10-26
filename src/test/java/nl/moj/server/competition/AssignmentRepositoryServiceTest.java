@@ -12,7 +12,7 @@ public class AssignmentRepositoryServiceTest {
 		
 		
 		AssignmentRepositoryService repo = new AssignmentRepositoryService();
-		repo.cloneRemoteGitRepository();
+		repo.cloneRemoteGitRepository("practice-assignments");
 		
 	}
 }

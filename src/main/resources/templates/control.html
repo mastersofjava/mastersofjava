@@ -19,20 +19,30 @@
 	<ul>
 		<li th:each="name : ${assignmenNames}" >
 			<input type="radio" name="assignment" th:value="${name}" th:text="${name}"/>
-
 		</li>
 	</ul>	
 </div>
 <div id="conversationDiv">
-	<button id="start" onclick="startTask();">Start Task</button>
-	<button id="stop" onclick="stopTask();">Stop Task</button>
-	<button id="clone" onclick="cloneAssignmentsRepo();">Clone assignments repo</button>
-	<p id="response"></p>
-	<form method="POST" action="/upload" enctype="multipart/form-data">
-	    <input type="file" name="file" /><br/><br/>
-	    <input type="submit" value="upload" />
-	</form>
+ <button id="start" onclick="startTask();">Start Task</button>
+ <button id="stop" onclick="stopTask();">Stop Task</button>
 </div>
+<div>
+  <ul>
+    <li th:each="repo : ${repos}" >
+        <input type="radio" name="repo" th:value="${repo.name}" th:text="${repo.name} +| / | + ${repo.branch}"/>
+  </li>
+  </ul>
+</div>
+<div id="conversationDiv">
+ <button id="clone" onclick="cloneAssignmentsRepo();">Clone assignments repo</button>
+ <p id="response"></p>
+ <form method="POST" action="/upload" enctype="multipart/form-data">
+     <input type="file" name="file" /><br/><br/>
+     <input type="submit" value="upload" />
+ </form>
+    <a href="/getresults">get results</a>
+</div>
+
 
 
 <script type="text/javascript" src="/js/taskcontrol.js"></script>

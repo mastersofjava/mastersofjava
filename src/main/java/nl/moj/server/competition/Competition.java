@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -78,7 +79,7 @@ public class Competition {
 		}).collect(Collectors.toList());
 	}
 
-	public String cloneAssignmentsRepo() {
+	public String cloneAssignmentsRepo(String repoName) {
 		// verwijder bestaande als die bestaan
 		if (assignments != null) {
 			assignments.keySet().forEach((k) -> {
@@ -87,7 +88,7 @@ public class Competition {
 			});
 			assignments.clear();
 		}
-		return repo.cloneRemoteGitRepository() ? "repo succesvol gedownload" : "repo downloaden mislukt";
+		return repo.cloneRemoteGitRepository(repoName) ? "repo succesvol gedownload" : "repo downloaden mislukt";
 	}
 
 	public void startCurrentAssignment() {
