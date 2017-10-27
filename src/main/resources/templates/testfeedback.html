@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-<script src="/webjars/sockjs-client/sockjs.min.js"></script>
-<script src="/webjars/stomp-websocket/stomp.min.js"></script>
-<script src="/webjars/jquery/jquery.min.js"></script>
-<script src="/js/testfeedback.js"></script>
-<link href="/css/testfeedback.css" rel="stylesheet" />
+	<link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
+	          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
+	<link href="/css/testfeedback.css" rel="stylesheet" />
 </head>
 
 <header>
@@ -19,15 +17,21 @@
    <th:block th:each="team : ${teams}">
     <table style="display: inline-block;">
      <tr>
-      <td th:colspan="${#lists.size(tests)}" th:text="${team.name}">Row 1: Col 1</td>
+      <td class="table-active" th:id="${team.name}" th:colspan="${#lists.size(tests)}" th:text="${team.name}">Row 1: Col 1</td>
      </tr>
      <tr>
-      <td th:id="${team.name}+'-'+${test}" th:each="test : ${tests}">O</td>
+      <td class="table-active" th:id="${team.name}+'-'+${test}" th:each="test : ${tests}">O</td>
      </tr>
     </table>
    </th:block>
 
   </div>
  </div>
+ 
+ <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+ <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+ <script src="/webjars/jquery/jquery.min.js"></script>
+ <script src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+ <script src="/js/testfeedback.js"></script>
 </body>
 </html>

@@ -14,10 +14,6 @@ table{
 	border: 5px;
 }
 
-td{
-	background-color: #ccfbb5;
-	text-align: center;
-}
 div.main {
 	margin-left: auto;
 	margin-right: auto;
@@ -28,8 +24,6 @@ div.main {
 	border-radius: 2px;
 	font-size: 13px;
 }
-
-
 
 label {
 	color: #464646;
