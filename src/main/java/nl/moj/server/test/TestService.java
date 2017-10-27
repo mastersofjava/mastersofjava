@@ -120,7 +120,7 @@ public class TestService {
 	}
 
 	/**
-	 * Test the solution provided by the team agains the Submit tests. Note that the 'normal' unit tests are not tested again.
+	 * Test the solution provided by the team against the Submit tests. Note that the 'normal' unit tests are not tested again.
 	 * @param compileResult
 	 * @return
 	 */

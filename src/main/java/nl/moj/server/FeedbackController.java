@@ -1,9 +1,8 @@
 package nl.moj.server;
 
-import nl.moj.server.competition.Competition;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.persistence.TeamMapper;
-import nl.moj.server.test.TestResult;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +11,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.util.ArrayList;
-import java.util.List;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.compile.CompileResult;
+import nl.moj.server.model.Team;
+import nl.moj.server.persistence.ResultMapper;
+import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.test.TestResult;
 
 @Controller
 public class FeedbackController {
@@ -22,6 +25,9 @@ public class FeedbackController {
 
 	@Autowired
 	private TeamMapper teamMapper;
+	
+	@Autowired
+	private ResultMapper resultMapper;
 
 	@Autowired
 	private Competition competition;
@@ -32,7 +38,9 @@ public class FeedbackController {
 	@GetMapping("/feedback")
 	public ModelAndView feedback() {
 		ModelAndView model = new ModelAndView("testfeedback");
-		model.addObject("teams", teamMapper.getAllTeams());
+		List<Team> allTeams = teamMapper.getAllTeams();
+		orderTeamsByHighestTotalScore(allTeams);
+		model.addObject("teams", allTeams);
 		List<String> testNames = new ArrayList<>();
 		if (competition.getCurrentAssignment() != null) {
 			testNames = competition.getCurrentAssignment().getTestNames();
@@ -44,10 +52,12 @@ public class FeedbackController {
 
 	public void sendTestFeedbackMessage(TestResult testResult, Boolean submit) {
 		log.info("sending testResult feedback");
+		Integer totalScore = resultMapper.getTotalScore(testResult.getUser());
+		
 		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback", new TestFeedbackMessage(
-				testResult.getUser(), testResult.getTestname(), testResult.getTestResult(), testResult.isSuccessful(), submit));
+				testResult.getUser(), testResult.getTestname(), testResult.getTestResult(), testResult.isSuccessful(), submit, totalScore));
 		template.convertAndSend("/queue/testfeedback", new TestFeedbackMessage(testResult.getUser(),
-				testResult.getTestname(), null, testResult.isSuccessful(), submit));
+				testResult.getTestname(), null, testResult.isSuccessful(), submit, totalScore));
 	}
 
 	public void sendCompileFeedbackMessage(CompileResult compileResult) {
@@ -56,23 +66,33 @@ public class FeedbackController {
 				new CompileFeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), compileResult.isSuccessful()));
 	}
 
+	private void orderTeamsByHighestTotalScore(List<Team> allTeams) {
+		allTeams.stream()
+			.sorted( (t1, t2) -> Integer.compare(
+					resultMapper.getTotalScore(t1.getName()), resultMapper.getTotalScore(t2.getName())
+				)
+			);
+	}
+
 	public static class TestFeedbackMessage {
 		private String team;
 		private String test;
 		private String text;
 		private Boolean success;
 		private Boolean submit;
+		private int totalScore;
 
 		public TestFeedbackMessage() {
 		}
 
-		public TestFeedbackMessage(String team, String test, String text, Boolean success, Boolean submit) {
+		public TestFeedbackMessage(String team, String test, String text, Boolean success, Boolean submit, int totalScore) {
 			super();
 			this.team = team;
 			this.test = test;
 			this.text = text;
 			this.success = success;
 			this.submit = submit;
+			this.totalScore = totalScore;
 		}
 
 		public String getTeam() {
@@ -113,6 +133,14 @@ public class FeedbackController {
 
 		public void setSubmit(Boolean submit) {
 			this.submit = submit;
+		}
+
+		public int getTotalScore() {
+			return totalScore;
+		}
+
+		public void setTotalScore(int totalScore) {
+			this.totalScore = totalScore;
 		}
 
 	}
