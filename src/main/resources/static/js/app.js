@@ -94,25 +94,26 @@ function initializeAssignmentClock() {
     var initialOffset = '440';
     var t = time - $assignmentClock.attr('data-time-left');
 
-
     /* Need initial run as interval hasn't yet occured... */
     $circle.css('stroke-dashoffset', initialOffset - (initialOffset / time));
 
     function renderTime(i) {
         var remaining = time - i - 1;
-        var minutes = Math.floor(remaining / 60);
-        var seconds = ("0" + remaining % 60).slice(-2);
+        if (remaining >= 0) {
+          var minutes = Math.floor(remaining / 60);
+          var seconds = ("0" + remaining % 60).slice(-2);
 
-        $('h2', $assignmentClock).text(minutes + ":" + seconds);
-        $circle.css('stroke-dashoffset', initialOffset - ((i + 1) * (initialOffset / time)));
+          $('h2', $assignmentClock).text(minutes + ":" + seconds);
+          $circle.css('stroke-dashoffset', initialOffset - ((i + 1) * (initialOffset / time)));
 
-        var fraction = i / time;
-        if (fraction > 0.5) {
+          var fraction = i / time;
+          if (fraction > 0.5) {
             if (fraction > 0.8) {
-                $circle.css('stroke', 'red');
+              $circle.css('stroke', 'red');
             } else {
-                $circle.css('stroke', 'orange');
+              $circle.css('stroke', 'orange');
             }
+          }
         }
     }
 
