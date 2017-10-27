@@ -100,9 +100,16 @@ public class TestService {
 					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles().stream()
 							.filter(f -> tests.contains(f.getName())).collect(Collectors.toList());
 					for (AssignmentFile assignmentFile : testFiles) {
-						TestResult tr = unittest(assignmentFile, compileResult);
-						tr.setSubmit(false);
-						feedback.sendTestFeedbackMessage(tr, false);
+					    try {
+					        TestResult tr = unittest(assignmentFile, compileResult);
+					        tr.setSubmit(false);
+					        feedback.sendTestFeedbackMessage(tr, false);
+					        result.add( tr );
+					    } catch (Exception e) {
+					        final TestResult dummyResult = new TestResult("Server error running tests - contact the Organizer", compileResult.getUser(), false, assignmentFile.getFilename() );
+					        feedback.sendTestFeedbackMessage(dummyResult, false);
+					        result.add( dummyResult );
+					    }
 					}
 					return result;
 				} else {
@@ -123,13 +130,19 @@ public class TestService {
 			public TestResult get() {
 				competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser());
 				if (compileResult.isSuccessful()) {
-					TestResult tr = null;
-					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
-					// there should be only 1;
-					tr = unittest(testFiles.get(0), compileResult);
-					tr.setSubmit(true);
-					feedback.sendTestFeedbackMessage(tr, true);
-					return tr;
+				    try {
+				        TestResult tr = null;
+				        List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
+				        // there should be only 1;
+				        tr = unittest(testFiles.get(0), compileResult);
+				        tr.setSubmit(true);
+				        feedback.sendTestFeedbackMessage(tr, true);
+				        return tr;
+				    } catch (Exception e) {
+				        final TestResult dummyResult = new TestResult("Server error running tests - contact the Organizer", compileResult.getUser(), false, "Submission Test" );
+				        feedback.sendTestFeedbackMessage(dummyResult, true);
+				        return dummyResult;
+				    }
 				}
 				return null;
 			}
@@ -143,6 +156,7 @@ public class TestService {
 		File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
 		File policy = FileUtils.getFile(basedir, libDirectory, SECURITY_POLICY_FOR_UNIT_TESTS);
 		if (!policy.exists()) {
+		    log.error("security policy file not found");      // Exception is swallowed somewhere
 			throw new RuntimeException("security policy file not found");
 		}
 
