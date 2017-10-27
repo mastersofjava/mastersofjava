@@ -18,3 +18,4 @@ mojserver.log
 # moj data
 moj-data/
 **/application-local.yaml
+/mojserver.log.1

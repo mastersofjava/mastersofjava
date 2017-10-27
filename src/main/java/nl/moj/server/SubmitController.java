@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 @Controller
 @MessageMapping("/submit")
 public class SubmitController {
-
 	private static final Logger log = LoggerFactory.getLogger(SubmitController.class);
 
 	@Autowired
@@ -95,15 +94,16 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		int scoreAtSubmissionTime = competition.getRemainingTime();
-
-		message.setTeam(user.getName());
-		CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
-				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
-				.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
-				.thenAccept(testResult -> {
-					setFinalAssignmentScore(testResult, scoreAtSubmissionTime);
-				});
+		if( !competition.getCurrentAssignment().isTeamFinished(user.getName()) ) {
+			int scoreAtSubmissionTime = competition.getRemainingTime();
+			message.setTeam(user.getName());
+			CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
+					.orTimeout(TIMEOUT, TimeUnit.SECONDS)
+					.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
+					.thenAccept(testResult -> {
+						setFinalAssignmentScore(testResult, scoreAtSubmissionTime);
+					});
+		}
 	}
 
 	private void setFinalAssignmentScore(TestResult testResult, int scoreAtSubmissionTime) {

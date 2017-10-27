@@ -57,6 +57,7 @@ function connectButtons() {
         e.preventDefault();
     });
     $('#submit').click(function (e) {
+    	    $('#btn-open-submit').attr('disabled', 'disabled');
     		$('#confirm-submit-modal').modal('hide');
         submit();
         e.preventDefault();
