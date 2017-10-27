@@ -1,5 +1,6 @@
 var stomp = null;
 var editors = [];
+var timerActive = true;
 
 $(document).ready(function () {
     connectFeedback();
@@ -59,7 +60,7 @@ function connectButtons() {
     $('#submit').click(function (e) {
     	    $('#btn-open-submit').attr('disabled', 'disabled');
     		$('#confirm-submit-modal').modal('hide');
-    		$('#timer').hide();
+    		timerActive = false;
         submit();
         e.preventDefault();
     });
@@ -100,7 +101,7 @@ function initializeAssignmentClock() {
 
     function renderTime(i) {
         var remaining = time - i - 1;
-        if (remaining >= 0) {
+        if (timerActive && remaining >= 0) {
           var minutes = Math.floor(remaining / 60);
           var seconds = ("0" + remaining % 60).slice(-2);
 
