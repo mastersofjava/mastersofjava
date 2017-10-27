@@ -6,8 +6,8 @@ body {
     cursor: pointer;
 }
 
-.CodeMirror {
-    height: 800px;
+CodeMirror-scroll {
+    overflow-y: scroll;
 }
 
 .footer {
@@ -54,6 +54,5 @@ svg {
 }
 
 .output-content {
-    height: 800px;
     overflow-y: scroll;
 }

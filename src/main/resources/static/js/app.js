@@ -69,9 +69,10 @@ function connectButtons() {
 
 function initializeCodeMirrors() {
     $('textarea[data-cm]').each(function (idx) {
+        var type = $(this).attr('data-cm-file-type');
         var cm = CodeMirror.fromTextArea(this, {
             lineNumbers: true,
-            mode: "text/x-java",
+            mode: type==='TASK'?'text/plain':"text/x-java",
             matchBrackets: true,
             readOnly: $(this).attr('data-cm-readonly') === 'true'
         });
@@ -85,6 +86,19 @@ function initializeCodeMirrors() {
         $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab', function (e) {
             cm.refresh();
         });
+
+        $wrapper = $(cm.getWrapperElement());
+        $wrapper.resizable({
+            resize: function() {
+                cm.setSize($(this).width(), $(this).height());
+                cm.refresh();
+            }
+        });
+
+        var pos = $('#tabs .tab-content').position();
+        var height = window.innerHeight - pos.top - 80;
+        $wrapper.css('height',height+'px');
+        cm.refresh();
     });
 }
 

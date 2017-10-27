@@ -16,8 +16,6 @@
 
 <body class="p-2">
 <div class="container-fluid">
-    <!-- header -->
-
     <!-- content -->
     <div class="row">
         <div class="col-9">
@@ -58,9 +56,8 @@
                     <div class="tab-content">
                         <div class="tab-pane fade" th:classappend="${status.index==0?'show active':''}" role="tabpanel"
                              th:each="file,status : ${files}" th:id="${file.name + '-tab'}">
-                            <div>
-                                <pre th:if="${file.fileType.name()=='TASK'}" th:utext="${file.content}"></pre>
-                                <textarea th:if="${file.fileType.name()!='TASK'}"
+                            <div class="tab-pane-content">
+                                <textarea th:if="${file.fileType.name()}"
                                           th:attr="data-cm=${file.name},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-filename=${file.filename}"
                                           th:utext="${file.content}"></textarea>
                             </div>
