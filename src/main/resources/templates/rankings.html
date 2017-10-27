@@ -1,50 +1,164 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-<script src="/webjars/sockjs-client/sockjs.min.js"></script>
-<script src="/webjars/stomp-websocket/stomp.min.js"></script>
-<script src="/webjars/jquery/jquery.min.js"></script>
-<script src="/js/ranking.js"></script>
-<link href="/css/ranking.css" rel="stylesheet" />
+    <meta charset="UTF-8"/>
+
+    <title>Master of Java 2017</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
+          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
+    <link rel="stylesheet" th:href="@{/css/rankings.css}" href="/static/css/rankings.css"/>
+
 </head>
 
-<header>
-	<h1>Rankings</h1>
-</header>
-<body onload=connect()>
-	<div class="container">
-		<div id="main" class="main">
-			<table id="table">
-				<tr>
-					<th COLSPAN="10">
-						<h3>
-							<br>SCORE BOARD
-						</h3>
-					</th>
-				</tr>
-				<tr>
-					<th rowspan="2">Team</th>
-					<th colspan="1" th:each="assignment : ${assignments}" th:text="${assignment}" />
-					<th rowspan="2">Total score</th>
-				</tr>
-				<tr>
-					<th:block th:each="assignment : ${assignments}">
- 						<th>score</th> <!-- <th>penalty</th><th>credit</th> -->
-					</th:block>
-					</tr>
-				<tr th:each="ranking : ${rankings}">
-					<td th:text="${ranking.team}" >teamname</td>
-					
-					<th:block th:each="result : ${ranking.results}">
-						<td th:text="${result.score}">0</td>
-<!-- 						<td th:text="${result.penalty}">1</td> -->
-<!-- 						<td th:text="${result.credit}">2</td> -->
-					</th:block>
+<body class="p-2">
+<div class="container-fluid">
+    <!-- header -->
+    <div class="row">
+        <div class="col d-flex justify-content-center">
+            <div>
+                <img th:src="@{/images/moj_logo_128x97_2017.png}" class="img-fluid"
+                     src="/static/images/moj_logo_128x97_2017.png"/>
+            </div>
+            <div class="pl-5 align-self-center">
+                <h1>Ranking</h1>
+            </div>
 
-					<td th:text="${ranking.totalScore}">3</td>
-				</tr>
-			</table>
-		</div>
-	</div>
+        </div>
+    </div>
+    <!-- content -->
+    <div class="row mt-2">
+
+        <div class="col-6">
+            <div class="p-2 d-flex justify-content-center">
+                <div id="assignment-clock" th:attrappend="data-time-left=${timeLeft},data-time=${time}"
+                     class="align-self-center">
+                    <div class="time d-flex justify-content-center" style="height: 370px; width: 370px;">
+                        <h2 class="align-self-center">--:--</h2>
+                    </div>
+                    <svg width="370" height="370" xmlns="http://www.w3.org/2000/svg">
+                        <g>
+                            <circle class="clock circle_animation" r="150" cy="185" cx="185"
+                                    stroke-width="25"
+                                    stroke="#6fdb6f" fill="none"></circle>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+        </div>
+        <div class="col-6">
+            <table id="top5" class="table">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Team</th>
+                    <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
+                    <th>Total Score</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!--/*@thymesVar id="top" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <tr th:each="ranking,status : ${top}" th:class="${'rank-'+status.index}">
+                    <td th:text="${ranking.rank}"></td>
+                    <td th:text="${ranking.team}">teamname</td>
+                    <th:block th:each="result : ${ranking.results}">
+                        <td th:text="${result.score}">0</td>
+                    </th:block>
+                    <td th:text="${ranking.totalScore}">3</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-4">
+            <table id="bottom1" class="table table-sm">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Team</th>
+                    <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
+                    <th>Total Score</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!--/*@thymesVar id="bottom1" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <tr th:each="ranking : ${bottom1}">
+                    <td th:text="${ranking.rank}"></td>
+                    <td th:text="${ranking.team}">teamname</td>
+                    <th:block th:each="result : ${ranking.results}">
+                        <td th:text="${result.score}">0</td>
+                    </th:block>
+                    <td th:text="${ranking.totalScore}">3</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-4">
+            <table id="bottom2" class="table table-sm">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Team</th>
+                    <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
+                    <th>Total Score</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!--/*@thymesVar id="bottom2" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <tr th:each="ranking : ${bottom2}">
+                    <td th:text="${ranking.rank}"></td>
+                    <td th:text="${ranking.team}">teamname</td>
+                    <th:block th:each="result : ${ranking.results}">
+                        <td th:text="${result.score}">0</td>
+                    </th:block>
+                    <td th:text="${ranking.totalScore}">3</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-4">
+            <table id="bottom3" class="table table-sm">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Team</th>
+                    <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
+                    <th>Total Score</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!--/*@thymesVar id="bottom3" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <tr th:each="ranking : ${bottom3}">
+                    <td th:text="${ranking.rank}"></td>
+                    <td th:text="${ranking.team}">teamname</td>
+                    <th:block th:each="result : ${ranking.results}">
+                        <td th:text="${result.score}">0</td>
+                    </th:block>
+                    <td th:text="${ranking.totalScore}">3</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- footer -->
+    <div class="fixed-bottom footer d-flex">
+        <div class="mr-auto p-2">
+            <img th:src="@{/images/logo_first8_150x39.png}" class="img-fluid"
+                 src="/static/images/logo_first8_150x39.png"/>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/dist/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+
+<script type="text/javascript" th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+
+<script type="text/javascript" th:src="@{/js/rankings.js}"></script>
+
 </body>
 </html>

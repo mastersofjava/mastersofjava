@@ -6,10 +6,6 @@ body {
     cursor: pointer;
 }
 
-CodeMirror-scroll {
-    overflow-y: scroll;
-}
-
 .footer {
     border-top: 1px solid #aaaaaa;
     background-color: white;

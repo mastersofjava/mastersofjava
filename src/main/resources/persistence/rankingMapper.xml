@@ -18,7 +18,7 @@
 	</resultMap>
 
 	<select id="getRankings" resultMap="Ranking">
-		SELECT t.name, results.id, results.assignment, results.score,results.penalty,results.credit, s.scores
+		SELECT t.name, results.id, results.assignment,results.score,results.penalty,results.credit, s.scores
 		 FROM team t,
 		 (SELECT *
 		    FROM result
@@ -28,6 +28,7 @@
 		   GROUP BY team) as s
 		WHERE results.team = t.name
 		  AND s.team = t.name
+		ORDER BY s.scores DESC
 	</select>
 
 </mapper>

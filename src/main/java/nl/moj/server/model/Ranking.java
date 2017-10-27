@@ -4,8 +4,10 @@ import java.util.List;
 
 public class Ranking {
 
-	private String team;
+	private Integer rank;
 	
+	private String team;
+
 	private List<Result> results;
 
 	private Integer totalScore;
@@ -33,6 +35,12 @@ public class Ranking {
 	public void setTotalScore(Integer totalScore) {
 		this.totalScore = totalScore;
 	}
-	
-	
+
+	public Integer getRank() {
+		return rank;
+	}
+
+	public void setRank(Integer rank) {
+		this.rank = rank;
+	}
 }
