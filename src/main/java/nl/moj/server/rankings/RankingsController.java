@@ -34,9 +34,11 @@ public class RankingsController {
 		model.addAttribute("bottom2", parts.get(1));
 		model.addAttribute("bottom3", parts.get(2));
 		if( competition.getCurrentAssignment() != null ) {
+			model.addAttribute("assignment", competition.getCurrentAssignment().getName());
 			model.addAttribute("timeLeft", competition.getRemainingTime());
 			model.addAttribute("time", competition.getCurrentAssignment().getSolutionTime());
 		} else {
+			model.addAttribute("assignment", "-");
 			model.addAttribute("timeLeft", 0);
 			model.addAttribute("time", 0);
 		}
