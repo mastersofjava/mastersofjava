@@ -8,7 +8,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -65,9 +64,9 @@ public class TaskControlController {
 	@ModelAttribute(name = "repos")
 	public List<Repo> repos() {
 		return repos.getRepos();
-	}	
-	
-	
+	}
+
+
 	@MessageMapping("/control/starttask")
 	public void startTask(TaskMessage message) {
 		competition.setCurrentAssignment(message.getTaskName());
@@ -80,6 +79,7 @@ public class TaskControlController {
             public void run() {
 				sendStopToTeams(message.taskName);
 				handler.cancel(false);
+				competition.stopCurrentAssignment();
 			}
 		}, solutiontime, TimeUnit.SECONDS);
 	}
