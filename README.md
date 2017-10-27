@@ -24,7 +24,7 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 
 #### Start opgave
 - open http://localhost:8080/control
-- login met control/control
+- login met control/f8!moj20!7
 - als er opgaven staan, selecteer er 1 en klik 'start Task'
 - anders klik *Clone assignments repo*
 
