@@ -36,12 +36,17 @@ function connectControl() {
 function process(testfeedback){
 	var id = testfeedback.team + '-' + testfeedback.test;
 	var elem = $('#' + id);
+	$('#' + testfeedback.team).removeClass('table-active').addClass('table-primary');
 	if (testfeedback.success) {
 		elem.text('V');
-		elem.css( "background-color", "green" );	
+		elem.removeClass('table-active');
+		elem.removeClass('table-danger');
+		elem.addClass('table-success');
 	} else {
 		elem.text('X');
-		elem.css( "background-color", "red" );
+		elem.removeClass('table-active');
+		elem.removeClass('table-success');
+		elem.addClass('table-danger');
 	}
 }
 
