@@ -21,7 +21,7 @@ moj:
     limits:
       unitTestTimeoutSeconds: 4
       unitTestOutput:
-        maxLines: 900
+        maxLines: 1000
         maxChars: 100000
         maxLineLen: 1000
         lineTruncatedMessage: "...{truncated}"

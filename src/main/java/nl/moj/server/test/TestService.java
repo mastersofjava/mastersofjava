@@ -150,12 +150,12 @@ public class TestService {
 			boolean isRunTerminated = false;
 			int exitvalue = 0;
 			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(
-					MAX_FEEDBACK_LINES,
 					MAX_FEEDBACK_SIZE,
+					MAX_FEEDBACK_LINES,
 					MAX_FEEDBACK_LINES_LENGTH);
 			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(
-					MAX_FEEDBACK_LINES,
 					MAX_FEEDBACK_SIZE,
+					MAX_FEEDBACK_LINES,
 					MAX_FEEDBACK_LINES_LENGTH);
 			try {
 				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(javaExecutable,
