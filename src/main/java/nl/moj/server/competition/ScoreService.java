@@ -27,10 +27,12 @@ public class ScoreService {
 		if (oldScore == null) {
             oldScore = 0;
         }
-		final int newScore = oldScore + scoreAtSubmissionTime + bonusForSuccessfulSubmission;
+		final int assignmentScore = scoreAtSubmissionTime + bonusForSuccessfulSubmission;
+		final int newScore = oldScore + assignmentScore;
 		log.info("Team {} submitted {}. Previous score {} + assignment score {} + bonus {} = {}",
 		        teamname, assignment, oldScore, scoreAtSubmissionTime, bonusForSuccessfulSubmission, newScore );
         resultMapper.updateScore(teamname, assignment, newScore);
+        //resultMapper.insertScore(teamname, assignment, assignmentScore);
 	}
 
 

@@ -1,10 +1,32 @@
 package nl.moj.server;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import nl.moj.server.files.AssignmentFileFilter;
-import nl.moj.server.files.FileProcessor;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+//import nz.net.ultraq.thymeleaf.LayoutDialect;
+//import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +53,8 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
+import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -46,28 +70,18 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.tools.*;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-//import nz.net.ultraq.thymeleaf.LayoutDialect;
-//import nz.net.ultraq.thymeleaf.decorators.strategies.GroupingStrategy;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import nl.moj.server.files.AssignmentFileFilter;
+import nl.moj.server.files.FileProcessor;
 
 @Configuration
 // @EnableAspectJAutoProxy
 // @Import(AppConfig.SecurityConfig.class)
 public class AppConfig {
+
+	
+	private static final Logger log = LoggerFactory.getLogger(AppConfig.class);
 
 	@Value("${moj.server.assignmentDirectory}")
 	private String assignmentDirectory;
@@ -165,8 +179,7 @@ public class AppConfig {
 						try {
 							Files.createDirectories(teamdir);
 						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							log.error("error while creating team directory", e);
 						}
 					}
 				}
@@ -194,78 +207,18 @@ public class AppConfig {
 		}
 	}
 
-	// @Configuration
-	// public class WebSocketSecurityConfig extends
-	// AbstractSecurityWebSocketMessageBrokerConfigurer {
-	//
-	// protected void configureInbound(MessageSecurityMetadataSourceRegistry
-	// messages) {
-	// messages.simpDestMatchers("/*").authenticated();
-	// }
-	//
-	// @Override
-	// protected boolean sameOriginDisabled() {
-	// // disable CSRF for websockets for now...
-	// return true;
-	// }
-	// }
-
-	@EnableWebMvc
 	@Configuration
-	public class WebAppConfig implements WebMvcConfigurer {
+	public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
 
-		private ApplicationContext applicationContext;
-
-		@Autowired
-		public void setApplicationContext(ApplicationContext applicationContext) {
-			this.applicationContext = applicationContext;
-		}
-
-		public WebAppConfig() {
-
+		protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
+			messages.simpDestMatchers("/*").authenticated();
 		}
 
 		@Override
-		public void addResourceHandlers(ResourceHandlerRegistry registry) {
-
-			registry.addResourceHandler("/webjars/**")
-					.addResourceLocations("classpath:/META-INF/resources/webjars/", "/webjars/")
-					.setCacheControl(CacheControl.maxAge(30L, TimeUnit.DAYS).cachePublic()).resourceChain(true)
-					.addResolver(new WebJarsResourceResolver());
-			registry.addResourceHandler("/**", "/static/**").addResourceLocations("classpath:/static/");
+		protected boolean sameOriginDisabled() {
+			// disable CSRF for websockets for now...
+			return true;
 		}
-
-		/*
-		@Bean
-		public ViewResolver javascriptViewResolver() {
-
-			ThymeleafViewResolver resolver = new ThymeleafViewResolver();
-			resolver.setTemplateEngine(templateEngine(javascriptTemplateResolver()));
-			resolver.setContentType("application/javascript");
-			resolver.setCharacterEncoding("UTF-8");
-			String[] viewnames = { "/js/*.js" };
-			resolver.setViewNames(viewnames);
-			return resolver;
-		}
-
-		private ISpringTemplateEngine templateEngine(ITemplateResolver templateResolver) {
-			SpringTemplateEngine engine = new SpringTemplateEngine();
-			// engine.addDialect(new LayoutDialect(new GroupingStrategy()));
-			// engine.addDialect(new Java8TimeDialect());
-			engine.setTemplateResolver(templateResolver);
-			// engine.setTemplateEngineMessageSource(messageSource());
-			return engine;
-		}
-
-		private ITemplateResolver javascriptTemplateResolver() {
-			SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
-			resolver.setApplicationContext(applicationContext);
-			resolver.setPrefix("/js/");
-			resolver.setCacheable(false);
-			resolver.setTemplateMode(TemplateMode.JAVASCRIPT);
-			return resolver;
-		}
-		*/
 	}
 
 	@Configuration
@@ -366,6 +319,5 @@ public class AppConfig {
 			super(AppConfig.SecurityConfig.class);
 		}
 	}
-
 
 }

@@ -20,6 +20,8 @@ function connectFeedback() {
             if (!message.submit) {
                 appendOutput(message.text);
                 updateOutputHeaderColor(message.success);
+            } else {
+            	updateAlertContainerWithScore(message);
             }
         });
         stompTestFeedbackClient.subscribe('/user/queue/compilefeedback', function (msg) {
@@ -162,6 +164,19 @@ function updateOutputHeaderColor(success) {
     }
 }
 
+function updateAlertContainerWithScore(message) {
+	if (message.success) {
+		 $('#alert-container')
+	     .empty()
+	     .append('<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Testst Success</h4><h1>:-)</h1>' +
+	    		 '<p>your score is</p><strong>'+ message.score + '</strong></div>');			
+	} else {
+		 $('#alert-container')
+	     .empty()
+	     .append('<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Testst Failed</h4><h1>:-(</h1></div>');	
+	}
+}
+
 function appendOutput(txt) {
     $('#output-content').append('<pre>' + escape(txt) + '</pre>');
     $('#content').tab('show');
@@ -235,6 +250,6 @@ function submit() {
 function showSubmitDetails() {
     $('#alert-container')
         .empty()
-        .append('<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Submitted</h4><p>Well done! You have submitted the assignment for final review. ' +
-            'Chill out and wait until the next assignment starts.</p></div>');
+        .append('<div class="alert alert-info p-4" role="alert"><h4 class="alert-heading">Assignment Submitted</h4><p>Well done! You have submitted the assignment for final review. ' +
+            'Chill out and wait a few seconds until the results are displayed.</p></div>');
 }

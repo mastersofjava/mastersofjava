@@ -32,10 +32,10 @@ import nl.moj.server.files.AssignmentFile;
 @Service
 public class TestService {
 
-
 	public static final String SECURITY_POLICY_FOR_UNIT_TESTS = "securityPolicyForUnitTests.policy";
 	private static final Logger log = LoggerFactory.getLogger(TestService.class);
-	private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+	private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
+			Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 	@Value("${moj.server.limits.unitTestOutput.maxChars}")
 	private int MAX_FEEDBACK_SIZE;
 
@@ -56,7 +56,6 @@ public class TestService {
 
 	@Value("${moj.server.limits.unitTestOutput.testTimoutTermination}")
 	private String TEST_TEMINATED_MESSAGE;
-
 
 	@Autowired
 	@Qualifier("testing")
@@ -83,7 +82,6 @@ public class TestService {
 	@Autowired
 	private FeedbackController feedback;
 
-
 	/**
 	 * Tests all normal unit tests. The Submit test will NOT be tested.
 	 *
@@ -100,16 +98,18 @@ public class TestService {
 					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles().stream()
 							.filter(f -> tests.contains(f.getName())).collect(Collectors.toList());
 					for (AssignmentFile assignmentFile : testFiles) {
-					    try {
-					        TestResult tr = unittest(assignmentFile, compileResult);
-					        tr.setSubmit(false);
-					        feedback.sendTestFeedbackMessage(tr, false);
-					        result.add( tr );
-					    } catch (Exception e) {
-					        final TestResult dummyResult = new TestResult("Server error running tests - contact the Organizer", compileResult.getUser(), false, assignmentFile.getFilename() );
-					        feedback.sendTestFeedbackMessage(dummyResult, false);
-					        result.add( dummyResult );
-					    }
+						try {
+							TestResult tr = unittest(assignmentFile, compileResult);
+							tr.setSubmit(false);
+							feedback.sendTestFeedbackMessage(tr, false);
+							result.add(tr);
+						} catch (Exception e) {
+							final TestResult dummyResult = new TestResult(
+									"Server error running tests - contact the Organizer", compileResult.getUser(),
+									false, assignmentFile.getFilename());
+							feedback.sendTestFeedbackMessage(dummyResult, false);
+							result.add(dummyResult);
+						}
 					}
 					return result;
 				} else {
@@ -120,7 +120,9 @@ public class TestService {
 	}
 
 	/**
-	 * Test the solution provided by the team against the Submit tests. Note that the 'normal' unit tests are not tested again.
+	 * Test the solution provided by the team against the Submit tests. Note that
+	 * the 'normal' unit tests are not tested again.
+	 * 
 	 * @param compileResult
 	 * @return
 	 */
@@ -130,34 +132,40 @@ public class TestService {
 			public TestResult get() {
 				competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser());
 				if (compileResult.isSuccessful()) {
-				    try {
-				        TestResult result = new TestResult();
-				        result.setSubmit(true);
-				        StringBuilder sb = new StringBuilder();
-				        boolean success = false;
-				        List<AssignmentFile> testFiles  = competition.getCurrentAssignment().getSubmitFiles();
-				        testFiles.addAll(competition.getCurrentAssignment().getTestFiles());
-				        testFiles.forEach(f -> log.debug(f.getName()));
-						for (AssignmentFile assignmentFile : testFiles) {
-						    try {
-						        TestResult tr = unittest(assignmentFile, compileResult);
-						        sb.append(tr.getTestResult());
-						        if (!success) {
-						        	success = tr.isSuccessful();
-						        }
-						    } catch (Exception e) {
-						        final TestResult dummyResult = new TestResult("Server error running tests - contact the Organizer", compileResult.getUser(), false, assignmentFile.getFilename() );
-						        feedback.sendTestFeedbackMessage(dummyResult, true);
-						    }
+					try {
+						TestResult result = new TestResult();
+						result.setSubmit(true);
+						StringBuilder sb = new StringBuilder();
+						boolean success = true;
+						List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
+						testFiles.addAll(competition.getCurrentAssignment().getTestFiles());
+						testFiles.forEach(f -> log.debug(f.getName()));
+						try {
+							for (AssignmentFile assignmentFile : testFiles) {
+								TestResult tr = unittest(assignmentFile, compileResult);
+								sb.append(tr.getTestResult());
+								if (success) {
+									success = tr.isSuccessful();
+									log.debug("set success {}", success);
+								}
+							}
+						} catch (Exception e) {
+							final TestResult dummyResult = new TestResult(
+									"Server error running tests - contact the Organizer", compileResult.getUser(),
+									false, e.getMessage());
+							feedback.sendTestFeedbackMessage(dummyResult, true);
+							return dummyResult;
 						}
 						result.setSuccessful(success);
-				        feedback.sendTestFeedbackMessage(result, true);
-				        return result;
-				    } catch (Exception e) {
-				        final TestResult dummyResult = new TestResult("Server error running tests - contact the Organizer", compileResult.getUser(), false, "Submission Test" );
-				        feedback.sendTestFeedbackMessage(dummyResult, true);
-				        return dummyResult;
-				    }
+						feedback.sendTestFeedbackMessage(result, true);
+						return result;
+					} catch (Exception e) {
+						final TestResult dummyResult = new TestResult(
+								"Server error running tests - contact the Organizer", compileResult.getUser(), false,
+								"Submission Test");
+						feedback.sendTestFeedbackMessage(dummyResult, true);
+						return dummyResult;
+					}
 				}
 				return null;
 			}
@@ -171,36 +179,25 @@ public class TestService {
 		File teamdir = FileUtils.getFile(basedir, teamDirectory, compileResult.getUser());
 		File policy = FileUtils.getFile(basedir, libDirectory, SECURITY_POLICY_FOR_UNIT_TESTS);
 		if (!policy.exists()) {
-		    log.error("security policy file not found");      // Exception is swallowed somewhere
+			log.error("security policy file not found"); // Exception is swallowed somewhere
 			throw new RuntimeException("security policy file not found");
 		}
 
 		try {
 			boolean isRunTerminated = false;
 			int exitvalue = 0;
-			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(
-					MAX_FEEDBACK_SIZE,
-					MAX_FEEDBACK_LINES,
-					MAX_FEEDBACK_LINES_LENGTH);
-			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(
-					MAX_FEEDBACK_SIZE,
-					MAX_FEEDBACK_LINES,
-					MAX_FEEDBACK_LINES_LENGTH);
+			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(MAX_FEEDBACK_SIZE,
+					MAX_FEEDBACK_LINES, MAX_FEEDBACK_LINES_LENGTH);
+			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(MAX_FEEDBACK_SIZE,
+					MAX_FEEDBACK_LINES, MAX_FEEDBACK_LINES_LENGTH);
 			try {
-				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(javaExecutable,
-						"-cp", makeClasspath(compileResult.getUser()),
-						"-Djava.security.manager",
-						"-Djava.security.policy=" + policy.getAbsolutePath(),
-						"org.junit.runner.JUnitCore", file.getName()
-				);
+				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(javaExecutable, "-cp",
+						makeClasspath(compileResult.getUser()), "-Djava.security.manager",
+						"-Djava.security.policy=" + policy.getAbsolutePath(), "org.junit.runner.JUnitCore",
+						file.getName());
 				log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
-				exitvalue = jUnitCommand
-						.directory(teamdir)
-						.timeout(MAX_UNIT_TEST_TIME_OUT, TimeUnit.SECONDS)
-						.redirectOutput(jUnitOutput)
-						.redirectError(jUnitError)
-						.execute()
-						.getExitValue();
+				exitvalue = jUnitCommand.directory(teamdir).timeout(MAX_UNIT_TEST_TIME_OUT, TimeUnit.SECONDS)
+						.redirectOutput(jUnitOutput).redirectError(jUnitError).execute().getExitValue();
 			} catch (TimeoutException e) {
 				// process is automatically destroyed
 				log.debug("Unit test for {} timed out and got killed", compileResult.getUser());
@@ -218,7 +215,7 @@ public class TestService {
 			if (jUnitOutput.length() > 0) {
 				stripJUnitPrefix(jUnitOutput.getBuffer());
 				// if we still have some output left and exitvalue = 0
-				if (jUnitOutput.length() > 0 && exitvalue == 0  && !isRunTerminated) {
+				if (jUnitOutput.length() > 0 && exitvalue == 0 && !isRunTerminated) {
 					success = true;
 					// result = filteroutput(output);
 				} else {
@@ -239,7 +236,6 @@ public class TestService {
 		}
 		return null;
 	}
-
 
 	private void stripJUnitPrefix(StringBuilder result) {
 		final Matcher matcher = JUNIT_PREFIX_P.matcher(result);
@@ -272,11 +268,10 @@ public class TestService {
 		return sb.toString();
 	}
 
-
 	/**
-	 * Support class to capture a limited shard of potentially huge output.
-	 * The output is limited to a maximum number of lines, a maximum number of chars per line,
-	 * and a total maximum number of characters.
+	 * Support class to capture a limited shard of potentially huge output. The
+	 * output is limited to a maximum number of lines, a maximum number of chars per
+	 * line, and a total maximum number of characters.
 	 *
 	 * @author hartmut
 	 */
@@ -315,26 +310,6 @@ public class TestService {
 
 		public StringBuilder getBuffer() {
 			return buffer;
-		}
-
-		public int getMaxSize() {
-			return maxSize;
-		}
-
-		public int getMaxLines() {
-			return maxLines;
-		}
-
-		public int getMaxLineLenght() {
-			return maxLineLenght;
-		}
-
-		public int getLineCount() {
-			return lineCount;
-		}
-
-		public void setLineCount(int lineCount) {
-			this.lineCount = lineCount;
 		}
 
 		@Override

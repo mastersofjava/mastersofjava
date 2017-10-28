@@ -25,7 +25,10 @@ public interface ResultMapper {
 
 	@Update("UPDATE result SET score = #{score} where team = #{team} AND assignment = #{assignment}")
 	public void updateScore(@Param("team") String team, @Param("assignment") String assignment,	@Param("score") Integer score);
-	
+
+	@Update("INSERT INTO result(team, assignment, score) VALUES (#{team}, #{assignment}, #{score})")
+	public void insertScore(@Param("team") String team, @Param("assignment") String assignment,	@Param("score") Integer score);
+
 	@Update("UPDATE result SET penalty = penalty + #{penalty} where team = #{team} AND assignment = #{assignment}")
 	public void incrementPenalty(@Param("team") String team, @Param("assignment") String assignment, @Param("penalty") Integer penalty);
 
