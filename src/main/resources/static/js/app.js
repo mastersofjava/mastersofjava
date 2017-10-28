@@ -225,6 +225,7 @@ function getContent() {
 
 function submit() {
     disable();
+    resetOutput();
     stomp.send("/app/submit/submit", {}, JSON.stringify({
         'sources': getContent()
     }));

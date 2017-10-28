@@ -70,14 +70,14 @@ public class CompileService {
 			Collection<AssignmentFile> assignmentFiles;
 			if (withTest) {
 				assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaAndTestFiles();
-				assignmentFiles.forEach(f -> log.debug(f.getName()));
 			} else {
 				if (forSubmit) {
-					assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaAndSubmitFiles();
+					assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaAndTestAndSubmitFiles();
 				} else {
 					assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaFiles();
 				}
 			}
+			assignmentFiles.forEach(f -> log.debug(f.getName()));
 			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
 					null);
 			String assignment = competition.getCurrentAssignment().getName();

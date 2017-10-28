@@ -29,7 +29,7 @@ public class Assignment {
 	private List<AssignmentFile> assFiles = new ArrayList<>();
 
 	private List<String> finishedTeams = new ArrayList<>();;
-	
+
 	public Assignment(String name) {
 		super();
 		this.name = name;
@@ -38,11 +38,11 @@ public class Assignment {
 	public void addFinishedTeam(String team) {
 		finishedTeams.add(team);
 	}
-	
+
 	public boolean isTeamFinished(String team) {
 		return finishedTeams.contains(team);
 	}
-	
+
 	public String getName() {
 		return name;
 	}
@@ -87,14 +87,12 @@ public class Assignment {
 
 	public List<AssignmentFile> getEditableFiles() {
 		if (isRunning()) {
-			return assFiles.stream()
-					.filter(f -> f.getFileType().equals(FileType.EDIT))
-					.collect(Collectors.toList());
+			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.EDIT)).collect(Collectors.toList());
 		} else {
 			return new ArrayList<AssignmentFile>();
 		}
 	}
-	
+
 	public List<AssignmentFile> getTestFiles() {
 		if (isRunning()) {
 			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TEST)).collect(Collectors.toList());
@@ -133,21 +131,20 @@ public class Assignment {
 		}
 	}
 
-	public List<AssignmentFile> getReadOnlyJavaAndSubmitFiles() {
+	public List<AssignmentFile> getReadOnlyJavaAndTestAndSubmitFiles() {
 		if (isRunning()) {
-			return assFiles.stream()
-					.filter(f -> f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.SUBMIT))
+			return assFiles
+					.stream().filter(f -> f.getFileType().equals(FileType.READONLY)
+							|| f.getFileType().equals(FileType.TEST) || f.getFileType().equals(FileType.SUBMIT))
 					.collect(Collectors.toList());
 		} else {
 			return new ArrayList<AssignmentFile>();
 		}
 	}
-	
+
 	public List<AssignmentFile> getSubmitFiles() {
 		if (isRunning()) {
-			return assFiles.stream()
-					.filter(f -> f.getFileType().equals(FileType.SUBMIT))
-					.collect(Collectors.toList());
+			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.SUBMIT)).collect(Collectors.toList());
 		} else {
 			return new ArrayList<AssignmentFile>();
 		}

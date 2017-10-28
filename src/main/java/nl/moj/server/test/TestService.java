@@ -131,13 +131,28 @@ public class TestService {
 				competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser());
 				if (compileResult.isSuccessful()) {
 				    try {
-				        TestResult tr = null;
-				        List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
-				        // there should be only 1;
-				        tr = unittest(testFiles.get(0), compileResult);
-				        tr.setSubmit(true);
-				        feedback.sendTestFeedbackMessage(tr, true);
-				        return tr;
+				        TestResult result = new TestResult();
+				        result.setSubmit(true);
+				        StringBuilder sb = new StringBuilder();
+				        boolean success = false;
+				        List<AssignmentFile> testFiles  = competition.getCurrentAssignment().getSubmitFiles();
+				        testFiles.addAll(competition.getCurrentAssignment().getTestFiles());
+				        testFiles.forEach(f -> log.debug(f.getName()));
+						for (AssignmentFile assignmentFile : testFiles) {
+						    try {
+						        TestResult tr = unittest(assignmentFile, compileResult);
+						        sb.append(tr.getTestResult());
+						        if (!success) {
+						        	success = tr.isSuccessful();
+						        }
+						    } catch (Exception e) {
+						        final TestResult dummyResult = new TestResult("Server error running tests - contact the Organizer", compileResult.getUser(), false, assignmentFile.getFilename() );
+						        feedback.sendTestFeedbackMessage(dummyResult, true);
+						    }
+						}
+						result.setSuccessful(success);
+				        feedback.sendTestFeedbackMessage(result, true);
+				        return result;
 				    } catch (Exception e) {
 				        final TestResult dummyResult = new TestResult("Server error running tests - contact the Organizer", compileResult.getUser(), false, "Submission Test" );
 				        feedback.sendTestFeedbackMessage(dummyResult, true);
@@ -280,7 +295,6 @@ public class TestService {
 
 		@Override
 		protected void processLine(String line) {
-		    log.info(line);
 			if (lineCount < maxLines) {
 				final int maxAppendFromBufferSize = min(line.length(), maxSize - buffer.length() + 1);
 				final int maxAppendFromLineLimit = min(maxAppendFromBufferSize, maxLineLenght);

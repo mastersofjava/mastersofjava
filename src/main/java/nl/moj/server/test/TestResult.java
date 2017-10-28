@@ -15,6 +15,10 @@ public class TestResult {
 		this.testname = testname;
 	}
 
+	public TestResult() {
+		// TODO Auto-generated constructor stub
+	}
+
 	public String getTestResult() {
 		return testResult;
 	}

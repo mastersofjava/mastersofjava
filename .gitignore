@@ -2,7 +2,7 @@
 bin/
 gen/
 target/
-mojserver.log
+mojserver.log*
 # Eclipse project files
 .classpath
 .project
@@ -18,4 +18,3 @@ mojserver.log
 # moj data
 moj-data/
 **/application-local.yaml
-/mojserver.log*
