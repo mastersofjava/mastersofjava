@@ -1,0 +1,54 @@
+body {
+    margin-bottom: 50px;
+}
+
+.btn:hover {
+    cursor: pointer;
+}
+
+.footer {
+    border-top: 1px solid #aaaaaa;
+    background-color: white;
+}
+
+#assignment-clock .clock {
+    position: relative;
+    float: left;
+}
+
+#assignment-clock .time {
+    position: absolute;
+}
+
+svg {
+    -webkit-transform: rotate(-90deg);
+    transform: rotate(-90deg);
+}
+
+.circle_animation {
+    stroke-dasharray: 440; /* this value is the pixel circumference of the circle */
+    stroke-dashoffset: 440;
+    transition: all 1s linear;
+}
+
+#tabs .nav-link {
+    color: black;
+}
+
+#tabs .nav-link.editable {
+    text-decoration: underline;
+}
+
+#tabs .nav-link.success {
+    background-color: #28a745;
+    color: white;
+}
+
+#tabs .nav-link.failure {
+    background-color: #dc3545;
+    color: white;
+}
+
+.output-content {
+    overflow-y: scroll;
+}

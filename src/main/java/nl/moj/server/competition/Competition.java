@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,7 +132,7 @@ public class Competition {
 	}
 
 
-	public Integer getSecondsElapsed() {
+	private Integer getSecondsElapsed() {
 		return (int) timer.elapsed(TimeUnit.SECONDS);
 	}
 
@@ -208,5 +209,9 @@ public class Competition {
 	public List<String> getAssignmentNames() {
 		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).keySet().stream().sorted()
 				.collect(Collectors.toList());
+	}
+	
+	public List<MutablePair<String,Integer>> getAssignmentInfo() {
+		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).values().stream().map(v -> MutablePair.of(v.getName(),v.getSolutionTime())).collect(Collectors.toList());
 	}
 }

@@ -2,49 +2,63 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
-	<script src="/webjars/jquery/jquery.min.js"></script>
-	<script src="/webjars/sockjs-client/sockjs.min.js"></script>
-	<script src="/webjars/stomp-websocket/stomp.min.js"></script>
-
-	<script src="/js/coolclock.js" type="text/javascript"></script>
+<script src="/webjars/jquery/jquery.min.js"></script>
+<script src="/webjars/sockjs-client/sockjs.min.js"></script>
+<script src="/webjars/stomp-websocket/stomp.min.js"></script>
+<link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css" />
+<link rel="stylesheet" th:href="@{/css/control.css}" />
 <title>Control</title>
 </head>
-<body onload="connect();">
+<body class="p-2">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-4">
+                <div>
+                    <ul>
+                        <li th:each="assignment : ${assignments}"><input type="radio" name="assignment" th:value="${assignment.left}"
+                            th:text="${assignment.left}" th:id="${assignment.left}" th:attr="time=${assignment.right}"  /></li>
+                    </ul>
+                </div>
+                <div id="conversationDiv">
+                    <button id="start" onclick="startTask();">Start Task</button>
+                    <button id="stop" onclick="stopTask();">Stop Task</button>
+                </div>
+                <div>
+                    <ul>
+                        <li th:each="repo : ${repos}"><input type="radio" name="repo" th:value="${repo.name}"
+                            th:text="${repo.name} +| / | + ${repo.branch}" /></li>
+                    </ul>
+                </div>
+                <div>
+                    <button id="clone" onclick="cloneAssignmentsRepo();">Clone assignments repo</button>
+                    <p id="response"></p>
+                    <form method="POST" action="/upload" enctype="multipart/form-data">
+                        <input type="file" name="file" /><br /> <br /> <input type="submit" value="upload" />
+                    </form>
+                    <a href="/getresults">get results</a>
+                </div>
 
-<div>
-<canvas id="clockid"  class="CoolClock"></canvas>
-</div>
+            </div>
+            <div class="col-3 d-flex flex-column">
+                <div class="p-2 align-self-center">
+                    <div class="text-center">
+                        <h3>Time Left</h3>
+                    </div>
+                    <div id="assignment-clock" th:attrappend="data-time-left=${timeLeft},data-time=${time},running=${running}" class="align-self-center">
+                        <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
+                            <h2 class="align-self-center">--:--</h2>
+                        </div>
+                        <svg width="160" height="160" xmlns="http://www.w3.org/2000/svg">
+                            <g>
+                                <circle class="clock circle_animation" r="69.85699" cy="81" cx="81" stroke-width="8" stroke="#6fdb6f" fill="none"></circle>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
 
-<div>
-	<ul>
-		<li th:each="name : ${assignmenNames}" >
-			<input type="radio" name="assignment" th:value="${name}" th:text="${name}"/>
-		</li>
-	</ul>	
-</div>
-<div id="conversationDiv">
- <button id="start" onclick="startTask();">Start Task</button>
- <button id="stop" onclick="stopTask();">Stop Task</button>
-</div>
-<div>
-  <ul>
-    <li th:each="repo : ${repos}" >
-        <input type="radio" name="repo" th:value="${repo.name}" th:text="${repo.name} +| / | + ${repo.branch}"/>
-  </li>
-  </ul>
-</div>
-<div id="conversationDiv">
- <button id="clone" onclick="cloneAssignmentsRepo();">Clone assignments repo</button>
- <p id="response"></p>
- <form method="POST" action="/upload" enctype="multipart/form-data">
-     <input type="file" name="file" /><br/><br/>
-     <input type="submit" value="upload" />
- </form>
-    <a href="/getresults">get results</a>
-</div>
-
-
-
-<script type="text/javascript" src="/js/taskcontrol.js"></script>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="/js/taskcontrol.js"></script>
 </body>
 </html>

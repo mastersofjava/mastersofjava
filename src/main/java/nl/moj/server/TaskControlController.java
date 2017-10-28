@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,16 +58,15 @@ public class TaskControlController {
 
 	private ScheduledFuture<?> handler;
 
-	@ModelAttribute(name = "assignmenNames")
-	public List<String> assignments() {
-		return competition.getAssignmentNames();
+	@ModelAttribute(name = "assignments")
+	public List<MutablePair<String, Integer>> assignments() {
+		return competition.getAssignmentInfo();
 	}
 
 	@ModelAttribute(name = "repos")
 	public List<Repo> repos() {
 		return repos.getRepos();
 	}
-
 
 	@MessageMapping("/control/starttask")
 	public void startTask(TaskMessage message) {
@@ -76,7 +77,7 @@ public class TaskControlController {
 		handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
 		ex.schedule(new Runnable() {
 			@Override
-            public void run() {
+			public void run() {
 				sendStopToTeams(message.taskName);
 				handler.cancel(false);
 				competition.stopCurrentAssignment();
@@ -119,8 +120,16 @@ public class TaskControlController {
 	}
 
 	@GetMapping("/control")
-	public String taskControl() {
-
+	public String taskControl(Model model) {
+		if (competition.getCurrentAssignment() != null) {
+			model.addAttribute("timeLeft", competition.getRemainingTime());
+			model.addAttribute("time", competition.getCurrentAssignment().getSolutionTime());
+			model.addAttribute("running", competition.getCurrentAssignment().isRunning());
+		} else {
+			model.addAttribute("timeLeft", 0);
+			model.addAttribute("time", 0);
+			model.addAttribute("running", false);
+		}
 		return "control";
 	}
 
