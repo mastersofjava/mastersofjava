@@ -231,6 +231,9 @@ public class TestService {
 		if (matcher.find()) {
 			log.debug("stripped '{}'", matcher.group());
 			result.delete(0, matcher.end());
+			if (result.length() > 0 && result.charAt(0) == '\n') {
+				result.deleteCharAt(0);
+			}
 		} else {
 			log.debug("stripped nothing of '{}'", result.subSequence(0, 50));
 		}
