@@ -106,7 +106,7 @@ public class TaskControlController {
 		template.convertAndSend("/queue/stop", new TaskMessage(taskname));
 	}
 
-	@MessageMapping("/control/clearAssignment")
+	@MessageMapping("/control/clearCurrentAssignment")
 	@SendToUser("/control/queue/feedback")
 	public void clearAssignment() {
 		competition.clearCurrentAssignment();

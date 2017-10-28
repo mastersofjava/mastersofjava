@@ -127,12 +127,12 @@ public class CompileService {
 				String result = sb.toString();
 				diagnosticCollector = new DiagnosticCollector<>();
 				log.debug("compileSuccess: {}\n{}", false, result);
-				compileResult = new CompileResult(result, null, message.getTeam(), false);
+				compileResult = new CompileResult(result, null, message.getTeam(), false, message.getScoreAtSubmissionTime());
 				feedbackController.sendCompileFeedbackMessage(compileResult);
 				return compileResult;
 			}
 			log.debug("compileSuccess: {}", true);
-			compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(), message.getTeam(), true);
+			compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(), message.getTeam(), true, message.getScoreAtSubmissionTime());
 			feedbackController.sendCompileFeedbackMessage(compileResult);
 			return compileResult;
 		};

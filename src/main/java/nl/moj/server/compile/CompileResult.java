@@ -12,11 +12,14 @@ public class CompileResult {
 	
 	private boolean successful;
 	
-	public CompileResult(String compileResult,  List<String> tests, String user, boolean successful) {
+	private Integer scoreAtSubmissionTime;
+	
+	public CompileResult(String compileResult,  List<String> tests, String user, boolean successful, Integer scoreAtSubmissionTime) {
 		this.compileResult = compileResult;
 		this.setTests(tests);
 		this.user = user;
 		this.successful = successful;
+		this.scoreAtSubmissionTime = scoreAtSubmissionTime;
 	}
 
 	public String getCompileResult() {
@@ -50,6 +53,14 @@ public class CompileResult {
 
 	public void setSuccessful(boolean successful) {
 		this.successful = successful;
+	}
+
+	public Integer getScoreAtSubmissionTime() {
+		return scoreAtSubmissionTime;
+	}
+
+	public void setScoreAtSubmissionTime(Integer scoreAtSubmissionTime) {
+		this.scoreAtSubmissionTime = scoreAtSubmissionTime;
 	}
 
 }

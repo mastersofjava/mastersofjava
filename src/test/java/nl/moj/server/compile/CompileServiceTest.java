@@ -1,6 +1,5 @@
 package nl.moj.server.compile;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import nl.moj.server.SubmitController;
 import nl.moj.server.TaskControlController;
 
 @RunWith(SpringRunner.class)
@@ -34,7 +32,7 @@ public class CompileServiceTest {
         Map<String, String> source = new HashMap<>();
         source.put("VirtualCPU", "");
 
-        compileService.compile(new SubmitController.SourceMessage("test_team", source, Collections.emptyList()), false, false);
+        //compileService.compile(new SubmitController.SourceMessage("test_team", source, Collections.emptyList()), false, false, 100);
     }
 
 }

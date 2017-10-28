@@ -7,6 +7,7 @@ public class TestResult {
 	private boolean successful;
 	private String testname;
 	private boolean submit;
+	private Integer scoreAtSubmissionTime;
 
 	public TestResult(String testResult, String user, boolean successful, String testname) {
 		this.testResult = testResult;
@@ -15,8 +16,15 @@ public class TestResult {
 		this.testname = testname;
 	}
 
+	public TestResult(String testResult, String user, boolean successful, String testname, Integer scoreAtSubmissionTime) {
+		this.testResult = testResult;
+		this.user = user;
+		this.successful = successful;
+		this.testname = testname;
+	}
+	
 	public TestResult() {
-		// TODO Auto-generated constructor stub
+		// default
 	}
 
 	public String getTestResult() {
@@ -57,5 +65,13 @@ public class TestResult {
 
 	public void setSubmit(boolean submit) {
 		this.submit = submit;
+	}
+
+	public Integer getScoreAtSubmissionTime() {
+		return scoreAtSubmissionTime;
+	}
+
+	public void setScoreAtSubmissionTime(Integer scoreAtSubmissionTime) {
+		this.scoreAtSubmissionTime = scoreAtSubmissionTime;
 	}
 }

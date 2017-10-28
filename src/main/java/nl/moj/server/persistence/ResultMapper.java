@@ -41,6 +41,9 @@ public interface ResultMapper {
 	@Select("SELECT (*) FROM result WHERE team = #{team}")
 	public List<Result> getResults(@Param ("team") String team);
 	
+	@Select("SELECT score FROM result WHERE team = #{team} AND assignment = #{assignment}")
+	public Integer getScoreForAssignment(@Param ("team") String team, @Param("assignment") String assignment);
+
 	@Select("SELECT (*) FROM result WHERE team = #{team} AND assignment = #{assignment}")
 	public Result getResult(@Param ("team") String team, @Param("assignment") String assignment);
 

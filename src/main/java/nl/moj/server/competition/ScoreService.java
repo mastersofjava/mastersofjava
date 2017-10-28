@@ -21,7 +21,7 @@ public class ScoreService {
 		this.resultMapper = resultMapper;
 	}
 
-	public void registerScoreAtSubmission(String teamname, int scoreAtSubmissionTime) {
+	public Integer registerScoreAtSubmission(String teamname, int scoreAtSubmissionTime) {
 		String assignment = competition.getCurrentAssignment().getName();
 		Integer oldScore = resultMapper.getScore(teamname, assignment);
 		if (oldScore == null) {
@@ -33,6 +33,7 @@ public class ScoreService {
 		        teamname, assignment, oldScore, scoreAtSubmissionTime, bonusForSuccessfulSubmission, newScore );
         resultMapper.updateScore(teamname, assignment, newScore);
         //resultMapper.insertScore(teamname, assignment, assignmentScore);
+        return assignmentScore;
 	}
 
 

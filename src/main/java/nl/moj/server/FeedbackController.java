@@ -50,14 +50,14 @@ public class FeedbackController {
 		return model;
 	}
 
-	public void sendTestFeedbackMessage(TestResult testResult, Boolean submit) {
+	public void sendTestFeedbackMessage(TestResult testResult, Boolean submit, Integer score) {
 		log.info("sending testResult feedback");
-		Integer totalScore = resultMapper.getTotalScore(testResult.getUser());
+		//Integer totalScore = resultMapper.getScoreForAssignment(testResult.getUser(), competition.getCurrentAssignment().getName());
 		
 		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback", new TestFeedbackMessage(
-				testResult.getUser(), testResult.getTestname(), testResult.getTestResult(), testResult.isSuccessful(), submit, totalScore));
+				testResult.getUser(), testResult.getTestname(), testResult.getTestResult(), testResult.isSuccessful(), submit, score));
 		template.convertAndSend("/queue/testfeedback", new TestFeedbackMessage(testResult.getUser(),
-				testResult.getTestname(), null, testResult.isSuccessful(), submit, totalScore));
+				testResult.getTestname(), null, testResult.isSuccessful(), submit, score));
 	}
 
 	public void sendCompileFeedbackMessage(CompileResult compileResult) {
@@ -78,21 +78,21 @@ public class FeedbackController {
 		private String team;
 		private String test;
 		private String text;
-		private Boolean success;
-		private Boolean submit;
-		private int totalScore;
+		private boolean success;
+		private boolean submit;
+		private int score;
 
 		public TestFeedbackMessage() {
 		}
 
-		public TestFeedbackMessage(String team, String test, String text, Boolean success, Boolean submit, int totalScore) {
+		public TestFeedbackMessage(String team, String test, String text, boolean success, Boolean submit, int score) {
 			super();
 			this.team = team;
 			this.test = test;
 			this.text = text;
 			this.success = success;
 			this.submit = submit;
-			this.totalScore = totalScore;
+			this.setScore(score);
 		}
 
 		public String getTeam() {
@@ -119,29 +119,31 @@ public class FeedbackController {
 			this.text = text;
 		}
 
-		public Boolean isSuccess() {
+		public boolean isSuccess() {
 			return success;
 		}
 
-		public void setSuccess(Boolean success) {
+		public void setSuccess(boolean success) {
 			this.success = success;
 		}
 
-		public Boolean getSubmit() {
+		public boolean isSubmit() {
 			return submit;
 		}
 
-		public void setSubmit(Boolean submit) {
+		public void setSubmit(boolean submit) {
 			this.submit = submit;
 		}
 
-		public int getTotalScore() {
-			return totalScore;
+		public int getScore() {
+			return score;
 		}
 
-		public void setTotalScore(int totalScore) {
-			this.totalScore = totalScore;
+		public void setScore(int score) {
+			this.score = score;
 		}
+
+
 
 	}
 

@@ -53,6 +53,6 @@ logging.file: mojserver.log
 logging.level.nl.moj.server: DEBUG
 logging.level.nl.moj.server.persistence: INFO
 logging.level.nl.moj.server.persistence.TeamMapper: INFO
-logging.level.nl.moj.server.persistence.ResultMapper: INFO
+logging.level.nl.moj.server.persistence.ResultMapper: DEBUG
 logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL
 ...

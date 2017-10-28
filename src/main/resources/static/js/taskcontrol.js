@@ -49,9 +49,7 @@ $(document).ready(function () {
 	}
 
 	function clearAssignment() {
-		var taskname = $("input[name='assignment']:checked").val();
-		console.log(taskname);
-		stompClient.send("/app/control/clearAssignment", {}, {});
+		stompClient.send("/app/control/clearCurrentAssignment", {}, {});
 	}
 	
 	function cloneAssignmentsRepo() {

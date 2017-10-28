@@ -20,12 +20,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.stream.LogOutputStream;
 
 import nl.moj.server.FeedbackController;
 import nl.moj.server.competition.Competition;
+import nl.moj.server.competition.ScoreService;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.files.AssignmentFile;
 
@@ -82,6 +84,12 @@ public class TestService {
 	@Autowired
 	private FeedbackController feedback;
 
+	@Autowired
+	private SimpMessagingTemplate template;
+
+	@Autowired
+	private ScoreService scoreService;
+
 	/**
 	 * Tests all normal unit tests. The Submit test will NOT be tested.
 	 *
@@ -101,13 +109,13 @@ public class TestService {
 						try {
 							TestResult tr = unittest(assignmentFile, compileResult);
 							tr.setSubmit(false);
-							feedback.sendTestFeedbackMessage(tr, false);
+							feedback.sendTestFeedbackMessage(tr, false, 0);
 							result.add(tr);
 						} catch (Exception e) {
 							final TestResult dummyResult = new TestResult(
 									"Server error running tests - contact the Organizer", compileResult.getUser(),
 									false, assignmentFile.getFilename());
-							feedback.sendTestFeedbackMessage(dummyResult, false);
+							feedback.sendTestFeedbackMessage(dummyResult, false, 0);
 							result.add(dummyResult);
 						}
 					}
@@ -133,8 +141,7 @@ public class TestService {
 				competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser());
 				if (compileResult.isSuccessful()) {
 					try {
-						TestResult result = new TestResult();
-						result.setSubmit(true);
+						
 						StringBuilder sb = new StringBuilder();
 						boolean success = true;
 						List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
@@ -146,24 +153,27 @@ public class TestService {
 								sb.append(tr.getTestResult());
 								if (success) {
 									success = tr.isSuccessful();
-									log.debug("set success {}", success);
+									log.debug("set success {}", tr.isSuccessful());
 								}
 							}
 						} catch (Exception e) {
 							final TestResult dummyResult = new TestResult(
 									"Server error running tests - contact the Organizer", compileResult.getUser(),
 									false, e.getMessage());
-							feedback.sendTestFeedbackMessage(dummyResult, true);
+							feedback.sendTestFeedbackMessage(dummyResult, true, 0);
 							return dummyResult;
 						}
-						result.setSuccessful(success);
-						feedback.sendTestFeedbackMessage(result, true);
+						TestResult result = new TestResult(sb.toString(), compileResult.getUser(), success,
+								"Submission Test", compileResult.getScoreAtSubmissionTime());
+						Integer score = setFinalAssignmentScore(result, compileResult.getScoreAtSubmissionTime());
+						feedback.sendTestFeedbackMessage(result, true, score);
 						return result;
 					} catch (Exception e) {
+						e.printStackTrace();
 						final TestResult dummyResult = new TestResult(
 								"Server error running tests - contact the Organizer", compileResult.getUser(), false,
 								"Submission Test");
-						feedback.sendTestFeedbackMessage(dummyResult, true);
+						feedback.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
 					}
 				}
@@ -173,6 +183,14 @@ public class TestService {
 
 	}
 
+	private Integer setFinalAssignmentScore(TestResult testResult, int scoreAtSubmissionTime) {
+		if (testResult.isSuccessful()) {
+			template.convertAndSend("/queue/rankings", "refresh");
+			return scoreService.registerScoreAtSubmission(testResult.getUser(), scoreAtSubmissionTime);
+		}
+		return 0;
+	}
+	
 	private TestResult unittest(AssignmentFile file, CompileResult compileResult) {
 
 		log.info("running unittest: {}", file.getName());

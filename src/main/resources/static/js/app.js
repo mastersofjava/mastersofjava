@@ -165,15 +165,16 @@ function updateOutputHeaderColor(success) {
 }
 
 function updateAlertContainerWithScore(message) {
-	if (message.success) {
+	console.log(message);
+	if (message.success == true) {
 		 $('#alert-container')
 	     .empty()
-	     .append('<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Testst Success</h4><h1>:-)</h1>' +
+	     .append('<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Tests Successful</h4><h1>:-)</h1>' +
 	    		 '<p>your score is</p><strong>'+ message.score + '</strong></div>');			
 	} else {
 		 $('#alert-container')
 	     .empty()
-	     .append('<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Testst Failed</h4><h1>:-(</h1></div>');	
+	     .append('<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed</h4><h1>:-(</h1></div>');	
 	}
 }
 

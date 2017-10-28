@@ -51,12 +51,6 @@ public class SubmitController {
 	@Qualifier("testing")
 	private Executor testing;
 
-	@Autowired
-	private SimpMessagingTemplate template;
-
-	@Autowired
-	private ScoreService scoreService;
-
 	@Value("${moj.server.timeout}")
 	private int TIMEOUT;
 
@@ -97,21 +91,14 @@ public class SubmitController {
 		if( !competition.getCurrentAssignment().isTeamFinished(user.getName()) ) {
 			int scoreAtSubmissionTime = competition.getRemainingTime();
 			message.setTeam(user.getName());
+			message.setScoreAtSubmissionTime(scoreAtSubmissionTime);
 			CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
 					.orTimeout(TIMEOUT, TimeUnit.SECONDS)
-					.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing)
-					.thenAccept(testResult -> {
-						setFinalAssignmentScore(testResult, scoreAtSubmissionTime);
-					});
+					.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing);
 		}
 	}
 
-	private void setFinalAssignmentScore(TestResult testResult, int scoreAtSubmissionTime) {
-		if (testResult.isSuccessful()) {
-			scoreService.registerScoreAtSubmission(testResult.getUser(), scoreAtSubmissionTime);
-			template.convertAndSend("/queue/rankings", "refresh");
-		}
-	}
+
 
 	@JsonDeserialize(using = SourceMessageDeserializer.class)
 	public static class SourceMessage {
@@ -119,11 +106,13 @@ public class SubmitController {
 		private String team;
 		private Map<String, String> source;
 		private List<String> tests;
+		private Integer scoreAtSubmissionTime;
 
-		public SourceMessage(String team, Map<String, String> source, List<String> tests) {
+		public SourceMessage(String team, Map<String, String> source, List<String> tests, Integer scoreAtSubmissionTime) {
 			this.team = team;
 			this.source = source;
 			this.tests = tests;
+			this.scoreAtSubmissionTime = scoreAtSubmissionTime;
 		}
 
 		public SourceMessage(Map<String, String> source, List<String> tests) {
@@ -153,6 +142,14 @@ public class SubmitController {
 
 		public void setTests(List<String> tests) {
 			this.tests = tests;
+		}
+
+		public Integer getScoreAtSubmissionTime() {
+			return scoreAtSubmissionTime;
+		}
+
+		public void setScoreAtSubmissionTime(Integer scoreAtSubmissionTime) {
+			this.scoreAtSubmissionTime = scoreAtSubmissionTime;
 		}
 	}
 
