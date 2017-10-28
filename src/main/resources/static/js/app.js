@@ -226,6 +226,11 @@ function disable() {
     $('#test').attr('disabled', 'disabled');
     $('#show-tests').attr('disabled', 'disabled');
     $('#submit').attr('disabled', 'disabled');
+    $.each(editors, function (idx, val) {
+        if (!val.readonly) {
+            val.cm.setOption("readOnly", true);
+        }
+    });
 }
 
 function getContent() {
