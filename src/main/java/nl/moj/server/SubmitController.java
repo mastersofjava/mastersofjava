@@ -7,9 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import nl.moj.server.competition.Competition;
-import nl.moj.server.competition.ScoreService;
 import nl.moj.server.compile.CompileService;
-import nl.moj.server.test.TestResult;
 import nl.moj.server.test.TestService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +16,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 
@@ -64,7 +61,7 @@ public class SubmitController {
 		log.info("Compile job submitted for: {}", user.getName());
 		message.setTeam(user.getName());
 		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
-				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(compileResult -> log.debug(compileResult.getCompileResult()));
+				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(compileResult -> log.debug(compileResult.getResult()));
 	}
 
 	@MessageMapping("/test")

@@ -150,7 +150,7 @@ public class TestService {
 						try {
 							for (AssignmentFile assignmentFile : testFiles) {
 								TestResult tr = unittest(assignmentFile, compileResult);
-								sb.append(tr.getTestResult());
+								sb.append(tr.getResult());
 								if (success) {
 									success = tr.isSuccessful();
 									log.debug("set success {}", tr.isSuccessful());

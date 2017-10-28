@@ -36,6 +36,9 @@ public class FileProcessor {
 	public void process(Message<String> msg) {
 		String filename = (String) msg.getHeaders().get(HEADER_FILE_NAME);
 		File origFile = (File) msg.getHeaders().get(HEADER_FILE_ORIGINALFILE);
+		if (origFile == null) {
+			return;
+		}
 		String origFilename = origFile.getAbsolutePath();
 		if (!origFilename.contains(DIRECTORY)) {
 			return;
@@ -74,7 +77,7 @@ public class FileProcessor {
 					file = new AssignmentFile(filename, content, FileType.POM, assignment, origFile);
 					competition.addAssignmentFile(file);
 					resultMapper.deleteResultsByAssignment(assignment);
-					teamMapper.getAllTeams().forEach(team -> resultMapper.insertEmptyResult(team.getName(), assignment));
+					//teamMapper.getAllTeams().forEach(team -> resultMapper.insertEmptyResult(team.getName(), assignment));
 				}
 			default:
 				break;

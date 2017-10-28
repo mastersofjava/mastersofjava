@@ -89,7 +89,7 @@ function initializeCodeMirrors() {
             cm.refresh();
         });
 
-        $wrapper = $(cm.getWrapperElement());
+        var $wrapper = $(cm.getWrapperElement());
         $wrapper.resizable({
             resize: function() {
                 cm.setSize($(this).width(), $(this).height());
@@ -222,10 +222,11 @@ function test() {
 }
 
 function disable() {
+	console.log("disable");
     $('#compile').attr('disabled', 'disabled');
     $('#test').attr('disabled', 'disabled');
     $('#show-tests').attr('disabled', 'disabled');
-    $('#submit').attr('disabled', 'disabled');
+    $('#btn-open-submit').attr('disabled', 'disabled');
     $.each(editors, function (idx, val) {
         if (!val.readonly) {
             val.cm.setOption("readOnly", true);

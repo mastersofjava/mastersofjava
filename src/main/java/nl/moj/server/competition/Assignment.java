@@ -22,6 +22,8 @@ public class Assignment {
 
 	private boolean running;
 
+	private boolean completed;
+	
 	private List<String> filenames = new ArrayList<>();
 
 	private Properties properties = new Properties();
@@ -43,6 +45,10 @@ public class Assignment {
 		return finishedTeams.contains(team);
 	}
 
+	public List<String> getFinishedTeams() {
+		return finishedTeams;
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -57,6 +63,14 @@ public class Assignment {
 
 	public void setRunning(boolean running) {
 		this.running = running;
+	}
+
+	public boolean isCompleted() {
+		return completed;
+	}
+
+	public void setCompleted(boolean completed) {
+		this.completed = completed;
 	}
 
 	public List<String> getFilenames() {

@@ -2,7 +2,7 @@ package nl.moj.server.test;
 
 public class TestResult {
 
-	private String testResult;
+	private String result;
 	private String user;
 	private boolean successful;
 	private String testname;
@@ -10,29 +10,30 @@ public class TestResult {
 	private Integer scoreAtSubmissionTime;
 
 	public TestResult(String testResult, String user, boolean successful, String testname) {
-		this.testResult = testResult;
+		this.setResult(testResult);
 		this.user = user;
 		this.successful = successful;
 		this.testname = testname;
 	}
 
 	public TestResult(String testResult, String user, boolean successful, String testname, Integer scoreAtSubmissionTime) {
-		this.testResult = testResult;
+		this.setResult(testResult);
 		this.user = user;
 		this.successful = successful;
 		this.testname = testname;
+		this.scoreAtSubmissionTime = scoreAtSubmissionTime;
 	}
 	
 	public TestResult() {
 		// default
 	}
 
-	public String getTestResult() {
-		return testResult;
+	public String getResult() {
+		return result;
 	}
 
-	public void setTestResult(String testResult) {
-		this.testResult = testResult;
+	public void setResult(String result) {
+		this.result = result;
 	}
 
 	public String getUser() {

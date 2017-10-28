@@ -12,6 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -23,13 +26,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Stopwatch;
 
+import nl.moj.server.TaskControlController.TaskMessage;
 import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
 import nl.moj.server.persistence.ResultMapper;
+import nl.moj.server.persistence.TeamMapper;
 import nl.moj.server.persistence.TestMapper;
 
 @Service
@@ -37,7 +43,14 @@ public class Competition {
 
 	private static final Logger log = LoggerFactory.getLogger(Competition.class);
 
-	private AtomicReference<Assignment> currentAssignment = new AtomicReference<>();      // FIXME: access should be synchronized
+	private AtomicReference<Assignment> currentAssignment = new AtomicReference<>(); // FIXME: access should be
+																						// synchronized
+	private ScheduledFuture<?> handler;
+
+	private static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
+
+	@Autowired
+	private SimpMessagingTemplate template;
 
 	private Stopwatch timer;
 
@@ -52,6 +65,9 @@ public class Competition {
 	@Autowired
 	private ResultMapper resultMapper;
 
+	@Autowired
+	private TeamMapper teamMapper;
+
 	@Value("${moj.server.teamDirectory}")
 	private String teamDirectory;
 
@@ -59,35 +75,33 @@ public class Competition {
 	private String basedir;
 
 	/**
-	 * Returns an immutable list of assignment files modified by the given team. The modified files are stored when they 'compile'
+	 * Returns an immutable list of assignment files modified by the given team. The
+	 * modified files are stored when they 'compile'
+	 * 
 	 * @param team
 	 * @return a potentially empty list of files
 	 */
 	public List<AssignmentFile> getBackupFilesForTeam(String team) {
-	    Assignment assignment = getCurrentAssignment();
-	    if (assignment != null) {
-	        File teamdir = FileUtils.getFile(basedir, teamDirectory, team);
-	        File sourcesdir = FileUtils.getFile(teamdir, "sources", assignment.getName());
-	        if (sourcesdir.exists()) {
-	            final List<AssignmentFile> assignmentFiles = FileUtils.listFiles(sourcesdir, TrueFileFilter.INSTANCE, null).stream()
-	                    .map(file -> {
-	                        try {
-	                            return new AssignmentFile(
-	                                    file.getName(),
-	                                    FileUtils.readFileToString(file, Charset.defaultCharset()),
-	                                    FileType.EDIT,
-	                                    assignment.getName(),
-	                                    file);
-	                        } catch (IOException e) {
-	                            log.error("Error retrieving backup files", e);
-	                        }
-	                        return null;
-	                    })
-	                    .collect( toImmutableList() );
-                return assignmentFiles;
-	        }
-	    }
-	    return emptyList();
+		Assignment assignment = getCurrentAssignment();
+		if (assignment != null) {
+			File teamdir = FileUtils.getFile(basedir, teamDirectory, team);
+			File sourcesdir = FileUtils.getFile(teamdir, "sources", assignment.getName());
+			if (sourcesdir.exists()) {
+				final List<AssignmentFile> assignmentFiles = FileUtils
+						.listFiles(sourcesdir, TrueFileFilter.INSTANCE, null).stream().map(file -> {
+							try {
+								return new AssignmentFile(file.getName(),
+										FileUtils.readFileToString(file, Charset.defaultCharset()), FileType.EDIT,
+										assignment.getName(), file);
+							} catch (IOException e) {
+								log.error("Error retrieving backup files", e);
+							}
+							return null;
+						}).collect(toImmutableList());
+				return assignmentFiles;
+			}
+		}
+		return emptyList();
 	}
 
 	public String cloneAssignmentsRepo(String repoName) {
@@ -103,34 +117,54 @@ public class Competition {
 	}
 
 	/**
-	 * Starts the current assignment if one is set.
-	 * Otherwise does nothing except logging a warning.
+	 * Starts the current assignment if one is set. Otherwise does nothing except
+	 * logging a warning.
 	 */
 	public void startCurrentAssignment() {
-	    final Assignment assignment = getCurrentAssignment();
-	    if (assignment!=null) {
-	        assignment.setRunning(true);
-	        timer = Stopwatch.createStarted();
-	        log.info("assignment started {}", assignment.getName());
-        } else {
-            log.warn("Called startCurrentAssignment with currentAssignment==null");
-        }
+		final Assignment assignment = getCurrentAssignment();
+		Integer solutiontime = getCurrentAssignment().getSolutionTime();
+		handler = ex.schedule(new Runnable() {
+			@Override
+			public void run() {
+				sendStopToTeams(assignment.getName());
+				handler.cancel(false);
+				stopCurrentAssignment();
+			}
+		}, solutiontime, TimeUnit.SECONDS);
+
+		if (assignment != null) {
+			assignment.setRunning(true);
+			timer = Stopwatch.createStarted();
+			log.info("assignment started {}", assignment.getName());
+		} else {
+			log.warn("Called startCurrentAssignment with currentAssignment==null");
+		}
 	}
 
-    /**
-     * Stops the current assignment if one is set.
-     * Otherwise does nothing except logging a warning.
-     */
+	private void sendStopToTeams(String taskname) {
+		template.convertAndSend("/queue/stop", new TaskMessage(taskname));
+	}
+
+	/**
+	 * Stops the current assignment if one is set. Otherwise does nothing except
+	 * logging a warning.
+	 */
 	public Optional<Assignment> stopCurrentAssignment() {
-	    final Optional<Assignment> previousAssignment = clearCurrentAssignment();
-	    if (previousAssignment.isPresent()) {
-	        previousAssignment.get().setRunning(false);
-	        timer.stop();
-	        log.info("assignment stopped {}", previousAssignment.get().getName());
-        }
-	    return previousAssignment;
-	}
+		final Optional<Assignment> previousAssignment = clearCurrentAssignment();
 
+		if (previousAssignment.isPresent()) {
+			previousAssignment.get().setRunning(false);
+			previousAssignment.get().setCompleted(true);
+			timer.stop();
+			handler.cancel(true);
+			log.info("assignment stopped {}", previousAssignment.get().getName());
+			// set 0 score for teams that did not finish
+			teamMapper.getAllTeams().stream()
+					.filter(t -> !previousAssignment.get().getFinishedTeams().contains(t.getName()))
+					.forEach(t -> resultMapper.insertScore(t.getName(), previousAssignment.get().getName(), 0));
+		}
+		return previousAssignment;
+	}
 
 	private Integer getSecondsElapsed() {
 		return (int) timer.elapsed(TimeUnit.SECONDS);
@@ -138,17 +172,18 @@ public class Competition {
 
 	/**
 	 * Returns the remaining time of the current assignment or 0, if none is active.
+	 * 
 	 * @return
 	 */
 	public Integer getRemainingTime() {
-        final Assignment assignment = getCurrentAssignment();
-        if (assignment!=null) {
-            int solutiontime = assignment.getSolutionTime();
-            int seconds = getSecondsElapsed();
-            return solutiontime - seconds;
-        } else {
-            return 0;
-        }
+		final Assignment assignment = getCurrentAssignment();
+		if (assignment != null) {
+			int solutiontime = assignment.getSolutionTime();
+			int seconds = getSecondsElapsed();
+			return solutiontime - seconds;
+		} else {
+			return 0;
+		}
 	}
 
 	public Assignment getCurrentAssignment() {
@@ -156,27 +191,29 @@ public class Competition {
 	}
 
 	/**
-	 * Activates the assignment <code>assignmentName</code> (if it exists).
-	 * Any running assignment will be stopped.
+	 * Activates the assignment <code>assignmentName</code> (if it exists). Any
+	 * running assignment will be stopped.
 	 *
-	 * @param assignmentName   the name of the assignment to activate
+	 * @param assignmentName
+	 *            the name of the assignment to activate
 	 * @return the previously active assignment (now stopped)
 	 */
 	public Optional<Assignment> setCurrentAssignment(String assignmentName) {
-	    Assignment stoppedAssignment = null;
+		Assignment stoppedAssignment = null;
 		if (assignments.containsKey(assignmentName)) {
-		    stopCurrentAssignment();
-		    stoppedAssignment = this.currentAssignment.getAndSet(assignments.get(assignmentName));
+			stopCurrentAssignment();
+			stoppedAssignment = this.currentAssignment.getAndSet(assignments.get(assignmentName));
 		}
-		return Optional.ofNullable( stoppedAssignment );
+		return Optional.ofNullable(stoppedAssignment);
 	}
 
 	/**
 	 * Clears the current assignment and returns its last value;
+	 * 
 	 * @return the stopped assignment
 	 */
 	public Optional<Assignment> clearCurrentAssignment() {
-	    return Optional.ofNullable( currentAssignment.getAndSet(null) );
+		return Optional.ofNullable(currentAssignment.getAndSet(null));
 	}
 
 	public Assignment getAssignment(String name) {
@@ -207,11 +244,15 @@ public class Competition {
 	}
 
 	public List<String> getAssignmentNames() {
-		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).keySet().stream().sorted()
+		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).values().stream()
+				.filter(a -> a.isCompleted() || a.isRunning()).map(a -> a.getName()).sorted()
 				.collect(Collectors.toList());
 	}
-	
-	public List<MutablePair<String,Integer>> getAssignmentInfo() {
-		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).values().stream().map(v -> MutablePair.of(v.getName(),v.getSolutionTime())).collect(Collectors.toList());
+
+	public List<MutablePair<String, Integer>> getAssignmentInfo() {
+		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).values().stream()
+				.map(v -> MutablePair.of(v.getName(), v.getSolutionTime()))
+				.sorted()
+				.collect(Collectors.toList());
 	}
 }

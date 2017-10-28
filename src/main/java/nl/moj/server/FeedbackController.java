@@ -55,7 +55,7 @@ public class FeedbackController {
 		//Integer totalScore = resultMapper.getScoreForAssignment(testResult.getUser(), competition.getCurrentAssignment().getName());
 		
 		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback", new TestFeedbackMessage(
-				testResult.getUser(), testResult.getTestname(), testResult.getTestResult(), testResult.isSuccessful(), submit, score));
+				testResult.getUser(), testResult.getTestname(), testResult.getResult(), testResult.isSuccessful(), submit, score));
 		template.convertAndSend("/queue/testfeedback", new TestFeedbackMessage(testResult.getUser(),
 				testResult.getTestname(), null, testResult.isSuccessful(), submit, score));
 	}
@@ -63,7 +63,7 @@ public class FeedbackController {
 	public void sendCompileFeedbackMessage(CompileResult compileResult) {
 		log.info("sending compileResult feedback, {}", compileResult.isSuccessful());
 		template.convertAndSendToUser(compileResult.getUser(), "/queue/compilefeedback",
-				new CompileFeedbackMessage(compileResult.getUser(), compileResult.getCompileResult(), compileResult.isSuccessful()));
+				new CompileFeedbackMessage(compileResult.getUser(), compileResult.getResult(), compileResult.isSuccessful()));
 	}
 
 	private void orderTeamsByHighestTotalScore(List<Team> allTeams) {
@@ -142,12 +142,9 @@ public class FeedbackController {
 		public void setScore(int score) {
 			this.score = score;
 		}
-
-
-
 	}
 
-	private class CompileFeedbackMessage {
+	public static class CompileFeedbackMessage {
 
 		private String team;
 		private String text;

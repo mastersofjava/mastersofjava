@@ -4,11 +4,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.csv.CSVFormat;
@@ -42,7 +37,6 @@ public class TaskControlController {
 
 	private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
 
-	private static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
 
 	@Autowired
 	private SimpMessagingTemplate template;
@@ -56,7 +50,6 @@ public class TaskControlController {
 	@Autowired
 	private AssignmentRepoConfiguration repos;
 
-	private ScheduledFuture<?> handler;
 
 	@ModelAttribute(name = "assignments")
 	public List<MutablePair<String, Integer>> assignments() {
@@ -71,40 +64,31 @@ public class TaskControlController {
 	@MessageMapping("/control/starttask")
 	public void startTask(TaskMessage message) {
 		competition.setCurrentAssignment(message.getTaskName());
-		Integer solutiontime = competition.getCurrentAssignment().getSolutionTime();
 		competition.startCurrentAssignment();
 		sendStartToTeams(message.taskName);
-		handler = ex.scheduleAtFixedRate(() -> sendRemainingTime(), 0, 1, TimeUnit.SECONDS);
-		ex.schedule(new Runnable() {
-			@Override
-			public void run() {
-				sendStopToTeams(message.taskName);
-				handler.cancel(false);
-				competition.stopCurrentAssignment();
-			}
-		}, solutiontime, TimeUnit.SECONDS);
 	}
 
 	@MessageMapping("/control/stoptask")
 	public void stopTask(TaskMessage message) {
 		competition.stopCurrentAssignment();
-		handler.cancel(true);
 		sendStopToTeams(message.taskName);
-	}
-
-	private void sendRemainingTime() {
-		TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
-		taskTimeMessage.setRemainingTime(String.valueOf(competition.getRemainingTime()));
-		template.convertAndSend("/queue/time", taskTimeMessage);
-	}
-
-	private void sendStartToTeams(String taskname) {
-		template.convertAndSend("/queue/start", taskname);
 	}
 
 	private void sendStopToTeams(String taskname) {
 		template.convertAndSend("/queue/stop", new TaskMessage(taskname));
 	}
+	
+//	private void sendRemainingTime() {
+//		TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
+//		taskTimeMessage.setRemainingTime(String.valueOf(competition.getRemainingTime()));
+//		template.convertAndSend("/queue/time", taskTimeMessage);
+//	}
+
+	private void sendStartToTeams(String taskname) {
+		template.convertAndSend("/queue/start", taskname);
+	}
+
+
 
 	@MessageMapping("/control/clearCurrentAssignment")
 	@SendToUser("/control/queue/feedback")
@@ -194,18 +178,6 @@ public class TaskControlController {
 			this.taskName = taskName;
 		}
 
-	}
-
-	private static class TaskTimeMessage {
-		private String remainingTime;
-
-		public String getRemainingTime() {
-			return remainingTime;
-		}
-
-		public void setRemainingTime(String remainingTime) {
-			this.remainingTime = remainingTime;
-		}
 	}
 
 }

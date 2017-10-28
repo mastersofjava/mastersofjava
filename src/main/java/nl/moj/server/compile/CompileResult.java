@@ -4,7 +4,7 @@ import java.util.List;
 
 public class CompileResult {
 
-	private String compileResult;
+	private String result;
 
 	private List<String> tests;
 
@@ -15,20 +15,19 @@ public class CompileResult {
 	private Integer scoreAtSubmissionTime;
 	
 	public CompileResult(String compileResult,  List<String> tests, String user, boolean successful, Integer scoreAtSubmissionTime) {
-		this.compileResult = compileResult;
+		this.setResult(compileResult);
 		this.setTests(tests);
 		this.user = user;
 		this.successful = successful;
 		this.scoreAtSubmissionTime = scoreAtSubmissionTime;
 	}
 
-	public String getCompileResult() {
-		return compileResult;
+	public String getResult() {
+		return result;
 	}
 
-	public CompileResult setCompileResult(String compileResult) {
-		this.compileResult = compileResult;
-		return this;
+	public void setResult(String result) {
+		this.result = result;
 	}
 
 	public List<String> getTests() {

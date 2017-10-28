@@ -19,9 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
-import nl.moj.server.competition.Competition;
 import nl.moj.server.model.Team;
-import nl.moj.server.persistence.ResultMapper;
 import nl.moj.server.persistence.TeamMapper;
 
 @Controller
@@ -30,13 +28,7 @@ public class LoginController {
 	private TeamMapper teamMapper;
 	
 	@Autowired
-	private ResultMapper resultMapper;
-	
-	@Autowired
 	private PasswordEncoder encoder;
-	
-	@Autowired
-	private Competition competition;
 	
 	@Value("${moj.server.teamDirectory}")
 	private String teamDirectory;
@@ -66,9 +58,9 @@ public class LoginController {
     	}
     	
     	teamMapper.addTeam(team.getName(), encoder.encode(team.getPassword()),"ROLE_USER");
-    	for(String assignment : competition.getAssignmentNames()){
-    		resultMapper.insertEmptyResult(team.getName(), assignment);
-    	}
+    	//for(String assignment : competition.getAssignmentNames()){
+    	//	resultMapper.insertEmptyResult(team.getName(), assignment);
+    	//}
     	
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
