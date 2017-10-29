@@ -67,5 +67,5 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 - save
 - stop gui
 - start mojserver
-- run jmeter zonder gui met
-- <apache-jmeter>/bin/jmeter -n -t <workspace>/server/src/test/resources/jmeter/test-mojserver.jmx
+- run jmeter zonder gui vanuit de <workspace> directory
+- <apache-jmeter>/bin/jmeter -n -t server/src/test/resources/jmeter/test-mojserver.jmx
