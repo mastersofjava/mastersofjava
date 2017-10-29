@@ -8,6 +8,9 @@ public class Team {
 	private String password;
 	private String cpassword;
 	private String role;
+	private String country;
+	private String company;
+	
 	private List<Result> results;
 	
 	public int getId() {
@@ -50,6 +53,22 @@ public class Team {
 		this.role = role;
 	}
 	
+	public String getCountry() {
+		return country;
+	}
+
+	public void setCountry(String country) {
+		this.country = country;
+	}
+
+	public String getCompany() {
+		return company;
+	}
+
+	public void setCompany(String company) {
+		this.company = company;
+	}
+
 	public Integer getTotalScore(){
 		int sum = 0;
 		for(Result r : getResults()){
@@ -65,8 +84,5 @@ public class Team {
 	public void setResults(List<Result> results) {
 		this.results = results;
 	}
-//	public void addResult(Result result) {
-//		this.results.add(result);
-//	}
 	
 }

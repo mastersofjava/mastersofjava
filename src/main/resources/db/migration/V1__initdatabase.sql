@@ -4,7 +4,9 @@ create table team (
 	id int not null primary key auto_increment,
 	name varchar(200) unique not null,
 	password varchar(200),
-	role varchar(200)
+	role varchar(200),
+	company varchar(200),
+	country varchar(200)
 );
 
 drop table result if exists;

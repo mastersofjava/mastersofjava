@@ -62,6 +62,7 @@ public class IndexController {
 		model.addAttribute("files", files);
 		model.addAttribute("running", competition.getCurrentAssignment().isRunning());
 		model.addAttribute("finished", competition.getCurrentAssignment().isTeamFinished(user.getName()));
+		model.addAttribute("submittime", competition.getCurrentAssignment().getTeamSubmitTime(user.getName()));
 	}
 
 }

@@ -138,7 +138,7 @@ public class TestService {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
 			public TestResult get() {
-				competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser());
+				competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), compileResult.getScoreAtSubmissionTime());
 				if (compileResult.isSuccessful()) {
 					try {
 						

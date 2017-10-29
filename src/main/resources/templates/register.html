@@ -42,6 +42,19 @@
                     <small id="usernameHelp" class="form-text text-muted">This will show up everywhere.</small>
                 </div>
                 <div class="form-group">
+                    <label for="company">Company</label>
+                    <input type="text" class="form-control" id="company" th:field="*{company}" placeholder="">
+                    <small id="companyHelp" class="form-text text-muted">Yours or your teammate's or both or ...</small>
+                </div>
+                <div class="form-group">
+                    <label for="country">Country</label>
+                    <select th:field="*{country}" class="form-control">
+                      <option value="belgie" >Belgie</option>
+                      <option value="nederland" >Nederland</option>
+                    </select>
+                    <small id="countryHelp" class="form-text text-muted">Where are you?</small>
+                </div>
+                <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" class="form-control" id="password" th:field="*{password}" placeholder="">
                 </div>

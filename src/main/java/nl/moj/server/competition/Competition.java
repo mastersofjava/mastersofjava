@@ -160,7 +160,7 @@ public class Competition {
 			log.info("assignment stopped {}", previousAssignment.get().getName());
 			// set 0 score for teams that did not finish
 			teamMapper.getAllTeams().stream()
-					.filter(t -> !previousAssignment.get().getFinishedTeams().contains(t.getName()))
+					.filter(t -> !previousAssignment.get().getFinishedTeamNames().contains(t.getName()))
 					.forEach(t -> resultMapper.insertScore(t.getName(), previousAssignment.get().getName(), 0));
 		}
 		return previousAssignment;

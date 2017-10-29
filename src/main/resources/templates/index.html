@@ -29,7 +29,7 @@
             <!--/*@thymesVar id="finished" type="java.lang.Boolean"*/-->
 
 
-            <div th:if="${running}">
+            <div id="content" th:if="${running}" th:attr="finished=${finished},submittime=${submittime}">
                 <div class="p-2">
                     <h3>Assignment: [[${assignment}]]</h3>
                 </div>
@@ -39,7 +39,7 @@
                         <p>Well done!. You have submitted the assignment for final review. Chill out and wait until the next assignment starts.</p>
                     </div>
                 </div>
-                <div id="tabs">
+                <div th:unless="${finished}" id="tabs">
                     <ul class="nav nav-tabs" role="tablist">
                         <!--/*@thymesVar id="files" type="java.util.List<nl.moj.server.files.AssignmentFile>"*/-->
                         <li class="nav-item" th:each="file,status : ${files}">
