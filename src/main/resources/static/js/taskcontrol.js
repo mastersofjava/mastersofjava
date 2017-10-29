@@ -17,8 +17,9 @@ $(document).ready(function () {
 		stompClient.debug = null;
 		stompClient.connect({}, function(frame) {
 			console.log('Connected to control');
-			stompClient.subscribe('/user/queue/feedback', function(messageOutput) {
-				console.log("user feedback")
+			console.log('Subscribe to /user/queue/controlfeedback');
+			stompClient.subscribe('/user/queue/controlfeedback', function(messageOutput) {
+				console.log("controlfeedback")
 				showOutput(messageOutput.body);
 			});
 		});

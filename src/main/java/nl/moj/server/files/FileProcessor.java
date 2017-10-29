@@ -1,10 +1,7 @@
 package nl.moj.server.files;
 
-import nl.moj.server.competition.Competition;
-import nl.moj.server.model.Test;
-import nl.moj.server.persistence.ResultMapper;
-import nl.moj.server.persistence.TeamMapper;
-import nl.moj.server.persistence.TestMapper;
+import java.io.File;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.model.Test;
+import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.persistence.TestMapper;
 
 @Component
 public class FileProcessor {
@@ -24,9 +24,6 @@ public class FileProcessor {
 	private String DIRECTORY;
 	@Autowired
 	private Competition competition;
-
-	@Autowired
-	private ResultMapper resultMapper;
 
 	@Autowired
 	private TestMapper testMapper;

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+import nl.moj.server.TaskControlController.TaskMessage;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.compile.CompileResult;
 import nl.moj.server.model.Team;
@@ -54,7 +55,7 @@ public class FeedbackController {
 		log.info("sending testResult feedback");
 		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback", new TestFeedbackMessage(
 				testResult.getUser(), testResult.getTestname(), testResult.getResult(), testResult.isSuccessful(), submit, score));
-		template.convertAndSend("/queue/testfeedback", new TestFeedbackMessage(testResult.getUser(),
+		template.convertAndSend("/queue/feedbackpage", new TestFeedbackMessage(testResult.getUser(),
 				testResult.getTestname(), null, testResult.isSuccessful(), submit, score));
 	}
 
@@ -64,6 +65,17 @@ public class FeedbackController {
 				new CompileFeedbackMessage(compileResult.getUser(), compileResult.getResult(), compileResult.isSuccessful()));
 	}
 
+	public void sendStartToTeams(String taskname) {
+		template.convertAndSend("/queue/start", taskname);
+	}
+	
+	public void sendStopToTeams(String taskname) {
+		template.convertAndSend("/queue/stop", new TaskMessage(taskname));
+	}
+	public void sendRefreshToRankingsPage() {
+		template.convertAndSend("/queue/rankings", "refresh");
+	}
+	
 	private void orderTeamsByHighestTotalScore(List<Team> allTeams) {
 		allTeams.stream()
 			.sorted( (t1, t2) -> Integer.compare(
@@ -71,6 +83,8 @@ public class FeedbackController {
 				)
 			);
 	}
+
+
 
 	public static class TestFeedbackMessage {
 		private String team;
@@ -179,4 +193,6 @@ public class FeedbackController {
 			this.success = success;
 		}
 	}
+
+
 }

@@ -25,12 +25,11 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Stopwatch;
 
-import nl.moj.server.TaskControlController.TaskMessage;
+import nl.moj.server.FeedbackController;
 import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
 import nl.moj.server.persistence.ResultMapper;
@@ -48,8 +47,6 @@ public class Competition {
 
 	private static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
 
-	private SimpMessagingTemplate template;
-
 	private Stopwatch timer;
 
 	private Map<String, Assignment> assignments;
@@ -61,21 +58,23 @@ public class Competition {
 	private ResultMapper resultMapper;
 
 	private TeamMapper teamMapper;
+	
+	private FeedbackController feedbackController;
 
 	private String teamDirectory;
 
 	private String basedir;
 
-	public Competition(SimpMessagingTemplate template, AssignmentRepositoryService repo, TestMapper testMapper,
-			ResultMapper resultMapper, TeamMapper teamMapper,
+	public Competition(AssignmentRepositoryService repo, TestMapper testMapper,
+			ResultMapper resultMapper, TeamMapper teamMapper, FeedbackController feedbackController,
 			@Value("${moj.server.teamDirectory}") String teamDirectory,
 			@Value("${moj.server.basedir}") String basedir) {
 		super();
-		this.template = template;
 		this.repo = repo;
 		this.testMapper = testMapper;
 		this.resultMapper = resultMapper;
 		this.teamMapper = teamMapper;
+		this.feedbackController = feedbackController;
 		this.teamDirectory = teamDirectory;
 		this.basedir = basedir;
 	}
@@ -145,7 +144,7 @@ public class Competition {
 		handler = ex.schedule(new Runnable() {
 			@Override
 			public void run() {
-				sendStopToTeams(assignment.getName());
+				feedbackController.sendStopToTeams(assignment.getName());
 				handler.cancel(false);
 				stopCurrentAssignment();
 			}
@@ -156,9 +155,7 @@ public class Competition {
 		log.info("assignment started {}", assignment.getName());
 	}
 
-	private void sendStopToTeams(String taskname) {
-		template.convertAndSend("/queue/stop", new TaskMessage(taskname));
-	}
+
 
 	/**
 	 * Stops the current assignment if one is set. Otherwise does nothing except

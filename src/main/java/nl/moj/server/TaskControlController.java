@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,10 +37,6 @@ public class TaskControlController {
 
 	private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
 
-
-	@Autowired
-	private SimpMessagingTemplate template;
-
 	@Autowired
 	private Competition competition;
 
@@ -51,7 +46,9 @@ public class TaskControlController {
 	@Autowired
 	private AssignmentRepoConfiguration repos;
 
-
+	@Autowired
+	private FeedbackController feedbackController;
+	
 	@ModelAttribute(name = "assignments")
 	public List<ImmutablePair<String, Integer>> assignments() {
 		return competition.getAssignmentInfo();
@@ -65,31 +62,25 @@ public class TaskControlController {
 	@MessageMapping("/control/starttask")
 	public void startTask(TaskMessage message) {
 		competition.startAssignment(message.getTaskName());
-		sendStartToTeams(message.taskName);
+		feedbackController.sendStartToTeams(message.taskName);
 	}
 
 	@MessageMapping("/control/stoptask")
 	public void stopTask(TaskMessage message) {
 		competition.stopCurrentAssignment();
-		sendStopToTeams(message.taskName);
+		feedbackController.sendStopToTeams(message.taskName);
 	}
 
-	private void sendStopToTeams(String taskname) {
-		template.convertAndSend("/queue/stop", new TaskMessage(taskname));
-	}
 	
-	private void sendStartToTeams(String taskname) {
-		template.convertAndSend("/queue/start", taskname);
-	}
 
 	@MessageMapping("/control/clearCurrentAssignment")
-	@SendToUser("/control/queue/feedback")
+	@SendToUser("/queue/controlfeedback")
 	public void clearAssignment() {
 		competition.clearCurrentAssignment();
 	}
 
 	@MessageMapping("/control/cloneAssignmentsRepo")
-	@SendToUser("/queue/feedback")
+	@SendToUser("/queue/controlfeedback")
 	public String cloneAssignmentsRepo(Message<String> repoName) {
 		return competition.cloneAssignmentsRepo(repoName.getPayload());
 	}
