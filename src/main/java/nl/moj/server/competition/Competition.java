@@ -21,10 +21,9 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -49,30 +48,37 @@ public class Competition {
 
 	private static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
 
-	@Autowired
 	private SimpMessagingTemplate template;
 
 	private Stopwatch timer;
 
 	private Map<String, Assignment> assignments;
 
-	@Autowired
 	private AssignmentRepositoryService repo;
 
-	@Autowired
 	private TestMapper testMapper;
 
-	@Autowired
 	private ResultMapper resultMapper;
 
-	@Autowired
 	private TeamMapper teamMapper;
 
-	@Value("${moj.server.teamDirectory}")
 	private String teamDirectory;
 
-	@Value("${moj.server.basedir}")
 	private String basedir;
+
+	public Competition(SimpMessagingTemplate template, AssignmentRepositoryService repo, TestMapper testMapper,
+			ResultMapper resultMapper, TeamMapper teamMapper,
+			@Value("${moj.server.teamDirectory}") String teamDirectory,
+			@Value("${moj.server.basedir}") String basedir) {
+		super();
+		this.template = template;
+		this.repo = repo;
+		this.testMapper = testMapper;
+		this.resultMapper = resultMapper;
+		this.teamMapper = teamMapper;
+		this.teamDirectory = teamDirectory;
+		this.basedir = basedir;
+	}
 
 	/**
 	 * Returns an immutable list of assignment files modified by the given team. The
@@ -119,7 +125,7 @@ public class Competition {
 	public Assignment getCurrentAssignment() {
 		return currentAssignment.get();
 	}
-	
+
 	/**
 	 * Starts the current assignment if one is set. Otherwise does nothing except
 	 * logging a warning.
@@ -145,9 +151,9 @@ public class Competition {
 			}
 		}, solutiontime, TimeUnit.SECONDS);
 
-			assignment.setRunning(true);
-			timer = Stopwatch.createStarted();
-			log.info("assignment started {}", assignment.getName());
+		assignment.setRunning(true);
+		timer = Stopwatch.createStarted();
+		log.info("assignment started {}", assignment.getName());
 	}
 
 	private void sendStopToTeams(String taskname) {
@@ -233,10 +239,8 @@ public class Competition {
 				.collect(Collectors.toList());
 	}
 
-	public List<MutablePair<String, Integer>> getAssignmentInfo() {
+	public List<ImmutablePair<String, Integer>> getAssignmentInfo() {
 		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).values().stream()
-				.map(v -> MutablePair.of(v.getName(), v.getSolutionTime()))
-				.sorted()
-				.collect(Collectors.toList());
+				.map(v -> ImmutablePair.of(v.getName(), v.getSolutionTime())).sorted().collect(Collectors.toList());
 	}
 }
