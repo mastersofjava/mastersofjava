@@ -3,44 +3,37 @@ package nl.moj.server;
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.io.FileUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class Application {
 	
-	@Value("${moj.server.assignmentDirectory}")
-	public String assignmentDirectory;
-
-	@Value("${moj.server.teamDirectory}")
-	private String teamDirectory;
-
-	@Value("${moj.server.libDirectory}")
-	private String libDirectory;
-
-	@Value("${moj.server.basedir}")
-	private String basedir;
+	private DirectoriesConfiguration directories;
 
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}
 
+	public Application(DirectoriesConfiguration directories) {
+		super();
+		this.directories = directories;
+	}
+
 	@PostConstruct
 	public void init() {
-		if (!FileUtils.getFile(basedir).exists()) {
-			FileUtils.getFile(basedir).mkdir();
+		if (!FileUtils.getFile(directories.getBaseDirectory()).exists()) {
+			FileUtils.getFile(directories.getBaseDirectory()).mkdir();
 		}
-		if (!FileUtils.getFile(basedir, teamDirectory).exists()) {
-			FileUtils.getFile(basedir, teamDirectory).mkdir();
+		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory()).exists()) {
+			FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory()).mkdir();
 		}
-		if (!FileUtils.getFile(basedir, assignmentDirectory).exists()) {
-			FileUtils.getFile(basedir, assignmentDirectory).mkdir();
+		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory()).exists()) {
+			FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory()).mkdir();
 		}
-		if (!FileUtils.getFile(basedir, libDirectory).exists()) {
-			FileUtils.getFile(basedir, libDirectory).mkdir();
+		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).exists()) {
+			FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).mkdir();
 		}
-
 	}
 
 }

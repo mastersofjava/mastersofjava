@@ -67,21 +67,18 @@ import nl.moj.server.files.FileProcessor;
 
 @Configuration
 public class AppConfig {
-
 	
 	private static final Logger log = LoggerFactory.getLogger(AppConfig.class);
-
-	@Value("${moj.server.assignmentDirectory}")
-	private String assignmentDirectory;
-
-	@Value("${moj.server.threads}")
+	
 	private int threads;
 
-	@Value("${moj.server.teamDirectory}")
-	private String teamDirectory;
+	private DirectoriesConfiguration directories;
 
-	@Value("${moj.server.basedir}")
-	private String basedir;
+	public AppConfig(@Value("${moj.server.threads}") int threads, DirectoriesConfiguration directories) {
+		super();
+		this.threads = threads;
+		this.directories = directories;
+	}
 
 	@Configuration
 	public class CompilerConfig {
@@ -167,7 +164,7 @@ public class AppConfig {
 					response.sendRedirect("/control");
 				} else {
 					response.sendRedirect("/");
-					Path teamdir = Paths.get(basedir, teamDirectory, authentication.getName());
+					Path teamdir = Paths.get(directories.getBaseDirectory(), directories.getTeamDirectory(), authentication.getName());
 					if (!Files.exists(teamdir)) {
 						try {
 							Files.createDirectories(teamdir);
@@ -252,7 +249,7 @@ public class AppConfig {
 			FileReadingMessageSource source = new FileReadingMessageSource(comparator());
 			source.setUseWatchService(true);
 			source.setAutoCreateDirectory(true);
-			source.setDirectory(new File(basedir, assignmentDirectory));
+			source.setDirectory(new File(directories.getBaseDirectory(), directories.getAssignmentDirectory()));
 			source.setFilter(filters);
 			return source;
 		}

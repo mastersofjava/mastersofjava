@@ -1,11 +1,12 @@
 
 moj:
   server:
-    basedir: /opt/mojserver
-    teamDirectory: teams
-    assignmentDirectory: assignments
-    libDirectory: lib
     javaExecutable: /usr/lib/jvm/java-9-oracle/bin/java
+    directories:
+      baseDirectory: /opt/mojserver
+      teamDirectory: teams
+      assignmentDirectory: assignments
+      libDirectory: lib
     assignments:
       repos:
         -

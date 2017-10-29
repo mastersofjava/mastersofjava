@@ -24,9 +24,9 @@ import javax.tools.StandardLocation;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.SubmitController.SourceMessage;
 import nl.moj.server.competition.Competition;
@@ -46,24 +46,17 @@ public class CompileService {
 
 	private Competition competition;
 
-	private String teamDirectory;
-
-	private String libDirectory;
-
-	private String basedir;
+	private DirectoriesConfiguration directories;
 
 	public CompileService(JavaCompiler javaCompiler, DiagnosticCollector<JavaFileObject> diagnosticCollector,
 			FeedbackMessageController feedbackMessageController, Competition competition,
-			@Value("${moj.server.teamDirectory}") String teamDirectory,
-			@Value("${moj.server.libDirectory}") String libDirectory, @Value("${moj.server.basedir}") String basedir) {
+			DirectoriesConfiguration directories) {
 		super();
 		this.javaCompiler = javaCompiler;
 		this.diagnosticCollector = diagnosticCollector;
 		this.feedbackMessageController = feedbackMessageController;
 		this.competition = competition;
-		this.teamDirectory = teamDirectory;
-		this.libDirectory = libDirectory;
-		this.basedir = basedir;
+		this.directories = directories;
 	}
 
 	public Supplier<CompileResult> compile(SourceMessage message) {
@@ -94,7 +87,8 @@ public class CompileService {
 			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
 					null);
 			String assignment = competition.getCurrentAssignment().getName();
-			File teamdir = FileUtils.getFile(basedir, teamDirectory, message.getTeam());
+			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(),
+					message.getTeam());
 
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream().map(a -> {
 				JavaFileObject jfo = createJavaFileObject(a.getFilename(), a.getContent());
@@ -167,9 +161,11 @@ public class CompileService {
 
 	private List<File> makeClasspath(String user) {
 		final List<File> classPath = new ArrayList<>();
-		classPath.add(FileUtils.getFile(basedir, teamDirectory, user));
-		classPath.add(FileUtils.getFile(basedir, libDirectory, "junit-4.12.jar"));
-		classPath.add(FileUtils.getFile(basedir, libDirectory, "hamcrest-all-1.3.jar"));
+		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), user));
+		classPath.add(
+				FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(), "junit-4.12.jar"));
+		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(),
+				"hamcrest-all-1.3.jar"));
 		for (File file : classPath) {
 			if (!file.exists()) {
 				log.error("not found: {}", file.getAbsolutePath());

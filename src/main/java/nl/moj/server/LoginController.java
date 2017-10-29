@@ -8,7 +8,6 @@ import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -32,16 +31,13 @@ public class LoginController {
 	
 	private PasswordEncoder encoder;
 	
-	private String teamDirectory;
-
-	private String basedir;
+	private DirectoriesConfiguration directories;
 	
-    public LoginController(TeamMapper teamMapper, PasswordEncoder encoder,@Value("${moj.server.teamDirectory}") String teamDirectory,@Value("${moj.server.basedir}") String basedir) {
+    public LoginController(TeamMapper teamMapper, PasswordEncoder encoder, DirectoriesConfiguration directories) {
 		super();
 		this.teamMapper = teamMapper;
 		this.encoder = encoder;
-		this.teamDirectory = teamDirectory;
-		this.basedir = basedir;
+		this.directories = directories;
 	}
 
 	@GetMapping("/login")
@@ -69,7 +65,7 @@ public class LoginController {
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     	context.setAuthentication(authentication);
-    	Path teamdir = Paths.get(basedir, teamDirectory, authentication.getName());
+    	Path teamdir = Paths.get(directories.getBaseDirectory(), directories.getTeamDirectory(), authentication.getName());
 		if (!Files.exists(teamdir)) {
 			try {
 				Files.createDirectory(teamdir);

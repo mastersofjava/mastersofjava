@@ -20,7 +20,7 @@ public class FileProcessor {
 	private static final Logger log = LoggerFactory.getLogger(FileProcessor.class);
 	private static final String HEADER_FILE_NAME = "file_name";
 	private static final String HEADER_FILE_ORIGINALFILE = "file_originalFile";
-	@Value("${moj.server.assignmentDirectory}")
+	@Value("${moj.server.directories.assignmentDirectory}")
 	private String DIRECTORY;
 	@Autowired
 	private Competition competition;

@@ -24,11 +24,11 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Stopwatch;
 
+import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
@@ -61,22 +61,18 @@ public class Competition {
 	
 	private FeedbackMessageController feedbackMessageController;
 
-	private String teamDirectory;
-
-	private String basedir;
+	private DirectoriesConfiguration directories;
 
 	public Competition(AssignmentRepositoryService repo, TestMapper testMapper,
 			ResultMapper resultMapper, TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
-			@Value("${moj.server.teamDirectory}") String teamDirectory,
-			@Value("${moj.server.basedir}") String basedir) {
+			 DirectoriesConfiguration directories) {
 		super();
 		this.repo = repo;
 		this.testMapper = testMapper;
 		this.resultMapper = resultMapper;
 		this.teamMapper = teamMapper;
 		this.feedbackMessageController = feedbackMessageController;
-		this.teamDirectory = teamDirectory;
-		this.basedir = basedir;
+		this.directories = directories;
 	}
 
 	/**
@@ -89,7 +85,7 @@ public class Competition {
 	public List<AssignmentFile> getBackupFilesForTeam(String team) {
 		Assignment assignment = getCurrentAssignment();
 		if (assignment != null) {
-			File teamdir = FileUtils.getFile(basedir, teamDirectory, team);
+			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory(), team);
 			File sourcesdir = FileUtils.getFile(teamdir, "sources", assignment.getName());
 			if (sourcesdir.exists()) {
 				final List<AssignmentFile> assignmentFiles = FileUtils

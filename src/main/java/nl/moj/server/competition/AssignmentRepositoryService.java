@@ -12,29 +12,25 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import nl.moj.server.AssignmentRepoConfiguration;
 import nl.moj.server.AssignmentRepoConfiguration.Repo;
+import nl.moj.server.DirectoriesConfiguration;
 
 @Service
 public class AssignmentRepositoryService {
 
 	private static final Logger log = LoggerFactory.getLogger(AssignmentRepositoryService.class);
 
-	private String assignmentDirectory;
-
-	private String basedir;
-
 	private AssignmentRepoConfiguration repos;
 
-	public AssignmentRepositoryService(@Value("${moj.server.assignmentDirectory}") String assignmentDirectory,
-			@Value("${moj.server.basedir}") String basedir, AssignmentRepoConfiguration repos) {
+	private DirectoriesConfiguration directories;
+	
+	public AssignmentRepositoryService(AssignmentRepoConfiguration repos, DirectoriesConfiguration directories) {
 		super();
-		this.assignmentDirectory = assignmentDirectory;
-		this.basedir = basedir;
 		this.repos = repos;
+		this.directories = directories;
 	}
 
 	public boolean cloneRemoteGitRepository(String repoName) {
@@ -46,7 +42,7 @@ public class AssignmentRepositoryService {
 			}
 			Repo repo = repos.getRepos().stream().filter(r -> r.getName().equalsIgnoreCase(repoName)).findFirst().get();
 			// then clone
-			log.info("Cloning from " + basedir + "/" + repo.getUrl() + " to " + tmpPath);
+			log.info("Cloning from " + directories.getBaseDirectory() + "/" + repo.getUrl() + " to " + tmpPath);
 
 			Git result;
 			try {
@@ -58,7 +54,7 @@ public class AssignmentRepositoryService {
 				log.error(e.getMessage(), e);
 				return false;
 			}
-			File assignmentDir = new File(basedir, assignmentDirectory);
+			File assignmentDir = new File(directories.getBaseDirectory(), directories.getAssignmentDirectory());
 			// make sure its empty
 			emptyDir(assignmentDir);
 			// copy to assignments dir
@@ -109,7 +105,7 @@ public class AssignmentRepositoryService {
 
 				@Override
 				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-					if (dir.endsWith(assignmentDirectory))
+					if (dir.endsWith(directories.getAssignmentDirectory()))
 						return FileVisitResult.CONTINUE;
 					Files.delete(dir);
 					return FileVisitResult.CONTINUE;
