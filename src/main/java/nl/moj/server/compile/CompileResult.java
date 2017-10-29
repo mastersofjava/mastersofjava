@@ -14,8 +14,8 @@ public class CompileResult {
 	
 	private Integer scoreAtSubmissionTime;
 	
-	public CompileResult(String compileResult,  List<String> tests, String user, boolean successful, Integer scoreAtSubmissionTime) {
-		this.setResult(compileResult);
+	public CompileResult(String result,  List<String> tests, String user, boolean successful, Integer scoreAtSubmissionTime) {
+		this.setResult(result);
 		this.setTests(tests);
 		this.user = user;
 		this.successful = successful;

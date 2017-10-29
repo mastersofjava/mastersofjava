@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.stream.LogOutputStream;
 
-import nl.moj.server.FeedbackController;
+import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.competition.ScoreService;
 import nl.moj.server.compile.CompileResult;
@@ -84,7 +84,7 @@ public class TestService {
 	private ScoreService scoreService;
 
 	@Autowired
-	private FeedbackController feedbackController;
+	private FeedbackMessageController feedbackMessageController;
 	
 	/**
 	 * Tests all normal unit tests. The Submit test will NOT be tested.
@@ -105,13 +105,13 @@ public class TestService {
 						try {
 							TestResult tr = unittest(assignmentFile, compileResult);
 							tr.setSubmit(false);
-							feedbackController.sendTestFeedbackMessage(tr, false, 0);
+							feedbackMessageController.sendTestFeedbackMessage(tr, false, 0);
 							result.add(tr);
 						} catch (Exception e) {
 							final TestResult dummyResult = new TestResult(
 									"Server error running tests - contact the Organizer", compileResult.getUser(),
 									false, assignmentFile.getFilename());
-							feedbackController.sendTestFeedbackMessage(dummyResult, false, 0);
+							feedbackMessageController.sendTestFeedbackMessage(dummyResult, false, 0);
 							result.add(dummyResult);
 						}
 					}
@@ -124,11 +124,11 @@ public class TestService {
 	}
 
 	/**
-	 * Test the solution provided by the team against the Submit tests. Note that
-	 * the 'normal' unit tests are not tested again.
+	 * Test the solution provided by the team against the Submit test and assignment tests.
+	 * All tests have to succeed.
 	 * 
 	 * @param compileResult
-	 * @return
+	 * @return the combined TestResult
 	 */
 	public CompletableFuture<TestResult> testSubmit(CompileResult compileResult) {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
@@ -142,7 +142,7 @@ public class TestService {
 						boolean success = true;
 						List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
 						testFiles.addAll(competition.getCurrentAssignment().getTestFiles());
-						testFiles.forEach(f -> log.debug(f.getName()));
+						testFiles.forEach(f -> log.trace(f.getName()));
 						try {
 							for (AssignmentFile assignmentFile : testFiles) {
 								TestResult tr = unittest(assignmentFile, compileResult);
@@ -156,20 +156,20 @@ public class TestService {
 							final TestResult dummyResult = new TestResult(
 									"Server error running tests - contact the Organizer", compileResult.getUser(),
 									false, e.getMessage());
-							feedbackController.sendTestFeedbackMessage(dummyResult, true, 0);
+							feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 							return dummyResult;
 						}
 						TestResult result = new TestResult(sb.toString(), compileResult.getUser(), success,
-								"Submission Test", compileResult.getScoreAtSubmissionTime());
+								"Submit Test", compileResult.getScoreAtSubmissionTime());
 						Integer score = setFinalAssignmentScore(result, compileResult.getScoreAtSubmissionTime());
-						feedbackController.sendTestFeedbackMessage(result, true, score);
+						feedbackMessageController.sendTestFeedbackMessage(result, true, score);
 						return result;
 					} catch (Exception e) {
 						e.printStackTrace();
 						final TestResult dummyResult = new TestResult(
 								"Server error running tests - contact the Organizer", compileResult.getUser(), false,
-								"Submission Test");
-						feedbackController.sendTestFeedbackMessage(dummyResult, true, 0);
+								"Submit Test");
+						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
 					}
 				}
@@ -181,7 +181,7 @@ public class TestService {
 
 	private Integer setFinalAssignmentScore(TestResult testResult, int scoreAtSubmissionTime) {
 		if (testResult.isSuccessful()) {
-			feedbackController.sendRefreshToRankingsPage();
+			feedbackMessageController.sendRefreshToRankingsPage();
 			return scoreService.registerScoreAtSubmission(testResult.getUser(), scoreAtSubmissionTime);
 		}
 		return 0;
@@ -209,7 +209,7 @@ public class TestService {
 						makeClasspath(compileResult.getUser()), "-Djava.security.manager",
 						"-Djava.security.policy=" + policy.getAbsolutePath(), "org.junit.runner.JUnitCore",
 						file.getName());
-				log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
+				log.trace("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
 				exitvalue = jUnitCommand.directory(teamdir).timeout(MAX_UNIT_TEST_TIME_OUT, TimeUnit.SECONDS)
 						.redirectOutput(jUnitOutput).redirectError(jUnitError).execute().getExitValue();
 			} catch (TimeoutException e) {
@@ -236,7 +236,7 @@ public class TestService {
 				}
 				result = jUnitOutput.toString();
 			} else {
-				log.debug(jUnitOutput.toString());
+				log.trace(jUnitOutput.toString());
 				result = jUnitError.toString();
 				success = (exitvalue == 0) && !isRunTerminated;
 			}
@@ -253,13 +253,13 @@ public class TestService {
 	private void stripJUnitPrefix(StringBuilder result) {
 		final Matcher matcher = JUNIT_PREFIX_P.matcher(result);
 		if (matcher.find()) {
-			log.debug("stripped '{}'", matcher.group());
+			log.trace("stripped '{}'", matcher.group());
 			result.delete(0, matcher.end());
 			if (result.length() > 0 && result.charAt(0) == '\n') {
 				result.deleteCharAt(0);
 			}
 		} else {
-			log.debug("stripped nothing of '{}'", result.subSequence(0, 50));
+			log.trace("stripped nothing of '{}'", result.subSequence(0, 50));
 		}
 	}
 
@@ -270,7 +270,7 @@ public class TestService {
 		classPath.add(FileUtils.getFile(basedir, libDirectory, "hamcrest-all-1.3.jar"));
 		for (File file : classPath) {
 			if (!file.exists()) {
-				System.out.println("not found: " + file.getAbsolutePath());
+				log.error("not found: {}", file.getAbsolutePath());
 			}
 		}
 		StringBuilder sb = new StringBuilder();

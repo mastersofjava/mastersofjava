@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 
 import com.google.common.base.Stopwatch;
 
-import nl.moj.server.FeedbackController;
+import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
 import nl.moj.server.persistence.ResultMapper;
@@ -59,14 +59,14 @@ public class Competition {
 
 	private TeamMapper teamMapper;
 	
-	private FeedbackController feedbackController;
+	private FeedbackMessageController feedbackMessageController;
 
 	private String teamDirectory;
 
 	private String basedir;
 
 	public Competition(AssignmentRepositoryService repo, TestMapper testMapper,
-			ResultMapper resultMapper, TeamMapper teamMapper, FeedbackController feedbackController,
+			ResultMapper resultMapper, TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
 			@Value("${moj.server.teamDirectory}") String teamDirectory,
 			@Value("${moj.server.basedir}") String basedir) {
 		super();
@@ -74,7 +74,7 @@ public class Competition {
 		this.testMapper = testMapper;
 		this.resultMapper = resultMapper;
 		this.teamMapper = teamMapper;
-		this.feedbackController = feedbackController;
+		this.feedbackMessageController = feedbackMessageController;
 		this.teamDirectory = teamDirectory;
 		this.basedir = basedir;
 	}
@@ -144,7 +144,7 @@ public class Competition {
 		handler = ex.schedule(new Runnable() {
 			@Override
 			public void run() {
-				feedbackController.sendStopToTeams(assignment.getName());
+				feedbackMessageController.sendStopToTeams(assignment.getName());
 				handler.cancel(false);
 				stopCurrentAssignment();
 			}

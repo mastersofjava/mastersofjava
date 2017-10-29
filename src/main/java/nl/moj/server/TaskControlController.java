@@ -47,7 +47,7 @@ public class TaskControlController {
 	private AssignmentRepoConfiguration repos;
 
 	@Autowired
-	private FeedbackController feedbackController;
+	private FeedbackMessageController feedbackMessageController;
 	
 	@ModelAttribute(name = "assignments")
 	public List<ImmutablePair<String, Integer>> assignments() {
@@ -62,13 +62,13 @@ public class TaskControlController {
 	@MessageMapping("/control/starttask")
 	public void startTask(TaskMessage message) {
 		competition.startAssignment(message.getTaskName());
-		feedbackController.sendStartToTeams(message.taskName);
+		feedbackMessageController.sendStartToTeams(message.taskName);
 	}
 
 	@MessageMapping("/control/stoptask")
 	public void stopTask(TaskMessage message) {
 		competition.stopCurrentAssignment();
-		feedbackController.sendStopToTeams(message.taskName);
+		feedbackMessageController.sendStopToTeams(message.taskName);
 	}
 
 	

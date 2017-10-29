@@ -260,9 +260,9 @@ vars.put(&quot;wsTestSources&quot;, wsTestSources);</stringProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">1</stringProp>
+          <stringProp name="LoopController.loops">100</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.num_threads">40</stringProp>
         <stringProp name="ThreadGroup.ramp_time">2</stringProp>
         <longProp name="ThreadGroup.start_time">1504904835000</longProp>
         <longProp name="ThreadGroup.end_time">1504904835000</longProp>
@@ -367,7 +367,7 @@ vars.put(&quot;wsTestSources&quot;, wsTestSources);</stringProp>
         <hashTree/>
         <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">true</boolProp>
-          <stringProp name="LoopController.loops">1</stringProp>
+          <stringProp name="LoopController.loops">100</stringProp>
         </LoopController>
         <hashTree>
           <eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler" testname="WebSocket compile sources" enabled="true">
@@ -390,7 +390,7 @@ vars.put(&quot;wsTestSources&quot;, wsTestSources);</stringProp>
             <boolProp name="optional">false</boolProp>
           </eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler>
           <hashTree>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="false">
               <collectionProp name="Asserion.test_strings">
                 <stringProp name="994821069">Files compiled successfully</stringProp>
               </collectionProp>
@@ -439,7 +439,7 @@ vars.put(&quot;wsTestSources&quot;, wsTestSources);</stringProp>
             <boolProp name="optional">false</boolProp>
           </eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler>
           <hashTree>
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="true">
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion" enabled="false">
               <collectionProp name="Asserion.test_strings">
                 <stringProp name="447618091">Server error running tests</stringProp>
               </collectionProp>
