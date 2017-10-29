@@ -66,8 +66,6 @@ import nl.moj.server.files.AssignmentFileFilter;
 import nl.moj.server.files.FileProcessor;
 
 @Configuration
-// @EnableAspectJAutoProxy
-// @Import(AppConfig.SecurityConfig.class)
 public class AppConfig {
 
 	
@@ -183,7 +181,7 @@ public class AppConfig {
 
 		@Override
 		public void configureMessageBroker(MessageBrokerRegistry config) {
-			config.enableSimpleBroker("/topic", "/queue"); // ,"/user"
+			config.enableSimpleBroker("/topic", "/queue");
 			config.setApplicationDestinationPrefixes("/app");
 			config.setUserDestinationPrefix("/user");
 		}
@@ -297,12 +295,6 @@ public class AppConfig {
 
 	}
 
-	// class SimpleThreadFactory implements ThreadFactory {
-	// public Thread newThread(Runnable r) {
-	//
-	// return new Thread(r);
-	// }
-	// }
 	public class SecurityWebApplicationInitializer extends AbstractSecurityWebApplicationInitializer {
 
 		public SecurityWebApplicationInitializer() {

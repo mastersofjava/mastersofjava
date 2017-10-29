@@ -168,11 +168,6 @@ public class CompileService {
 		StringBuilder sb = new StringBuilder();
 		sb.append(dg.getKind() + "> Line=" + dg.getLineNumber() + ", Column=" + dg.getColumnNumber() + "\n");
 		sb.append("Message> " + dg.getMessage(null) + "\n");
-		//sb.append("Cause> " + dg.getCode() + "\n");
-		//JavaFileObject jfo = (JavaFileObject) dg.getSource();
-		//if (jfo != null) {
-		//	sb.append(jfo.getName() + "\n");
-		//}
 		return sb.toString();
 	}
 

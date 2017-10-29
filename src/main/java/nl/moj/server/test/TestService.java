@@ -235,7 +235,6 @@ public class TestService {
 				// if we still have some output left and exitvalue = 0
 				if (jUnitOutput.length() > 0 && exitvalue == 0 && !isRunTerminated) {
 					success = true;
-					// result = filteroutput(output);
 				} else {
 					success = false;
 				}

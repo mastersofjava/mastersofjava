@@ -116,12 +116,23 @@ public class Competition {
 		return repo.cloneRemoteGitRepository(repoName) ? "repo succesvol gedownload" : "repo downloaden mislukt";
 	}
 
+	public Assignment getCurrentAssignment() {
+		return currentAssignment.get();
+	}
+	
 	/**
 	 * Starts the current assignment if one is set. Otherwise does nothing except
 	 * logging a warning.
 	 */
-	public void startCurrentAssignment() {
-		final Assignment assignment = getCurrentAssignment();
+	public void startAssignment(String assignmentName) {
+		if (assignments.containsKey(assignmentName)) {
+			stopCurrentAssignment();
+			this.currentAssignment.set(assignments.get(assignmentName));
+		} else {
+			return;
+		}
+
+		final Assignment assignment = currentAssignment.get();
 		// remove old results
 		resultMapper.deleteResultsByAssignment(assignment.getName());
 		Integer solutiontime = getCurrentAssignment().getSolutionTime();
@@ -134,13 +145,9 @@ public class Competition {
 			}
 		}, solutiontime, TimeUnit.SECONDS);
 
-		if (assignment != null) {
 			assignment.setRunning(true);
 			timer = Stopwatch.createStarted();
 			log.info("assignment started {}", assignment.getName());
-		} else {
-			log.warn("Called startCurrentAssignment with currentAssignment==null");
-		}
 	}
 
 	private void sendStopToTeams(String taskname) {
@@ -168,45 +175,20 @@ public class Competition {
 		return previousAssignment;
 	}
 
-	private Integer getSecondsElapsed() {
-		return (int) timer.elapsed(TimeUnit.SECONDS);
-	}
-
 	/**
 	 * Returns the remaining time of the current assignment or 0, if none is active.
 	 * 
 	 * @return
 	 */
 	public Integer getRemainingTime() {
-		final Assignment assignment = getCurrentAssignment();
+		final Assignment assignment = currentAssignment.get();
 		if (assignment != null) {
 			int solutiontime = assignment.getSolutionTime();
-			int seconds = getSecondsElapsed();
+			int seconds = (int) timer.elapsed(TimeUnit.SECONDS);
 			return solutiontime - seconds;
 		} else {
 			return 0;
 		}
-	}
-
-	public Assignment getCurrentAssignment() {
-		return currentAssignment.get();
-	}
-
-	/**
-	 * Activates the assignment <code>assignmentName</code> (if it exists). Any
-	 * running assignment will be stopped.
-	 *
-	 * @param assignmentName
-	 *            the name of the assignment to activate
-	 * @return the previously active assignment (now stopped)
-	 */
-	public Optional<Assignment> setCurrentAssignment(String assignmentName) {
-		Assignment stoppedAssignment = null;
-		if (assignments.containsKey(assignmentName)) {
-			stopCurrentAssignment();
-			stoppedAssignment = this.currentAssignment.getAndSet(assignments.get(assignmentName));
-		}
-		return Optional.ofNullable(stoppedAssignment);
 	}
 
 	/**

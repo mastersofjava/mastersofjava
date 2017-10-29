@@ -52,8 +52,6 @@ public class FeedbackController {
 
 	public void sendTestFeedbackMessage(TestResult testResult, Boolean submit, Integer score) {
 		log.info("sending testResult feedback");
-		//Integer totalScore = resultMapper.getScoreForAssignment(testResult.getUser(), competition.getCurrentAssignment().getName());
-		
 		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback", new TestFeedbackMessage(
 				testResult.getUser(), testResult.getTestname(), testResult.getResult(), testResult.isSuccessful(), submit, score));
 		template.convertAndSend("/queue/testfeedback", new TestFeedbackMessage(testResult.getUser(),

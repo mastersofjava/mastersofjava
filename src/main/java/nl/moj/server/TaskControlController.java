@@ -63,8 +63,7 @@ public class TaskControlController {
 
 	@MessageMapping("/control/starttask")
 	public void startTask(TaskMessage message) {
-		competition.setCurrentAssignment(message.getTaskName());
-		competition.startCurrentAssignment();
+		competition.startAssignment(message.getTaskName());
 		sendStartToTeams(message.taskName);
 	}
 
@@ -78,23 +77,14 @@ public class TaskControlController {
 		template.convertAndSend("/queue/stop", new TaskMessage(taskname));
 	}
 	
-//	private void sendRemainingTime() {
-//		TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
-//		taskTimeMessage.setRemainingTime(String.valueOf(competition.getRemainingTime()));
-//		template.convertAndSend("/queue/time", taskTimeMessage);
-//	}
-
 	private void sendStartToTeams(String taskname) {
 		template.convertAndSend("/queue/start", taskname);
 	}
-
-
 
 	@MessageMapping("/control/clearCurrentAssignment")
 	@SendToUser("/control/queue/feedback")
 	public void clearAssignment() {
 		competition.clearCurrentAssignment();
-
 	}
 
 	@MessageMapping("/control/cloneAssignmentsRepo")
@@ -177,7 +167,5 @@ public class TaskControlController {
 		public void setTaskName(String taskName) {
 			this.taskName = taskName;
 		}
-
 	}
-
 }

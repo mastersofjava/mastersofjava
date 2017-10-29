@@ -31,21 +31,7 @@ public class ScoreService {
 		final int newScore = oldScore + assignmentScore;
 		log.info("Team {} submitted {}. Previous score {} + assignment score {} + bonus {} = {}",
 		        teamname, assignment, oldScore, scoreAtSubmissionTime, bonusForSuccessfulSubmission, newScore );
-        //resultMapper.updateScore(teamname, assignment, newScore);
         resultMapper.insertScore(teamname, assignment, assignmentScore);
         return assignmentScore;
 	}
-
-
-	public void applyTestPenaltyOrCredit(String teamname) {
-		if (competition.getCurrentAssignment().hasTestPenalties()) {
-			resultMapper.incrementPenalty(teamname, competition.getCurrentAssignment().getName(), 1);
-		}
-		if (competition.getCurrentAssignment().hasTestCredits()) {
-			resultMapper.decrementCredit(teamname, competition.getCurrentAssignment().getName(), 1);
-		}
-
-	}
-
-
 }
