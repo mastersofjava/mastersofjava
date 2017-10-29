@@ -16,9 +16,10 @@ public interface TeamMapper {
 	@Select("SELECT name, password, role FROM TEAM WHERE name = #{name}")
 	public Team findByName(@Param("name") String name);
 
-	@Insert("INSERT INTO TEAM (name, password, role) VALUES (#{teamname}, #{password}, #{role})")
-	public void addTeam(@Param("teamname") String teamname, @Param("password") String password,
-			@Param("role") String role);
+	@Insert("INSERT INTO TEAM (name, password, role, country, company) VALUES (#{name}, #{password}, #{role}, #{country}, #{company})")
+	public void insertTeam(Team team);
+	
+	
 	
 	@Select("SELECT * FROM TEAM")
 	public List<Team> findAll();

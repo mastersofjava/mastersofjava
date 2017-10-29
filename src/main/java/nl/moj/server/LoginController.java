@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,6 +26,9 @@ import nl.moj.server.persistence.TeamMapper;
 
 @Controller
 public class LoginController {
+	
+	private static final Logger log = LoggerFactory.getLogger(LoginController.class);
+	
 	@Autowired
 	private TeamMapper teamMapper;
 	
@@ -56,12 +61,9 @@ public class LoginController {
     		model.addAttribute("errors", "Passwords don't match");
     		return "register";
     	}
-    	
-    	teamMapper.addTeam(team.getName(), encoder.encode(team.getPassword()),"ROLE_USER");
-    	//for(String assignment : competition.getAssignmentNames()){
-    	//	resultMapper.insertEmptyResult(team.getName(), assignment);
-    	//}
-    	
+    	team.setRole("ROLE_USER");
+    	team.setPassword(encoder.encode(team.getPassword()));
+    	teamMapper.insertTeam(team);
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     	context.setAuthentication(authentication);
@@ -70,8 +72,7 @@ public class LoginController {
 			try {
 				Files.createDirectory(teamdir);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				log.error("error creating teamdir", e);	
 			}
 		}
     	return "redirect:/";

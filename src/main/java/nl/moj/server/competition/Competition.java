@@ -122,6 +122,8 @@ public class Competition {
 	 */
 	public void startCurrentAssignment() {
 		final Assignment assignment = getCurrentAssignment();
+		// remove old results
+		resultMapper.deleteResultsByAssignment(assignment.getName());
 		Integer solutiontime = getCurrentAssignment().getSolutionTime();
 		handler = ex.schedule(new Runnable() {
 			@Override

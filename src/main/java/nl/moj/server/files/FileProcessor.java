@@ -76,8 +76,6 @@ public class FileProcessor {
 				if (filename.equalsIgnoreCase("pom.xml")) {
 					file = new AssignmentFile(filename, content, FileType.POM, assignment, origFile);
 					competition.addAssignmentFile(file);
-					resultMapper.deleteResultsByAssignment(assignment);
-					//teamMapper.getAllTeams().forEach(team -> resultMapper.insertEmptyResult(team.getName(), assignment));
 				}
 			default:
 				break;
