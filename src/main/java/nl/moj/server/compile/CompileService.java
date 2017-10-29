@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
@@ -23,7 +24,6 @@ import javax.tools.StandardLocation;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -34,31 +34,37 @@ import nl.moj.server.files.AssignmentFile;
 
 @Service
 public class CompileService {
-    private final static String JAVA_SOURCE_EXTENSION = ".java";
+	private final static String JAVA_SOURCE_EXTENSION = ".java";
 
-    private static final Logger log = LoggerFactory.getLogger(CompileService.class);
+	private static final Logger log = LoggerFactory.getLogger(CompileService.class);
 
-	@Autowired
 	private javax.tools.JavaCompiler javaCompiler;
 
-	@Autowired
 	private DiagnosticCollector<JavaFileObject> diagnosticCollector;
 
-	@Autowired
 	private FeedbackMessageController feedbackMessageController;
 
-	@Autowired
 	private Competition competition;
 
-	@Value("${moj.server.teamDirectory}")
 	private String teamDirectory;
 
-	@Value("${moj.server.libDirectory}")
 	private String libDirectory;
 
-	@Value("${moj.server.basedir}")
 	private String basedir;
 
+	public CompileService(JavaCompiler javaCompiler, DiagnosticCollector<JavaFileObject> diagnosticCollector,
+			FeedbackMessageController feedbackMessageController, Competition competition,
+			@Value("${moj.server.teamDirectory}") String teamDirectory,
+			@Value("${moj.server.libDirectory}") String libDirectory, @Value("${moj.server.basedir}") String basedir) {
+		super();
+		this.javaCompiler = javaCompiler;
+		this.diagnosticCollector = diagnosticCollector;
+		this.feedbackMessageController = feedbackMessageController;
+		this.competition = competition;
+		this.teamDirectory = teamDirectory;
+		this.libDirectory = libDirectory;
+		this.basedir = basedir;
+	}
 
 	public Supplier<CompileResult> compile(SourceMessage message) {
 		return compile(message, false, false);
@@ -97,31 +103,32 @@ public class CompileService {
 			try {
 				FileUtils.cleanDirectory(teamdir);
 			} catch (IOException e) {
-				log.error("error while cleaning teamdir",e);
+				log.error("error while cleaning teamdir", e);
 			}
 			message.getSource().forEach((k, v) -> {
 				try {
-					FileUtils.writeStringToFile(FileUtils.getFile(teamdir, "sources",assignment, k), v, Charset.defaultCharset());
+					FileUtils.writeStringToFile(FileUtils.getFile(teamdir, "sources", assignment, k), v,
+							Charset.defaultCharset());
 				} catch (IOException e) {
-					log.error("error while writing sourcefiles to teamdir",e);
+					log.error("error while writing sourcefiles to teamdir", e);
 				}
 				javaFileObjects.add(createJavaFileObject(k, v));
 			});
 			// C) Java compiler options
 			List<String> options = createCompilerOptions();
 
-
 			PrintWriter err = new PrintWriter(System.err);
 			log.info("compiling {} classes", javaFileObjects.size());
 			List<File> files = new ArrayList<>();
-			FileUtils.listFiles(teamdir, new String[] { "class" }, true).stream().forEach(f -> FileUtils.deleteQuietly(f));
+			FileUtils.listFiles(teamdir, new String[] { "class" }, true).stream()
+					.forEach(f -> FileUtils.deleteQuietly(f));
 			files.add(teamdir);
 			// Create a compilation task.
 			try {
 				standardFileManager.setLocation(StandardLocation.CLASS_OUTPUT, files);
 				standardFileManager.setLocation(StandardLocation.CLASS_PATH, makeClasspath(message.getTeam()));
 			} catch (IOException e) {
-				log.error(e.getMessage(),e);
+				log.error(e.getMessage(), e);
 			}
 			CompilationTask compilationTask = javaCompiler.getTask(err, standardFileManager, diagnosticCollector,
 					options, null, javaFileObjects);
@@ -129,17 +136,19 @@ public class CompileService {
 			if (!compilationTask.call()) {
 				StringBuilder sb = new StringBuilder();
 				for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics()) {
-                    sb.append(report(diagnostic));
-                }
+					sb.append(report(diagnostic));
+				}
 				String result = sb.toString();
 				diagnosticCollector = new DiagnosticCollector<>();
 				log.debug("compileSuccess: {}\n{}", false, result);
-				compileResult = new CompileResult(result, null, message.getTeam(), false, message.getScoreAtSubmissionTime());
+				compileResult = new CompileResult(result, null, message.getTeam(), false,
+						message.getScoreAtSubmissionTime());
 				feedbackMessageController.sendCompileFeedbackMessage(compileResult);
 				return compileResult;
 			}
 			log.debug("compileSuccess: {}", true);
-			compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(), message.getTeam(), true, message.getScoreAtSubmissionTime());
+			compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(), message.getTeam(),
+					true, message.getScoreAtSubmissionTime());
 			feedbackMessageController.sendCompileFeedbackMessage(compileResult);
 			return compileResult;
 		};
@@ -185,17 +194,17 @@ public class CompileService {
 	private static URI toURI(String name) {
 		File file = new File(name);
 		if (file.exists()) {
-            return file.toURI();
-        } else {
+			return file.toURI();
+		} else {
 			try {
 				final StringBuilder newUri = new StringBuilder();
 				newUri.append("mfm:///");
 				newUri.append(name.replace('.', '/'));
 
 				if (name.endsWith(JAVA_SOURCE_EXTENSION)) {
-                    newUri.replace(newUri.length() - JAVA_SOURCE_EXTENSION.length(), newUri.length(),
+					newUri.replace(newUri.length() - JAVA_SOURCE_EXTENSION.length(), newUri.length(),
 							JAVA_SOURCE_EXTENSION);
-                }
+				}
 
 				return URI.create(newUri.toString());
 			} catch (Exception exp) {
@@ -203,7 +212,6 @@ public class CompileService {
 			}
 		}
 	}
-
 
 	/**
 	 * A subclass of JavaFileObject used to represent Java source coming from a
@@ -220,7 +228,7 @@ public class CompileService {
 		}
 
 		@Override
-        public CharBuffer getCharContent(boolean ignoreEncodingErrors) {
+		public CharBuffer getCharContent(boolean ignoreEncodingErrors) {
 			return CharBuffer.wrap(sourceCode);
 		}
 	}

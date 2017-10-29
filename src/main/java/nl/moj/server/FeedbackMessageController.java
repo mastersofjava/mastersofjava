@@ -2,7 +2,6 @@ package nl.moj.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
@@ -15,9 +14,13 @@ public class FeedbackMessageController {
 	
 	private static final Logger log = LoggerFactory.getLogger(FeedbackMessageController.class);
 
-	@Autowired
 	private SimpMessagingTemplate template;
 	
+	public FeedbackMessageController(SimpMessagingTemplate template) {
+		super();
+		this.template = template;
+	}
+
 	public void sendTestFeedbackMessage(TestResult testResult, Boolean submit, Integer score) {
 		log.info("sending testResult feedback");
 		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback", new TestFeedbackMessage(

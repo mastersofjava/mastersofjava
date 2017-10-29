@@ -1,27 +1,30 @@
 package nl.moj.server.rankings;
 
-import nl.moj.server.competition.Competition;
-import nl.moj.server.model.Ranking;
-import nl.moj.server.persistence.RankingMapper;
-import nl.moj.server.util.CollectionUtil;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.util.ArrayList;
-import java.util.List;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.model.Ranking;
+import nl.moj.server.persistence.RankingMapper;
+import nl.moj.server.util.CollectionUtil;
 
 @Controller
 public class RankingsController {
 	
-	@Autowired
 	private RankingMapper rankingMapper;
 	
-	@Autowired
 	private Competition competition;
 	
-	
+	public RankingsController(RankingMapper rankingMapper, Competition competition) {
+		super();
+		this.rankingMapper = rankingMapper;
+		this.competition = competition;
+	}
+
 	@GetMapping("/rankings")
 	public String getRankings(Model model){
 		List<Ranking> rankings = enrich(rankingMapper.getRankings());

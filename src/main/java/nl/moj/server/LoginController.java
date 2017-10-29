@@ -8,7 +8,6 @@ import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -29,20 +28,23 @@ public class LoginController {
 	
 	private static final Logger log = LoggerFactory.getLogger(LoginController.class);
 	
-	@Autowired
 	private TeamMapper teamMapper;
 	
-	@Autowired
 	private PasswordEncoder encoder;
 	
-	@Value("${moj.server.teamDirectory}")
 	private String teamDirectory;
 
-	@Value("${moj.server.basedir}")
 	private String basedir;
-
 	
-    @GetMapping("/login")
+    public LoginController(TeamMapper teamMapper, PasswordEncoder encoder,@Value("${moj.server.teamDirectory}") String teamDirectory,@Value("${moj.server.basedir}") String basedir) {
+		super();
+		this.teamMapper = teamMapper;
+		this.encoder = encoder;
+		this.teamDirectory = teamDirectory;
+		this.basedir = basedir;
+	}
+
+	@GetMapping("/login")
     public String loginForm(Model model) {
         return "login";
     }

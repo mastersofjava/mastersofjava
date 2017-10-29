@@ -13,7 +13,6 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
@@ -37,18 +36,23 @@ public class TaskControlController {
 
 	private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
 
-	@Autowired
 	private Competition competition;
 
-	@Autowired
 	private ResultMapper resultMapper;
 
-	@Autowired
 	private AssignmentRepoConfiguration repos;
 
-	@Autowired
 	private FeedbackMessageController feedbackMessageController;
 	
+	public TaskControlController(Competition competition, ResultMapper resultMapper, AssignmentRepoConfiguration repos,
+			FeedbackMessageController feedbackMessageController) {
+		super();
+		this.competition = competition;
+		this.resultMapper = resultMapper;
+		this.repos = repos;
+		this.feedbackMessageController = feedbackMessageController;
+	}
+
 	@ModelAttribute(name = "assignments")
 	public List<ImmutablePair<String, Integer>> assignments() {
 		return competition.getAssignmentInfo();

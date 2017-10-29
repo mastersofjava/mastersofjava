@@ -12,7 +12,6 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,16 +23,21 @@ public class AssignmentRepositoryService {
 
 	private static final Logger log = LoggerFactory.getLogger(AssignmentRepositoryService.class);
 
-	@Value("${moj.server.assignmentDirectory}")
 	private String assignmentDirectory;
 
-	@Value("${moj.server.basedir}")
 	private String basedir;
-	
-	@Autowired
+
 	private AssignmentRepoConfiguration repos;
 
-	public boolean cloneRemoteGitRepository(String repoName)  {
+	public AssignmentRepositoryService(@Value("${moj.server.assignmentDirectory}") String assignmentDirectory,
+			@Value("${moj.server.basedir}") String basedir, AssignmentRepoConfiguration repos) {
+		super();
+		this.assignmentDirectory = assignmentDirectory;
+		this.basedir = basedir;
+		this.repos = repos;
+	}
+
+	public boolean cloneRemoteGitRepository(String repoName) {
 		File tmpPath;
 		try {
 			tmpPath = File.createTempFile("gitrepo", "");
@@ -42,12 +46,12 @@ public class AssignmentRepositoryService {
 			}
 			Repo repo = repos.getRepos().stream().filter(r -> r.getName().equalsIgnoreCase(repoName)).findFirst().get();
 			// then clone
-			log.info("Cloning from " +basedir + "/" + repo.getUrl() + " to " + tmpPath);
+			log.info("Cloning from " + basedir + "/" + repo.getUrl() + " to " + tmpPath);
 
 			Git result;
 			try {
 				result = Git.cloneRepository().setURI(repo.getUrl()).setDirectory(tmpPath).call();
-				
+
 				result.checkout().setName(repo.getBranch()).call();
 				result.close();
 			} catch (GitAPIException e) {
@@ -62,7 +66,7 @@ public class AssignmentRepositoryService {
 			log.info("Copied assignments to " + assignmentDir);
 			return true;
 		} catch (IOException e) {
-			log.error(e.getMessage(),e);
+			log.error(e.getMessage(), e);
 			return false;
 		}
 	}
@@ -90,7 +94,7 @@ public class AssignmentRepositoryService {
 				}
 			});
 		} catch (IOException e) {
-			log.error(e.getMessage(),e);
+			log.error(e.getMessage(), e);
 		}
 	}
 

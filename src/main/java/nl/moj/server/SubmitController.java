@@ -1,24 +1,5 @@
 package nl.moj.server;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.compile.CompileService;
-import nl.moj.server.test.TestService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
-
 import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -29,39 +10,57 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
+import nl.moj.server.competition.Competition;
+import nl.moj.server.compile.CompileService;
+import nl.moj.server.test.TestService;
+
 @Controller
 @MessageMapping("/submit")
 public class SubmitController {
-	private static final Logger log = LoggerFactory.getLogger(SubmitController.class);
 
-	@Autowired
 	private CompileService compileService;
 
-	@Autowired
 	private TestService testService;
 
-	@Autowired
-	@Qualifier("compiling")
 	private Executor compiling;
 
-	@Autowired
-	@Qualifier("testing")
 	private Executor testing;
 
-	@Value("${moj.server.timeout}")
-	private int TIMEOUT;
+	private Integer timeout;
 
-	@Autowired
 	private Competition competition;
 
+	public SubmitController(CompileService compileService, TestService testService,@Qualifier("compiling") Executor compiling,
+			@Qualifier("testing") Executor testing, @Value("${moj.server.timeout}") Integer timeout, Competition competition) {
+		super();
+		this.compileService = compileService;
+		this.testService = testService;
+		this.compiling = compiling;
+		this.testing = testing;
+		this.timeout = timeout;
+		this.competition = competition;
+	}
 
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		log.info("Compile job submitted for: {}", user.getName());
 		message.setTeam(user.getName());
 		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
-				.orTimeout(TIMEOUT, TimeUnit.SECONDS).thenAccept(compileResult -> log.debug(compileResult.getResult()));
+				.orTimeout(timeout, TimeUnit.SECONDS);
 	}
 
 	@MessageMapping("/test")
@@ -69,7 +68,7 @@ public class SubmitController {
 			throws Exception {
 		message.setTeam(user.getName());
 		CompletableFuture.supplyAsync(compileService.compileWithTest(message), testing)
-				.orTimeout(TIMEOUT, TimeUnit.SECONDS)
+				.orTimeout(timeout, TimeUnit.SECONDS)
 				.thenComposeAsync(compileResult -> testService.testAll(compileResult), testing);
 	}
 
@@ -90,7 +89,7 @@ public class SubmitController {
 			message.setTeam(user.getName());
 			message.setScoreAtSubmissionTime(scoreAtSubmissionTime);
 			CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
-					.orTimeout(TIMEOUT, TimeUnit.SECONDS)
+					.orTimeout(timeout, TimeUnit.SECONDS)
 					.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing);
 		}
 	}

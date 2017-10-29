@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -24,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -113,7 +113,12 @@ public class AppConfig {
 	@EnableWebSecurity
 	@Configuration
 	public class SecurityConfig extends WebSecurityConfigurerAdapter {
-		private @Autowired TeamDetailsService teamDetailsService = new TeamDetailsService();
+		
+		private TeamDetailsService teamDetailsService;
+		
+		public SecurityConfig(TeamDetailsService teamDetailsService) {
+			this.teamDetailsService = teamDetailsService;
+		}
 
 		@Bean
 		public PasswordEncoder passwordEncoder() {

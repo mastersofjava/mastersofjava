@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -18,8 +17,13 @@ import nl.moj.server.persistence.TeamMapper;
 
 @Service
 public class TeamDetailsService implements UserDetailsService {
-	@Autowired
+
 	private TeamMapper teamMapper;
+
+	public TeamDetailsService(TeamMapper teamMapper) {
+		super();
+		this.teamMapper = teamMapper;
+	}
 
 	@Override
 	public UserDetails loadUserByUsername(String teamname) throws UsernameNotFoundException {

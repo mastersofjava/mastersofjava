@@ -11,8 +11,8 @@ public class AssignmentRepositoryServiceTest {
 	public void test() {
 		
 		
-		AssignmentRepositoryService repo = new AssignmentRepositoryService();
-		repo.cloneRemoteGitRepository("practice-assignments");
+		//AssignmentRepositoryService repo = new AssignmentRepositoryService();
+		//repo.cloneRemoteGitRepository("practice-assignments");
 		
 	}
 }

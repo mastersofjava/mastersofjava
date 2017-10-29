@@ -3,7 +3,6 @@ package nl.moj.server;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
@@ -16,15 +15,18 @@ import nl.moj.server.persistence.TeamMapper;
 @Controller
 public class FeedbackController {
 
-	@Autowired
 	private TeamMapper teamMapper;
 	
-	@Autowired
 	private ResultMapper resultMapper;
 
-	@Autowired
 	private Competition competition;
 
+	public FeedbackController(TeamMapper teamMapper, ResultMapper resultMapper, Competition competition) {
+		super();
+		this.teamMapper = teamMapper;
+		this.resultMapper = resultMapper;
+		this.competition = competition;
+	}
 
 	@GetMapping("/feedback")
 	public ModelAndView feedback() {
