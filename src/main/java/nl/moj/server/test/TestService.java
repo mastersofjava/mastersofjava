@@ -25,6 +25,7 @@ import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.stream.LogOutputStream;
 
 import nl.moj.server.FeedbackMessageController;
+import nl.moj.server.UnitTestLimitsConfiguration;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.competition.ScoreService;
 import nl.moj.server.compile.CompileResult;
@@ -37,27 +38,10 @@ public class TestService {
 	private static final Logger log = LoggerFactory.getLogger(TestService.class);
 	private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
 			Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-	@Value("${moj.server.limits.unitTestOutput.maxChars}")
-	private int MAX_FEEDBACK_SIZE;
 
-	@Value("${moj.server.limits.unitTestOutput.maxLines}")
-	private int MAX_FEEDBACK_LINES;
-
-	@Value("${moj.server.limits.unitTestOutput.maxLineLen}")
-	private int MAX_FEEDBACK_LINES_LENGTH;
-
-	@Value("${moj.server.limits.unitTestTimeoutSeconds}")
-	private int MAX_UNIT_TEST_TIME_OUT;
-
-	@Value("${moj.server.limits.unitTestOutput.lineTruncatedMessage}")
-	private String TRUNC_LINE_MESSAGE;
-
-	@Value("${moj.server.limits.unitTestOutput.outputTruncMessage}")
-	private String TRUNC_OUTPUT_MESSAGE;
-
-	@Value("${moj.server.limits.unitTestOutput.testTimoutTermination}")
-	private String TEST_TEMINATED_MESSAGE;
-
+	@Autowired
+	private UnitTestLimitsConfiguration limits;
+	
 	@Autowired
 	@Qualifier("testing")
 	private Executor testing;
@@ -200,17 +184,15 @@ public class TestService {
 		try {
 			boolean isRunTerminated = false;
 			int exitvalue = 0;
-			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(MAX_FEEDBACK_SIZE,
-					MAX_FEEDBACK_LINES, MAX_FEEDBACK_LINES_LENGTH);
-			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(MAX_FEEDBACK_SIZE,
-					MAX_FEEDBACK_LINES, MAX_FEEDBACK_LINES_LENGTH);
+			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher();
+			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher();
 			try {
 				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(javaExecutable, "-cp",
 						makeClasspath(compileResult.getUser()), "-Djava.security.manager",
 						"-Djava.security.policy=" + policy.getAbsolutePath(), "org.junit.runner.JUnitCore",
 						file.getName());
 				log.trace("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
-				exitvalue = jUnitCommand.directory(teamdir).timeout(MAX_UNIT_TEST_TIME_OUT, TimeUnit.SECONDS)
+				exitvalue = jUnitCommand.directory(teamdir).timeout(limits.getUnitTestTimeoutSeconds(), TimeUnit.SECONDS)
 						.redirectOutput(jUnitOutput).redirectError(jUnitError).execute().getExitValue();
 			} catch (TimeoutException e) {
 				// process is automatically destroyed
@@ -221,7 +203,7 @@ public class TestService {
 			}
 			log.debug("exitValue {}", exitvalue);
 			if (isRunTerminated) {
-				jUnitOutput.getBuffer().append('\n').append(TEST_TEMINATED_MESSAGE);
+				jUnitOutput.getBuffer().append('\n').append(limits.getUnitTestOutput().getTestTimoutTermination());
 			}
 
 			final boolean success;
@@ -294,13 +276,17 @@ public class TestService {
 		private final int maxLines;
 		private final int maxLineLenght;
 		private int lineCount = 0;
+		private final String lineTruncatedMessage;
+		private final String outputTruncMessage;
 
-		public LengthLimitedOutputCatcher(int maxSize, int maxLines, int maxLineLenght) {
-			this.maxSize = maxSize;
-			this.maxLines = maxLines;
-			this.maxLineLenght = maxLineLenght;
+		public LengthLimitedOutputCatcher() {
+			this.maxSize = limits.getUnitTestOutput().getMaxChars();
+			this.maxLines= limits.getUnitTestOutput().getMaxFeedbackLines();
+			this.maxLineLenght = limits.getUnitTestOutput().getMaxLineLen();
+			this.lineTruncatedMessage = limits.getUnitTestOutput().getLineTruncatedMessage();
+			this.outputTruncMessage = limits.getUnitTestOutput().getOutputTruncMessage();
 		}
-
+		
 		@Override
 		protected void processLine(String line) {
 			if (lineCount < maxLines) {
@@ -309,14 +295,14 @@ public class TestService {
 				if (maxAppendFromLineLimit > 0) {
 					final boolean isLineTruncated = maxAppendFromLineLimit < line.length();
 					if (isLineTruncated) {
-						buffer.append(line.substring(0, maxAppendFromLineLimit)).append(TRUNC_LINE_MESSAGE);
+						buffer.append(line.substring(0, maxAppendFromLineLimit)).append(lineTruncatedMessage);
 					} else {
 						buffer.append(line);
 					}
 					buffer.append('\n');
 				}
 			} else if (lineCount == maxLines) {
-				buffer.append(TRUNC_OUTPUT_MESSAGE);
+				buffer.append(outputTruncMessage);
 			}
 			lineCount++;
 		}
