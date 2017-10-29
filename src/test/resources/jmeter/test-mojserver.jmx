@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jmeterTestPlan version="1.2" properties="3.2" jmeter="3.2 r1790748">
+<jmeterTestPlan version="1.2" properties="3.2" jmeter="3.3 r1808647">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Test Plan" enabled="true">
       <stringProp name="TestPlan.comments"></stringProp>
@@ -18,34 +18,9 @@
             <stringProp name="Argument.value">localhost</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
-          <elementProp name="wsURI" elementType="Argument">
-            <stringProp name="Argument.name">wsURI</stringProp>
+          <elementProp name="wsSubmitURI" elementType="Argument">
+            <stringProp name="Argument.name">wsSubmitURI</stringProp>
             <stringProp name="Argument.value">submit/websocket</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="wsQueueCompileFeedback" elementType="Argument">
-            <stringProp name="Argument.name">wsQueueCompileFeedback</stringProp>
-            <stringProp name="Argument.value">/user/queue/compilefeedback</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="wsToken" elementType="Argument">
-            <stringProp name="Argument.name">wsToken</stringProp>
-            <stringProp name="Argument.value">xxxxxxxxxxxTOKENxxxxxxxxxx</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="ReadLoopCount" elementType="Argument">
-            <stringProp name="Argument.name">ReadLoopCount</stringProp>
-            <stringProp name="Argument.value">20</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="webDomain" elementType="Argument">
-            <stringProp name="Argument.name">webDomain</stringProp>
-            <stringProp name="Argument.value">localhost</stringProp>
-            <stringProp name="Argument.metadata">=</stringProp>
-          </elementProp>
-          <elementProp name="webURI" elementType="Argument">
-            <stringProp name="Argument.name">webURI</stringProp>
-            <stringProp name="Argument.value">/</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="wsControlURI" elementType="Argument">
@@ -66,6 +41,11 @@
           <elementProp name="wsSubmitTestDestination" elementType="Argument">
             <stringProp name="Argument.name">wsSubmitTestDestination</stringProp>
             <stringProp name="Argument.value">/app/submit/test</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="wsQueueCompileFeedback" elementType="Argument">
+            <stringProp name="Argument.name">wsQueueCompileFeedback</stringProp>
+            <stringProp name="Argument.value">/user/queue/compilefeedback</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="wsQueueControlFeedback" elementType="Argument">
@@ -274,8 +254,6 @@ vars.put(&quot;wsTestSources&quot;, wsTestSources);</stringProp>
         <CookieManager guiclass="CookiePanel" testclass="CookieManager" testname="HTTP Cookie Manager" enabled="true">
           <collectionProp name="CookieManager.cookies"/>
           <boolProp name="CookieManager.clearEachIteration">false</boolProp>
-          <stringProp name="CookieManager.policy">standard</stringProp>
-          <stringProp name="CookieManager.implementation">org.apache.jmeter.protocol.http.control.HC4CookieHandler</stringProp>
         </CookieManager>
         <hashTree/>
         <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
@@ -325,7 +303,7 @@ vars.put(&quot;wsTestSources&quot;, wsTestSources);</stringProp>
           <boolProp name="TLS">false</boolProp>
           <stringProp name="server">${wsDomain}</stringProp>
           <stringProp name="port">8080</stringProp>
-          <stringProp name="path">${wsURI}</stringProp>
+          <stringProp name="path">${wsSubmitURI}</stringProp>
           <boolProp name="binaryPayload">false</boolProp>
           <stringProp name="requestData">${wsConnect}</stringProp>
           <boolProp name="createNewConnection">true</boolProp>

@@ -46,3 +46,26 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 
 #### Feedback pagina
 - open [http://localhost:8080/feedback](http://localhost:8080/feedback)
+
+## Jmeter test
+
+### Installatie Jmeter
+- installeer jmeter
+- installeer de jmeter plugin manager: volg instructies op https://jmeter-plugins.org/install/Install/
+- Ga naar Options -> Plugins Manager -> Available Plugins
+- zoek naar *WebSocket Samplers by Peter Doornbosch*  
+- selecteer en *Apply changes...*
+- meer info over samplers https://bitbucket.org/pjtr/jmeter-websocket-samplers/overview
+- download mjson library naar <apache-jmeter>/lib/ext:  http://repo1.maven.org/maven2/org/sharegov/mjson/1.4.0/mjson-1.4.0.jar
+- herstart jmeter
+
+### Test
+- creeer test gebruikers met <workspace>/server/createUsers.sh
+- open <workspace>/server/src/test/resources/jmeter/*test-mojserver.jmx*
+- pas aan filenaam aan in *CSV Data Set Config* naar <workspace>/server/src/test/resources/jmeter/teams.csv
+- 
+- save
+- stop gui
+- start mojserver
+- run jmeter zonder gui met
+- <apache-jmeter>/bin/jmeter -n -t <workspace>/server/src/test/resources/jmeter/test-mojserver.jmx
