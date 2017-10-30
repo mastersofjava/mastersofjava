@@ -1,33 +1,32 @@
-/* Below line is used for online Google font */
-@import url(http://fonts.googleapis.com/css?family=Droid+Serif);
-
-h1{
-	text-align: center;
+body {
+    margin-bottom: 50px;
 }
 
-div.container {
-	width: 90%;
-	margin-left: auto;
-	margin-right: auto;
-}
-table{
-	border: 5px;
+.btn:hover {
+    cursor: pointer;
 }
 
-div.main {
-	margin-left: auto;
-	margin-right: auto;
-	padding: 10px 55px 40px;
-/* 	background-color: rgba(187, 255, 184, 0.65); */
-	border: 15px solid white;
-	box-shadow: 0 0 10px;
-	border-radius: 2px;
-	font-size: 13px;
+.footer {
+    border-top: 1px solid #aaaaaa;
+    background-color: white;
 }
 
-label {
-	color: #464646;
-	text-shadow: 0 1px 0 #fff;
-	font-size: 14px;
-	font-weight: bold;
+#assignment-clock .clock {
+    position: relative;
+    float: left;
+}
+
+#assignment-clock .time {
+    position: absolute;
+}
+
+svg {
+    -webkit-transform: rotate(-90deg);
+    transform: rotate(-90deg);
+}
+
+.circle_animation {
+    stroke-dasharray: 440; /* this value is the pixel circumference of the circle */
+    stroke-dashoffset: 440;
+    transition: all 1s linear;
 }

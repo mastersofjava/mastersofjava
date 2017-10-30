@@ -3,31 +3,112 @@
 <head>
 	<link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
 	          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/4.7.0/css/font-awesome.min.css}"/>
 	<link href="/css/testfeedback.css" rel="stylesheet" />
 </head>
 
-<header>
- <h1 id="tasktime">Test Feedback</h1>
-</header>
+<body onload=init() class="p-2">
+    <div class="container-fluid">
+        <!-- content -->
+        <div class="row mt-3 mb-3">
+            <div class="col-1 d-flex justify-content-center">
+                <div class="align-self-center">
+                    <img th:src="@{/images/moj_logo_128x97_2017.png}" class="img-fluid"
+                         src="/static/images/moj_logo_128x97_2017.png"/>
+                </div>
+            </div>
+            <div class="col-4 d-flex justify-content-center">
+                <div class="align-self-center">
+                    <h1>Live Assignment Progress</h1>
+                </div>
+            </div>
+            <div class="col-5 d-flex justify-content-center">
+                <div class="align-self-center">
+                    <h1>Assignment: [[${assignment}]]</h1>
+                </div>
+            </div>
+            <div class="col-2 d-flex justify-content-center">
+                <div id="assignment-clock" th:attrappend="data-time-left=${timeLeft},data-time=${time}"
+                     class="align-self-center">
+                    <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
+                        <h2 class="align-self-center">--:--</h2>
+                    </div>
+                    <svg width="160" height="160" xmlns="http://www.w3.org/2000/svg">
+                        <g>
+                            <circle class="clock circle_animation" r="69.85699" cy="81" cx="81"
+                                    stroke-width="8"
+                                    stroke="#6fdb6f" fill="none"></circle>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-4">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th:block th:each="test,status : ${tests}">
+                                    <th th:text="'Test ' + ${status.index + 1}">Test #</th>
+                                </th:block>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="team : ${teams1}">
+                                <td th:text="${team.shortName}">Team name</td>
+                                <td th:each="test : ${tests}"><span th:id="${team.name} + '-' + ${test}"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-4">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th:block th:each="test,status : ${tests}">
+                                    <th th:text="'Test ' + ${status.index + 1}">Test #</th>
+                                </th:block>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="team : ${teams2}">
+                                <td th:text="${team.shortName}">Team name</td>
+                                <td th:each="test : ${tests}"><span th:id="${team.name} + '-' + ${test}"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            <div class="col-4">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th:block th:each="test,status : ${tests}">
+                                <th th:text="'Test ' + ${status.index + 1}">Test #</th>
+                            </th:block>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="team : ${teams3}">
+                            <td th:text="${team.shortName}">Team name</td>
+                            <td th:each="test : ${tests}"><span th:id="${team.name} + '-' + ${test}"></span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-<body onload=init()>
- <div class="container">
-  <div id="main" class="main">
+        <!-- footer -->
+        <div class="fixed-bottom footer d-flex">
+            <div class="mr-auto p-2">
+                <img th:src="@{/images/logo_first8_150x39.png}" class="img-fluid"
+                     src="/static/images/logo_first8_150x39.png"/>
+            </div>
+        </div>
+    </div>
 
-   <th:block th:each="team : ${teams}">
-    <table style="display: inline-block;">
-     <tr>
-      <td class="table-active" th:id="${team.name}" th:colspan="${#lists.size(tests)}" th:text="${team.name}">Row 1: Col 1</td>
-     </tr>
-     <tr>
-      <td class="table-active" th:id="${team.name}+'-'+${test}" th:each="test : ${tests}">O</td>
-     </tr>
-    </table>
-   </th:block>
-
-  </div>
- </div>
- 
  <script src="/webjars/sockjs-client/sockjs.min.js"></script>
  <script src="/webjars/stomp-websocket/stomp.min.js"></script>
  <script src="/webjars/jquery/jquery.min.js"></script>

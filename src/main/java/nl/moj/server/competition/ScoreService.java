@@ -10,19 +10,24 @@ import org.springframework.stereotype.Service;
 public class ScoreService {
 
 	private static final Logger log = LoggerFactory.getLogger(ScoreService.class);
-	private final Competition competition;
 	private final ResultMapper resultMapper;
 
     @Value("${moj.server.competition.bonusForSuccessfulSubmission}")
 	private int bonusForSuccessfulSubmission;
 
-	public ScoreService(Competition competition, ResultMapper resultMapper) {
-		this.competition = competition;
+	public ScoreService(ResultMapper resultMapper) {
 		this.resultMapper = resultMapper;
 	}
 
-	public Integer registerScoreAtSubmission(String teamname, int scoreAtSubmissionTime) {
-		String assignment = competition.getCurrentAssignment().getName();
+	public void removeScoresForAssignment(String assignment) {
+		resultMapper.deleteResultsByAssignment(assignment);
+	}
+
+	public void initializeScoreAtStart(String teamname, String assignment) {
+		resultMapper.insertScore(teamname,assignment, 0);
+	}
+
+	public Integer registerScoreAtSubmission(String teamname, String assignment, int scoreAtSubmissionTime) {
 		Integer oldScore = resultMapper.getScore(teamname, assignment);
 		if (oldScore == null) {
             oldScore = 0;
@@ -31,7 +36,7 @@ public class ScoreService {
 		final int newScore = oldScore + assignmentScore;
 		log.info("Team {} submitted {}. Previous score {} + assignment score {} + bonus {} = {}",
 		        teamname, assignment, oldScore, scoreAtSubmissionTime, bonusForSuccessfulSubmission, newScore );
-        resultMapper.insertScore(teamname, assignment, assignmentScore);
+        resultMapper.updateScore(teamname, assignment, assignmentScore);
         return assignmentScore;
 	}
 }

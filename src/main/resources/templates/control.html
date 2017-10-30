@@ -1,65 +1,122 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<script src="/webjars/jquery/jquery.min.js"></script>
-<script src="/webjars/sockjs-client/sockjs.min.js"></script>
-<script src="/webjars/stomp-websocket/stomp.min.js"></script>
-<link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css" />
-<link rel="stylesheet" th:href="@{/css/control.css}" />
-<title>Control</title>
+    <meta charset="UTF-8">
+    <script src="/webjars/jquery/jquery.min.js"></script>
+    <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
+          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
+    <link rel="stylesheet" th:href="@{/css/control.css}"/>
+
+    <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/apple-touch-icon.png}"
+          href="/static/images/apple-touch-icon.png"/>
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon-32x32.png}"
+          href="/static/images/favicon-32x32.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" th:href="@{/images/favicon-16x16.png}"
+          href="/static/images/favicon-16x16.png"/>
+    <link rel="mask-icon" th:href="@{/images/safari-pinned-tab.svg}" href="/static/imags/safari-pinned-tab.svg"
+          color="#5bbad5"/>
+    <link rel="manifest" th:href="@{//manifest.json}" href="/static/manifest.json"/>
+    <meta name="theme-color" content="#ffffff"/>
+
+
+    <title>Control</title>
 </head>
 <body class="p-2">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-4">
-                <div>
-                    <ul>
-                        <li th:each="assignment : ${assignments}"><input type="radio" name="assignment" th:value="${assignment.left}"
-                            th:text="${assignment.left}" th:id="${assignment.left}" th:attr="time=${assignment.right}"  /></li>
-                    </ul>
-                </div>
-                <div id="conversationDiv">
-                    <button id="start" onclick="startTask();">Start Assignment</button>
-                    <button id="stop" onclick="stopTask();">Stop Assignment</button>
-                    <button id="stop" onclick="clearAssignment();">Clear Current Assignment</button>
-                </div>
-                <div>
-                    <ul>
-                        <li th:each="repo : ${repos}"><input type="radio" name="repo" th:value="${repo.name}"
-                            th:text="${repo.name} +| / | + ${repo.branch}" /></li>
-                    </ul>
-                </div>
-                <div>
-                    <button id="clone" onclick="cloneAssignmentsRepo();">Clone assignments repo</button>
-                    <p id="response"></p>
-                    <form method="POST" action="/upload" enctype="multipart/form-data">
-                        <input type="file" name="file" /><br /> <br /> <input type="submit" value="upload" />
-                    </form>
-                    <a href="/getresults">get results</a>
-                </div>
+  <div class="container-fluid">
 
-            </div>
-            <div class="col-3 d-flex flex-column">
-                <div class="p-2 align-self-center">
-                    <div class="text-center">
-                        <h3>Time Left</h3>
-                    </div>
-                    <div id="assignment-clock" th:attrappend="data-time-left=${timeLeft},data-time=${time},running=${running}" class="align-self-center">
-                        <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
-                            <h2 class="align-self-center">--:--</h2>
-                        </div>
-                        <svg width="160" height="160" xmlns="http://www.w3.org/2000/svg">
-                            <g>
-                                <circle class="clock circle_animation" r="69.85699" cy="81" cx="81" stroke-width="8" stroke="#6fdb6f" fill="none"></circle>
-                            </g>
-                        </svg>
-                    </div>
+    <div class="row">
+      <div class="col-3 d-flex flex-column">
+            <div class="p-2 align-self-center">
+                <div class="text-center">
+                    <h3>Time Left</h3>
                 </div>
-
+                <div id="assignment-clock"
+                     th:attrappend="data-time-left=${timeLeft},data-time=${time},running=${running}"
+                     class="align-self-center">
+                    <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
+                        <h2 class="align-self-center">--:--</h2>
+                    </div>
+                    <svg width="160" height="160" xmlns="http://www.w3.org/2000/svg">
+                        <g>
+                            <circle class="clock circle_animation" r="69.85699" cy="81" cx="81" stroke-width="8"
+                                    stroke="#6fdb6f" fill="none"></circle>
+                        </g>
+                    </svg>
+                </div>
             </div>
         </div>
+
+       <div class="offset-1 col-8 d-flex flex-column mt-5">
+         <div class="row">
+
+         <div class="form-group col-3">
+           <th:block th:each="assignment : ${assignments}">
+             <div class="form-check input-group radio">
+               <label class="form-check-label">
+                 <input class="form-check-input" type="radio" name="assignment" th:text="' ' + ${assignment.left}" th:value="${assignment.left}" th:id="${assignment.left}" th:attr="time=${assignment.right}" />
+               </label>
+             </div>
+           </th:block>
+         </div>
+
+         <div class="form-group col-9">
+           <div class="row">
+           <div class="btn-group-vertical col-4">
+             <div class="p-2 text-center">
+               <button id="start" class="btn btn-success" onclick="startTask();">Start Assignment</button>
+             </div>
+             <div class="p-2 text-center">
+               <button id="stop" class="btn btn-danger" onclick="stopTask();">Stop Assignment</button>
+             </div>
+           </div>
+           <div class="p-2 text-center col-4">
+             <button id="clear" class="btn btn-warning" onclick="clearAssignment();">Clear Current Assignment</button>
+           </div>
+           </div>
+         </div>
+         </div>
+
+       </div>
+     </div>
+
     </div>
-    <script type="text/javascript" src="/js/taskcontrol.js"></script>
+
+    <div class="row">
+      <div class="col-6">
+        <th:block th:each="repo : ${repos}">
+          <div class="form-check input-group radio">
+            <label class="form-check-label">
+              <input class="form-check-input" type="radio" name="repo" th:text="' ' + ${repo.name} +| / | + ${repo.branch}" th:value="${repo.name}" th:id="${repo.name}" />
+            </label>
+          </div>
+        </th:block>
+      </div>
+    </div>
+
+    <div class="row p-2">
+      <div class="p-2 col-6">
+        <button id="clone"  class="btn btn-primary" onclick="cloneAssignmentsRepo();">Clone assignments repo</button>
+        <p id="response"></p>
+      </div>
+    </div>
+
+    <div class="row p-2">
+      <div class="p-2 col-6">
+        <form class="mt-5" method="POST" action="/upload" enctype="multipart/form-data">
+          <div>
+            <label class="btn btn-outline-secondary" for="file">
+              <input id="file" type="file" name="file" hidden />
+              bladeren...
+            </label>
+          </div>
+          <input class="btn btn-primary form-control col-3" type="submit" value="upload"/>
+        </form>
+        <a class="btn btn-link" href="/getresults">get results</a>
+      </div>
+    </div>
+        
+<script type="text/javascript" src="/js/taskcontrol.js"></script>
 </body>
 </html>

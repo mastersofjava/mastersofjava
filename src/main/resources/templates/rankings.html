@@ -9,13 +9,25 @@
           href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
     <link rel="stylesheet" th:href="@{/css/rankings.css}" href="/static/css/rankings.css"/>
 
+    <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/apple-touch-icon.png}"
+          href="/static/images/apple-touch-icon.png"/>
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon-32x32.png}"
+          href="/static/images/favicon-32x32.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" th:href="@{/images/favicon-16x16.png}"
+          href="/static/images/favicon-16x16.png"/>
+    <link rel="mask-icon" th:href="@{/images/safari-pinned-tab.svg}" href="/static/imags/safari-pinned-tab.svg"
+          color="#5bbad5"/>
+    <link rel="manifest" th:href="@{//manifest.json}" href="/static/manifest.json"/>
+    <meta name="theme-color" content="#ffffff"/>
+
+
 </head>
 
 <body class="p-2">
 <div class="container-fluid">
     <!-- content -->
     <div class="row mt-3">
-        <div class="col-6 mt-4">
+        <div class="col-4 mt-4">
             <div class="text-center">
                 <h3>Assignment: [[${assignment}]]</h3>
             </div>
@@ -52,7 +64,7 @@
                         <tr>
                             <th></th>
                             <th>Team</th>
-                            <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
+                            <th th:each="assignment,iterStat : ${assignments}" th:text="'#' + ${iterStat.count}"></th>
                             <th>Total Score</th>
                         </tr>
                         </thead>
@@ -73,13 +85,12 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-4">
+        <div class="col-3">
             <table id="bottom1" class="table table-sm">
                 <thead>
                 <tr>
                     <th></th>
                     <th>Team</th>
-                    <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
                     <th>Total Score</th>
                 </tr>
                 </thead>
@@ -88,21 +99,17 @@
                 <tr th:each="ranking : ${bottom1}">
                     <td th:text="${ranking.rank}"></td>
                     <td th:text="${ranking.team}">teamname</td>
-                    <th:block th:each="result : ${ranking.results}">
-                        <td th:text="${result.score}">0</td>
-                    </th:block>
                     <td th:text="${ranking.totalScore}">3</td>
                 </tr>
                 </tbody>
             </table>
         </div>
-        <div class="col-4">
+        <div class="col-3">
             <table id="bottom2" class="table table-sm">
                 <thead>
                 <tr>
                     <th></th>
                     <th>Team</th>
-                    <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
                     <th>Total Score</th>
                 </tr>
                 </thead>
@@ -111,21 +118,17 @@
                 <tr th:each="ranking : ${bottom2}">
                     <td th:text="${ranking.rank}"></td>
                     <td th:text="${ranking.team}">teamname</td>
-                    <th:block th:each="result : ${ranking.results}">
-                        <td th:text="${result.score}">0</td>
-                    </th:block>
                     <td th:text="${ranking.totalScore}">3</td>
                 </tr>
                 </tbody>
             </table>
         </div>
-        <div class="col-4">
+        <div class="col-3">
             <table id="bottom3" class="table table-sm">
                 <thead>
                 <tr>
                     <th></th>
                     <th>Team</th>
-                    <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
                     <th>Total Score</th>
                 </tr>
                 </thead>
@@ -134,9 +137,25 @@
                 <tr th:each="ranking : ${bottom3}">
                     <td th:text="${ranking.rank}"></td>
                     <td th:text="${ranking.team}">teamname</td>
-                    <th:block th:each="result : ${ranking.results}">
-                        <td th:text="${result.score}">0</td>
-                    </th:block>
+                    <td th:text="${ranking.totalScore}">3</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-3">
+            <table id="bottom4" class="table table-sm">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Team</th>
+                    <th>Total Score</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!--/*@thymesVar id="bottom3" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <tr th:each="ranking : ${bottom4}">
+                    <td th:text="${ranking.rank}"></td>
+                    <td th:text="${ranking.team}">teamname</td>
                     <td th:text="${ranking.totalScore}">3</td>
                 </tr>
                 </tbody>

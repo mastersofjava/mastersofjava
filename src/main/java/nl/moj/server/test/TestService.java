@@ -1,6 +1,20 @@
 package nl.moj.server.test;
 
-import static java.lang.Math.min;
+import nl.moj.server.DirectoriesConfiguration;
+import nl.moj.server.FeedbackMessageController;
+import nl.moj.server.UnitTestLimitsConfiguration;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.competition.ScoreService;
+import nl.moj.server.compile.CompileResult;
+import nl.moj.server.files.AssignmentFile;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.stream.LogOutputStream;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -15,22 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.stream.LogOutputStream;
-
-import nl.moj.server.DirectoriesConfiguration;
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.UnitTestLimitsConfiguration;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.competition.ScoreService;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.files.AssignmentFile;
+import static java.lang.Math.min;
 
 @Service
 public class TestService {
@@ -115,6 +114,7 @@ public class TestService {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
 			public TestResult get() {
+				String assignment = competition.getCurrentAssignment().getName();
 				competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(),
 						compileResult.getScoreAtSubmissionTime());
 				if (compileResult.isSuccessful()) {
@@ -143,7 +143,7 @@ public class TestService {
 						}
 						TestResult result = new TestResult(sb.toString(), compileResult.getUser(), success,
 								"Submit Test", compileResult.getScoreAtSubmissionTime());
-						Integer score = setFinalAssignmentScore(result, compileResult.getScoreAtSubmissionTime());
+						Integer score = setFinalAssignmentScore(result, assignment, compileResult.getScoreAtSubmissionTime());
 						feedbackMessageController.sendTestFeedbackMessage(result, true, score);
 						return result;
 					} catch (Exception e) {
@@ -160,93 +160,12 @@ public class TestService {
 		}, testing);
 
 	}
+	
+	private Integer setFinalAssignmentScore(TestResult testResult, String assignment, int scoreAtSubmissionTime) {
 
-	/**
-	 * Tests all normal unit tests. The Submit test will NOT be tested.
-	 *
-	 * @param compileResult
-	 * @return
-	 */
-	public Consumer<CompileResult> testAllS(CompileResult compileResult) {
-		Consumer<CompileResult> supplier = (x) -> {
-				if (compileResult.isSuccessful()) {
-					List<TestResult> result = new ArrayList<>();
-					List<String> tests = compileResult.getTests();
-					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles().stream()
-							.filter(f -> tests.contains(f.getName())).collect(Collectors.toList());
-					for (AssignmentFile assignmentFile : testFiles) {
-						try {
-							TestResult tr = unittest(assignmentFile, compileResult);
-							tr.setSubmit(false);
-							feedbackMessageController.sendTestFeedbackMessage(tr, false, 0);
-							result.add(tr);
-						} catch (Exception e) {
-							final TestResult dummyResult = new TestResult(
-									"Server error running tests - contact the Organizer", compileResult.getUser(),
-									false, assignmentFile.getFilename());
-							feedbackMessageController.sendTestFeedbackMessage(dummyResult, false, 0);
-							result.add(dummyResult);
-						}
-					}
-					//return result;
-				} else {
-					//return new ArrayList<>();
-				}
-		};
-		return supplier;
-
-	}
-
-	/**
-	 * Test the solution provided by the team against the Submit test and assignment
-	 * tests. All tests have to succeed.
-	 * 
-	 * @param compileResult
-	 * @return the combined TestResult
-	 */
-	public Supplier<TestResult> testSubmitS(CompileResult compileResult) {
-		Supplier<TestResult> supplier = () -> {
-			competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(),
-					compileResult.getScoreAtSubmissionTime());
-			if (compileResult.isSuccessful()) {
-				try {
-
-					StringBuilder sb = new StringBuilder();
-					boolean success = true;
-					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
-					testFiles.addAll(competition.getCurrentAssignment().getTestFiles());
-					testFiles.forEach(f -> log.trace(f.getName()));
-					for (AssignmentFile assignmentFile : testFiles) {
-						TestResult tr = unittest(assignmentFile, compileResult);
-						sb.append(tr.getResult());
-						if (success) {
-							success = tr.isSuccessful();
-							log.debug("set success {}", tr.isSuccessful());
-						}
-					}
-					TestResult result = new TestResult(sb.toString(), compileResult.getUser(), success,
-							"Submit Test", compileResult.getScoreAtSubmissionTime());
-					Integer score = setFinalAssignmentScore(result, compileResult.getScoreAtSubmissionTime());
-					feedbackMessageController.sendTestFeedbackMessage(result, true, score);
-					return result;
-				} catch (Exception e) {
-					e.printStackTrace();
-					final TestResult dummyResult = new TestResult(
-							"Server error running tests - contact the Organizer", compileResult.getUser(), false,
-							"Submit Test");
-					feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
-					return dummyResult;
-				}
-			}
-			return null;
-		};
-		return supplier;
-
-	}
-	private Integer setFinalAssignmentScore(TestResult testResult, int scoreAtSubmissionTime) {
 		if (testResult.isSuccessful()) {
 			feedbackMessageController.sendRefreshToRankingsPage();
-			return scoreService.registerScoreAtSubmission(testResult.getUser(), scoreAtSubmissionTime);
+			return scoreService.registerScoreAtSubmission(testResult.getUser(), assignment, scoreAtSubmissionTime);
 		}
 		return 0;
 	}
