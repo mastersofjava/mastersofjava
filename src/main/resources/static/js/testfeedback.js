@@ -62,11 +62,9 @@ function process(message){
 function initializeAssignmentClock() {
   var $assignmentClock = $('#assignment-clock');
   var $circle = $('.circle_animation', $assignmentClock);
-  // var time = $assignmentClock.attr('data-time');
-  var time = 40;
+  var time = $assignmentClock.attr('data-time');
   var initialOffset = '440';
-  // var timeleft = $assignmentClock.attr('data-time-left');
-  var timeleft = 30;
+  var timeleft = $assignmentClock.attr('data-time-left');
   var finished = ($('#content').attr('finished') == 'true');
   if (finished) {
     timeleft = $('#content').attr('submittime');
