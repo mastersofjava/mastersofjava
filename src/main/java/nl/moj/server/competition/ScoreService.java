@@ -27,16 +27,26 @@ public class ScoreService {
 		resultMapper.insertScore(teamname,assignment, 0);
 	}
 
+	/**
+	 * Scores can only be registered once per assignment per team.
+	 * Old score is always 0
+	 * new score is seconds left plus bonus.
+	 * 
+	 * @param teamname
+	 * @param assignment
+	 * @param scoreAtSubmissionTime
+	 * @return
+	 */
 	public Integer registerScoreAtSubmission(String teamname, String assignment, int scoreAtSubmissionTime) {
-		Integer oldScore = resultMapper.getScore(teamname, assignment);
-		if (oldScore == null) {
-            oldScore = 0;
-        }
-		final int assignmentScore = scoreAtSubmissionTime + bonusForSuccessfulSubmission;
-		final int newScore = oldScore + assignmentScore;
-		log.info("Team {} submitted {}. Previous score {} + assignment score {} + bonus {} = {}",
-		        teamname, assignment, oldScore, scoreAtSubmissionTime, bonusForSuccessfulSubmission, newScore );
-        resultMapper.updateScore(teamname, assignment, assignmentScore);
-        return assignmentScore;
+		int score = 0;
+		if (scoreAtSubmissionTime > 0) {
+			final int assignmentScore = scoreAtSubmissionTime + bonusForSuccessfulSubmission;
+			score = assignmentScore;
+			
+		}
+		log.debug("Team {} submitted {}. assignment score {} + bonus {} = {}",
+		        teamname, assignment, scoreAtSubmissionTime, bonusForSuccessfulSubmission, score );
+        resultMapper.updateScore(teamname, assignment, score);
+        return score;
 	}
 }
