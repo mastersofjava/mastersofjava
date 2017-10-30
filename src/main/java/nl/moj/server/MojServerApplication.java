@@ -3,25 +3,26 @@ package nl.moj.server;
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.io.FileUtils;
-import org.springframework.boot.SpringApplication;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import javafx.stage.Stage;
 @SpringBootApplication
-public class Application {
-	
+public class MojServerApplication extends AbstractJavaFxApplicationSupport {
+
+	@Autowired
 	private DirectoriesConfiguration directories;
 
 	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
+		launchApp(MojServerApplication.class, args);
 	}
 
-	public Application(DirectoriesConfiguration directories) {
-		super();
-		this.directories = directories;
+	public MojServerApplication() {
+		// TODO Auto-generated constructor stub
 	}
 
 	@PostConstruct
-	public void init() {
+	public void initialize() {
 		if (!FileUtils.getFile(directories.getBaseDirectory()).exists()) {
 			FileUtils.getFile(directories.getBaseDirectory()).mkdir();
 		}
@@ -34,6 +35,11 @@ public class Application {
 		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).exists()) {
 			FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).mkdir();
 		}
+	}
+
+	@Override
+	public void start(Stage arg0) throws Exception {
+		// Bootstrap Spring context here.
 	}
 
 }

@@ -43,14 +43,16 @@ public class TaskControlController {
 	private AssignmentRepoConfiguration repos;
 
 	private FeedbackMessageController feedbackMessageController;
+	private SoundService soundService;
 	
 	public TaskControlController(Competition competition, ResultMapper resultMapper, AssignmentRepoConfiguration repos,
-			FeedbackMessageController feedbackMessageController) {
+			FeedbackMessageController feedbackMessageController, SoundService soundService) {
 		super();
 		this.competition = competition;
 		this.resultMapper = resultMapper;
 		this.repos = repos;
 		this.feedbackMessageController = feedbackMessageController;
+		this.soundService = soundService;
 	}
 
 	@ModelAttribute(name = "assignments")
@@ -65,8 +67,10 @@ public class TaskControlController {
 
 	@MessageMapping("/control/starttask")
 	public void startTask(TaskMessage message) {
-		competition.startAssignment(message.getTaskName());
 		feedbackMessageController.sendStartToTeams(message.taskName);
+		competition.startAssignment(message.getTaskName());
+		soundService.playTicTac1Sound();
+		
 	}
 
 	@MessageMapping("/control/stoptask")

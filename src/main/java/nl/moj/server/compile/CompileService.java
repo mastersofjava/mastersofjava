@@ -68,10 +68,11 @@ public class CompileService {
 	}
 
 	public Supplier<CompileResult> compileWithTest(SourceMessage message) {
+		log.debug("compileWithTest");
 		return compile(message, true, false);
 	}
 
-	public Supplier<CompileResult> compile(SourceMessage message, boolean withTest, boolean forSubmit) {
+	private Supplier<CompileResult> compile(SourceMessage message, boolean withTest, boolean forSubmit) {
 		Supplier<CompileResult> supplier = () -> {
 			Collection<AssignmentFile> assignmentFiles;
 			if (withTest) {

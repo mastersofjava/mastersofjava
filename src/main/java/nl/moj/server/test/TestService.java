@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -160,6 +161,88 @@ public class TestService {
 
 	}
 
+	/**
+	 * Tests all normal unit tests. The Submit test will NOT be tested.
+	 *
+	 * @param compileResult
+	 * @return
+	 */
+	public Consumer<CompileResult> testAllS(CompileResult compileResult) {
+		Consumer<CompileResult> supplier = (x) -> {
+				if (compileResult.isSuccessful()) {
+					List<TestResult> result = new ArrayList<>();
+					List<String> tests = compileResult.getTests();
+					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles().stream()
+							.filter(f -> tests.contains(f.getName())).collect(Collectors.toList());
+					for (AssignmentFile assignmentFile : testFiles) {
+						try {
+							TestResult tr = unittest(assignmentFile, compileResult);
+							tr.setSubmit(false);
+							feedbackMessageController.sendTestFeedbackMessage(tr, false, 0);
+							result.add(tr);
+						} catch (Exception e) {
+							final TestResult dummyResult = new TestResult(
+									"Server error running tests - contact the Organizer", compileResult.getUser(),
+									false, assignmentFile.getFilename());
+							feedbackMessageController.sendTestFeedbackMessage(dummyResult, false, 0);
+							result.add(dummyResult);
+						}
+					}
+					//return result;
+				} else {
+					//return new ArrayList<>();
+				}
+		};
+		return supplier;
+
+	}
+
+	/**
+	 * Test the solution provided by the team against the Submit test and assignment
+	 * tests. All tests have to succeed.
+	 * 
+	 * @param compileResult
+	 * @return the combined TestResult
+	 */
+	public Supplier<TestResult> testSubmitS(CompileResult compileResult) {
+		Supplier<TestResult> supplier = () -> {
+			competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(),
+					compileResult.getScoreAtSubmissionTime());
+			if (compileResult.isSuccessful()) {
+				try {
+
+					StringBuilder sb = new StringBuilder();
+					boolean success = true;
+					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
+					testFiles.addAll(competition.getCurrentAssignment().getTestFiles());
+					testFiles.forEach(f -> log.trace(f.getName()));
+					for (AssignmentFile assignmentFile : testFiles) {
+						TestResult tr = unittest(assignmentFile, compileResult);
+						sb.append(tr.getResult());
+						if (success) {
+							success = tr.isSuccessful();
+							log.debug("set success {}", tr.isSuccessful());
+						}
+					}
+					TestResult result = new TestResult(sb.toString(), compileResult.getUser(), success,
+							"Submit Test", compileResult.getScoreAtSubmissionTime());
+					Integer score = setFinalAssignmentScore(result, compileResult.getScoreAtSubmissionTime());
+					feedbackMessageController.sendTestFeedbackMessage(result, true, score);
+					return result;
+				} catch (Exception e) {
+					e.printStackTrace();
+					final TestResult dummyResult = new TestResult(
+							"Server error running tests - contact the Organizer", compileResult.getUser(), false,
+							"Submit Test");
+					feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
+					return dummyResult;
+				}
+			}
+			return null;
+		};
+		return supplier;
+
+	}
 	private Integer setFinalAssignmentScore(TestResult testResult, int scoreAtSubmissionTime) {
 		if (testResult.isSuccessful()) {
 			feedbackMessageController.sendRefreshToRankingsPage();
