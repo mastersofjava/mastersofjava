@@ -1,37 +1,51 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-	<link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
-	          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
-	<link href="/css/testfeedback.css" rel="stylesheet" />
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
+          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
+    <link href="/css/testfeedback.css" rel="stylesheet"/>
+
+    <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/apple-touch-icon.png}"
+          href="/static/images/apple-touch-icon.png"/>
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon-32x32.png}"
+          href="/static/images/favicon-32x32.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" th:href="@{/images/favicon-16x16.png}"
+          href="/static/images/favicon-16x16.png"/>
+    <link rel="mask-icon" th:href="@{/images/safari-pinned-tab.svg}" href="/static/imags/safari-pinned-tab.svg"
+          color="#5bbad5"/>
+    <link rel="manifest" th:href="@{//manifest.json}" href="/static/manifest.json"/>
+    <meta name="theme-color" content="#ffffff"/>
+
 </head>
 
 <header>
- <h1 id="tasktime">Test Feedback</h1>
+    <h1 id="tasktime">Test Feedback</h1>
 </header>
 
 <body onload=init()>
- <div class="container">
-  <div id="main" class="main">
+<div class="container">
+    <div id="main" class="main">
 
-   <th:block th:each="team : ${teams}">
-    <table style="display: inline-block;">
-     <tr>
-      <td class="table-active" th:id="${team.name}" th:colspan="${#lists.size(tests)}" th:text="${team.name}">Row 1: Col 1</td>
-     </tr>
-     <tr>
-      <td class="table-active" th:id="${team.name}+'-'+${test}" th:each="test : ${tests}">O</td>
-     </tr>
-    </table>
-   </th:block>
+        <th:block th:each="team : ${teams}">
+            <table style="display: inline-block;">
+                <tr>
+                    <td class="table-active" th:id="${team.name}" th:colspan="${#lists.size(tests)}"
+                        th:text="${team.name}">Row 1: Col 1
+                    </td>
+                </tr>
+                <tr>
+                    <td class="table-active" th:id="${team.name}+'-'+${test}" th:each="test : ${tests}">O</td>
+                </tr>
+            </table>
+        </th:block>
 
-  </div>
- </div>
- 
- <script src="/webjars/sockjs-client/sockjs.min.js"></script>
- <script src="/webjars/stomp-websocket/stomp.min.js"></script>
- <script src="/webjars/jquery/jquery.min.js"></script>
- <script src="/webjars/bootstrap/js/bootstrap.min.js"></script>
- <script src="/js/testfeedback.js"></script>
+    </div>
+</div>
+
+<script src="/webjars/sockjs-client/sockjs.min.js"></script>
+<script src="/webjars/stomp-websocket/stomp.min.js"></script>
+<script src="/webjars/jquery/jquery.min.js"></script>
+<script src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+<script src="/js/testfeedback.js"></script>
 </body>
 </html>
