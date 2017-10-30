@@ -70,10 +70,14 @@ public class Team {
 	}
 
 	public Integer getTotalScore(){
-		int sum = 0;
-		for(Result r : getResults()){
-			sum += r.getScore();
-		}
+        int sum = 0;
+
+	    if (getResults() != null) {
+            for (Result r : getResults()) {
+                sum += r.getScore();
+            }
+        }
+
 		return sum;
 	}
 
@@ -84,5 +88,9 @@ public class Team {
 	public void setResults(List<Result> results) {
 		this.results = results;
 	}
+
+	public String getShortName() {
+	    return name.length() > 20 ? name.substring(0, 20) + "..." : name;
+    }
 	
 }
