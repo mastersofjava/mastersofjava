@@ -27,7 +27,7 @@
 <div class="container-fluid">
     <!-- content -->
     <div class="row mt-3">
-        <div class="col-6 mt-4">
+        <div class="col-4 mt-4">
             <div class="text-center">
                 <h3>Assignment: [[${assignment}]]</h3>
             </div>
@@ -64,7 +64,7 @@
                         <tr>
                             <th></th>
                             <th>Team</th>
-                            <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
+                            <th th:each="assignment,iterStat : ${assignments}" th:text="'#' + ${iterStat.count}"></th>
                             <th>Total Score</th>
                         </tr>
                         </thead>
@@ -85,13 +85,12 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-4">
+        <div class="col-3">
             <table id="bottom1" class="table table-sm">
                 <thead>
                 <tr>
                     <th></th>
                     <th>Team</th>
-                    <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
                     <th>Total Score</th>
                 </tr>
                 </thead>
@@ -100,21 +99,17 @@
                 <tr th:each="ranking : ${bottom1}">
                     <td th:text="${ranking.rank}"></td>
                     <td th:text="${ranking.team}">teamname</td>
-                    <th:block th:each="result : ${ranking.results}">
-                        <td th:text="${result.score}">0</td>
-                    </th:block>
                     <td th:text="${ranking.totalScore}">3</td>
                 </tr>
                 </tbody>
             </table>
         </div>
-        <div class="col-4">
+        <div class="col-3">
             <table id="bottom2" class="table table-sm">
                 <thead>
                 <tr>
                     <th></th>
                     <th>Team</th>
-                    <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
                     <th>Total Score</th>
                 </tr>
                 </thead>
@@ -123,21 +118,17 @@
                 <tr th:each="ranking : ${bottom2}">
                     <td th:text="${ranking.rank}"></td>
                     <td th:text="${ranking.team}">teamname</td>
-                    <th:block th:each="result : ${ranking.results}">
-                        <td th:text="${result.score}">0</td>
-                    </th:block>
                     <td th:text="${ranking.totalScore}">3</td>
                 </tr>
                 </tbody>
             </table>
         </div>
-        <div class="col-4">
+        <div class="col-3">
             <table id="bottom3" class="table table-sm">
                 <thead>
                 <tr>
                     <th></th>
                     <th>Team</th>
-                    <th th:each="assignment : ${assignments}" th:text="${assignment}"></th>
                     <th>Total Score</th>
                 </tr>
                 </thead>
@@ -146,9 +137,25 @@
                 <tr th:each="ranking : ${bottom3}">
                     <td th:text="${ranking.rank}"></td>
                     <td th:text="${ranking.team}">teamname</td>
-                    <th:block th:each="result : ${ranking.results}">
-                        <td th:text="${result.score}">0</td>
-                    </th:block>
+                    <td th:text="${ranking.totalScore}">3</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-3">
+            <table id="bottom4" class="table table-sm">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Team</th>
+                    <th>Total Score</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!--/*@thymesVar id="bottom3" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <tr th:each="ranking : ${bottom4}">
+                    <td th:text="${ranking.rank}"></td>
+                    <td th:text="${ranking.team}">teamname</td>
                     <td th:text="${ranking.totalScore}">3</td>
                 </tr>
                 </tbody>
