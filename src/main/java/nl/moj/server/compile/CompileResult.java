@@ -1,12 +1,13 @@
 package nl.moj.server.compile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CompileResult {
 
 	private String result;
 
-	private List<String> tests;
+	private List<String> tests = new ArrayList<>();
 
 	private String user;
 	

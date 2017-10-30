@@ -161,11 +161,12 @@ public class TestService {
 	}
 
 	private Integer setFinalAssignmentScore(TestResult testResult, String assignment, int scoreAtSubmissionTime) {
+		int score = 0;
 		if (testResult.isSuccessful()) {
 			feedbackMessageController.sendRefreshToRankingsPage();
-			return scoreService.registerScoreAtSubmission(testResult.getUser(), assignment, scoreAtSubmissionTime);
+			score = scoreAtSubmissionTime; 
 		}
-		return 0;
+		return scoreService.registerScoreAtSubmission(testResult.getUser(), assignment, score);
 	}
 
 	private TestResult unittest(AssignmentFile file, CompileResult compileResult) {

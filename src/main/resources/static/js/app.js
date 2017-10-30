@@ -28,9 +28,14 @@ function connectFeedback() {
 		stompTestFeedbackClient.subscribe('/user/queue/compilefeedback',
 				function(msg) {
 					var message = JSON.parse(msg.body);
-					if (!message.submit) {
+					if (!message.forTest) {
 						appendOutput(message.text);
 						updateOutputHeaderColor(message.success);
+					} else {
+						if (!message.success) {
+							updateOutputHeaderColor(message.success);
+						}
+						appendOutput(message.text);
 					}
 				});
 	});
@@ -62,6 +67,7 @@ function connectButtons() {
 		e.preventDefault();
 	});
 	$('#submit').click(function(e) {
+		resetTabColor();
 		$('#btn-open-submit').attr('disabled', 'disabled');
 		$('#confirm-submit-modal').modal('hide');
 		timerActive = false;
@@ -155,6 +161,9 @@ function initializeAssignmentClock() {
 function resetOutput() {
 	$('#output').removeClass('failure', 'success');
 	$('#output-content').empty();
+}
+function resetTabColor() {
+	$('#output').removeClass('failure', 'success');
 }
 
 function updateOutputHeaderColor(success) {

@@ -135,14 +135,14 @@ public class CompileService {
 				String result = sb.toString();
 				diagnosticCollector = new DiagnosticCollector<>();
 				log.debug("compileSuccess: {}\n{}", false, result);
-				compileResult = new CompileResult(result, null, message.getTeam(), false,
+				List<String> tests = new ArrayList<>();
+				compileResult = new CompileResult(result, tests, message.getTeam(), false,
 						message.getScoreAtSubmissionTime());
-				feedbackMessageController.sendCompileFeedbackMessage(compileResult);
-				return compileResult;
+			} else {
+				log.debug("compileSuccess: {}", true);
+				compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(),
+						message.getTeam(), true, message.getScoreAtSubmissionTime());
 			}
-			log.debug("compileSuccess: {}", true);
-			compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(), message.getTeam(),
-					true, message.getScoreAtSubmissionTime());
 			feedbackMessageController.sendCompileFeedbackMessage(compileResult);
 			return compileResult;
 		};
