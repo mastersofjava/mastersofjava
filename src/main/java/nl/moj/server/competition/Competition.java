@@ -1,24 +1,12 @@
 package nl.moj.server.competition;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.util.Collections.emptyList;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Stopwatch;
+import nl.moj.server.DirectoriesConfiguration;
+import nl.moj.server.FeedbackMessageController;
+import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
+import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.persistence.TestMapper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -26,15 +14,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Stopwatch;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
-import nl.moj.server.DirectoriesConfiguration;
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
-import nl.moj.server.persistence.ResultMapper;
-import nl.moj.server.persistence.TeamMapper;
-import nl.moj.server.persistence.TestMapper;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.Collections.emptyList;
 
 @Service
 public class Competition {
@@ -55,7 +47,7 @@ public class Competition {
 
 	private TestMapper testMapper;
 
-	private ResultMapper resultMapper;
+	private ScoreService scoreService;
 
 	private TeamMapper teamMapper;
 	
@@ -64,13 +56,13 @@ public class Competition {
 	private DirectoriesConfiguration directories;
 
 	public Competition(AssignmentRepositoryService repo, TestMapper testMapper,
-			ResultMapper resultMapper, TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
+			ScoreService scoreService, TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
 			 DirectoriesConfiguration directories) {
 		super();
 		this.repo = repo;
 		this.testMapper = testMapper;
-		this.resultMapper = resultMapper;
 		this.teamMapper = teamMapper;
+		this.scoreService = scoreService;
 		this.feedbackMessageController = feedbackMessageController;
 		this.directories = directories;
 	}
@@ -110,7 +102,7 @@ public class Competition {
 		if (assignments != null) {
 			assignments.keySet().forEach((k) -> {
 				testMapper.deleteTestsByAssignment(k);
-				resultMapper.deleteResultsByAssignment(k);
+				scoreService.removeScoresForAssignment(k);
 			});
 			assignments.clear();
 		}
@@ -135,7 +127,13 @@ public class Competition {
 
 		final Assignment assignment = currentAssignment.get();
 		// remove old results
-		resultMapper.deleteResultsByAssignment(assignment.getName());
+		scoreService.removeScoresForAssignment(assignment.getName());
+
+		// initialize scores on 0.
+		teamMapper.getAllTeams().forEach( t -> {
+			scoreService.initializeScoreAtStart(t.getName(),assignment.getName());
+		});
+
 		Integer solutiontime = getCurrentAssignment().getSolutionTime();
 		handler = ex.schedule(new Runnable() {
 			@Override
@@ -169,7 +167,7 @@ public class Competition {
 			// set 0 score for teams that did not finish
 			teamMapper.getAllTeams().stream()
 					.filter(t -> !previousAssignment.get().getFinishedTeamNames().contains(t.getName()))
-					.forEach(t -> resultMapper.insertScore(t.getName(), previousAssignment.get().getName(), 0));
+					.forEach(t -> scoreService.registerScoreAtSubmission(t.getName(), previousAssignment.get().getName(), 0));
 		}
 		return previousAssignment;
 	}

@@ -7,6 +7,18 @@
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
           href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
     <link rel="stylesheet" th:href="@{/css/registration.css}" href="/static/css/registration.css"/>
+
+    <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/apple-touch-icon.png}"
+          href="/static/images/apple-touch-icon.png"/>
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon-32x32.png}"
+          href="/static/images/favicon-32x32.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" th:href="@{/images/favicon-16x16.png}"
+          href="/static/images/favicon-16x16.png"/>
+    <link rel="mask-icon" th:href="@{/images/safari-pinned-tab.svg}" href="/static/imags/safari-pinned-tab.svg"
+          color="#5bbad5"/>
+    <link rel="manifest" th:href="@{//manifest.json}" href="/static/manifest.json"/>
+    <meta name="theme-color" content="#ffffff"/>
+
 </head>
 
 <body class="p-5">
@@ -49,8 +61,8 @@
                 <div class="form-group">
                     <label for="country">Country</label>
                     <select th:field="*{country}" class="form-control">
-                      <option value="België" >België</option>
-                      <option value="Nederland" >Nederland</option>
+                        <option value="België">België</option>
+                        <option value="Nederland">Nederland</option>
                     </select>
                     <small id="countryHelp" class="form-text text-muted">Where are you?</small>
                 </div>
