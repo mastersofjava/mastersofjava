@@ -36,6 +36,7 @@ public class RankingsController {
 		model.addAttribute("bottom1", parts.get(0));
 		model.addAttribute("bottom2", parts.get(1));
 		model.addAttribute("bottom3", parts.get(2));
+		model.addAttribute("bottom4", parts.get(3));
 		if( competition.getCurrentAssignment() != null ) {
 			model.addAttribute("assignment", competition.getCurrentAssignment().getName());
 			model.addAttribute("timeLeft", competition.getRemainingTime());
@@ -53,7 +54,7 @@ public class RankingsController {
 		if( rankings.size() > offset ) {
 			remaining = rankings.subList(offset,rankings.size());
 		}
-		return CollectionUtil.partition(remaining,3);
+		return CollectionUtil.partition(remaining,4);
 	}
 
 	private List<Ranking> enrich( List<Ranking> rankings ) {
