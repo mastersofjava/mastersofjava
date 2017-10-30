@@ -6,28 +6,71 @@
 	<link href="/css/testfeedback.css" rel="stylesheet" />
 </head>
 
-<header>
- <h1 id="tasktime">Test Feedback</h1>
-</header>
+<body onload=init() class="p-2">
+    <div class="container-fluid">
+        <!-- content -->
+        <div class="row mt-3">
+            <div class="col-6 mt-4">
+                <div class="text-center">
+                    <h3>Assignment: [[${assignment}]]</h3>
+                </div>
+                <div class="p-2 d-flex justify-content-center">
+                    <div id="assignment-clock" th:attrappend="data-time-left=${timeLeft},data-time=${time}"
+                         class="align-self-center">
+                        <div class="time d-flex justify-content-center" style="height: 370px; width: 370px;">
+                            <h2 class="align-self-center">--:--</h2>
+                        </div>
+                        <svg width="370" height="370" xmlns="http://www.w3.org/2000/svg">
+                            <g>
+                                <circle class="clock circle_animation" r="150" cy="185" cx="185"
+                                        stroke-width="25"
+                                        stroke="#6fdb6f" fill="none"></circle>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="row justify-content-center">
+                    <div>
+                        <img th:src="@{/images/moj_logo_128x97_2017.png}" class="img-fluid"
+                             src="/static/images/moj_logo_128x97_2017.png"/>
+                    </div>
+                    <div class="pl-5 align-self-center">
+                        <h1>Live assignment progress</h1>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col">
+                        <table id="team-progress" class="table">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Team</th>
+                                    <th>Total score</th>
+                                    <th>Test progression</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="team : ${teams}">
+                                    <td th:text="${team.name}">Team name</td>
+                                    <td th:text="${team.totalScore}">Total score</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- footer -->
+        <div class="fixed-bottom footer d-flex">
+            <div class="mr-auto p-2">
+                <img th:src="@{/images/logo_first8_150x39.png}" class="img-fluid"
+                     src="/static/images/logo_first8_150x39.png"/>
+            </div>
+        </div>
+    </div>
 
-<body onload=init()>
- <div class="container">
-  <div id="main" class="main">
-
-   <th:block th:each="team : ${teams}">
-    <table style="display: inline-block;">
-     <tr>
-      <td class="table-active" th:id="${team.name}" th:colspan="${#lists.size(tests)}" th:text="${team.name}">Row 1: Col 1</td>
-     </tr>
-     <tr>
-      <td class="table-active" th:id="${team.name}+'-'+${test}" th:each="test : ${tests}">O</td>
-     </tr>
-    </table>
-   </th:block>
-
-  </div>
- </div>
- 
  <script src="/webjars/sockjs-client/sockjs.min.js"></script>
  <script src="/webjars/stomp-websocket/stomp.min.js"></script>
  <script src="/webjars/jquery/jquery.min.js"></script>
