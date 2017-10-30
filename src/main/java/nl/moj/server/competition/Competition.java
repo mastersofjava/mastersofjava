@@ -1,23 +1,17 @@
 package nl.moj.server.competition;
 
-import com.google.common.base.Stopwatch;
-import nl.moj.server.DirectoriesConfiguration;
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
-import nl.moj.server.persistence.TeamMapper;
-import nl.moj.server.persistence.TestMapper;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.Collections.emptyList;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -25,8 +19,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.util.Collections.emptyList;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import com.google.common.base.Stopwatch;
+
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import nl.moj.server.DirectoriesConfiguration;
+import nl.moj.server.FeedbackMessageController;
+import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
+import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.persistence.TestMapper;
 
 @Service
 public class Competition {
@@ -35,7 +44,10 @@ public class Competition {
 
 	private AtomicReference<Assignment> currentAssignment = new AtomicReference<>(); // FIXME: access should be
 																						// synchronized
-	private ScheduledFuture<?> handler;
+	private ScheduledFuture<?> assignmentHandler;
+
+	private ScheduledFuture<?> sound2MinHandler;
+	private ScheduledFuture<?> sound1MinHandler;
 
 	private static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
 
@@ -50,14 +62,14 @@ public class Competition {
 	private ScoreService scoreService;
 
 	private TeamMapper teamMapper;
-	
+
 	private FeedbackMessageController feedbackMessageController;
 
 	private DirectoriesConfiguration directories;
 
-	public Competition(AssignmentRepositoryService repo, TestMapper testMapper,
-			ScoreService scoreService, TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
-			 DirectoriesConfiguration directories) {
+	public Competition(AssignmentRepositoryService repo, TestMapper testMapper, ScoreService scoreService,
+			TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
+			DirectoriesConfiguration directories) {
 		super();
 		this.repo = repo;
 		this.testMapper = testMapper;
@@ -77,7 +89,8 @@ public class Competition {
 	public List<AssignmentFile> getBackupFilesForTeam(String team) {
 		Assignment assignment = getCurrentAssignment();
 		if (assignment != null) {
-			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory(), team);
+			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory(),
+					team);
 			File sourcesdir = FileUtils.getFile(teamdir, "sources", assignment.getName());
 			if (sourcesdir.exists()) {
 				final List<AssignmentFile> assignmentFiles = FileUtils
@@ -118,6 +131,12 @@ public class Competition {
 	 * logging a warning.
 	 */
 	public void startAssignment(String assignmentName) {
+		File gong = FileUtils
+				.getFile("/home/mhayen/Workspaces/workspace-moj/server/src/main/resources/sounds/gong.wav");
+		Media m = new Media(gong.toURI().toString());
+		MediaPlayer player = new MediaPlayer(m);
+		player.play();
+		// soundService.playStartGong();
 		if (assignments.containsKey(assignmentName)) {
 			stopCurrentAssignment();
 			this.currentAssignment.set(assignments.get(assignmentName));
@@ -130,26 +149,18 @@ public class Competition {
 		scoreService.removeScoresForAssignment(assignment.getName());
 
 		// initialize scores on 0.
-		teamMapper.getAllTeams().forEach( t -> {
-			scoreService.initializeScoreAtStart(t.getName(),assignment.getName());
+		teamMapper.getAllTeams().forEach(t -> {
+			scoreService.initializeScoreAtStart(t.getName(), assignment.getName());
 		});
 
 		Integer solutiontime = getCurrentAssignment().getSolutionTime();
-		handler = ex.schedule(new Runnable() {
-			@Override
-			public void run() {
-				feedbackMessageController.sendStopToTeams(assignment.getName());
-				handler.cancel(false);
-				stopCurrentAssignment();
-			}
-		}, solutiontime, TimeUnit.SECONDS);
-
+		startAssignmentRunnable(assignment, solutiontime);
+		play2MinBeforeEndSound(solutiontime);
+		play1MinBeforeEndSound(solutiontime);
 		assignment.setRunning(true);
 		timer = Stopwatch.createStarted();
 		log.info("assignment started {}", assignment.getName());
 	}
-
-
 
 	/**
 	 * Stops the current assignment if one is set. Otherwise does nothing except
@@ -162,12 +173,13 @@ public class Competition {
 			previousAssignment.get().setRunning(false);
 			previousAssignment.get().setCompleted(true);
 			timer.stop();
-			handler.cancel(true);
+			assignmentHandler.cancel(true);
 			log.info("assignment stopped {}", previousAssignment.get().getName());
 			// set 0 score for teams that did not finish
 			teamMapper.getAllTeams().stream()
 					.filter(t -> !previousAssignment.get().getFinishedTeamNames().contains(t.getName()))
-					.forEach(t -> scoreService.registerScoreAtSubmission(t.getName(), previousAssignment.get().getName(), 0));
+					.forEach(t -> scoreService.registerScoreAtSubmission(t.getName(),
+							previousAssignment.get().getName(), 0));
 		}
 		return previousAssignment;
 	}
@@ -233,5 +245,46 @@ public class Competition {
 	public List<ImmutablePair<String, Integer>> getAssignmentInfo() {
 		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).values().stream()
 				.map(v -> ImmutablePair.of(v.getName(), v.getSolutionTime())).sorted().collect(Collectors.toList());
+	}
+
+	private void play2MinBeforeEndSound(Integer solutiontime) {
+		sound2MinHandler = ex.schedule(new Runnable() {
+			@Override
+			public void run() {
+				System.out.println("hier");
+				File gong = FileUtils.getFile(directories.getSoundDirectory(), "slowtictaclong.wav");
+				Media m = new Media(gong.toURI().toString());
+				MediaPlayer player = new MediaPlayer(m);
+				player.play();
+				System.out.println("hier");
+				// soundHandler.cancel(false);
+			}
+		}, solutiontime - 120, TimeUnit.SECONDS);
+	}
+
+	private void play1MinBeforeEndSound(Integer solutiontime) {
+		sound1MinHandler = ex.schedule(new Runnable() {
+			@Override
+			public void run() {
+				System.out.println("hier");
+				File gong = FileUtils.getFile(directories.getSoundDirectory(), "slowtictaclong.wav");
+				Media m = new Media(gong.toURI().toString());
+				MediaPlayer player = new MediaPlayer(m);
+				player.play();
+				System.out.println("hier");
+				// sound1MinHandler.cancel(false);
+			}
+		}, solutiontime - 60, TimeUnit.SECONDS);
+	}
+
+	private void startAssignmentRunnable(final Assignment assignment, Integer solutiontime) {
+		assignmentHandler = ex.schedule(new Runnable() {
+			@Override
+			public void run() {
+				feedbackMessageController.sendStopToTeams(assignment.getName());
+				assignmentHandler.cancel(false);
+				stopCurrentAssignment();
+			}
+		}, solutiontime, TimeUnit.SECONDS);
 	}
 }

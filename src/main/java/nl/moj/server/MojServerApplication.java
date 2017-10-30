@@ -5,8 +5,11 @@ import javax.annotation.PostConstruct;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Lazy;
 
 import javafx.stage.Stage;
+
+@Lazy
 @SpringBootApplication
 public class MojServerApplication extends AbstractJavaFxApplicationSupport {
 
@@ -34,6 +37,9 @@ public class MojServerApplication extends AbstractJavaFxApplicationSupport {
 		}
 		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).exists()) {
 			FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).mkdir();
+		}
+		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getSoundDirectory()).exists()) {
+			FileUtils.getFile(directories.getBaseDirectory(), directories.getSoundDirectory()).mkdir();
 		}
 	}
 

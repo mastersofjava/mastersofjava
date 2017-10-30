@@ -11,6 +11,7 @@ public class DirectoriesConfiguration {
 	private String teamDirectory;
 	private String assignmentDirectory;
 	private String libDirectory;
+	private String soundDirectory;
 
 	public String getBaseDirectory() {
 		return baseDirectory;
@@ -42,6 +43,14 @@ public class DirectoriesConfiguration {
 
 	public void setLibDirectory(String libDirectory) {
 		this.libDirectory = libDirectory;
+	}
+
+	public String getSoundDirectory() {
+		return soundDirectory;
+	}
+
+	public void setSoundDirectory(String soundDirectory) {
+		this.soundDirectory = soundDirectory;
 	}
 
 }

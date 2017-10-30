@@ -6,6 +6,7 @@ moj:
       teamDirectory: teams
       assignmentDirectory: assignments
       libDirectory: lib
+      soundDirectory: sounds
     assignments:
       repos:
         -

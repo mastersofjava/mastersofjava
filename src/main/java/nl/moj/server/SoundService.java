@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 
-@Service
+//@Service
 public class SoundService {
 
 	public void playStartGong() {
@@ -45,14 +45,13 @@ public class SoundService {
 	}
 
 	public void playSlowTicTac2Sound() {
-		CompletableFuture.runAsync(() -> {
+		//CompletableFuture.runAsync(() -> {
 			// 1,5 seconden
 			File gong = FileUtils
-					.getFile("/home/mhayen/Workspaces/workspace-moj/server/src/main/resources/sounds/tictac2.wav");
+					.getFile("/home/mhayen/Workspaces/workspace-moj/server/src/main/resources/sounds/slowtictaclong.wav");
 			Media m = new Media(gong.toURI().toString());
 			MediaPlayer player = new MediaPlayer(m);
-			player.setCycleCount(40);
 			player.play();
-		});
+		//});
 	}
 }
