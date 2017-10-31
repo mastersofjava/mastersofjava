@@ -18,7 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -38,8 +37,8 @@ public class Competition {
 	private ScheduledFuture<?> handler;
 
 	private ScheduledFuture<?> timeHandler;
-	
-	private static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
+
+	private ScheduledExecutorService scheduledExecutorService;
 
 	private Stopwatch timer;
 
@@ -58,8 +57,8 @@ public class Competition {
 	private DirectoriesConfiguration directories;
 
 	public Competition(AssignmentRepositoryService repo, TestMapper testMapper,
-			ScoreService scoreService, TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
-			 DirectoriesConfiguration directories) {
+					   ScoreService scoreService, TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
+					   DirectoriesConfiguration directories, ScheduledExecutorService scheduledExecutorService ) {
 		super();
 		this.repo = repo;
 		this.testMapper = testMapper;
@@ -67,6 +66,7 @@ public class Competition {
 		this.scoreService = scoreService;
 		this.feedbackMessageController = feedbackMessageController;
 		this.directories = directories;
+		this.scheduledExecutorService = scheduledExecutorService;
 	}
 
 	/**
@@ -137,22 +137,31 @@ public class Competition {
 		});
 
 		Integer solutiontime = getCurrentAssignment().getSolutionTime();
-		handler = ex.schedule(new Runnable() {
+		timeHandler = scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 			@Override
 			public void run() {
-				feedbackMessageController.sendStopToTeams(assignment.getName());
-				handler.cancel(false);
-				stopCurrentAssignment();
+				try {
+					feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
+				} catch( Exception e ) {
+					log.error("Failed to send time update.", e);
+				}
+			}
+		}, 0, 10, TimeUnit.SECONDS);
+
+		handler = scheduledExecutorService.schedule(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					feedbackMessageController.sendStopToTeams(assignment.getName());
+					handler.cancel(false);
+					timeHandler.cancel(false);
+					stopCurrentAssignment();
+				} catch( Exception e ) {
+					log.error("Failed to stop assignment.", e);
+				}
 			}
 		}, solutiontime, TimeUnit.SECONDS);
 
-		timeHandler = ex.scheduleAtFixedRate(new Runnable() {
-			@Override
-			public void run() {
-				feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
-			}
-		}, 0, 10, TimeUnit.SECONDS);
-		
 		
 		
 		assignment.setRunning(true);
