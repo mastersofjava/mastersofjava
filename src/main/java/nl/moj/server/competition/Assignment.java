@@ -1,13 +1,5 @@
 package nl.moj.server.competition;
 
-import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -18,6 +10,13 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+
+import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
+
 public class Assignment {
 
 	private String name;
@@ -25,38 +24,41 @@ public class Assignment {
 	private boolean running;
 
 	private boolean completed;
-	
+
 	private List<String> filenames = new ArrayList<>();
 
 	private Properties properties = new Properties();
 
 	private List<AssignmentFile> assFiles = new ArrayList<>();
 
-	private List<ImmutablePair<String, Integer>> finishedTeams = new ArrayList<>();;
+	private List<TeamStatus> finishedTeams = new ArrayList<>();;
 
 	public Assignment(String name) {
 		super();
 		this.name = name;
 	}
 
-	public void addFinishedTeam(String team, Integer score) {
-		finishedTeams.add(ImmutablePair.of(team, score));
+	public void addFinishedTeam(String team, Integer timeAtSubmission, Integer finalScore) {
+		finishedTeams.add(new TeamStatus(team, timeAtSubmission, finalScore));
 	}
 
 	public boolean isTeamFinished(String team) {
-		return finishedTeams.stream().anyMatch(t -> t.left.equalsIgnoreCase(team));
+		return finishedTeams.stream().anyMatch(t -> t.getTeam().equalsIgnoreCase(team));
 	}
 
 	public Integer getTeamSubmitTime(String team) {
-		return finishedTeams.stream().filter(t -> t.left.equalsIgnoreCase(team)).map(t -> t.getRight()).findFirst().orElse(0);
+		return finishedTeams.stream().filter(t -> t.getTeam().equalsIgnoreCase(team)).map(t -> t.getTimeAtSubmission()).findFirst().orElse(0);
 	}
-	
-	public List<ImmutablePair<String, Integer>> getFinishedTeams() {
+	public Integer getTeamFinalScore(String team) {    // score at submit time
+	    return finishedTeams.stream().filter(t -> t.getTeam().equalsIgnoreCase(team)).map(t -> t.getFinalScore()).findFirst().orElse(0);
+	}
+
+	public List<TeamStatus> getFinishedTeams() {
 		return finishedTeams;
 	}
-	
+
 	public List<String> getFinishedTeamNames() {
-		return finishedTeams.stream().map(t -> t.getLeft()).collect(Collectors.toList());
+		return finishedTeams.stream().map(t -> t.getTeam()).collect(Collectors.toList());
 	}
 
 	public String getName() {
@@ -105,7 +107,7 @@ public class Assignment {
 					.filter(f -> f.getFileType().equals(FileType.EDIT) || f.getFileType().equals(FileType.READONLY))
 					.collect(Collectors.toList());
 		} else {
-			return new ArrayList<AssignmentFile>();
+			return new ArrayList<>();
 		}
 	}
 
@@ -113,7 +115,7 @@ public class Assignment {
 		if (isRunning()) {
 			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.EDIT)).collect(Collectors.toList());
 		} else {
-			return new ArrayList<AssignmentFile>();
+			return new ArrayList<>();
 		}
 	}
 
@@ -121,7 +123,7 @@ public class Assignment {
 		if (isRunning()) {
 			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TEST)).collect(Collectors.toList());
 		} else {
-			return new ArrayList<AssignmentFile>();
+			return new ArrayList<>();
 		}
 	}
 
@@ -132,7 +134,7 @@ public class Assignment {
 							|| f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.TEST))
 					.collect(Collectors.toList());
 		} else {
-			return new ArrayList<AssignmentFile>();
+			return new ArrayList<>();
 		}
 	}
 
@@ -141,7 +143,7 @@ public class Assignment {
 			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.READONLY))
 					.collect(Collectors.toList());
 		} else {
-			return new ArrayList<AssignmentFile>();
+			return new ArrayList<>();
 		}
 	}
 
@@ -151,7 +153,7 @@ public class Assignment {
 					.filter(f -> f.getFileType().equals(FileType.READONLY) || f.getFileType().equals(FileType.TEST))
 					.collect(Collectors.toList());
 		} else {
-			return new ArrayList<AssignmentFile>();
+			return new ArrayList<>();
 		}
 	}
 
@@ -162,7 +164,7 @@ public class Assignment {
 							|| f.getFileType().equals(FileType.TEST) || f.getFileType().equals(FileType.SUBMIT))
 					.collect(Collectors.toList());
 		} else {
-			return new ArrayList<AssignmentFile>();
+			return new ArrayList<>();
 		}
 	}
 
@@ -170,7 +172,7 @@ public class Assignment {
 		if (isRunning()) {
 			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.SUBMIT)).collect(Collectors.toList());
 		} else {
-			return new ArrayList<AssignmentFile>();
+			return new ArrayList<>();
 		}
 	}
 
@@ -180,7 +182,7 @@ public class Assignment {
 					.filter(f -> f.getFileType().equals(FileType.TEST) || f.getFileType().equals(FileType.SUBMIT))
 					.collect(Collectors.toList());
 		} else {
-			return new ArrayList<AssignmentFile>();
+			return new ArrayList<>();
 		}
 	}
 
@@ -188,7 +190,7 @@ public class Assignment {
 		if (isRunning()) {
 			return assFiles.stream().filter(f -> f.getFileType().equals(FileType.TASK)).collect(Collectors.toList());
 		} else {
-			return new ArrayList<AssignmentFile>();
+			return new ArrayList<>();
 		}
 	}
 
@@ -252,4 +254,25 @@ public class Assignment {
 		assFiles.add(file);
 	}
 
+
+	private static final class TeamStatus {
+	    final String team;
+	    final Integer timeAtSubmission;
+	    final Integer finalScore;
+        private TeamStatus(String team, Integer timeAtSubmission, Integer finalScore) {
+            super();
+            this.team = team;
+            this.timeAtSubmission = timeAtSubmission;
+            this.finalScore = finalScore;
+        }
+	    String getTeam() {
+	        return team;
+	    }
+	    Integer getTimeAtSubmission() {
+	        return timeAtSubmission;
+	    }
+	    Integer getFinalScore() {
+	        return finalScore;
+	    }
+	}
 }
