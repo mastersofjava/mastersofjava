@@ -1,26 +1,30 @@
 package nl.moj.server;
 
-import nl.moj.server.competition.Competition;
-import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+import nl.moj.server.competition.Competition;
+import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
+import nl.moj.server.persistence.RankingMapper;
+
 @Controller
 public class IndexController {
 
 	private Competition competition;
+    private RankingMapper rankingMapper;
 
-	public IndexController(Competition competition) {
+	public IndexController(Competition competition, RankingMapper rankingMapper) {
 		super();
 		this.competition = competition;
+		this.rankingMapper = rankingMapper;
 	}
 
 	@GetMapping("/")
@@ -66,6 +70,7 @@ public class IndexController {
 		model.addAttribute("running", competition.getCurrentAssignment().isRunning());
 		model.addAttribute("finished", competition.getCurrentAssignment().isTeamFinished(user.getName()));
 		model.addAttribute("submittime", competition.getCurrentAssignment().getTeamSubmitTime(user.getName()));
+		model.addAttribute("finalscore", competition.getCurrentAssignment().getTeamFinalScore(user.getName()));
 	}
 
 }

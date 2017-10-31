@@ -115,8 +115,8 @@ public class TestService {
 			@Override
 			public TestResult get() {
 				String assignment = competition.getCurrentAssignment().getName();
-				competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(),
-						compileResult.getScoreAtSubmissionTime());
+				int finalScore = 0;
+				final Integer submissionTime = compileResult.getScoreAtSubmissionTime();    // Identical to score at submission time
 				if (compileResult.isSuccessful()) {
 					try {
 
@@ -142,9 +142,9 @@ public class TestService {
 							return dummyResult;
 						}
 						TestResult result = new TestResult(sb.toString(), compileResult.getUser(), success,
-								"Submit Test", compileResult.getScoreAtSubmissionTime());
-						Integer score = setFinalAssignmentScore(result, assignment, compileResult.getScoreAtSubmissionTime());
-						feedbackMessageController.sendTestFeedbackMessage(result, true, score);
+								"Submit Test", submissionTime);
+						finalScore = setFinalAssignmentScore(result, assignment, submissionTime);
+						feedbackMessageController.sendTestFeedbackMessage(result, true, finalScore);
 						return result;
 					} catch (Exception e) {
 						log.error("Exception Running tests", e);
@@ -153,6 +153,8 @@ public class TestService {
 								"Submit Test");
 						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
+					} finally {
+					    competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), submissionTime, finalScore);
 					}
 
 				} else {        // Compile failed
@@ -161,6 +163,7 @@ public class TestService {
                             "Submit Test", 0);
                     feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
                     setFinalAssignmentScore(compileFailedResult, assignment, 0);
+                    competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), submissionTime, 0);
                     return compileFailedResult;
 				}
 			}
