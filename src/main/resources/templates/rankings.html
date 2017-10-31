@@ -67,8 +67,7 @@
                         <tr>
                             <th></th>
                             <th class="text-center">Team</th>
-                            <th class="text-center" th:each="assignment,iterStat : ${assignments}"
-                                th:text="'#' + ${iterStat.count}"></th>
+                            <th class="text-center" th:each="assignment,iterStat : ${assignments}">#[[${iterStat.count}]] <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" th:attrappend="data-content=${assignment}"></span></th>
                             <th class="text-center">Total Score</th>
                         </tr>
                         </thead>
