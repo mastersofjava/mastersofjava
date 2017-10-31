@@ -6,6 +6,7 @@ $(document).ready(function(){
 	connect();
 	connectControl();
 	initializeAssignmentClock();
+	initPopovers();
 })
 
 function connect() {
@@ -47,9 +48,39 @@ function disconnect() {
 function refresh(){
 	console.log("Refreshing");
 	$('#table').load(document.URL +  ' #table');
+	initPopovers();
 }
 
 function initializeAssignmentClock() {
 	clock = new Clock('943');
 	clock.start();
+}
+
+function initPopovers() {
+    $('[data-toggle="popover"]').popover();
+    function html( json ) {
+        var val = JSON.parse(json);
+        console.log("parsed", val);
+        var txt = '<table>';
+        $.each(val.scores,function() {
+            txt += '<tr><td>'+this.name+':</td><td>'+this.score+'</td></tr>';
+        });
+        txt += '</table>';
+        return txt;
+    }
+
+    $('[data-score-popup]').each(function(){
+        var $popup = $(this);
+        $popup.popover({
+            container: 'body',
+            content: html($popup.attr('data-score-popup')),
+            html: true,
+            placement: 'top',
+            title: 'Individual Assignment Scores',
+            trigger: 'hover'
+        });
+    })
+
+
+
 }
