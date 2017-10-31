@@ -1,20 +1,6 @@
 package nl.moj.server.test;
 
-import nl.moj.server.DirectoriesConfiguration;
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.UnitTestLimitsConfiguration;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.competition.ScoreService;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.files.AssignmentFile;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.stream.LogOutputStream;
+import static java.lang.Math.min;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -28,7 +14,22 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static java.lang.Math.min;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.stream.LogOutputStream;
+
+import nl.moj.server.DirectoriesConfiguration;
+import nl.moj.server.FeedbackMessageController;
+import nl.moj.server.UnitTestLimitsConfiguration;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.competition.ScoreService;
+import nl.moj.server.compile.CompileResult;
+import nl.moj.server.files.AssignmentFile;
 
 @Service
 public class TestService {
@@ -105,7 +106,7 @@ public class TestService {
 	/**
 	 * Test the solution provided by the team against the Submit test and assignment
 	 * tests. All tests have to succeed.
-	 * 
+	 *
 	 * @param compileResult
 	 * @return the combined TestResult
 	 */
@@ -146,15 +147,22 @@ public class TestService {
 						feedbackMessageController.sendTestFeedbackMessage(result, true, score);
 						return result;
 					} catch (Exception e) {
-						e.printStackTrace();
+						log.error("Exception Running tests", e);
 						final TestResult dummyResult = new TestResult(
 								"Server error running tests - contact the Organizer", compileResult.getUser(), false,
 								"Submit Test");
 						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
 					}
+
+				} else {        // Compile failed
+                    final TestResult compileFailedResult = new TestResult(
+                            "Submit Test - Compilation failed->test failed", compileResult.getUser(), false,
+                            "Submit Test", 0);
+                    feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
+                    setFinalAssignmentScore(compileFailedResult, assignment, 0);
+                    return compileFailedResult;
 				}
-				return null;
 			}
 		}, testing);
 
@@ -162,9 +170,9 @@ public class TestService {
 
 	private Integer setFinalAssignmentScore(TestResult testResult, String assignment, int scoreAtSubmissionTime) {
 		int score = scoreService.registerScoreAtSubmission(testResult.getUser(), assignment, testResult.isSuccessful()?scoreAtSubmissionTime:0);
-		feedbackMessageController.sendRefreshToRankingsPage();
+			feedbackMessageController.sendRefreshToRankingsPage();
 		return score;
-	}
+		}
 
 	private TestResult unittest(AssignmentFile file, CompileResult compileResult) {
 
