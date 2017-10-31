@@ -161,7 +161,8 @@ function updateAlertContainerWithScore(message) {
         $('#alert-container')
             .empty()
             .append(
-                '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed</h4><h1>:-(</h1></div>');
+                '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'   
+            		+'<p>your score is 0</p></div>');
     }
 }
 
