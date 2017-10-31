@@ -34,8 +34,7 @@ moj:
 spring:
   h2:
     console:
-      enabled: true
-      path: /h2
+      enabled: false
   datasource:
     url: jdbc:h2:file:/opt/mojserver/db/test
     username: sa
