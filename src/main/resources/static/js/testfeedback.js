@@ -118,13 +118,6 @@ function renderTime(elapsed, solutiontime) {
           $circle.css('stroke', 'orange');
         }
       }
-      if (remaining === 0) {
-          rejectRemainingTeams();
-      }
     }
-}
-
-function rejectRemainingTeams() {
-  $('tr').not('.table-success').not(':contains("Team")').addClass('table-danger');
 }
 
