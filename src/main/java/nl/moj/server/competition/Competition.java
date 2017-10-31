@@ -79,7 +79,7 @@ public class Competition {
 	public List<AssignmentFile> getBackupFilesForTeam(String team) {
 		Assignment assignment = getCurrentAssignment();
 		if (assignment != null) {
-			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory(), team);
+			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), team);
 			File sourcesdir = FileUtils.getFile(teamdir, "sources", assignment.getName());
 			if (sourcesdir.exists()) {
 				final List<AssignmentFile> assignmentFiles = FileUtils
