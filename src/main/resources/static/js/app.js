@@ -58,8 +58,8 @@ function connectControl() {
         console.log('Subscribe to /control/queue/time');
         stomp.subscribe('/queue/time', function (taskTimeMessage) {
             var message = JSON.parse(taskTimeMessage.body);
-            if( clock ) {
-                clock.sync(message.remainingTime,message.totalTime);
+            if (clock) {
+                clock.sync(message.remainingTime, message.totalTime);
             }
         });
     });
@@ -129,12 +129,12 @@ function initializeAssignmentClock() {
 }
 
 function resetOutput() {
-    $('#output').removeClass('failure', 'success');
+    $('#output').removeClass('failure success');
     $('#output-content').empty();
 }
 
 function resetTabColor() {
-    $('#output').removeClass('failure', 'success');
+    $('#output').removeClass('failure success');
 }
 
 function updateOutputHeaderColor(success) {
@@ -142,7 +142,7 @@ function updateOutputHeaderColor(success) {
     if (success && !$output.hasClass('failure')) {
         $output.removeClass('failure');
         $output.addClass('success');
-    } else {
+    } else if (!success && !$output.hasClass('failure')) {
         $output.removeClass('success');
         $output.addClass('failure');
     }
@@ -150,7 +150,7 @@ function updateOutputHeaderColor(success) {
 
 function updateAlertContainerWithScore(message) {
     console.log(message);
-    if (message.success == true) {
+    if (message.success === true) {
         $('#alert-container')
             .empty()
             .append(
@@ -161,14 +161,14 @@ function updateAlertContainerWithScore(message) {
         $('#alert-container')
             .empty()
             .append(
-                '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'   
-            		+'<p>your score is 0</p></div>');
+                '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
+                + '<p>your score is 0</p></div>');
     }
 }
 
 function appendOutput(txt) {
     $('#output-content').append('<pre>' + escape(txt) + '</pre>');
-    $('#content').tab('show');
+    $('#output').tab('show');
 }
 
 function escape(txt) {
@@ -220,7 +220,7 @@ function disable() {
             val.cm.setOption("readOnly", true);
         }
     });
-    if( clock ) {
+    if (clock) {
         clock.stop();
     }
 }
