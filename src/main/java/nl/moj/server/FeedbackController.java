@@ -47,10 +47,12 @@ public class FeedbackController {
             model.addObject("assignment", competition.getCurrentAssignment().getName());
             model.addObject("timeLeft", competition.getRemainingTime());
             model.addObject("time", competition.getCurrentAssignment().getSolutionTime());
+            model.addObject("running", competition.getCurrentAssignment().isRunning());
         } else {
             model.addObject("assignment", "-");
             model.addObject("timeLeft", 0);
             model.addObject("time", 0);
+            model.addObject("running", false);
         }
 
         model.addObject("tests", testNames);

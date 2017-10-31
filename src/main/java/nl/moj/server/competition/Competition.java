@@ -37,6 +37,8 @@ public class Competition {
 																						// synchronized
 	private ScheduledFuture<?> handler;
 
+	private ScheduledFuture<?> timeHandler;
+	
 	private static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
 
 	private Stopwatch timer;
@@ -144,6 +146,15 @@ public class Competition {
 			}
 		}, solutiontime, TimeUnit.SECONDS);
 
+		timeHandler = ex.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
+			}
+		}, 0, 10, TimeUnit.SECONDS);
+		
+		
+		
 		assignment.setRunning(true);
 		timer = Stopwatch.createStarted();
 		log.info("assignment started {}", assignment.getName());

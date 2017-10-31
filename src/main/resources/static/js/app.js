@@ -1,6 +1,8 @@
 var stomp = null;
 var editors = [];
 var timerActive = true;
+var $circle = null;
+var $assignmentClock = null;
 
 $(document).ready(function() {
 	connectFeedback();
@@ -47,14 +49,22 @@ function connectControl() {
 	stomp.debug = null;
 	stomp.connect({}, function(frame) {
 		$('#status').append('<span>Connected</span>');
+		console.log('subscribe to /control/queue/start');
 		stomp.subscribe('/queue/start', function(msg) {
 			window.location.reload();
 		});
+		console.log('subscribe to /control/queue/stop');
 		stomp.subscribe("/queue/stop", function(msg) {
 			disable();
 		})
+		console.log('Subscribe to /control/queue/time');
+		stomp.subscribe('/queue/time', function(taskTimeMessage) {
+			var message = JSON.parse(taskTimeMessage.body);
+			runClock10Sec(message.totalTime, message.remainingTime),10;
+		});
 	});
 }
+
 
 function connectButtons() {
 	$('#compile').click(function(e) {
@@ -114,49 +124,59 @@ function initializeCodeMirrors() {
 }
 
 function initializeAssignmentClock() {
-	var $assignmentClock = $('#assignment-clock');
-	var $circle = $('.circle_animation', $assignmentClock);
-	var time = $assignmentClock.attr('data-time');
-	var initialOffset = '440';
-	var timeleft = $assignmentClock.attr('data-time-left');
-	var finished = ($('#content').attr('finished') == 'true');
-	if (finished) {
-		timeleft = $('#content').attr('submittime');	
-	}
-	var t = time - timeleft;
-	// make sure it is rendered at least once in case this team has finished
-	renderTime(t);
-
-	function renderTime(i) {
-		var remaining = time - i - 1;
-		if (timerActive && remaining >= 0) {
-			var minutes = Math.floor(remaining / 60);
-			var seconds = ("0" + remaining % 60).slice(-2);
-			$('h2', $assignmentClock).text(minutes + ":" + seconds);
-			$circle.css('stroke-dashoffset', initialOffset - ((i + 1) * (initialOffset / time)));
-
-			var fraction = i / time;
-			if (fraction > 0.5) {
-				if (fraction > 0.8) {
-					$circle.css('stroke', 'red');
-				} else {
-					$circle.css('stroke', 'orange');
-				}
-			}
+    $assignmentClock = $('#assignment-clock');
+    $circle = $('.circle_animation', $assignmentClock);
+    var running = $assignmentClock.attr('running');
+    if (running == 'true') {
+	    var solutiontime = $assignmentClock.attr('data-time');
+		var timeleft = $assignmentClock.attr('data-time-left');
+		var elapsed = solutiontime - timeleft;
+	    // run once
+		var remainder = elapsed % 10;
+		if (remainder > 1) {
+			var period = 10 - remainder;
+			console.log(period);
+			// subtract 1 for delay
+			runClock10Sec(solutiontime, timeleft - 1, period - 1);				
 		}
-	}
-
-	var interval = setInterval(function() {
-		if (finished || t === time) {
-			clearInterval(interval);
-			return;
-		} else {
-			renderTime(t);
-		}
-
-		t++;
-	}, 1000);
+    }
 }
+
+function runClock10Sec(solutiontime, timeleft, period){
+	var i = 0;
+	var elapsed = solutiontime - timeleft;
+    var clock = setInterval(function () {
+        if (i === period) {
+            clearInterval(clock);
+            i = 0;
+            return;
+        } else {
+            renderTime(elapsed, solutiontime);
+        }
+        elapsed++;
+        i++
+    }, 1000);		
+}
+
+function renderTime(elapsed, solutiontime) {
+	var initialOffset = '440';
+    var remaining = solutiontime - elapsed - 1;
+    if (remaining >= 0) {
+      var minutes = Math.floor(remaining / 60);
+      var seconds = ("0" + remaining % 60).slice(-2);
+      $('h2', $assignmentClock).text(minutes + ":" + seconds);
+      $circle.css('stroke-dashoffset', initialOffset - ((elapsed + 1) * (initialOffset / solutiontime)));
+      var fraction = elapsed / solutiontime;
+      if (fraction > 0.5) {
+        if (fraction > 0.8) {
+          $circle.css('stroke', 'red');
+        } else {
+          $circle.css('stroke', 'orange');
+        }
+      }
+    }
+}
+
 
 function resetOutput() {
 	$('#output').removeClass('failure', 'success');

@@ -50,6 +50,14 @@ public class FeedbackMessageController {
 		template.convertAndSend("/queue/rankings", "refresh");
 	}
 
+	public void sendRemainingTime(Integer remainingTime, Integer totalTime) {
+		//log.info("sendRemainingTime {} ", remainingTime);
+		TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
+		taskTimeMessage.setRemainingTime(String.valueOf(remainingTime));
+		taskTimeMessage.setTotalTime(String.valueOf(totalTime));
+		template.convertAndSend("/queue/time", taskTimeMessage);
+	}
+	
 	public static class TestFeedbackMessage {
 		private String team;
 		private String test;
@@ -166,6 +174,27 @@ public class FeedbackMessageController {
 
 		public void setForTest(boolean forTest) {
 			this.forTest = forTest;
+		}
+	}
+	
+	private static class TaskTimeMessage {
+		private String remainingTime;
+		private String totalTime;
+
+		public String getRemainingTime() {
+			return remainingTime;
+		}
+
+		public void setRemainingTime(String remainingTime) {
+			this.remainingTime = remainingTime;
+		}
+
+		public String getTotalTime() {
+			return totalTime;
+		}
+
+		public void setTotalTime(String totalTime) {
+			this.totalTime = totalTime;
 		}
 	}
 
