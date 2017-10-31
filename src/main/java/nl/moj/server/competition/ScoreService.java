@@ -40,8 +40,7 @@ public class ScoreService {
 	public Integer registerScoreAtSubmission(String teamname, String assignment, int scoreAtSubmissionTime) {
 		int score = 0;
 		if (scoreAtSubmissionTime > 0) {
-			final int assignmentScore = scoreAtSubmissionTime + bonusForSuccessfulSubmission;
-			score = assignmentScore;
+			score = scoreAtSubmissionTime + bonusForSuccessfulSubmission;
 			
 		}
 		log.debug("Team {} submitted {}. assignment score {} + bonus {} = {}",

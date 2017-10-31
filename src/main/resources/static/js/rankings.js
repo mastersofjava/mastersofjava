@@ -18,7 +18,7 @@ function connect() {
 		console.log('Connected to rankings');
 		console.log('Subscribe to /rankings/queue/rankings');
 		stompClient.subscribe('/queue/rankings', function(messageOutput) {
-			refresh();
+            window.location.reload();
 		});
 	});
 }
@@ -36,6 +36,10 @@ function connectControl() {
                 clock.sync(message.remainingTime,message.totalTime);
 			}
 		});
+        console.log('subscribe to /control/queue/start');
+        stompControlClient.subscribe('/queue/start', function (msg) {
+            window.location.reload();
+        });
 	});
 }
 
@@ -43,12 +47,6 @@ function disconnect() {
 	if (stompClient != null) {
 		stompClient.disconnect();
 	}
-}
-
-function refresh(){
-	console.log("Refreshing");
-	$('#table').load(document.URL +  ' #table');
-	initPopovers();
 }
 
 function initializeAssignmentClock() {
@@ -60,7 +58,6 @@ function initPopovers() {
     $('[data-toggle="popover"]').popover();
     function html( json ) {
         var val = JSON.parse(json);
-        console.log("parsed", val);
         var txt = '<table>';
         $.each(val.scores,function() {
             txt += '<tr><td>'+this.name+':</td><td>'+this.score+'</td></tr>';

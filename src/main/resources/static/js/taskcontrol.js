@@ -26,6 +26,10 @@ function connect() {
                clock.sync(message.remainingTime,message.totalTime);
            }
         });
+        console.log('subscribe to /control/queue/start');
+        stompClient.subscribe('/queue/start', function (msg) {
+            window.location.reload();
+        });
     });
 }
 
