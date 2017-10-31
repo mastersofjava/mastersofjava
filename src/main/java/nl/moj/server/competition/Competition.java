@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +48,9 @@ public class Competition {
 	private ScheduledFuture<?> sound2MinHandler;
 	private ScheduledFuture<?> sound1MinHandler;
 
-	private static ScheduledExecutorService ex = Executors.newSingleThreadScheduledExecutor();
+	private ScheduledFuture<?> timeHandler;
+
+	private ScheduledExecutorService scheduledExecutorService;
 
 	private Stopwatch timer;
 
@@ -69,7 +70,7 @@ public class Competition {
 
 	public Competition(AssignmentRepositoryService repo, TestMapper testMapper, ScoreService scoreService,
 			TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
-			DirectoriesConfiguration directories) {
+			DirectoriesConfiguration directories, ScheduledExecutorService scheduledExecutorService ) {
 		super();
 		this.repo = repo;
 		this.testMapper = testMapper;
@@ -77,6 +78,7 @@ public class Competition {
 		this.scoreService = scoreService;
 		this.feedbackMessageController = feedbackMessageController;
 		this.directories = directories;
+		this.scheduledExecutorService = scheduledExecutorService;
 	}
 
 	/**
@@ -89,7 +91,7 @@ public class Competition {
 	public List<AssignmentFile> getBackupFilesForTeam(String team) {
 		Assignment assignment = getCurrentAssignment();
 		if (assignment != null) {
-			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory(),
+			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(),
 					team);
 			File sourcesdir = FileUtils.getFile(teamdir, "sources", assignment.getName());
 			if (sourcesdir.exists()) {
@@ -131,35 +133,48 @@ public class Competition {
 	 * logging a warning.
 	 */
 	public void startAssignment(String assignmentName) {
-		File gong = FileUtils
-				.getFile("/home/mhayen/Workspaces/workspace-moj/server/src/main/resources/sounds/gong.wav");
-		Media m = new Media(gong.toURI().toString());
-		MediaPlayer player = new MediaPlayer(m);
-		player.play();
-		// soundService.playStartGong();
-		if (assignments.containsKey(assignmentName)) {
-			stopCurrentAssignment();
-			this.currentAssignment.set(assignments.get(assignmentName));
-		} else {
-			return;
+		try {
+			if (assignments.containsKey(assignmentName)) {
+				stopCurrentAssignment();
+				this.currentAssignment.set(assignments.get(assignmentName));
+			} else {
+				return;
+			}
+
+			final Assignment assignment = currentAssignment.get();
+			// remove old results
+			scoreService.removeScoresForAssignment(assignment.getName());
+
+			// initialize scores on 0.
+			teamMapper.getAllTeams().forEach(t -> {
+				scoreService.initializeScoreAtStart(t.getName(), assignment.getName());
+			});
+			assignment.setRunning(true);
+			timer = Stopwatch.createStarted();
+			Integer solutiontime = getCurrentAssignment().getSolutionTime();
+
+			timeHandler = scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
+					} catch (Exception e) {
+						log.error("Failed to send time update.", e);
+					}
+				}
+			}, 0, 10, TimeUnit.SECONDS);
+			startAssignmentRunnable(assignment, solutiontime);
+			play2MinBeforeEndSound(solutiontime);
+			play1MinBeforeEndSound(solutiontime);
+			File gong = FileUtils
+					.getFile("/home/mhayen/Workspaces/workspace-moj/server/src/main/resources/sounds/gong.wav");
+			Media m = new Media(gong.toURI().toString());
+			MediaPlayer player = new MediaPlayer(m);
+			player.play();
+			log.info("assignment started {}", assignment.getName());
+		} catch (Exception e) {
+			log.error("Starting assignment failed.", e);
 		}
-
-		final Assignment assignment = currentAssignment.get();
-		// remove old results
-		scoreService.removeScoresForAssignment(assignment.getName());
-
-		// initialize scores on 0.
-		teamMapper.getAllTeams().forEach(t -> {
-			scoreService.initializeScoreAtStart(t.getName(), assignment.getName());
-		});
-
-		Integer solutiontime = getCurrentAssignment().getSolutionTime();
-		startAssignmentRunnable(assignment, solutiontime);
-		play2MinBeforeEndSound(solutiontime);
-		play1MinBeforeEndSound(solutiontime);
-		assignment.setRunning(true);
-		timer = Stopwatch.createStarted();
-		log.info("assignment started {}", assignment.getName());
 	}
 
 	/**
@@ -174,12 +189,12 @@ public class Competition {
 			previousAssignment.get().setCompleted(true);
 			timer.stop();
 			assignmentHandler.cancel(true);
+			timeHandler.cancel(true);
 			log.info("assignment stopped {}", previousAssignment.get().getName());
 			// set 0 score for teams that did not finish
 			teamMapper.getAllTeams().stream()
 					.filter(t -> !previousAssignment.get().getFinishedTeamNames().contains(t.getName()))
-					.forEach(t -> scoreService.registerScoreAtSubmission(t.getName(),
-							previousAssignment.get().getName(), 0));
+					.forEach(t -> scoreService.registerScoreAtSubmission(t.getName(), previousAssignment.get().getName(), 0));
 		}
 		return previousAssignment;
 	}
@@ -248,7 +263,7 @@ public class Competition {
 	}
 
 	private void play2MinBeforeEndSound(Integer solutiontime) {
-		sound2MinHandler = ex.schedule(new Runnable() {
+		sound2MinHandler = scheduledExecutorService.schedule(new Runnable() {
 			@Override
 			public void run() {
 				System.out.println("hier");
@@ -263,7 +278,7 @@ public class Competition {
 	}
 
 	private void play1MinBeforeEndSound(Integer solutiontime) {
-		sound1MinHandler = ex.schedule(new Runnable() {
+		sound1MinHandler = scheduledExecutorService.schedule(new Runnable() {
 			@Override
 			public void run() {
 				System.out.println("hier");
@@ -278,7 +293,7 @@ public class Competition {
 	}
 
 	private void startAssignmentRunnable(final Assignment assignment, Integer solutiontime) {
-		assignmentHandler = ex.schedule(new Runnable() {
+		assignmentHandler = scheduledExecutorService.schedule(new Runnable() {
 			@Override
 			public void run() {
 				feedbackMessageController.sendStopToTeams(assignment.getName());

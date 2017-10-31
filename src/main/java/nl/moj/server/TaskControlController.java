@@ -89,10 +89,12 @@ public class TaskControlController {
 			model.addAttribute("timeLeft", competition.getRemainingTime());
 			model.addAttribute("time", competition.getCurrentAssignment().getSolutionTime());
 			model.addAttribute("running", competition.getCurrentAssignment().isRunning());
+			model.addAttribute("currentAssignment", competition.getCurrentAssignment().getName());
 		} else {
 			model.addAttribute("timeLeft", 0);
 			model.addAttribute("time", 0);
 			model.addAttribute("running", false);
+			model.addAttribute("currentAssignment", "-");
 		}
 		return "control";
 	}

@@ -1,9 +1,12 @@
 var stompClient = null;
-var timerActive = true;
+var stompControlClient = null;
+var clock = null;
 
 $(document).ready(function(){
 	connect();
+	connectControl();
 	initializeAssignmentClock();
+	initPopovers();
 })
 
 function connect() {
@@ -13,9 +16,36 @@ function connect() {
 	stompClient.debug = null;
 	stompClient.connect({}, function(frame) {
 		console.log('Connected to rankings');
+		console.log('Subscribe to /rankings/queue/rankings');
 		stompClient.subscribe('/queue/rankings', function(messageOutput) {
-			refresh();
+            window.location.reload();
 		});
+	});
+}
+
+function connectControl() {
+	var socket = new SockJS('/control');
+	stompControlClient = Stomp.over(socket);
+	stompControlClient.debug = null;
+	stompControlClient.connect({}, function(frame) {
+		console.log('Connected to control');
+		console.log('Subscribe to /control/queue/time');
+		stompControlClient.subscribe('/queue/time', function(taskTimeMessage) {
+			var message = JSON.parse(taskTimeMessage.body);
+			if( clock ) {
+                clock.sync(message.remainingTime,message.totalTime);
+			}
+		});
+        console.log('subscribe to /control/queue/start');
+        stompControlClient.subscribe('/queue/start', function (msg) {
+            window.location.reload();
+        });
+        console.log('subscribe to /control/queue/stop');
+        stompControlClient.subscribe('/queue/stop', function (msg) {
+            if( clock ) {
+                clock.stop();
+            }
+        });
 	});
 }
 
@@ -25,51 +55,35 @@ function disconnect() {
 	}
 }
 
-function refresh(){
-	console.log("Refreshing");
-	$('#table').load(document.URL +  ' #table');
+function initializeAssignmentClock() {
+	clock = new Clock('943');
+	clock.start();
 }
 
-function initializeAssignmentClock() {
-
-    var $assignmentClock = $('#assignment-clock');
-    var $circle = $('.circle_animation', $assignmentClock);
-    var time = $assignmentClock.attr('data-time');
-    var initialOffset = '943';  //(2*pi*r)
-    var t = time - $assignmentClock.attr('data-time-left');
-
-    /* Need initial run as interval hasn't yet occured... */
-    $circle.css('stroke-dashoffset', initialOffset - (initialOffset / time));
-
-    function renderTime(i) {
-        var remaining = time - i - 1;
-        if (timerActive && remaining >= 0) {
-            var minutes = Math.floor(remaining / 60);
-            var seconds = ("0" + remaining % 60).slice(-2);
-
-            $('h2', $assignmentClock).text(minutes + ":" + seconds);
-            $circle.css('stroke-dashoffset', initialOffset - ((i + 1) * (initialOffset / time)));
-
-            var fraction = i / time;
-            if (fraction > 0.5) {
-                if (fraction > 0.8) {
-                    $circle.css('stroke', 'red');
-                } else {
-                    $circle.css('stroke', 'orange');
-                }
-            }
-        }
+function initPopovers() {
+    $('[data-toggle="popover"]').popover();
+    function html( json ) {
+        var val = JSON.parse(json);
+        var txt = '<table>';
+        $.each(val.scores,function() {
+            txt += '<tr><td>'+this.name+':</td><td>'+this.score+'</td></tr>';
+        });
+        txt += '</table>';
+        return txt;
     }
 
-    var interval = setInterval(function () {
-        if (t === time) {
-            clearInterval(interval);
-            return;
-        } else {
-            renderTime(t);
-        }
+    $('[data-score-popup]').each(function(){
+        var $popup = $(this);
+        $popup.popover({
+            container: 'body',
+            content: html($popup.attr('data-score-popup')),
+            html: true,
+            placement: 'top',
+            title: 'Individual Assignment Scores',
+            trigger: 'hover'
+        });
+    })
 
 
-        t++;
-    }, 1000);
+
 }

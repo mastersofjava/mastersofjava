@@ -1,25 +1,8 @@
 package nl.moj.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.tools.DiagnosticCollector;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
-
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import nl.moj.server.files.AssignmentFileFilter;
+import nl.moj.server.files.FileProcessor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.slf4j.Logger;
@@ -42,6 +25,8 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ScheduledExecutorFactoryBean;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -60,12 +45,23 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import nl.moj.server.files.AssignmentFileFilter;
-import nl.moj.server.files.FileProcessor;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.tools.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 @Configuration
+@EnableScheduling
 public class AppConfig {
 	
 	private static final Logger log = LoggerFactory.getLogger(AppConfig.class);
@@ -78,6 +74,11 @@ public class AppConfig {
 		super();
 		this.threads = threads;
 		this.directories = directories;
+	}
+
+	@Bean
+	public ScheduledExecutorFactoryBean scheduledExecutorFactoryBean() {
+		return new ScheduledExecutorFactoryBean();
 	}
 
 	@Configuration
@@ -276,7 +277,7 @@ public class AppConfig {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("async-%d").build();
 			return Executors.newFixedThreadPool(threads, threadFactory);
 		}
-
+		
 		@Bean(name = "compiling")
 		public Executor compilingExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("compiling-%d").build();
@@ -286,7 +287,6 @@ public class AppConfig {
 		@Bean(name = "testing")
 		public Executor testingExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("testing-%d").build();
-
 			return Executors.newFixedThreadPool(threads, threadFactory);
 		}
 

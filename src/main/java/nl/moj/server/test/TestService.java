@@ -1,12 +1,19 @@
 package nl.moj.server.test;
 
-import nl.moj.server.DirectoriesConfiguration;
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.UnitTestLimitsConfiguration;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.competition.ScoreService;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.files.AssignmentFile;
+import static java.lang.Math.min;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,20 +23,13 @@ import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.stream.LogOutputStream;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import static java.lang.Math.min;
+import nl.moj.server.DirectoriesConfiguration;
+import nl.moj.server.FeedbackMessageController;
+import nl.moj.server.UnitTestLimitsConfiguration;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.competition.ScoreService;
+import nl.moj.server.compile.CompileResult;
+import nl.moj.server.files.AssignmentFile;
 
 @Service
 public class TestService {
@@ -115,8 +115,9 @@ public class TestService {
 			@Override
 			public TestResult get() {
 				String assignment = competition.getCurrentAssignment().getName();
-				competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(),
-						compileResult.getScoreAtSubmissionTime());
+				int finalScore = 0;
+				final Integer submissionTime = compileResult.getScoreAtSubmissionTime(); // Identical to score at
+																							// submission time
 				if (compileResult.isSuccessful()) {
 					try {
 
@@ -142,32 +143,41 @@ public class TestService {
 							return dummyResult;
 						}
 						TestResult result = new TestResult(sb.toString(), compileResult.getUser(), success,
-								"Submit Test", compileResult.getScoreAtSubmissionTime());
-						Integer score = setFinalAssignmentScore(result, assignment, compileResult.getScoreAtSubmissionTime());
-						feedbackMessageController.sendTestFeedbackMessage(result, true, score);
+								"Submit Test", submissionTime);
+						finalScore = setFinalAssignmentScore(result, assignment, submissionTime);
+						feedbackMessageController.sendTestFeedbackMessage(result, true, finalScore);
 						return result;
 					} catch (Exception e) {
-						e.printStackTrace();
+						log.error("Exception Running tests", e);
 						final TestResult dummyResult = new TestResult(
 								"Server error running tests - contact the Organizer", compileResult.getUser(), false,
 								"Submit Test");
 						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
+					} finally {
+						competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), submissionTime,
+								finalScore);
 					}
+
+				} else { // Compile failed
+					final TestResult compileFailedResult = new TestResult(
+							"Submit Test - Compilation failed->test failed", compileResult.getUser(), false,
+							"Submit Test", 0);
+					feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
+					setFinalAssignmentScore(compileFailedResult, assignment, 0);
+					competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), submissionTime, 0);
+					return compileFailedResult;
 				}
-				return null;
 			}
 		}, testing);
 
 	}
-	
-	private Integer setFinalAssignmentScore(TestResult testResult, String assignment, int scoreAtSubmissionTime) {
 
-		if (testResult.isSuccessful()) {
-			feedbackMessageController.sendRefreshToRankingsPage();
-			return scoreService.registerScoreAtSubmission(testResult.getUser(), assignment, scoreAtSubmissionTime);
-		}
-		return 0;
+	private Integer setFinalAssignmentScore(TestResult testResult, String assignment, int scoreAtSubmissionTime) {
+		int score = scoreService.registerScoreAtSubmission(testResult.getUser(), assignment,
+				testResult.isSuccessful() ? scoreAtSubmissionTime : 0);
+		feedbackMessageController.sendRefreshToRankingsPage();
+		return score;
 	}
 
 	private TestResult unittest(AssignmentFile file, CompileResult compileResult) {

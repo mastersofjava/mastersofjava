@@ -11,11 +11,11 @@ import nl.moj.server.test.TestResult;
 
 @Controller
 public class FeedbackMessageController {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(FeedbackMessageController.class);
 
 	private SimpMessagingTemplate template;
-	
+
 	public FeedbackMessageController(SimpMessagingTemplate template) {
 		super();
 		this.template = template;
@@ -23,8 +23,9 @@ public class FeedbackMessageController {
 
 	public void sendTestFeedbackMessage(TestResult testResult, Boolean submit, Integer score) {
 		log.info("sending testResult feedback");
-		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback", new TestFeedbackMessage(
-				testResult.getUser(), testResult.getTestname(), testResult.getResult(), testResult.isSuccessful(), submit, score));
+		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback",
+				new TestFeedbackMessage(testResult.getUser(), testResult.getTestname(), testResult.getResult(),
+						testResult.isSuccessful(), submit, score));
 		template.convertAndSend("/queue/feedbackpage", new TestFeedbackMessage(testResult.getUser(),
 				testResult.getTestname(), null, testResult.isSuccessful(), submit, score));
 	}
@@ -32,24 +33,31 @@ public class FeedbackMessageController {
 	public void sendCompileFeedbackMessage(CompileResult compileResult) {
 		log.info("sending compileResult feedback, {}", compileResult.isSuccessful());
 		template.convertAndSendToUser(compileResult.getUser(), "/queue/compilefeedback",
-				new CompileFeedbackMessage(compileResult.getUser(), compileResult.getResult(), compileResult.isSuccessful()));
+				new CompileFeedbackMessage(compileResult.getUser(), compileResult.getResult(),
+						compileResult.isSuccessful(), !compileResult.getTests().isEmpty()));
 	}
 
 	public void sendStartToTeams(String taskname) {
 		template.convertAndSend("/queue/start", taskname);
 	}
-	
+
 	public void sendStopToTeams(String taskname) {
 		template.convertAndSend("/queue/stop", new TaskMessage(taskname));
 	}
+
 	public void sendRefreshToRankingsPage() {
+		log.info("sending refresh to /queue/rankings");
 		template.convertAndSend("/queue/rankings", "refresh");
 	}
+
+	public void sendRemainingTime(Integer remainingTime, Integer totalTime) {
+		//log.info("sendRemainingTime {} ", remainingTime);
+		TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
+		taskTimeMessage.setRemainingTime(String.valueOf(remainingTime));
+		taskTimeMessage.setTotalTime(String.valueOf(totalTime));
+		template.convertAndSend("/queue/time", taskTimeMessage);
+	}
 	
-
-
-
-
 	public static class TestFeedbackMessage {
 		private String team;
 		private String test;
@@ -125,12 +133,15 @@ public class FeedbackMessageController {
 		private String team;
 		private String text;
 		private boolean success;
+		private boolean forTest;
+		
 
-		public CompileFeedbackMessage(String team, String text, boolean success) {
+		public CompileFeedbackMessage(String team, String text, boolean success, boolean forTest) {
 			super();
 			this.team = team;
 			this.text = text;
 			this.success = success;
+			this.forTest = forTest;
 		}
 
 		public String getTeam() {
@@ -156,7 +167,35 @@ public class FeedbackMessageController {
 		public void setSuccess(boolean success) {
 			this.success = success;
 		}
-	}
 
+		public boolean isForTest() {
+			return forTest;
+		}
+
+		public void setForTest(boolean forTest) {
+			this.forTest = forTest;
+		}
+	}
+	
+	private static class TaskTimeMessage {
+		private String remainingTime;
+		private String totalTime;
+
+		public String getRemainingTime() {
+			return remainingTime;
+		}
+
+		public void setRemainingTime(String remainingTime) {
+			this.remainingTime = remainingTime;
+		}
+
+		public String getTotalTime() {
+			return totalTime;
+		}
+
+		public void setTotalTime(String totalTime) {
+			this.totalTime = totalTime;
+		}
+	}
 
 }

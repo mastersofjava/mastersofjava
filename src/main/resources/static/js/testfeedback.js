@@ -1,8 +1,11 @@
-function init() {
+
+var clock = null;
+
+$(document).ready(function(){
 	connectFeedback();
 	connectControl();
 	initializeAssignmentClock();
-}
+});
 
 function connectFeedback() {
 
@@ -27,6 +30,19 @@ function connectControl() {
 		stompClientControl.subscribe('/queue/start', function(messageOutput) {
 			console.log("/queue/start")
 			window.location.reload();
+		});
+        stompClientControl.subscribe('/queue/stop', function(messageOutput) {
+            console.log("/queue/stop")
+            if( clock ) {
+            	clock.stop();
+			}
+        });
+		console.log('Subscribe to /control/queue/time');
+		stompClientControl.subscribe('/queue/time', function(taskTimeMessage) {
+			var message = JSON.parse(taskTimeMessage.body);
+			if( clock ) {
+				clock.sync(message.remainingTime,message.totalTime);
+			}
 		});
 
 	});
@@ -60,56 +76,6 @@ function process(message){
 }
 
 function initializeAssignmentClock() {
-  var $assignmentClock = $('#assignment-clock');
-  var $circle = $('.circle_animation', $assignmentClock);
-  var time = $assignmentClock.attr('data-time');
-  var initialOffset = '440';
-  var timeleft = $assignmentClock.attr('data-time-left');
-  var finished = ($('#content').attr('finished') == 'true');
-  if (finished) {
-    timeleft = $('#content').attr('submittime');
-  }
-  var t = time - timeleft;
-  // make sure it is rendered at least once in case this team has finished
-  renderTime(t);
-
-  function renderTime(i) {
-    var remaining = time - i - 1;
-    if (remaining >= 0) {
-      var minutes = Math.floor(remaining / 60);
-      var seconds = ("0" + remaining % 60).slice(-2);
-      $('h2', $assignmentClock).text(minutes + ":" + seconds);
-      $circle.css('stroke-dashoffset', initialOffset - ((i + 1) * (initialOffset / time)));
-
-      var fraction = i / time;
-      if (fraction > 0.5) {
-        if (fraction > 0.8) {
-          $circle.css('stroke', 'red');
-        } else {
-          $circle.css('stroke', 'orange');
-        }
-      }
-
-      if (remaining === 0) {
-        rejectRemainingTeams();
-      }
-    }
-
-  }
-
-  var interval = setInterval(function() {
-    if (finished || t === time) {
-      clearInterval(interval);
-      return;
-    } else {
-      renderTime(t);
-    }
-
-    t++;
-  }, 1000);
+	clock = new Clock('440');
+	clock.start();
 }
-
-function rejectRemainingTeams() {
-  $('tr').not('.table-success').not(':contains("Team")').addClass('table-danger');
-}
-
