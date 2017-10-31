@@ -19,7 +19,7 @@ function Clock( initialOffset ) {
 
         function renderTime() {
             var remaining = time - clock.current;
-            if (timerActive && remaining >= 0) {
+            if (remaining >= 0) {
                 var minutes = Math.floor(remaining / 60);
                 var seconds = ("0" + remaining % 60).slice(-2);
                 $('h2', $assignmentClock).text(minutes + ":" + seconds);
@@ -37,7 +37,7 @@ function Clock( initialOffset ) {
         }
 
         var interval = setInterval(function () {
-            if (finished || clock.current === time) {
+            if (finished || clock.current - time >= 0) {
                 clearInterval(interval);
                 return;
             } else {

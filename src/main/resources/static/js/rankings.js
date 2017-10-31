@@ -1,5 +1,4 @@
 var stompClient = null;
-var timerActive = true;
 var stompControlClient = null;
 var clock = null;
 

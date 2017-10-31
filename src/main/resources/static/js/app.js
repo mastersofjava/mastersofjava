@@ -1,6 +1,5 @@
 var stomp = null;
 var editors = [];
-var timerActive = true;
 var clock = null;
 
 $(document).ready(function () {
