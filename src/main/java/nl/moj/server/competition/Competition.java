@@ -136,7 +136,8 @@ public class Competition {
 			teamMapper.getAllTeams().forEach(t -> {
 				scoreService.initializeScoreAtStart(t.getName(), assignment.getName());
 			});
-
+			assignment.setRunning(true);
+			timer = Stopwatch.createStarted();
 			Integer solutiontime = getCurrentAssignment().getSolutionTime();
 			timeHandler = scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 				@Override
@@ -164,8 +165,6 @@ public class Competition {
 			}, solutiontime, TimeUnit.SECONDS);
 
 
-			assignment.setRunning(true);
-			timer = Stopwatch.createStarted();
 			log.info("assignment started {}", assignment.getName());
 		} catch( Exception e ) {
 			log.error("Starting assignment failed.", e);
