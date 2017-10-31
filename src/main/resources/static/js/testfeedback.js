@@ -31,6 +31,12 @@ function connectControl() {
 			console.log("/queue/start")
 			window.location.reload();
 		});
+        stompClientControl.subscribe('/queue/stop', function(messageOutput) {
+            console.log("/queue/stop")
+            if( clock ) {
+            	clock.stop();
+			}
+        });
 		console.log('Subscribe to /control/queue/time');
 		stompClientControl.subscribe('/queue/time', function(taskTimeMessage) {
 			var message = JSON.parse(taskTimeMessage.body);

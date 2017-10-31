@@ -120,53 +120,56 @@ public class Competition {
 	 * logging a warning.
 	 */
 	public void startAssignment(String assignmentName) {
-		if (assignments.containsKey(assignmentName)) {
-			stopCurrentAssignment();
-			this.currentAssignment.set(assignments.get(assignmentName));
-		} else {
-			return;
+		try {
+			if (assignments.containsKey(assignmentName)) {
+				stopCurrentAssignment();
+				this.currentAssignment.set(assignments.get(assignmentName));
+			} else {
+				return;
+			}
+
+			final Assignment assignment = currentAssignment.get();
+			// remove old results
+			scoreService.removeScoresForAssignment(assignment.getName());
+
+			// initialize scores on 0.
+			teamMapper.getAllTeams().forEach(t -> {
+				scoreService.initializeScoreAtStart(t.getName(), assignment.getName());
+			});
+
+			Integer solutiontime = getCurrentAssignment().getSolutionTime();
+			timeHandler = scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
+					} catch (Exception e) {
+						log.error("Failed to send time update.", e);
+					}
+				}
+			}, 0, 10, TimeUnit.SECONDS);
+
+			handler = scheduledExecutorService.schedule(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						feedbackMessageController.sendStopToTeams(assignment.getName());
+						handler.cancel(false);
+						timeHandler.cancel(false);
+						stopCurrentAssignment();
+					} catch (Exception e) {
+						log.error("Failed to stop assignment.", e);
+					}
+				}
+			}, solutiontime, TimeUnit.SECONDS);
+
+
+			assignment.setRunning(true);
+			timer = Stopwatch.createStarted();
+			log.info("assignment started {}", assignment.getName());
+		} catch( Exception e ) {
+			log.error("Starting assignment failed.", e);
 		}
-
-		final Assignment assignment = currentAssignment.get();
-		// remove old results
-		scoreService.removeScoresForAssignment(assignment.getName());
-
-		// initialize scores on 0.
-		teamMapper.getAllTeams().forEach( t -> {
-			scoreService.initializeScoreAtStart(t.getName(),assignment.getName());
-		});
-
-		Integer solutiontime = getCurrentAssignment().getSolutionTime();
-		timeHandler = scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
-				} catch( Exception e ) {
-					log.error("Failed to send time update.", e);
-				}
-			}
-		}, 0, 10, TimeUnit.SECONDS);
-
-		handler = scheduledExecutorService.schedule(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					feedbackMessageController.sendStopToTeams(assignment.getName());
-					handler.cancel(false);
-					timeHandler.cancel(false);
-					stopCurrentAssignment();
-				} catch( Exception e ) {
-					log.error("Failed to stop assignment.", e);
-				}
-			}
-		}, solutiontime, TimeUnit.SECONDS);
-
-		
-		
-		assignment.setRunning(true);
-		timer = Stopwatch.createStarted();
-		log.info("assignment started {}", assignment.getName());
 	}
 
 
@@ -183,6 +186,7 @@ public class Competition {
 			previousAssignment.get().setCompleted(true);
 			timer.stop();
 			handler.cancel(true);
+			timeHandler.cancel(true);
 			log.info("assignment stopped {}", previousAssignment.get().getName());
 			// set 0 score for teams that did not finish
 			teamMapper.getAllTeams().stream()

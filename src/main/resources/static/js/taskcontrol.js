@@ -30,6 +30,12 @@ function connect() {
         stompClient.subscribe('/queue/start', function (msg) {
             window.location.reload();
         });
+        console.log('subscribe to /control/queue/stop');
+        stompClient.subscribe('/queue/stop', function (msg) {
+            if(clock) {
+                clock.stop();
+            }
+        });
     });
 }
 

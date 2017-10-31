@@ -219,6 +219,9 @@ function disable() {
             val.cm.setOption("readOnly", true);
         }
     });
+    if( clock ) {
+        clock.stop();
+    }
 }
 
 function getContent() {

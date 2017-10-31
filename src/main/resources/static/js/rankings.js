@@ -40,6 +40,12 @@ function connectControl() {
         stompControlClient.subscribe('/queue/start', function (msg) {
             window.location.reload();
         });
+        console.log('subscribe to /control/queue/stop');
+        stompControlClient.subscribe('/queue/stop', function (msg) {
+            if( clock ) {
+                clock.stop();
+            }
+        });
 	});
 }
 

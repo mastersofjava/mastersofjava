@@ -2,15 +2,15 @@ function Clock( initialOffset ) {
 
     this.offset = initialOffset || '440';
     this.current = 0;
+    this.finished = $('#content').attr('finished') === 'true';
 
     this.start = function () {
         var $assignmentClock = $('#assignment-clock');
         var $circle = $('.circle_animation', $assignmentClock);
         var time = $assignmentClock.attr('data-time');
         var timeleft = $assignmentClock.attr('data-time-left');
-        var finished = $('#content').attr('finished') === 'true';
         var clock = this;
-        if (finished) {
+        if (clock.finished) {
             timeleft = $('#content').attr('submittime');
         }
         // make sure it is rendered at least once in case this team has finished
@@ -37,7 +37,7 @@ function Clock( initialOffset ) {
         }
 
         var interval = setInterval(function () {
-            if (finished || clock.current - time >= 0) {
+            if (clock.finished || clock.current - time >= 0) {
                 clearInterval(interval);
                 return;
             } else {
@@ -50,4 +50,8 @@ function Clock( initialOffset ) {
     this.sync = function( remaining, total ) {
         this.current = total - remaining;
     };
+
+    this.stop = function() {
+        this.finished = true;
+    }
 }
