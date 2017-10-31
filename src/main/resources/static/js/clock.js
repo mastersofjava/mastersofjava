@@ -22,6 +22,7 @@ function Clock( initialOffset ) {
             if (remaining >= 0) {
                 var minutes = Math.floor(remaining / 60);
                 var seconds = ("0" + remaining % 60).slice(-2);
+
                 $('h2', $assignmentClock).text(minutes + ":" + seconds);
                 $circle.css('stroke-dashoffset', clock.offset - ((clock.current + 1) * (clock.offset / time)));
 
@@ -39,7 +40,9 @@ function Clock( initialOffset ) {
         var interval = setInterval(function () {
             if (clock.finished || clock.current - time >= 0) {
                 clearInterval(interval);
-                return;
+                $('h2', $assignmentClock).text('0:00');
+                $circle.css('stroke-dashoffset', 0);
+              return;
             } else {
                 renderTime();
             }
