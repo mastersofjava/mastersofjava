@@ -213,7 +213,6 @@ function test() {
 }
 
 function disable() {
-    console.log("disable");
     $('#compile').attr('disabled', 'disabled');
     $('#test').attr('disabled', 'disabled');
     $('#show-tests').attr('disabled', 'disabled');

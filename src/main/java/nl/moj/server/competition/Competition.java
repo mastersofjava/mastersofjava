@@ -270,6 +270,7 @@ public class Competition {
 
 
 	private void startAssignmentRunnable(final Assignment assignment, Integer solutiontime) {
+		feedbackMessageController.sendStartToTeams(assignment.getName());
 		assignmentHandler = scheduledExecutorService.schedule(new Runnable() {
 			@Override
 			public void run() {
