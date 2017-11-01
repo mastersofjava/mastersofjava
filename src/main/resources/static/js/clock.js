@@ -3,6 +3,7 @@ function Clock( initialOffset ) {
     this.offset = initialOffset || '440';
     this.current = 0;
     this.finished = $('#content').attr('finished') === 'true';
+    this.time = $('#assignment-clock').attr('data-time');
 
     this.start = function () {
         var $assignmentClock = $('#assignment-clock');
@@ -51,10 +52,14 @@ function Clock( initialOffset ) {
     };
 
     this.sync = function( remaining, total ) {
+      if (remaining > 1) {
         this.current = total - remaining;
+      }
     };
 
     this.stop = function() {
+      if (this.time - this.current > 1) {
         this.finished = true;
+      }
     }
 }
