@@ -1,23 +1,12 @@
 package nl.moj.server.competition;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.util.Collections.emptyList;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Stopwatch;
+import nl.moj.server.DirectoriesConfiguration;
+import nl.moj.server.FeedbackMessageController;
+import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.FileType;
+import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.persistence.TestMapper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -25,16 +14,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Stopwatch;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-import nl.moj.server.DirectoriesConfiguration;
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
-import nl.moj.server.persistence.TeamMapper;
-import nl.moj.server.persistence.TestMapper;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.Collections.emptyList;
 
 @Service
 public class Competition {
@@ -45,8 +36,7 @@ public class Competition {
 																						// synchronized
 	private ScheduledFuture<?> assignmentHandler;
 
-	private ScheduledFuture<?> sound2MinHandler;
-	private ScheduledFuture<?> sound1MinHandler;
+	private ScheduledFuture<?> soundHandler;
 
 	private ScheduledFuture<?> timeHandler;
 
@@ -68,9 +58,12 @@ public class Competition {
 
 	private DirectoriesConfiguration directories;
 
+	private SoundService soundService;
+
 	public Competition(AssignmentRepositoryService repo, TestMapper testMapper, ScoreService scoreService,
 			TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
-			DirectoriesConfiguration directories, ScheduledExecutorService scheduledExecutorService ) {
+			DirectoriesConfiguration directories, ScheduledExecutorService scheduledExecutorService,
+					   SoundService soundService ) {
 		super();
 		this.repo = repo;
 		this.testMapper = testMapper;
@@ -79,6 +72,7 @@ public class Competition {
 		this.feedbackMessageController = feedbackMessageController;
 		this.directories = directories;
 		this.scheduledExecutorService = scheduledExecutorService;
+		this.soundService = soundService;
 	}
 
 	/**
@@ -154,14 +148,10 @@ public class Competition {
 			Integer solutiontime = getCurrentAssignment().getSolutionTime();
 
 			startAssignmentRunnable(assignment, solutiontime);
-			play2MinBeforeEndSound(solutiontime);
-			play1MinBeforeEndSound(solutiontime);
+			scheduleBeforeEndSound(solutiontime,120);
+			scheduleBeforeEndSound(solutiontime, 60);
 			startTimeSync(solutiontime);
-			File gong = FileUtils
-					.getFile("/home/mhayen/Workspaces/workspace-moj/server/src/main/resources/sounds/gong.wav");
-			Media m = new Media(gong.toURI().toString());
-			MediaPlayer player = new MediaPlayer(m);
-			player.play();
+			soundService.playGong();
 			log.info("assignment started {}", assignment.getName());
 		} catch (Exception e) {
 			log.error("Starting assignment failed.", e);
@@ -269,35 +259,15 @@ public class Competition {
 				.map(v -> ImmutablePair.of(v.getName(), v.getSolutionTime())).sorted().collect(Collectors.toList());
 	}
 
-	private void play2MinBeforeEndSound(Integer solutiontime) {
-		sound2MinHandler = scheduledExecutorService.schedule(new Runnable() {
+	private void scheduleBeforeEndSound(Integer solutiontime, int secondsBeforeEnd ) {
+		soundHandler = scheduledExecutorService.schedule(new Runnable() {
 			@Override
 			public void run() {
-				System.out.println("hier");
-				File gong = FileUtils.getFile(directories.getSoundDirectory(), "slowtictaclong.wav");
-				Media m = new Media(gong.toURI().toString());
-				MediaPlayer player = new MediaPlayer(m);
-				player.play();
-				System.out.println("hier");
-				// soundHandler.cancel(false);
+				soundService.playTicTac();
 			}
-		}, solutiontime - 120, TimeUnit.SECONDS);
+		}, solutiontime - secondsBeforeEnd, TimeUnit.SECONDS);
 	}
 
-	private void play1MinBeforeEndSound(Integer solutiontime) {
-		sound1MinHandler = scheduledExecutorService.schedule(new Runnable() {
-			@Override
-			public void run() {
-				System.out.println("hier");
-				File gong = FileUtils.getFile(directories.getSoundDirectory(), "slowtictaclong.wav");
-				Media m = new Media(gong.toURI().toString());
-				MediaPlayer player = new MediaPlayer(m);
-				player.play();
-				System.out.println("hier");
-				// sound1MinHandler.cancel(false);
-			}
-		}, solutiontime - 60, TimeUnit.SECONDS);
-	}
 
 	private void startAssignmentRunnable(final Assignment assignment, Integer solutiontime) {
 		assignmentHandler = scheduledExecutorService.schedule(new Runnable() {

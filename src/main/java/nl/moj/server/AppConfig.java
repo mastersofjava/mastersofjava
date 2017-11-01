@@ -40,6 +40,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.socket.config.annotation.AbstractWebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -63,9 +65,9 @@ import java.util.concurrent.ThreadFactory;
 @Configuration
 @EnableScheduling
 public class AppConfig {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(AppConfig.class);
-	
+
 	private int threads;
 
 	private DirectoriesConfiguration directories;
@@ -79,6 +81,30 @@ public class AppConfig {
 	@Bean
 	public ScheduledExecutorFactoryBean scheduledExecutorFactoryBean() {
 		return new ScheduledExecutorFactoryBean();
+	}
+
+	@Bean
+	public ServletServerContainerFactoryBean createServletServerContainerFactoryBean() {
+		ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+		container.setMaxTextMessageBufferSize(100000);
+		container.setMaxBinaryMessageBufferSize(100000);
+		return container;
+	}
+
+	@Configuration
+	public class WebConfig implements WebMvcConfigurer {
+
+		@Override
+		public void addResourceHandlers(ResourceHandlerRegistry registry) {
+			Path path = Paths.get(directories.getJavaDocDirectory());
+			if(!path.isAbsolute()) {
+				path = Paths.get(directories.getBaseDirectory(), directories.getJavaDocDirectory());
+				System.out.println("javadoc -> " + path.toAbsolutePath().toUri().toString());
+			}
+			registry
+					.addResourceHandler("/javadoc/**")
+					.addResourceLocations(path.toAbsolutePath().toUri().toString());
+		}
 	}
 
 	@Configuration
@@ -95,25 +121,17 @@ public class AppConfig {
 
 		@Bean
 		public StandardJavaFileManager standardJavaFileManager(JavaCompiler javaCompiler,
-				DiagnosticCollector<JavaFileObject> diagnosticCollector) {
+															   DiagnosticCollector<JavaFileObject> diagnosticCollector) {
 			return javaCompiler.getStandardFileManager(diagnosticCollector, null, StandardCharsets.UTF_8);
 		}
-	}
-
-	@Bean
-	public ServletServerContainerFactoryBean createServletServerContainerFactoryBean() {
-		ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
-		container.setMaxTextMessageBufferSize(100000);
-		container.setMaxBinaryMessageBufferSize(100000);
-		return container;
 	}
 
 	@EnableWebSecurity
 	@Configuration
 	public class SecurityConfig extends WebSecurityConfigurerAdapter {
-		
+
 		private TeamDetailsService teamDetailsService;
-		
+
 		public SecurityConfig(TeamDetailsService teamDetailsService) {
 			this.teamDetailsService = teamDetailsService;
 		}
@@ -150,7 +168,7 @@ public class AppConfig {
 
 			@Override
 			public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-					Authentication authentication) throws IOException, ServletException {
+												Authentication authentication) throws IOException, ServletException {
 				// set our response to OK status
 				response.setStatus(HttpServletResponse.SC_OK);
 				boolean admin = false;
@@ -277,7 +295,7 @@ public class AppConfig {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("async-%d").build();
 			return Executors.newFixedThreadPool(threads, threadFactory);
 		}
-		
+
 		@Bean(name = "compiling")
 		public Executor compilingExecutor() {
 			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("compiling-%d").build();

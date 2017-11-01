@@ -7,6 +7,7 @@ moj:
       assignmentDirectory: assignments
       libDirectory: lib
       soundDirectory: sounds
+      javaDocDirectory: javadoc
     assignments:
       repos:
         -
@@ -31,6 +32,7 @@ moj:
 
     competition:
        bonusForSuccessfulSubmission: 400    
+
 
 spring:
   h2:

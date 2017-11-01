@@ -54,7 +54,10 @@ function connectControl() {
         console.log('subscribe to /control/queue/stop');
         stomp.subscribe("/queue/stop", function (msg) {
             disable();
-        })
+            if( clock ) {
+                clock.stop();
+            }
+        });
         console.log('Subscribe to /control/queue/time');
         stomp.subscribe('/queue/time', function (taskTimeMessage) {
             var message = JSON.parse(taskTimeMessage.body);
@@ -220,9 +223,6 @@ function disable() {
             val.cm.setOption("readOnly", true);
         }
     });
-    if (clock) {
-        clock.stop();
-    }
 }
 
 function getContent() {
