@@ -3,7 +3,10 @@ package nl.moj.server;
 import nl.moj.server.AssignmentRepoConfiguration.Repo;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.model.Result;
+import nl.moj.server.model.Team;
 import nl.moj.server.persistence.ResultMapper;
+import nl.moj.server.persistence.TeamMapper;
+
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
@@ -34,15 +37,18 @@ public class TaskControlController {
 
 	private ResultMapper resultMapper;
 
+	private TeamMapper teamMapper;
+
 	private AssignmentRepoConfiguration repos;
 
 	private FeedbackMessageController feedbackMessageController;
-	
-	public TaskControlController(Competition competition, ResultMapper resultMapper, AssignmentRepoConfiguration repos,
+
+	public TaskControlController(Competition competition, ResultMapper resultMapper, TeamMapper teamMapper, AssignmentRepoConfiguration repos,
 			FeedbackMessageController feedbackMessageController) {
 		super();
 		this.competition = competition;
 		this.resultMapper = resultMapper;
+		this.teamMapper = teamMapper;
 		this.repos = repos;
 		this.feedbackMessageController = feedbackMessageController;
 	}
@@ -68,8 +74,6 @@ public class TaskControlController {
 		competition.stopCurrentAssignment();
 		feedbackMessageController.sendStopToTeams(message.taskName);
 	}
-
-	
 
 	@MessageMapping("/control/clearCurrentAssignment")
 	@SendToUser("/queue/controlfeedback")
@@ -122,24 +126,70 @@ public class TaskControlController {
 	public String singleFileUpload(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
 		if (file.isEmpty()) {
 			log.error("file empty");
+			return "control";
 		}
 		try {
 			Reader in = new InputStreamReader(file.getInputStream());
-			Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(ResultHeaders.class).withFirstRecordAsHeader()
-					.parse(in);
-			for (CSVRecord record : records) {
-				Result r = new Result(record.get(0), record.get(1), Integer.valueOf(record.get(2)),
-						Integer.valueOf(record.get(3)), Integer.valueOf(record.get(4)));
-				resultMapper.insertResult(r);
+			if (file.getName().equalsIgnoreCase("results.csv")) {
+				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(ResultHeaders.class)
+						.withFirstRecordAsHeader().parse(in);
+				for (CSVRecord record : records) {
+					Result r = new Result(record.get(ResultHeaders.TEAM), record.get(ResultHeaders.ASSIGNMENT),
+							Integer.valueOf(record.get(ResultHeaders.SCORE)), Integer.valueOf(record.get(ResultHeaders.PENALTY)),
+							Integer.valueOf(record.get(ResultHeaders.CREDIT)));
+					resultMapper.insertResult(r);
+				}
+			} else if (file.getName().equalsIgnoreCase("results-update.csv")) {
+				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(ResultHeaders.class)
+						.withFirstRecordAsHeader().parse(in);
+				for (CSVRecord record : records) {
+					Result r = new Result(record.get(ResultHeaders.TEAM), record.get(ResultHeaders.ASSIGNMENT),
+							Integer.valueOf(record.get(ResultHeaders.SCORE)), Integer.valueOf(record.get(ResultHeaders.PENALTY)),
+							Integer.valueOf(record.get(ResultHeaders.CREDIT)));
+					resultMapper.insertResult(r);
+				}
+			} else {
+				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(TeamHeaders.class).withFirstRecordAsHeader()
+						.parse(in);
+				for (CSVRecord r : records) {
+					Team t = new Team(r.get(TeamHeaders.NAME), "ROLE_USER", r.get(TeamHeaders.COUNTRY),
+							r.get(TeamHeaders.COMPANY));
+					teamMapper.insertTeam(t);
+				}
+
 			}
+
 		} catch (IllegalStateException | IOException e) {
 			log.error(e.getMessage(), e);
 		}
 		return "control";
 	}
 
+	@GetMapping(value = "/getteams", produces = "text/csv")
+	@ResponseBody
+	public void getTeamsAsCSV(HttpServletResponse response) {
+		response.setHeader("Content-Disposition", "attachment; filename=\"teams.csv\"");
+		try (CSVPrinter printer = new CSVPrinter(response.getWriter(),
+				CSVFormat.DEFAULT.withHeader(TeamHeaders.class))) {
+			List<Team> allTeams = teamMapper.getAllTeams();
+			allTeams.forEach((t) -> {
+				try {
+					printer.printRecord(t.getName(), t.getCompany(), t.getCountry());
+				} catch (IOException e) {
+					log.error(e.getMessage(), e);
+				}
+			});
+		} catch (IOException e) {
+			log.error(e.getMessage(), e);
+		}
+	}
+
 	private enum ResultHeaders {
 		TEAM, ASSIGNMENT, SCORE, PENALTY, CREDIT
+	}
+
+	private enum TeamHeaders {
+		NAME, COMPANY, COUNTRY
 	}
 
 	public static class TaskMessage {

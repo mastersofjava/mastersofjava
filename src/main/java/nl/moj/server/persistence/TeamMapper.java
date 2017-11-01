@@ -20,6 +20,6 @@ public interface TeamMapper {
 	@Select("SELECT name FROM TEAM where role = 'ROLE_USER'")
 	public List<String> getAllUserNames();
 	
-	@Select("SELECT name, password, role FROM TEAM WHERE role='ROLE_USER'")
+	@Select("SELECT * FROM TEAM WHERE role='ROLE_USER'")
 	public List<Team> getAllTeams();
 }

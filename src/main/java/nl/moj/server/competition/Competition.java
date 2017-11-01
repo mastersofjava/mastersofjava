@@ -153,19 +153,10 @@ public class Competition {
 			timer = Stopwatch.createStarted();
 			Integer solutiontime = getCurrentAssignment().getSolutionTime();
 
-			timeHandler = scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
-					} catch (Exception e) {
-						log.error("Failed to send time update.", e);
-					}
-				}
-			}, 0, 10, TimeUnit.SECONDS);
 			startAssignmentRunnable(assignment, solutiontime);
 			play2MinBeforeEndSound(solutiontime);
 			play1MinBeforeEndSound(solutiontime);
+			startTimeSync(solutiontime);
 			File gong = FileUtils
 					.getFile("/home/mhayen/Workspaces/workspace-moj/server/src/main/resources/sounds/gong.wav");
 			Media m = new Media(gong.toURI().toString());
@@ -177,12 +168,25 @@ public class Competition {
 		}
 	}
 
+	private void startTimeSync(Integer solutiontime) {
+		timeHandler = scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
+				} catch (Exception e) {
+					log.error("Failed to send time update.", e);
+				}
+			}
+		}, 1, 10, TimeUnit.SECONDS);
+	}
+
 	/**
 	 * Stops the current assignment if one is set. Otherwise does nothing except
 	 * logging a warning.
 	 */
 	public Optional<Assignment> stopCurrentAssignment() {
-		final Optional<Assignment> previousAssignment = clearCurrentAssignment();
+		final Optional<Assignment> previousAssignment = Optional.ofNullable(currentAssignment.getAndSet(null));
 
 		if (previousAssignment.isPresent()) {
 			previousAssignment.get().setRunning(false);
@@ -208,6 +212,9 @@ public class Competition {
 		final Assignment assignment = currentAssignment.get();
 		if (assignment != null) {
 			int solutiontime = assignment.getSolutionTime();
+			if (timer == null) {
+				return 0;
+			}
 			int seconds = (int) timer.elapsed(TimeUnit.SECONDS);
 			return solutiontime - seconds;
 		} else {
