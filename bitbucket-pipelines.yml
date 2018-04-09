@@ -6,9 +6,27 @@
 image: maven:3.5.3-jdk-9-slim
 
 pipelines:
-  build:
+  default:
+  - step:
+    script:
+    - echo "No default pipeline configured."
+  branches:
+    master:
     - step:
-        caches:
-          - maven
-        script: # Modify the commands below to build your repository.
-          - mvn -B clean install # -B batch mode makes Maven less verbose
+      caches:
+      - maven
+      script:
+      - mvn -B clean install
+    develop:
+    - step:
+      caches:
+      - maven
+      script:
+      - mvn -B clean install
+    feature/*:
+    - step:
+      caches:
+      - maven
+      script:
+      - mvn -B clean install
+
