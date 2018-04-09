@@ -6,7 +6,7 @@
 image: maven:3.5.3-jdk-9-slim
 
 pipelines:
-  default:
+  build:
     - step:
         caches:
           - maven
