@@ -1,10 +1,8 @@
 package nl.moj.server;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
 @ConfigurationProperties(prefix = "moj.server.directories")
-@Configuration
 public class DirectoriesConfiguration {
 
 	private String baseDirectory;

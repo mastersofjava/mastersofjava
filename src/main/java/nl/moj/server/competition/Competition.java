@@ -8,6 +8,7 @@ import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
 import nl.moj.server.repository.TeamRepository;
 import nl.moj.server.repository.TestRepository;
+import nl.moj.server.sound.SoundService;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -243,7 +244,12 @@ public class Competition {
 	}
 
 	private void scheduleBeforeEndSound(Integer solutiontime, int secondsBeforeEnd ) {
-		soundHandler = scheduledExecutorService.schedule(soundService::playTicTac, solutiontime - secondsBeforeEnd, TimeUnit.SECONDS);
+=		soundHandler = scheduledExecutorService.schedule(new Runnable() {
+			@Override
+			public void run() {
+				soundService.playTicTac(secondsBeforeEnd);
+			}
+		}, solutiontime - secondsBeforeEnd, TimeUnit.SECONDS);
 	}
 
 

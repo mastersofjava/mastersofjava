@@ -42,10 +42,9 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.socket.config.annotation.AbstractWebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
-import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -83,13 +82,13 @@ public class AppConfig {
 		return new ScheduledExecutorFactoryBean();
 	}
 
-	@Bean
-	public ServletServerContainerFactoryBean createServletServerContainerFactoryBean() {
-		ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
-		container.setMaxTextMessageBufferSize(100000);
-		container.setMaxBinaryMessageBufferSize(100000);
-		return container;
-	}
+//	@Bean
+//	public ServletServerContainerFactoryBean createServletServerContainerFactoryBean() {
+//		ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+//		container.setMaxTextMessageBufferSize(100000);
+//		container.setMaxBinaryMessageBufferSize(100000);
+//		return container;
+//	}
 
 	@Configuration
 	public class WebConfig implements WebMvcConfigurer {
@@ -105,6 +104,8 @@ public class AppConfig {
 					.addResourceHandler("/javadoc/**")
 					.addResourceLocations(path.toAbsolutePath().toUri().toString());
 		}
+
+
 	}
 
 	@Configuration
@@ -198,7 +199,7 @@ public class AppConfig {
 
 	@Configuration
 	@EnableWebSocketMessageBroker
-	public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
+	public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
 		@Override
 		public void configureMessageBroker(MessageBrokerRegistry config) {
