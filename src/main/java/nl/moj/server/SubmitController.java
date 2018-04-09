@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import nl.moj.server.competition.Competition;
+import nl.moj.server.compile.CompileResult;
 import nl.moj.server.compile.CompileService;
 import nl.moj.server.test.TestService;
 
@@ -44,8 +45,9 @@ public class SubmitController {
 
 	private Competition competition;
 
-	public SubmitController(CompileService compileService, TestService testService,@Qualifier("compiling") Executor compiling,
-			@Qualifier("testing") Executor testing, @Value("${moj.server.timeout}") Integer timeout, Competition competition) {
+	public SubmitController(CompileService compileService, TestService testService,
+			@Qualifier("compiling") Executor compiling, @Qualifier("testing") Executor testing,
+			@Value("${moj.server.timeout}") Integer timeout, Competition competition) {
 		super();
 		this.compileService = compileService;
 		this.testService = testService;
@@ -59,22 +61,29 @@ public class SubmitController {
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		message.setTeam(user.getName());
-		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
-				.orTimeout(timeout, TimeUnit.SECONDS);
+		CompletableFuture.supplyAsync(compileService.compile(message), compiling).orTimeout(timeout, TimeUnit.SECONDS);
 	}
 
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		message.setTeam(user.getName());
-		CompletableFuture.supplyAsync(compileService.compileWithTest(message), testing)
-				.orTimeout(timeout, TimeUnit.SECONDS)
-				.thenComposeAsync(compileResult -> testService.testAll(compileResult), testing);
+		CompletableFuture<Void> completableFuture = CompletableFuture
+				.supplyAsync(compileService.compileWithTest(message), testing)
+				.thenAccept(compileResult -> testService.testAll(compileResult)).whenComplete((value, ex) -> { 
+					if (value != null) {
+						System.out.println("Result: " + value);
+					} else {
+						// ... or return an error value:
+						System.out.println("Error code: -1. Root cause: " + ex.getCause().getMessage());
+					}
+				});
 	}
 
 	/**
-	 * Submits the final solution of the team and closes the assignment for the submitting team.
-	 * The submitting team cannot work with the assignment after closing.
+	 * Submits the final solution of the team and closes the assignment for the
+	 * submitting team. The submitting team cannot work with the assignment after
+	 * closing.
 	 *
 	 * @param message
 	 * @param user
@@ -84,7 +93,7 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		if( !competition.getCurrentAssignment().isTeamFinished(user.getName()) ) {
+		if (!competition.getCurrentAssignment().isTeamFinished(user.getName())) {
 			int scoreAtSubmissionTime = competition.getRemainingTime();
 			message.setTeam(user.getName());
 			message.setScoreAtSubmissionTime(scoreAtSubmissionTime);
@@ -94,8 +103,6 @@ public class SubmitController {
 		}
 	}
 
-
-
 	@JsonDeserialize(using = SourceMessageDeserializer.class)
 	public static class SourceMessage {
 
@@ -104,7 +111,8 @@ public class SubmitController {
 		private List<String> tests;
 		private Integer scoreAtSubmissionTime;
 
-		public SourceMessage(String team, Map<String, String> source, List<String> tests, Integer scoreAtSubmissionTime) {
+		public SourceMessage(String team, Map<String, String> source, List<String> tests,
+				Integer scoreAtSubmissionTime) {
 			this.team = team;
 			this.source = source;
 			this.tests = tests;
@@ -148,7 +156,6 @@ public class SubmitController {
 			this.scoreAtSubmissionTime = scoreAtSubmissionTime;
 		}
 	}
-
 
 	private class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
 		@Override

@@ -6,6 +6,8 @@ moj:
       teamDirectory: teams
       assignmentDirectory: assignments
       libDirectory: lib
+      soundDirectory: sounds
+      javaDocDirectory: javadoc
     assignments:
       repos:
         -
@@ -31,10 +33,12 @@ moj:
     competition:
        bonusForSuccessfulSubmission: 400    
 
+
 spring:
   h2:
     console:
       enabled: false
+      path: /h2
   datasource:
     url: jdbc:h2:file:/opt/mojserver/db/test
     username: sa

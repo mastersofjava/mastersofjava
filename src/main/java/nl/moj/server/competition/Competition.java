@@ -34,7 +34,9 @@ public class Competition {
 
 	private AtomicReference<Assignment> currentAssignment = new AtomicReference<>(); // FIXME: access should be
 																						// synchronized
-	private ScheduledFuture<?> handler;
+	private ScheduledFuture<?> assignmentHandler;
+
+	private ScheduledFuture<?> soundHandler;
 
 	private ScheduledFuture<?> timeHandler;
 
@@ -51,14 +53,17 @@ public class Competition {
 	private ScoreService scoreService;
 
 	private TeamMapper teamMapper;
-	
+
 	private FeedbackMessageController feedbackMessageController;
 
 	private DirectoriesConfiguration directories;
 
-	public Competition(AssignmentRepositoryService repo, TestMapper testMapper,
-					   ScoreService scoreService, TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
-					   DirectoriesConfiguration directories, ScheduledExecutorService scheduledExecutorService ) {
+	private SoundService soundService;
+
+	public Competition(AssignmentRepositoryService repo, TestMapper testMapper, ScoreService scoreService,
+			TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
+			DirectoriesConfiguration directories, ScheduledExecutorService scheduledExecutorService,
+					   SoundService soundService ) {
 		super();
 		this.repo = repo;
 		this.testMapper = testMapper;
@@ -67,6 +72,7 @@ public class Competition {
 		this.feedbackMessageController = feedbackMessageController;
 		this.directories = directories;
 		this.scheduledExecutorService = scheduledExecutorService;
+		this.soundService = soundService;
 	}
 
 	/**
@@ -79,7 +85,8 @@ public class Competition {
 	public List<AssignmentFile> getBackupFilesForTeam(String team) {
 		Assignment assignment = getCurrentAssignment();
 		if (assignment != null) {
-			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), team);
+			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(),
+					team);
 			File sourcesdir = FileUtils.getFile(teamdir, "sources", assignment.getName());
 			if (sourcesdir.exists()) {
 				final List<AssignmentFile> assignmentFiles = FileUtils
@@ -139,52 +146,43 @@ public class Competition {
 			assignment.setRunning(true);
 			timer = Stopwatch.createStarted();
 			Integer solutiontime = getCurrentAssignment().getSolutionTime();
-			timeHandler = scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
-					} catch (Exception e) {
-						log.error("Failed to send time update.", e);
-					}
-				}
-			}, 0, 10, TimeUnit.SECONDS);
 
-			handler = scheduledExecutorService.schedule(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						feedbackMessageController.sendStopToTeams(assignment.getName());
-						handler.cancel(false);
-						timeHandler.cancel(false);
-						stopCurrentAssignment();
-					} catch (Exception e) {
-						log.error("Failed to stop assignment.", e);
-					}
-				}
-			}, solutiontime, TimeUnit.SECONDS);
-
-
+			startAssignmentRunnable(assignment, solutiontime);
+			scheduleBeforeEndSound(solutiontime,120);
+			scheduleBeforeEndSound(solutiontime, 60);
+			startTimeSync(solutiontime);
+			soundService.playGong();
 			log.info("assignment started {}", assignment.getName());
-		} catch( Exception e ) {
+		} catch (Exception e) {
 			log.error("Starting assignment failed.", e);
 		}
 	}
 
-
+	private void startTimeSync(Integer solutiontime) {
+		timeHandler = scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
+				} catch (Exception e) {
+					log.error("Failed to send time update.", e);
+				}
+			}
+		}, 1, 10, TimeUnit.SECONDS);
+	}
 
 	/**
 	 * Stops the current assignment if one is set. Otherwise does nothing except
 	 * logging a warning.
 	 */
 	public Optional<Assignment> stopCurrentAssignment() {
-		final Optional<Assignment> previousAssignment = clearCurrentAssignment();
+		final Optional<Assignment> previousAssignment = Optional.ofNullable(currentAssignment.getAndSet(null));
 
 		if (previousAssignment.isPresent()) {
 			previousAssignment.get().setRunning(false);
 			previousAssignment.get().setCompleted(true);
 			timer.stop();
-			handler.cancel(true);
+			assignmentHandler.cancel(true);
 			timeHandler.cancel(true);
 			log.info("assignment stopped {}", previousAssignment.get().getName());
 			// set 0 score for teams that did not finish
@@ -204,6 +202,9 @@ public class Competition {
 		final Assignment assignment = currentAssignment.get();
 		if (assignment != null) {
 			int solutiontime = assignment.getSolutionTime();
+			if (timer == null) {
+				return 0;
+			}
 			int seconds = (int) timer.elapsed(TimeUnit.SECONDS);
 			return solutiontime - seconds;
 		} else {
@@ -256,5 +257,27 @@ public class Competition {
 	public List<ImmutablePair<String, Integer>> getAssignmentInfo() {
 		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).values().stream()
 				.map(v -> ImmutablePair.of(v.getName(), v.getSolutionTime())).sorted().collect(Collectors.toList());
+	}
+
+	private void scheduleBeforeEndSound(Integer solutiontime, int secondsBeforeEnd ) {
+		soundHandler = scheduledExecutorService.schedule(new Runnable() {
+			@Override
+			public void run() {
+				soundService.playTicTac();
+			}
+		}, solutiontime - secondsBeforeEnd, TimeUnit.SECONDS);
+	}
+
+
+	private void startAssignmentRunnable(final Assignment assignment, Integer solutiontime) {
+		feedbackMessageController.sendStartToTeams(assignment.getName());
+		assignmentHandler = scheduledExecutorService.schedule(new Runnable() {
+			@Override
+			public void run() {
+				feedbackMessageController.sendStopToTeams(assignment.getName());
+				assignmentHandler.cancel(false);
+				stopCurrentAssignment();
+			}
+		}, solutiontime, TimeUnit.SECONDS);
 	}
 }

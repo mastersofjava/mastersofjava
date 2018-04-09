@@ -106,7 +106,7 @@ public class TestService {
 	/**
 	 * Test the solution provided by the team against the Submit test and assignment
 	 * tests. All tests have to succeed.
-	 *
+	 * 
 	 * @param compileResult
 	 * @return the combined TestResult
 	 */
@@ -116,7 +116,8 @@ public class TestService {
 			public TestResult get() {
 				String assignment = competition.getCurrentAssignment().getName();
 				int finalScore = 0;
-				final Integer submissionTime = compileResult.getScoreAtSubmissionTime();    // Identical to score at submission time
+				final Integer submissionTime = compileResult.getScoreAtSubmissionTime(); // Identical to score at
+																							// submission time
 				if (compileResult.isSuccessful()) {
 					try {
 
@@ -154,17 +155,18 @@ public class TestService {
 						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
 					} finally {
-					    competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), submissionTime, finalScore);
+						competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), submissionTime,
+								finalScore);
 					}
 
-				} else {        // Compile failed
-                    final TestResult compileFailedResult = new TestResult(
-                            "Submit Test - Compilation failed->test failed", compileResult.getUser(), false,
-                            "Submit Test", 0);
-                    feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
-                    setFinalAssignmentScore(compileFailedResult, assignment, 0);
-                    competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), submissionTime, 0);
-                    return compileFailedResult;
+				} else { // Compile failed
+					final TestResult compileFailedResult = new TestResult(
+							"Submit Test - Compilation failed->test failed", compileResult.getUser(), false,
+							"Submit Test", 0);
+					feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
+					setFinalAssignmentScore(compileFailedResult, assignment, 0);
+					competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), submissionTime, 0);
+					return compileFailedResult;
 				}
 			}
 		}, testing);
@@ -172,10 +174,11 @@ public class TestService {
 	}
 
 	private Integer setFinalAssignmentScore(TestResult testResult, String assignment, int scoreAtSubmissionTime) {
-		int score = scoreService.registerScoreAtSubmission(testResult.getUser(), assignment, testResult.isSuccessful()?scoreAtSubmissionTime:0);
-			feedbackMessageController.sendRefreshToRankingsPage();
+		int score = scoreService.registerScoreAtSubmission(testResult.getUser(), assignment,
+				testResult.isSuccessful() ? scoreAtSubmissionTime : 0);
+		feedbackMessageController.sendRefreshToRankingsPage();
 		return score;
-		}
+	}
 
 	private TestResult unittest(AssignmentFile file, CompileResult compileResult) {
 

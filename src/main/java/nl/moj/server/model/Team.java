@@ -13,6 +13,17 @@ public class Team {
 	
 	private List<Result> results;
 	
+	public Team() {
+	}
+	
+	public Team(String name, String role, String country, String company) {
+		super();
+		this.name = name;
+		this.role = role;
+		this.country = country;
+		this.company = company;
+	}
+
 	public int getId() {
 		return id;
 	}
