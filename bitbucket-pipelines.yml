@@ -8,25 +8,24 @@ image: maven:3.5.3-jdk-9-slim
 pipelines:
   default:
   - step:
-    script:
-    - echo "No default pipeline configured."
+      script:
+      - echo "No default pipeline configured."
   branches:
     master:
     - step:
-      caches:
-      - maven
-      script:
-      - mvn -B clean install
+        caches:
+        - maven
+        script:
+        - mvn -B clean install
     develop:
     - step:
-      caches:
-      - maven
-      script:
-      - mvn -B clean install
+        caches:
+        - maven
+        script:
+        - mvn -B clean install
     feature/*:
     - step:
-      caches:
-      - maven
-      script:
-      - mvn -B clean install
-
+        caches:
+        - maven
+        script:
+        - mvn -B clean install
