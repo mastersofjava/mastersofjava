@@ -1,84 +1,73 @@
 package nl.moj.server.model;
 
 import java.util.List;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@NoArgsConstructor(force = true)
+@AllArgsConstructor
+@Getter
+@Setter
+@Table(name = "team")
+@SequenceGenerator(name = "id_seq", sequenceName = "team_id_seq")
 public class Team {
-	private int id;
+
+    public Team(String name, String role, String country, String company) {
+        super();
+        this.name = name;
+        this.role = role;
+        this.country = country;
+        this.company = company;
+    }
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_seq")
+    @Column(name = "id", nullable = false)
+    private Long id;
+
+    @Column(name = "name")
 	private String name;
-	private String password;
-	private String cpassword;
-	private String role;
+
+    @Column(name = "password")
+    private String password;
+
+    @Column(name = "cpassword")
+    private String cpassword;
+
+    @Column(name = "role")
+    private String role;
+
+    @Column(name = "country")
 	private String country;
+
+    @Column(name = "company")
 	private String company;
-	
-	private List<Result> results;
-	
-	public Team() {
-	}
-	
-	public Team(String name, String role, String country, String company) {
-		super();
-		this.name = name;
-		this.role = role;
-		this.country = country;
-		this.company = company;
-	}
 
-	public int getId() {
-		return id;
-	}
+    @OneToMany(mappedBy = "team")
+    private List<Result> results;
 
-	public void setId(int id) {
-		this.id = id;
-	}
+    @OneToMany(mappedBy = "team")
+    private List<Test> test;
 
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
-	public String getCpassword() {
-		return cpassword;
-	}
-
-	public void setCpassword(String cpassword) {
-		this.cpassword = cpassword;
-	}
-
-	public String getRole() {
-		return role;
-	}
-
-	public void setRole(String role) {
-		this.role = role;
-	}
-	
-	public String getCountry() {
-		return country;
-	}
-
-	public void setCountry(String country) {
-		this.country = country;
-	}
-
-	public String getCompany() {
-		return company;
-	}
-
-	public void setCompany(String company) {
-		this.company = company;
-	}
+    @OneToOne(mappedBy = "team",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY)
+    private Ranking ranking;
 
 	public Integer getTotalScore(){
         int sum = 0;
@@ -90,14 +79,6 @@ public class Team {
         }
 
 		return sum;
-	}
-
-	public List<Result> getResults() {
-		return results;
-	}
-
-	public void setResults(List<Result> results) {
-		this.results = results;
 	}
 
 	public String getShortName() {

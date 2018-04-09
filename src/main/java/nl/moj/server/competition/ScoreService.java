@@ -1,30 +1,33 @@
 package nl.moj.server.competition;
 
-import nl.moj.server.persistence.ResultMapper;
+import lombok.RequiredArgsConstructor;
+import nl.moj.server.model.Result;
+import nl.moj.server.repository.ResultRepository;
+import nl.moj.server.repository.TeamRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class ScoreService {
 
 	private static final Logger log = LoggerFactory.getLogger(ScoreService.class);
-	private final ResultMapper resultMapper;
+
+	private final ResultRepository resultRepository;
+
+	private final TeamRepository teamRepository;
 
     @Value("${moj.server.competition.bonusForSuccessfulSubmission}")
 	private int bonusForSuccessfulSubmission;
 
-	public ScoreService(ResultMapper resultMapper) {
-		this.resultMapper = resultMapper;
-	}
-
 	public void removeScoresForAssignment(String assignment) {
-		resultMapper.deleteResultsByAssignment(assignment);
+		resultRepository.findAllByAssignment(assignment).forEach(resultRepository::delete);
 	}
 
 	public void initializeScoreAtStart(String teamname, String assignment) {
-		resultMapper.insertScore(teamname,assignment, 0);
+        resultRepository.save(new Result(teamRepository.findByName(teamname), assignment, 0, null, null));
 	}
 
 	/**
@@ -45,7 +48,9 @@ public class ScoreService {
 		}
 		log.debug("Team {} submitted {}. assignment score {} + bonus {} = {}",
 		        teamname, assignment, scoreAtSubmissionTime, bonusForSuccessfulSubmission, score );
-        resultMapper.updateScore(teamname, assignment, score);
+        Result result = resultRepository.findByTeamAndAssignment(teamRepository.findByName(teamname), assignment);
+        result.setScore(score);
+        resultRepository.save(result);
         return score;
 	}
 }

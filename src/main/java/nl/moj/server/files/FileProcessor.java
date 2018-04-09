@@ -4,31 +4,32 @@ import java.io.File;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
+import lombok.RequiredArgsConstructor;
 import nl.moj.server.competition.Competition;
+import nl.moj.server.repository.TeamRepository;
 import nl.moj.server.model.Test;
-import nl.moj.server.persistence.TeamMapper;
-import nl.moj.server.persistence.TestMapper;
+import nl.moj.server.repository.TestRepository;
 
 @Component
+@RequiredArgsConstructor
 public class FileProcessor {
 
 	private static final Logger log = LoggerFactory.getLogger(FileProcessor.class);
 	private static final String HEADER_FILE_NAME = "file_name";
 	private static final String HEADER_FILE_ORIGINALFILE = "file_originalFile";
-	@Value("${moj.server.directories.assignmentDirectory}")
-	private String DIRECTORY;
-	@Autowired
-	private Competition competition;
 
-	@Autowired
-	private TestMapper testMapper;
-	@Autowired
-	private TeamMapper teamMapper;
+	private final Competition competition;
+
+	private final TestRepository testRepository;
+
+	private final TeamRepository teamRepository;
+
+    @Value("${moj.server.directories.assignmentDirectory}")
+    private String DIRECTORY;
 
 	public void process(Message<String> msg) {
 		String filename = (String) msg.getHeaders().get(HEADER_FILE_NAME);
@@ -54,8 +55,8 @@ public class FileProcessor {
 					file = new AssignmentFile(filename, content, FileType.EDIT, assignment, origFile);
 				} else if (competition.getAssignment(assignment).getTestFileNames().contains(filename)) {
 					file = new AssignmentFile(filename, content, FileType.TEST, assignment, origFile);
-					teamMapper.getAllTeams().forEach(team -> testMapper.insertTest(new Test(team.getName(), assignment,
-							filename.substring(0, filename.indexOf(".")), 0, 0)));
+					teamRepository.findAllByRole("ROLE_USER").forEach(team -> testRepository.save(new Test(team, assignment,
+                            filename.substring(0, filename.indexOf(".")), 0, 0)));
 				} else if (competition.getAssignment(assignment).getSubmitFileNames().contains(filename)) {
 					file = new AssignmentFile(filename, content, FileType.SUBMIT, assignment, origFile);
 				} else if (competition.getAssignment(assignment).getSolutionFileNames().contains(filename)) {

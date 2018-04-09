@@ -19,12 +19,10 @@ import nl.moj.server.persistence.RankingMapper;
 public class IndexController {
 
 	private Competition competition;
-    private RankingMapper rankingMapper;
 
-	public IndexController(Competition competition, RankingMapper rankingMapper) {
+	public IndexController(Competition competition) {
 		super();
 		this.competition = competition;
-		this.rankingMapper = rankingMapper;
 	}
 
 	@GetMapping("/")

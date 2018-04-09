@@ -1,59 +1,54 @@
 package nl.moj.server.model;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@NoArgsConstructor(force = true)
+@AllArgsConstructor
+@Getter
+@Setter
+@Table(name = "test")
 public class Test {
 
-	private String team;
-	private String assignment;
-	private String testname;
-	private Integer success;
-	private Integer failure;
+    public Test(Team team, String assignment, String testname, Integer success, Integer failure) {
+        super();
+        this.team = team;
+        this.assignment = assignment;
+        this.testname = testname;
+        this.success = success;
+        this.failure = failure;
+    }
 
-	public Test(String team, String assignment, String testname, Integer success, Integer failure) {
-		super();
-		this.team = team;
-		this.assignment = assignment;
-		this.testname = testname;
-		this.success = success;
-		this.failure = failure;
-	}
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_seq")
+    @Column(name = "id", nullable = false)
+    private Long id;
 
-	public String getTeam() {
-		return team;
-	}
+    @ManyToOne
+    @JoinColumn(name="team_id")
+	private Team team;
 
-	public void setTeam(String team) {
-		this.team = team;
-	}
+    @Column(name = "score")
+    private String assignment;
 
-	public String getAssignment() {
-		return assignment;
-	}
+    @Column(name = "score")
+    private String testname;
 
-	public void setAssignment(String assignment) {
-		this.assignment = assignment;
-	}
+    @Column(name = "score")
+    private Integer success;
 
-	public String getTestname() {
-		return testname;
-	}
-
-	public void setTestname(String testname) {
-		this.testname = testname;
-	}
-
-	public Integer getSuccess() {
-		return success;
-	}
-
-	public void setSuccess(Integer success) {
-		this.success = success;
-	}
-
-	public Integer getFailure() {
-		return failure;
-	}
-
-	public void setFailure(Integer failure) {
-		this.failure = failure;
-	}
+    @Column(name = "score")
+    private Integer failure;
 }

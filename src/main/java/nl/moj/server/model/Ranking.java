@@ -1,48 +1,50 @@
 package nl.moj.server.model;
 
 import java.util.List;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@NoArgsConstructor(force = true)
+@AllArgsConstructor
+@Getter
+@Setter
+@Table(name = "ranking")
+@SequenceGenerator(name = "id_seq", sequenceName = "ranking_id_seq")
 public class Ranking {
 
-	private Integer rank;
-	
-	private String team;
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_seq")
+    @Column(name = "id", nullable = false)
+    private Long id;
 
+    @Column(name = "rank")
+	private Integer rank;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id")
+	private Team team;
+
+    @OneToMany(mappedBy = "ranking")
 	private List<Result> results;
 
+    @Column(name = "total_score")
 	private Integer totalScore;
-	
-	public String getTeam() {
-		return team;
-	}
-
-	public void setTeam(String team) {
-		this.team = team;
-	}
-
-	public List<Result> getResults() {
-		return results;
-	}
-
-	public void setResults(List<Result> results) {
-		this.results = results;
-	}
-
-	public Integer getTotalScore() {
-		return totalScore;
-	}
-
-	public void setTotalScore(Integer totalScore) {
-		this.totalScore = totalScore;
-	}
-
-	public Integer getRank() {
-		return rank;
-	}
-
-	public void setRank(Integer rank) {
-		this.rank = rank;
-	}
 
 	public String getResultJson() {
 		StringBuffer b = new StringBuffer();

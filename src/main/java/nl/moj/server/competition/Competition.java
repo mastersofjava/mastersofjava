@@ -1,12 +1,13 @@
 package nl.moj.server.competition;
 
 import com.google.common.base.Stopwatch;
+import lombok.RequiredArgsConstructor;
 import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
-import nl.moj.server.persistence.TeamMapper;
-import nl.moj.server.persistence.TestMapper;
+import nl.moj.server.repository.TeamRepository;
+import nl.moj.server.repository.TestRepository;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -28,11 +29,28 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Collections.emptyList;
 
 @Service
+@RequiredArgsConstructor
 public class Competition {
 
 	private static final Logger log = LoggerFactory.getLogger(Competition.class);
 
-	private AtomicReference<Assignment> currentAssignment = new AtomicReference<>(); // FIXME: access should be
+    private final AssignmentRepositoryService repo;
+
+    private final TestRepository testRepository;
+
+    private final ScoreService scoreService;
+
+    private final TeamRepository teamRepository;
+
+    private final FeedbackMessageController feedbackMessageController;
+
+    private final DirectoriesConfiguration directories;
+
+    private final SoundService soundService;
+
+    private final ScheduledExecutorService scheduledExecutorService;
+
+    private AtomicReference<Assignment> currentAssignment = new AtomicReference<>(); // FIXME: access should be
 																						// synchronized
 	private ScheduledFuture<?> assignmentHandler;
 
@@ -40,40 +58,9 @@ public class Competition {
 
 	private ScheduledFuture<?> timeHandler;
 
-	private ScheduledExecutorService scheduledExecutorService;
-
 	private Stopwatch timer;
 
 	private Map<String, Assignment> assignments;
-
-	private AssignmentRepositoryService repo;
-
-	private TestMapper testMapper;
-
-	private ScoreService scoreService;
-
-	private TeamMapper teamMapper;
-
-	private FeedbackMessageController feedbackMessageController;
-
-	private DirectoriesConfiguration directories;
-
-	private SoundService soundService;
-
-	public Competition(AssignmentRepositoryService repo, TestMapper testMapper, ScoreService scoreService,
-			TeamMapper teamMapper, FeedbackMessageController feedbackMessageController,
-			DirectoriesConfiguration directories, ScheduledExecutorService scheduledExecutorService,
-					   SoundService soundService ) {
-		super();
-		this.repo = repo;
-		this.testMapper = testMapper;
-		this.teamMapper = teamMapper;
-		this.scoreService = scoreService;
-		this.feedbackMessageController = feedbackMessageController;
-		this.directories = directories;
-		this.scheduledExecutorService = scheduledExecutorService;
-		this.soundService = soundService;
-	}
 
 	/**
 	 * Returns an immutable list of assignment files modified by the given team. The
@@ -89,18 +76,17 @@ public class Competition {
 					team);
 			File sourcesdir = FileUtils.getFile(teamdir, "sources", assignment.getName());
 			if (sourcesdir.exists()) {
-				final List<AssignmentFile> assignmentFiles = FileUtils
-						.listFiles(sourcesdir, TrueFileFilter.INSTANCE, null).stream().map(file -> {
-							try {
-								return new AssignmentFile(file.getName(),
-										FileUtils.readFileToString(file, Charset.defaultCharset()), FileType.EDIT,
-										assignment.getName(), file);
-							} catch (IOException e) {
-								log.error("Error retrieving backup files", e);
-							}
-							return null;
-						}).collect(toImmutableList());
-				return assignmentFiles;
+                return FileUtils
+                        .listFiles(sourcesdir, TrueFileFilter.INSTANCE, null).stream().map(file -> {
+                            try {
+                                return new AssignmentFile(file.getName(),
+                                        FileUtils.readFileToString(file, Charset.defaultCharset()), FileType.EDIT,
+                                        assignment.getName(), file);
+                            } catch (IOException e) {
+                                log.error("Error retrieving backup files", e);
+                            }
+                            return null;
+                        }).collect(toImmutableList());
 			}
 		}
 		return emptyList();
@@ -110,7 +96,7 @@ public class Competition {
 		// verwijder bestaande als die bestaan
 		if (assignments != null) {
 			assignments.keySet().forEach((k) -> {
-				testMapper.deleteTestsByAssignment(k);
+                testRepository.findAllByAssignment(k).forEach(testRepository::delete);
 				scoreService.removeScoresForAssignment(k);
 			});
 			assignments.clear();
@@ -140,7 +126,7 @@ public class Competition {
 			scoreService.removeScoresForAssignment(assignment.getName());
 
 			// initialize scores on 0.
-			teamMapper.getAllTeams().forEach(t -> {
+			teamRepository.findAllByRole("ROLE_USER").forEach(t -> {
 				scoreService.initializeScoreAtStart(t.getName(), assignment.getName());
 			});
 			assignment.setRunning(true);
@@ -159,16 +145,13 @@ public class Competition {
 	}
 
 	private void startTimeSync(Integer solutiontime) {
-		timeHandler = scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
-				} catch (Exception e) {
-					log.error("Failed to send time update.", e);
-				}
-			}
-		}, 1, 10, TimeUnit.SECONDS);
+		timeHandler = scheduledExecutorService.scheduleAtFixedRate(() -> {
+            try {
+                feedbackMessageController.sendRemainingTime(getRemainingTime(), solutiontime);
+            } catch (Exception e) {
+                log.error("Failed to send time update.", e);
+            }
+        }, 1, 10, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -186,7 +169,7 @@ public class Competition {
 			timeHandler.cancel(true);
 			log.info("assignment stopped {}", previousAssignment.get().getName());
 			// set 0 score for teams that did not finish
-			teamMapper.getAllTeams().stream()
+			teamRepository.findAllByRole("ROLE_USER").stream()
 					.filter(t -> !previousAssignment.get().getFinishedTeamNames().contains(t.getName()))
 					.forEach(t -> scoreService.registerScoreAtSubmission(t.getName(), previousAssignment.get().getName(), 0));
 		}
@@ -250,7 +233,7 @@ public class Competition {
 
 	public List<String> getAssignmentNames() {
 		return Optional.ofNullable(assignments).orElse(Collections.emptyMap()).values().stream()
-				.filter(a -> a.isCompleted() || a.isRunning()).map(a -> a.getName()).sorted()
+				.filter(a -> a.isCompleted() || a.isRunning()).map(Assignment::getName).sorted()
 				.collect(Collectors.toList());
 	}
 
@@ -260,24 +243,16 @@ public class Competition {
 	}
 
 	private void scheduleBeforeEndSound(Integer solutiontime, int secondsBeforeEnd ) {
-		soundHandler = scheduledExecutorService.schedule(new Runnable() {
-			@Override
-			public void run() {
-				soundService.playTicTac();
-			}
-		}, solutiontime - secondsBeforeEnd, TimeUnit.SECONDS);
+		soundHandler = scheduledExecutorService.schedule(soundService::playTicTac, solutiontime - secondsBeforeEnd, TimeUnit.SECONDS);
 	}
 
 
 	private void startAssignmentRunnable(final Assignment assignment, Integer solutiontime) {
 		feedbackMessageController.sendStartToTeams(assignment.getName());
-		assignmentHandler = scheduledExecutorService.schedule(new Runnable() {
-			@Override
-			public void run() {
-				feedbackMessageController.sendStopToTeams(assignment.getName());
-				assignmentHandler.cancel(false);
-				stopCurrentAssignment();
-			}
-		}, solutiontime, TimeUnit.SECONDS);
+		assignmentHandler = scheduledExecutorService.schedule(() -> {
+            feedbackMessageController.sendStopToTeams(assignment.getName());
+            assignmentHandler.cancel(false);
+            stopCurrentAssignment();
+        }, solutiontime, TimeUnit.SECONDS);
 	}
 }
