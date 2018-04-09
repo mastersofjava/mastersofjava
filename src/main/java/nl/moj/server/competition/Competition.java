@@ -244,12 +244,7 @@ public class Competition {
 	}
 
 	private void scheduleBeforeEndSound(Integer solutiontime, int secondsBeforeEnd ) {
-=		soundHandler = scheduledExecutorService.schedule(new Runnable() {
-			@Override
-			public void run() {
-				soundService.playTicTac(secondsBeforeEnd);
-			}
-		}, solutiontime - secondsBeforeEnd, TimeUnit.SECONDS);
+		soundHandler = scheduledExecutorService.schedule(() -> soundService.playTicTac(secondsBeforeEnd), solutiontime - secondsBeforeEnd, TimeUnit.SECONDS);
 	}
 
 
