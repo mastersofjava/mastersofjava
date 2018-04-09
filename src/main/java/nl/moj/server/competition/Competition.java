@@ -7,6 +7,7 @@ import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
 import nl.moj.server.persistence.TeamMapper;
 import nl.moj.server.persistence.TestMapper;
+import nl.moj.server.sound.SoundService;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -263,7 +264,7 @@ public class Competition {
 		soundHandler = scheduledExecutorService.schedule(new Runnable() {
 			@Override
 			public void run() {
-				soundService.playTicTac();
+				soundService.playTicTac(secondsBeforeEnd);
 			}
 		}, solutiontime - secondsBeforeEnd, TimeUnit.SECONDS);
 	}
