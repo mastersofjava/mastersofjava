@@ -1,12 +1,10 @@
 package nl.moj.server;
 
-import lombok.AllArgsConstructor;
-import nl.moj.server.AssignmentRepoConfiguration.Repo;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.model.Result;
-import nl.moj.server.repository.ResultRepository;
-import nl.moj.server.model.Team;
-import nl.moj.server.repository.TeamRepository;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.List;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -19,15 +17,20 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.List;
+import lombok.AllArgsConstructor;
+import nl.moj.server.AssignmentRepoConfiguration.Repo;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.model.Result;
+import nl.moj.server.model.Team;
+import nl.moj.server.repository.ResultRepository;
+import nl.moj.server.repository.TeamRepository;
 
 @Controller
 @AllArgsConstructor
@@ -101,7 +104,7 @@ public class TaskControlController {
 		response.setHeader("Content-Disposition", "attachment; filename=\"results.csv\"");
 		try (CSVPrinter printer = new CSVPrinter(response.getWriter(),
 				CSVFormat.DEFAULT.withHeader(ResultHeaders.class))) {
-			List<Result> allResults = resultRepository.findAllOrderByTeam();
+			List<Result> allResults = resultRepository.findAllByOrderByTeamNameAsc();
 			allResults.forEach((r) -> {
 				try {
 					printer.printRecord(r.getTeam(), r.getAssignment(), r.getScore(), r.getPenalty(), r.getCredit());

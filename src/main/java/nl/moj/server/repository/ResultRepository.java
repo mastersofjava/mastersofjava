@@ -14,8 +14,8 @@ public interface ResultRepository extends JpaRepository<Result, Long> {
 
     Result findByTeamAndAssignment(Team team, String assignment);
 
-    @Query("SELECT SUM(score) FROM result WHERE team = #{team.name}")
-    Integer getTotalScore(@Param("team") String teamName);
+    @Query("SELECT SUM(score) FROM Result WHERE team = team")
+    Integer getTotalScore(@Param("team") Team team);
 
-    List<Result> findAllOrderByTeam();
+    List<Result> findAllByOrderByTeamNameAsc();
 }

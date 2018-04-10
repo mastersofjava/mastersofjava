@@ -22,7 +22,7 @@ public class RankingsController {
 	
 	@GetMapping("/rankings")
 	public String getRankings(Model model){
-		List<Ranking> rankings = enrich(rankingRepository.findAllOrderByRank());
+		List<Ranking> rankings = enrich(rankingRepository.findAllByOrderByRankAsc());
 
 		model.addAttribute("assignments", competition.getAssignmentNames());
 		model.addAttribute("top", rankings.subList(0,Math.min(5, rankings.size())));

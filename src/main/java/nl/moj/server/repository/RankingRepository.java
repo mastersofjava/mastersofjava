@@ -7,6 +7,5 @@ import nl.moj.server.model.Ranking;
 
 public interface RankingRepository extends JpaRepository<Ranking, Long> {
 
-
-    List<Ranking> findAllOrderByRank();
+    List<Ranking> findAllByOrderByRankAsc();
 }

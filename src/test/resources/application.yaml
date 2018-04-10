@@ -1,6 +1,6 @@
 moj:
   server:
-    javaExecutable: /Users/basp/local/java/bin/java
+    javaExecutable: /Library/Java/JavaVirtualMachines/jdk-9.0.4.jdk/Contents/Home/bin
     directories:
       teamDirectory: teams
       assignmentDirectory: assignments

@@ -3,7 +3,6 @@ package nl.moj.server.model;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -22,17 +21,17 @@ import lombok.Setter;
 @Table(name = "test")
 public class Test {
 
-    public Test(Team team, String assignment, String testname, Integer success, Integer failure) {
+    public Test(Team team, String assignment, String testName, Integer success, Integer failure) {
         super();
         this.team = team;
         this.assignment = assignment;
-        this.testname = testname;
+        this.testName = testName;
         this.success = success;
         this.failure = failure;
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_seq")
+    @GeneratedValue
     @Column(name = "id", nullable = false)
     private Long id;
 
@@ -40,15 +39,15 @@ public class Test {
     @JoinColumn(name="team_id")
 	private Team team;
 
-    @Column(name = "score")
+    @Column(name = "assignment")
     private String assignment;
 
-    @Column(name = "score")
-    private String testname;
+    @Column(name = "test_name")
+    private String testName;
 
-    @Column(name = "score")
+    @Column(name = "success")
     private Integer success;
 
-    @Column(name = "score")
+    @Column(name = "failure")
     private Integer failure;
 }

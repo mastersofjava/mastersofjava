@@ -7,11 +7,10 @@ import java.util.List;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
-
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.competition.Competition;
-import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.model.Team;
+import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.repository.TeamRepository;
 import nl.moj.server.util.CollectionUtil;
 
@@ -57,7 +56,7 @@ public class FeedbackController {
 	}
 
     private void orderTeamsByHighestTotalScore(List<Team> allTeams) {
-		allTeams.sort(Comparator.comparingInt(t -> resultRepository.getTotalScore(t.getName())));
+		allTeams.sort(Comparator.comparingInt(t -> resultRepository.getTotalScore(t)));
 	}
 	
 
