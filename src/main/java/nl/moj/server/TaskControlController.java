@@ -1,11 +1,10 @@
 package nl.moj.server;
 
-import nl.moj.server.AssignmentRepoConfiguration.Repo;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.model.Result;
-import nl.moj.server.model.Team;
-import nl.moj.server.persistence.ResultMapper;
-import nl.moj.server.persistence.TeamMapper;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.List;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -18,40 +17,36 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.List;
+import lombok.AllArgsConstructor;
+import nl.moj.server.AssignmentRepoConfiguration.Repo;
+import nl.moj.server.competition.Competition;
+import nl.moj.server.model.Result;
+import nl.moj.server.model.Team;
+import nl.moj.server.repository.ResultRepository;
+import nl.moj.server.repository.TeamRepository;
 
 @Controller
+@AllArgsConstructor
 public class TaskControlController {
 
 	private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
 
-	private Competition competition;
+	private final Competition competition;
 
-	private ResultMapper resultMapper;
+	private final ResultRepository resultRepository;
 
-	private TeamMapper teamMapper;
+	private final TeamRepository teamRepository;
 
-	private AssignmentRepoConfiguration repos;
+	private final AssignmentRepoConfiguration repos;
 
-	private FeedbackMessageController feedbackMessageController;
-
-	public TaskControlController(Competition competition, ResultMapper resultMapper, TeamMapper teamMapper, AssignmentRepoConfiguration repos,
-			FeedbackMessageController feedbackMessageController) {
-		super();
-		this.competition = competition;
-		this.resultMapper = resultMapper;
-		this.teamMapper = teamMapper;
-		this.repos = repos;
-		this.feedbackMessageController = feedbackMessageController;
-	}
+	private final FeedbackMessageController feedbackMessageController;
 
 	@ModelAttribute(name = "assignments")
 	public List<ImmutablePair<String, Integer>> assignments() {
@@ -109,7 +104,7 @@ public class TaskControlController {
 		response.setHeader("Content-Disposition", "attachment; filename=\"results.csv\"");
 		try (CSVPrinter printer = new CSVPrinter(response.getWriter(),
 				CSVFormat.DEFAULT.withHeader(ResultHeaders.class))) {
-			List<Result> allResults = resultMapper.getAllResults();
+			List<Result> allResults = resultRepository.findAllByOrderByTeamNameAsc();
 			allResults.forEach((r) -> {
 				try {
 					printer.printRecord(r.getTeam(), r.getAssignment(), r.getScore(), r.getPenalty(), r.getCredit());
@@ -134,19 +129,19 @@ public class TaskControlController {
 				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(ResultHeaders.class)
 						.withFirstRecordAsHeader().parse(in);
 				for (CSVRecord record : records) {
-					Result r = new Result(record.get(ResultHeaders.TEAM), record.get(ResultHeaders.ASSIGNMENT),
+					Result r = new Result(teamRepository.findByName(record.get(ResultHeaders.TEAM)), record.get(ResultHeaders.ASSIGNMENT),
 							Integer.valueOf(record.get(ResultHeaders.SCORE)), Integer.valueOf(record.get(ResultHeaders.PENALTY)),
 							Integer.valueOf(record.get(ResultHeaders.CREDIT)));
-					resultMapper.insertResult(r);
+					resultRepository.save(r);
 				}
 			} else if (file.getName().equalsIgnoreCase("results-update.csv")) {
 				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(ResultHeaders.class)
 						.withFirstRecordAsHeader().parse(in);
 				for (CSVRecord record : records) {
-					Result r = new Result(record.get(ResultHeaders.TEAM), record.get(ResultHeaders.ASSIGNMENT),
+					Result r = new Result(teamRepository.findByName(record.get(ResultHeaders.TEAM)), record.get(ResultHeaders.ASSIGNMENT),
 							Integer.valueOf(record.get(ResultHeaders.SCORE)), Integer.valueOf(record.get(ResultHeaders.PENALTY)),
 							Integer.valueOf(record.get(ResultHeaders.CREDIT)));
-					resultMapper.insertResult(r);
+                    resultRepository.save(r);
 				}
 			} else {
 				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(TeamHeaders.class).withFirstRecordAsHeader()
@@ -154,7 +149,7 @@ public class TaskControlController {
 				for (CSVRecord r : records) {
 					Team t = new Team(r.get(TeamHeaders.NAME), "ROLE_USER", r.get(TeamHeaders.COUNTRY),
 							r.get(TeamHeaders.COMPANY));
-					teamMapper.insertTeam(t);
+					teamRepository.save(t);
 				}
 
 			}
@@ -171,7 +166,7 @@ public class TaskControlController {
 		response.setHeader("Content-Disposition", "attachment; filename=\"teams.csv\"");
 		try (CSVPrinter printer = new CSVPrinter(response.getWriter(),
 				CSVFormat.DEFAULT.withHeader(TeamHeaders.class))) {
-			List<Team> allTeams = teamMapper.getAllTeams();
+			List<Team> allTeams = teamRepository.findAllByRole("ROLE_USER");
 			allTeams.forEach((t) -> {
 				try {
 					printer.printRecord(t.getName(), t.getCompany(), t.getCountry());

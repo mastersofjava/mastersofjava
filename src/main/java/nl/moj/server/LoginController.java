@@ -19,26 +19,21 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import lombok.RequiredArgsConstructor;
 import nl.moj.server.model.Team;
-import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.repository.TeamRepository;
 
 @Controller
+@RequiredArgsConstructor
 public class LoginController {
 	
 	private static final Logger log = LoggerFactory.getLogger(LoginController.class);
 	
-	private TeamMapper teamMapper;
+	private final TeamRepository teamRepository;
 	
-	private PasswordEncoder encoder;
+	private final PasswordEncoder encoder;
 	
-	private DirectoriesConfiguration directories;
-	
-    public LoginController(TeamMapper teamMapper, PasswordEncoder encoder, DirectoriesConfiguration directories) {
-		super();
-		this.teamMapper = teamMapper;
-		this.encoder = encoder;
-		this.directories = directories;
-	}
+	private final DirectoriesConfiguration directories;
 
 	@GetMapping("/login")
     public String loginForm(Model model) {
@@ -51,7 +46,7 @@ public class LoginController {
     		model.addAttribute("errors", "Not all fields are filled in");
     		return "register";
     	}
-    	if(teamMapper.findByName(team.getName()) != null){
+    	if(teamRepository.findByName(team.getName()) != null){
     		model.addAttribute("errors", "Name already in use");
     		return "register";
     	}
@@ -61,7 +56,7 @@ public class LoginController {
     	}
     	team.setRole("ROLE_USER");
     	team.setPassword(encoder.encode(team.getPassword()));
-    	teamMapper.insertTeam(team);
+        teamRepository.save(team);
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     	context.setAuthentication(authentication);

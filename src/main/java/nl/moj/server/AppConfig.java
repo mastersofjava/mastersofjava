@@ -279,10 +279,6 @@ public class AppConfig {
 			return new FileToStringTransformer();
 		}
 
-		@Bean
-		public FileProcessor fileProcessor() {
-			return new FileProcessor();
-		}
 	}
 
 	@Configuration

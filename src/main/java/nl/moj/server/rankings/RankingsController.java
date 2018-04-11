@@ -6,28 +6,22 @@ import java.util.List;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-
+import lombok.RequiredArgsConstructor;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.model.Ranking;
-import nl.moj.server.persistence.RankingMapper;
 import nl.moj.server.util.CollectionUtil;
 
 @Controller
+@RequiredArgsConstructor
 public class RankingsController {
-	
-	private RankingMapper rankingMapper;
-	
-	private Competition competition;
-	
-	public RankingsController(RankingMapper rankingMapper, Competition competition) {
-		super();
-		this.rankingMapper = rankingMapper;
-		this.competition = competition;
-	}
+
+	private final Competition competition;
+
+	private final RankingsMapper rankingsMapper;
 
 	@GetMapping("/rankings")
 	public String getRankings(Model model){
-		List<Ranking> rankings = enrich(rankingMapper.getRankings());
+		List<Ranking> rankings = enrich(rankingsMapper.getRankings());
 
 		model.addAttribute("assignments", competition.getAssignmentNames());
 		model.addAttribute("top", rankings.subList(0,Math.min(5, rankings.size())));

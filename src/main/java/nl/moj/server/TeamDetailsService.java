@@ -12,22 +12,19 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import lombok.RequiredArgsConstructor;
 import nl.moj.server.model.Team;
-import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.repository.TeamRepository;
 
 @Service
+@RequiredArgsConstructor
 public class TeamDetailsService implements UserDetailsService {
 
-	private TeamMapper teamMapper;
-
-	public TeamDetailsService(TeamMapper teamMapper) {
-		super();
-		this.teamMapper = teamMapper;
-	}
+    private final TeamRepository teamRepository;
 
 	@Override
 	public UserDetails loadUserByUsername(String teamname) throws UsernameNotFoundException {
-		Team team = teamMapper.findByName(teamname);
+		Team team = teamRepository.findByName(teamname);
 		if (team == null)
 			throw new UsernameNotFoundException("no team found with name: " + teamname);
 		return new User(teamname, team.getPassword(), true, true, true, true, getAuthorities(team));

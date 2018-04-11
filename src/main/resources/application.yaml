@@ -1,6 +1,6 @@
 moj:
   server:
-    javaExecutable: /usr/lib/jvm/java-9-oracle/bin/java
+    javaExecutable: /Library/Java/JavaVirtualMachines/jdk-9.0.4.jdk/Contents/Home/bin
     directories:
       baseDirectory: /opt/mojserver
       teamDirectory: teams
@@ -37,21 +37,21 @@ moj:
 spring:
   h2:
     console:
-      enabled: false
+      enabled: true
       path: /h2
   datasource:
     url: jdbc:h2:file:/opt/mojserver/db/test
     username: sa
     password: sa
     driver-class-name: org.h2.Driver     
-    initialize: false         
+    initialize: false
   thymeleaf:
     mode: HTML
+#  flyway:
+#    baseline-on-migrate: true
 server.session.timeout: 36000
 security.basic.enabled: false
 
-
-mybatis.mapper-locations: persistence/*
 logging.file: mojserver.log
 #logging.level.nl.moj.server: DEBUG
 #logging.level.nl.moj.server.persistence: INFO

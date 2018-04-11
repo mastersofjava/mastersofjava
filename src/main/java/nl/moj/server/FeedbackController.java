@@ -1,38 +1,33 @@
 package nl.moj.server;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
-
+import lombok.RequiredArgsConstructor;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.model.Team;
-import nl.moj.server.persistence.ResultMapper;
-import nl.moj.server.persistence.TeamMapper;
+import nl.moj.server.repository.ResultRepository;
+import nl.moj.server.repository.TeamRepository;
 import nl.moj.server.util.CollectionUtil;
 
 @Controller
+@RequiredArgsConstructor
 public class FeedbackController {
 
-	private TeamMapper teamMapper;
-	
-	private ResultMapper resultMapper;
+    private final TeamRepository teamRepository;
 
-	private Competition competition;
+    private final ResultRepository resultRepository;
 
-	public FeedbackController(TeamMapper teamMapper, ResultMapper resultMapper, Competition competition) {
-		super();
-		this.teamMapper = teamMapper;
-		this.resultMapper = resultMapper;
-		this.competition = competition;
-	}
+	private final Competition competition;
 
 	@GetMapping("/feedback")
 	public ModelAndView feedback() {
 		ModelAndView model = new ModelAndView("testfeedback");
-		List<Team> allTeams = teamMapper.getAllTeams();
+		List<Team> allTeams = teamRepository.findAllByRole("ROLE_USER");
 		orderTeamsByHighestTotalScore(allTeams);
 
 		List<List<Team>> partitionedTeams = CollectionUtil.partition(allTeams, 3);
@@ -61,11 +56,7 @@ public class FeedbackController {
 	}
 
     private void orderTeamsByHighestTotalScore(List<Team> allTeams) {
-		allTeams.stream()
-			.sorted( (t1, t2) -> Integer.compare(
-					resultMapper.getTotalScore(t1.getName()), resultMapper.getTotalScore(t2.getName())
-				)
-			);
+		allTeams.sort(Comparator.comparingInt(t -> resultRepository.getTotalScore(t)));
 	}
 	
 
