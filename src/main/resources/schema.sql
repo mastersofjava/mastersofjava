@@ -1,7 +1,5 @@
-drop sequence team_seq if exists;
-create sequence team_seq;
-
 drop table team if exists;
+
 create table team (
 	id bigint not null primary key auto_increment,
 	name varchar(200) unique not null,
@@ -12,10 +10,8 @@ create table team (
 	country varchar(200)
 );
 
-drop sequence result_seq if exists;
-create sequence result_seq;
-
 drop table result if exists;
+
 create table result (
 	id bigint not null primary key auto_increment,
 	team_id bigint not null,
@@ -26,10 +22,8 @@ create table result (
 	FOREIGN KEY (team_id) REFERENCES team(id)
 );
 
-drop sequence test_seq if exists;
-create sequence test_seq;
-
 drop table test if exists;
+
 create table test (
 	id bigint not null primary key auto_increment,
 	team_id bigint not null,

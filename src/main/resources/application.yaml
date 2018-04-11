@@ -44,11 +44,11 @@ spring:
     username: sa
     password: sa
     driver-class-name: org.h2.Driver     
-    initialize: true
+    initialize: false
   thymeleaf:
     mode: HTML
-  flyway:
-    baseline-on-migrate: true
+#  flyway:
+#    baseline-on-migrate: true
 server.session.timeout: 36000
 security.basic.enabled: false
 
