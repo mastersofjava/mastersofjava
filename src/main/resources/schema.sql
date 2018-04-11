@@ -28,7 +28,7 @@ create table test (
 	id bigint not null primary key auto_increment,
 	team_id bigint not null,
 	assignment varchar(200) not null,
-	testname varchar(200) not null,
+	test_name varchar(200) not null,
 	success int default 0 not null,
 	failure int default 0 not null,
 	FOREIGN KEY (team_id) REFERENCES team(id)
