@@ -9,11 +9,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-
 import nl.moj.server.competition.Competition;
 import nl.moj.server.files.AssignmentFile;
 import nl.moj.server.files.FileType;
-import nl.moj.server.persistence.RankingMapper;
 
 @Controller
 public class IndexController {
