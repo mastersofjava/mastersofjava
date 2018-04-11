@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.competition.Competition;
 import nl.moj.server.model.Ranking;
-import nl.moj.server.repository.RankingRepository;
 import nl.moj.server.util.CollectionUtil;
 
 @Controller
@@ -18,11 +17,11 @@ public class RankingsController {
 
 	private final Competition competition;
 
-	private final RankingRepository rankingRepository;
-	
+	private final RankingsMapper rankingsMapper;
+
 	@GetMapping("/rankings")
 	public String getRankings(Model model){
-		List<Ranking> rankings = enrich(rankingRepository.findAllByOrderByRankAsc());
+		List<Ranking> rankings = enrich(rankingsMapper.getRankings());
 
 		model.addAttribute("assignments", competition.getAssignmentNames());
 		model.addAttribute("top", rankings.subList(0,Math.min(5, rankings.size())));

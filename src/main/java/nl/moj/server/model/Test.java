@@ -3,21 +3,20 @@ package nl.moj.server.model;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
-@Getter
-@Setter
+@Data
 @Table(name = "test")
 public class Test {
 
@@ -31,23 +30,23 @@ public class Test {
     }
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name="team_id")
+    @JoinColumn(name="team_id", nullable = false)
 	private Team team;
 
-    @Column(name = "assignment")
+    @Column(name = "assignment", nullable = false)
     private String assignment;
 
-    @Column(name = "test_name")
+    @Column(name = "test_name", nullable = false)
     private String testName;
 
-    @Column(name = "success")
+    @Column(name = "success", nullable = false)
     private Integer success;
 
-    @Column(name = "failure")
+    @Column(name = "failure", nullable = false)
     private Integer failure;
 }
