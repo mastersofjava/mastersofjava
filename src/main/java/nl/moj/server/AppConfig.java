@@ -1,8 +1,24 @@
 package nl.moj.server;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import nl.moj.server.files.AssignmentFileFilter;
-import nl.moj.server.files.FileProcessor;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.slf4j.Logger;
@@ -45,21 +61,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.tools.*;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import nl.moj.server.files.AssignmentFileFilter;
 
 @Configuration
 @EnableScheduling
@@ -81,6 +87,20 @@ public class AppConfig {
 	public ScheduledExecutorFactoryBean scheduledExecutorFactoryBean() {
 		return new ScheduledExecutorFactoryBean();
 	}
+
+	@Bean(name = "objectMapper")
+    public ObjectMapper jsonObjectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper;
+    }
+
+    @Bean(name = "yamlObjectMapper")
+    public ObjectMapper yamlObjectMapper() {
+        ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
+        yamlObjectMapper.registerModule(new JavaTimeModule());
+
+        return yamlObjectMapper;
+    }
 
 //	@Bean
 //	public ServletServerContainerFactoryBean createServletServerContainerFactoryBean() {
