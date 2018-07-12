@@ -8,8 +8,15 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.0.1.RELEASE</version>
+		<version>2.0.3.RELEASE</version>
 	</parent>
+
+	<properties>
+		<java.version>10</java.version>
+		<lombok.version>1.18.0</lombok.version>
+		<maven-surefire-plugin.version>2.22.0</maven-surefire-plugin.version>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -177,14 +184,8 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<scope>compile</scope>
 		</dependency>
 	</dependencies>
-
-
-	<properties>
-		<java.version>9</java.version>
-	</properties>
 
 	<build>
 		<plugins>
@@ -192,61 +193,8 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
-			<plugin>
-				<groupId>org.codefx.mvn</groupId>
-				<artifactId>jdeps-maven-plugin</artifactId>
-				<version>0.2</version>
-				<executions>
-					<execution>
-						<configuration>
-							<!-- define known and acceptable dependencies here (see below) -->
-						</configuration>
-						<goals>
-							<goal>jdkinternals</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
-
 	</build>
 
-	<repositories>
-		<repository>
-			<id>spring-milestones</id>
-			<name>Spring Milestones</name>
-			<url>https://repo.spring.io/libs-milestone</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>spring-snapshots</id>
-			<name>Spring Snapshots</name>
-			<url>https://repo.spring.io/libs-snapshot</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
-
-	<pluginRepositories>
-		<pluginRepository>
-			<id>spring-snapshots</id>
-			<name>Spring Snapshots</name>
-			<url>https://repo.spring.io/snapshot</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</pluginRepository>
-		<pluginRepository>
-			<id>spring-milestones</id>
-			<name>Spring Milestones</name>
-			<url>https://repo.spring.io/milestone</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</pluginRepository>
-	</pluginRepositories>
 
 </project>
