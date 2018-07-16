@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.files.AssignmentFile;
+import nl.moj.server.files.AssignmentFileVisitor;
 import nl.moj.server.files.FileType;
 import nl.moj.server.repository.TeamRepository;
 import nl.moj.server.repository.TestRepository;
@@ -14,11 +15,16 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,6 +40,9 @@ import static java.util.Collections.emptyList;
 public class Competition {
 
 	private static final Logger log = LoggerFactory.getLogger(Competition.class);
+
+    @Value("${moj.server.directories.assignmentDirectory}")
+    private String assignmentDirectory;
 
     private final AssignmentRepositoryService repo;
 
@@ -93,7 +102,35 @@ public class Competition {
 		return emptyList();
 	}
 
-	public String cloneAssignmentsRepo(String repoName) {
+	public String cloneAndInitAssignmentsFromRepo(String repoName) {
+
+		if (cloneAssignmentsRepo(repoName)) {
+			if(initAssignments()) {
+				return "repo gedownload en geinitialiseerd";
+			}
+
+			return "fout tijdens het initialiseren van de assigments";
+		}
+
+		return "repo downloaden mislukt";
+	}
+
+	private boolean initAssignments() {
+		log.info("Initialising assignments");
+		AssignmentFileVisitor visitor = new AssignmentFileVisitor(assignmentDirectory, this, testRepository, teamRepository);
+		Path assignmentPath = Paths.get(directories.getBaseDirectory(), directories.getAssignmentDirectory());
+
+		try {
+			Files.walkFileTree(assignmentPath, visitor);
+		} catch (IOException e) {
+			return false;
+		}
+
+
+		return true;
+	}
+
+	private boolean cloneAssignmentsRepo(String repoName) {
 		// verwijder bestaande als die bestaan
 		if (assignments != null) {
 			assignments.keySet().forEach((k) -> {
@@ -102,7 +139,7 @@ public class Competition {
 			});
 			assignments.clear();
 		}
-		return repo.cloneRemoteGitRepository(repoName) ? "repo succesvol gedownload" : "repo downloaden mislukt";
+		return repo.cloneRemoteGitRepository(repoName); // ? "repo succesvol gedownload" : "repo downloaden mislukt";
 	}
 
 	public Assignment getCurrentAssignment() {
