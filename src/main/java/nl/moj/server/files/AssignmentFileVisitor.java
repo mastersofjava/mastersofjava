@@ -25,15 +25,17 @@ public class AssignmentFileVisitor extends SimpleFileVisitor<Path> {
 
     private final TeamRepository teamRepository;
 
+    private final AssignmentFileFilter filter = new AssignmentFileFilter();
+
     @Override
     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        if (!filter.accept(file.toFile())) {
+            return FileVisitResult.CONTINUE;
+        }
+
         String filename = file.getFileName().toString();
         String fileAndDir = file.toString();
         String type = filename.substring(filename.indexOf("."));
-
-        if (".md".equalsIgnoreCase(type)) {
-            return super.visitFile(file, attrs);
-        }
 
         String content = new String(Files.readAllBytes(file));
         int beginIndex = fileAndDir.indexOf(DIRECTORY) + DIRECTORY.length() + 1;
@@ -41,7 +43,7 @@ public class AssignmentFileVisitor extends SimpleFileVisitor<Path> {
         String assignment = fileAndDir.substring(beginIndex, indexOf);
 
         File origFile = file.toFile();
-        AssignmentFile assignmentFile = null;
+        AssignmentFile assignmentFile;
 
         switch (type) {
             case ".java":
@@ -73,7 +75,9 @@ public class AssignmentFileVisitor extends SimpleFileVisitor<Path> {
                 break;
         }
 
-        return super.visitFile(file, attrs);
+        return FileVisitResult.CONTINUE;
     }
+
+
 
 }
