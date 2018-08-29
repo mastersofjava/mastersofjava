@@ -1,20 +1,20 @@
 package nl.moj.server.competition;
 
 
-import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.time.StopWatch;
 
-import com.google.common.base.Stopwatch;
+import java.util.concurrent.TimeUnit;
 
 public class TaskTimer {
 
-	private Stopwatch timer;
+	private StopWatch timer;
 	
 	public void start() {
-		timer = Stopwatch.createStarted();
+		timer = StopWatch.createStarted();
 	}
 	
 	public int getSeconds() {
-		return (int) timer.elapsed(TimeUnit.SECONDS);
+		return (int) timer.getTime(TimeUnit.SECONDS);
 	}
 	
 	public String stop() {

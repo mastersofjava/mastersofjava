@@ -1,6 +1,5 @@
 package nl.moj.server.competition;
 
-import com.google.common.base.Stopwatch;
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
@@ -12,6 +11,7 @@ import nl.moj.server.repository.TestRepository;
 import nl.moj.server.sound.SoundService;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Collections.emptyList;
 
 @Service
@@ -68,12 +66,12 @@ public class Competition {
 
 	private ScheduledFuture<?> timeHandler;
 
-	private Stopwatch timer;
+	private StopWatch timer;
 
 	private Map<String, Assignment> assignments;
 
 	/**
-	 * Returns an immutable list of assignment files modified by the given team. The
+	 * Returns a list of assignment files modified by the given team. The
 	 * modified files are stored when they 'compile'
 	 * 
 	 * @param team
@@ -96,7 +94,7 @@ public class Competition {
                                 log.error("Error retrieving backup files", e);
                             }
                             return null;
-                        }).collect(toImmutableList());
+                        }).collect(Collectors.toList());
 			}
 		}
 		return emptyList();
@@ -168,7 +166,7 @@ public class Competition {
 				scoreService.initializeScoreAtStart(t.getName(), assignment.getName());
 			});
 			assignment.setRunning(true);
-			timer = Stopwatch.createStarted();
+			timer = StopWatch.createStarted();
 			Integer solutiontime = getCurrentAssignment().getSolutionTime();
 
 			startAssignmentRunnable(assignment, solutiontime);
@@ -226,7 +224,7 @@ public class Competition {
 			if (timer == null) {
 				return 0;
 			}
-			int seconds = (int) timer.elapsed(TimeUnit.SECONDS);
+			int seconds = (int) timer.getTime(TimeUnit.SECONDS);
 			return solutiontime - seconds;
 		} else {
 			return 0;

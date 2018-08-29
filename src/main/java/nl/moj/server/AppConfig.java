@@ -1,6 +1,6 @@
 package nl.moj.server;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import nl.moj.server.util.NamedThreadFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.slf4j.Logger;
@@ -44,7 +44,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 @Configuration
 @EnableScheduling
@@ -217,20 +216,17 @@ public class AppConfig {
 
 		@Override
 		public Executor getAsyncExecutor() {
-			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("async-%d").build();
-			return Executors.newFixedThreadPool(threads, threadFactory);
+			return Executors.newFixedThreadPool(threads, new NamedThreadFactory("async"));
 		}
 
 		@Bean(name = "compiling")
 		public Executor compilingExecutor() {
-			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("compiling-%d").build();
-			return Executors.newFixedThreadPool(threads, threadFactory);
+			return Executors.newFixedThreadPool(threads, new NamedThreadFactory("compiling"));
 		}
 
 		@Bean(name = "testing")
 		public Executor testingExecutor() {
-			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("testing-%d").build();
-			return Executors.newFixedThreadPool(threads, threadFactory);
+			return Executors.newFixedThreadPool(threads, new NamedThreadFactory("testing"));
 		}
 
 		@Override
