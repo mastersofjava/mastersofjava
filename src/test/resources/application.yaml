@@ -44,9 +44,11 @@ spring:
   thymeleaf:
     mode: HTML
   flyway:
-    baseline-on-migrate: true
+    enabled: false
+  #    baseline-on-migrate: true
+  jpa:
+    generate-ddl: true
 
-mybatis.mapper-locations: persistence/*
 logging.file: mojserver.log
 logging.level.nl.moj.server: DEBUG
 logging.level.nl.moj.server.persistence: INFO

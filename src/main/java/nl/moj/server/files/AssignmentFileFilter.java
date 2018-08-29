@@ -3,18 +3,15 @@ package nl.moj.server.files;
 import java.io.File;
 import java.io.IOException;
 
-import org.springframework.integration.file.filters.AbstractFileListFilter;
-
 /**
  * filters out eclipse settings and maven target folders
  * 
  * @author mhayen
  *
  */
-public class AssignmentFileFilter extends AbstractFileListFilter<File> {
+public class AssignmentFileFilter {
 
-	@Override
-	public boolean accept(File file) {
+	boolean accept(File file) {
 		try {
 			if (file.getCanonicalPath().contains(".settings")) {
 				return false;

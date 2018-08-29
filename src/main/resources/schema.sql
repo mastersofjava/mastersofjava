@@ -17,8 +17,8 @@ create table result (
 	team_id bigint not null,
 	assignment varchar(200) not null,
 	score int default 0 not null,
-	penalty int default 0 not null,
-	credit int default 100 not null,
+	penalty int default 0,
+	credit int default 100,
 	FOREIGN KEY (team_id) REFERENCES team(id)
 );
 

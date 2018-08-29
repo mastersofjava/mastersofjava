@@ -79,7 +79,7 @@ public class TaskControlController {
 	@MessageMapping("/control/cloneAssignmentsRepo")
 	@SendToUser("/queue/controlfeedback")
 	public String cloneAssignmentsRepo(Message<String> repoName) {
-		return competition.cloneAssignmentsRepo(repoName.getPayload());
+		return competition.cloneAndInitAssignmentsFromRepo(repoName.getPayload());
 	}
 
 	@GetMapping("/control")
