@@ -1,8 +1,6 @@
 package nl.moj.server;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import nl.moj.server.files.AssignmentFileFilter;
-import nl.moj.server.files.FileProcessor;
+import nl.moj.server.util.NamedThreadFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.slf4j.Logger;
@@ -11,17 +9,6 @@ import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.annotation.InboundChannelAdapter;
-import org.springframework.integration.annotation.Poller;
-import org.springframework.integration.channel.DirectChannel;
-import org.springframework.integration.core.MessageSource;
-import org.springframework.integration.dsl.IntegrationFlow;
-import org.springframework.integration.dsl.IntegrationFlows;
-import org.springframework.integration.file.FileReadingMessageSource;
-import org.springframework.integration.file.filters.CompositeFileListFilter;
-import org.springframework.integration.file.filters.IgnoreHiddenFileListFilter;
-import org.springframework.integration.file.transformer.FileToStringTransformer;
-import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -50,16 +37,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.tools.*;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 @Configuration
 @EnableScheduling
@@ -82,13 +66,6 @@ public class AppConfig {
 		return new ScheduledExecutorFactoryBean();
 	}
 
-//	@Bean
-//	public ServletServerContainerFactoryBean createServletServerContainerFactoryBean() {
-//		ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
-//		container.setMaxTextMessageBufferSize(100000);
-//		container.setMaxBinaryMessageBufferSize(100000);
-//		return container;
-//	}
 
 	@Configuration
 	public class WebConfig implements WebMvcConfigurer {
@@ -232,56 +209,6 @@ public class AppConfig {
 	}
 
 	@Configuration
-	public class IntegrationConfig {
-
-		@Bean
-		public IntegrationFlow processFileFlow() {
-			return IntegrationFlows.from("fileInputChannel").transform(fileToStringTransformer())
-					.handle("fileProcessor", "process").get();
-		}
-
-		@Bean
-		public MessageChannel fileInputChannel() {
-			return new DirectChannel();
-		}
-
-		@Bean
-		public Comparator<File> comparator() {
-			// make sure pom.xml is read first
-			return new Comparator<File>() {
-
-				@Override
-				public int compare(File o1, File o2) {
-					if (o1.getName().equalsIgnoreCase("pom.xml"))
-						return -10;
-					return 10;
-				}
-
-			};
-		}
-
-		@Bean
-		@InboundChannelAdapter(value = "fileInputChannel", poller = @Poller(fixedDelay = "1000", maxMessagesPerPoll = "1000"))
-		public MessageSource<File> fileReadingMessageSource() {
-			CompositeFileListFilter<File> filters = new CompositeFileListFilter<>();
-			filters.addFilter(new IgnoreHiddenFileListFilter());
-			filters.addFilter(new AssignmentFileFilter());
-			FileReadingMessageSource source = new FileReadingMessageSource(comparator());
-			source.setUseWatchService(true);
-			source.setAutoCreateDirectory(true);
-			source.setDirectory(new File(directories.getBaseDirectory(), directories.getAssignmentDirectory()));
-			source.setFilter(filters);
-			return source;
-		}
-
-		@Bean
-		public FileToStringTransformer fileToStringTransformer() {
-			return new FileToStringTransformer();
-		}
-
-	}
-
-	@Configuration
 	@EnableAsync
 	public class AsyncConfig implements AsyncConfigurer {
 
@@ -289,20 +216,17 @@ public class AppConfig {
 
 		@Override
 		public Executor getAsyncExecutor() {
-			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("async-%d").build();
-			return Executors.newFixedThreadPool(threads, threadFactory);
+			return Executors.newFixedThreadPool(threads, new NamedThreadFactory("async"));
 		}
 
 		@Bean(name = "compiling")
 		public Executor compilingExecutor() {
-			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("compiling-%d").build();
-			return Executors.newFixedThreadPool(threads, threadFactory);
+			return Executors.newFixedThreadPool(threads, new NamedThreadFactory("compiling"));
 		}
 
 		@Bean(name = "testing")
 		public Executor testingExecutor() {
-			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("testing-%d").build();
-			return Executors.newFixedThreadPool(threads, threadFactory);
+			return Executors.newFixedThreadPool(threads, new NamedThreadFactory("testing"));
 		}
 
 		@Override
