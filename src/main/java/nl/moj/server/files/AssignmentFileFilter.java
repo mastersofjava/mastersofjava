@@ -3,8 +3,6 @@ package nl.moj.server.files;
 import java.io.File;
 import java.io.IOException;
 
-import org.springframework.integration.file.filters.AbstractFileListFilter;
-
 /**
  * filters out eclipse settings and maven target folders
  * 
