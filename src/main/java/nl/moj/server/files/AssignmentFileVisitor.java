@@ -1,7 +1,7 @@
 package nl.moj.server.files;
 
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.competition.Competition;
+import nl.moj.server.runtime.Competition;
 import nl.moj.server.model.Test;
 import nl.moj.server.repository.TeamRepository;
 import nl.moj.server.repository.TestRepository;

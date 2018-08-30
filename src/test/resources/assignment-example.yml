@@ -1,7 +1,0 @@
-name: DukeRace
-duration: PT30M
-scoring-rules:
-  maximum-resubmits: 2
-  resubmit-penalty: 50%
-  success-bonus: 200
-  test-penalty: 20%

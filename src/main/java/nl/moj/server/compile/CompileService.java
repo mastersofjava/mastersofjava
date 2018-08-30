@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.SubmitController.SourceMessage;
-import nl.moj.server.competition.Competition;
+import nl.moj.server.runtime.Competition;
 import nl.moj.server.files.AssignmentFile;
 
 @Service

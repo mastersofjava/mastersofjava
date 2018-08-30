@@ -26,7 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import lombok.AllArgsConstructor;
 import nl.moj.server.AssignmentRepoConfiguration.Repo;
-import nl.moj.server.competition.Competition;
+import nl.moj.server.runtime.Competition;
 import nl.moj.server.model.Result;
 import nl.moj.server.model.Team;
 import nl.moj.server.repository.ResultRepository;

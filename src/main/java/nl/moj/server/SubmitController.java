@@ -24,8 +24,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import nl.moj.server.competition.Competition;
-import nl.moj.server.compile.CompileResult;
+import nl.moj.server.runtime.Competition;
 import nl.moj.server.compile.CompileService;
 import nl.moj.server.test.TestService;
 

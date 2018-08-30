@@ -7,7 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.competition.Competition;
+import nl.moj.server.runtime.Competition;
 import nl.moj.server.model.Ranking;
 import nl.moj.server.util.CollectionUtil;
 
