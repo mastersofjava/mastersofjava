@@ -29,6 +29,8 @@ assignment-files:
   assignment: src/main/resources/VirtualCPUCase.txt
   editable:
     - src/main/java/VirtualCPU.java
+  readonly:
+    - src/main/java/CPUState.java
   tests:
     - src/test/java/TestVirtualCPU.java
   solution:

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class WorkloadbalancerImpl {
+public class WorkloadBalancerImpl {
 
 	public List<List<Order>> distributeOrders(int days, List<Order> orders) {
 		Comparator<Order> comp = new Comparator<Order>() {
