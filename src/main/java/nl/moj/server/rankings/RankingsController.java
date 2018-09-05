@@ -1,21 +1,22 @@
 package nl.moj.server.rankings;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import lombok.RequiredArgsConstructor;
+import nl.moj.server.model.Ranking;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.util.CollectionUtil;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import lombok.RequiredArgsConstructor;
-import nl.moj.server.runtime.Competition;
-import nl.moj.server.model.Ranking;
-import nl.moj.server.util.CollectionUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
 public class RankingsController {
 
-	private final Competition competition;
+	private final CompetitionRuntime competition;
 
 	private final RankingsMapper rankingsMapper;
 
@@ -32,10 +33,11 @@ public class RankingsController {
 		model.addAttribute("bottom3", parts.get(2));
 		model.addAttribute("bottom4", parts.get(3));
 		if( competition.getCurrentAssignment() != null ) {
-			model.addAttribute("assignment", competition.getCurrentAssignment().getName());
-			model.addAttribute("timeLeft", competition.getRemainingTime());
-			model.addAttribute("time", competition.getCurrentAssignment().getSolutionTime());
-			model.addAttribute("running", competition.getCurrentAssignment().isRunning());
+			AssignmentState state = competition.getAssignmentRuntime().getState();
+			model.addAttribute("assignment", state.getAssignmentDescriptor().getName());
+			model.addAttribute("timeLeft", state.getTimeRemaining());
+			model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
+			model.addAttribute("running", competition.getAssignmentRuntime().isRunning());
 		} else {
 			model.addAttribute("assignment", "-");
 			model.addAttribute("timeLeft", 0);

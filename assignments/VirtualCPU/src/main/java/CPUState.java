@@ -3,7 +3,7 @@
  *  
  */
 public class CPUState {
-	private int[] ports = new int[16];
+	//private int[] ports = new int[16];
 	private int[] registers = new int[8];
 
 	/*

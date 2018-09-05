@@ -1,44 +1,53 @@
 package nl.moj.server;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.List;
-import javax.servlet.http.HttpServletResponse;
-
+import lombok.RequiredArgsConstructor;
+import nl.moj.server.AssignmentRepoConfiguration.Repo;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.repository.AssignmentRepository;
+import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.repository.CompetitionRepository;
+import nl.moj.server.model.Result;
+import nl.moj.server.repository.ResultRepository;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import lombok.AllArgsConstructor;
-import nl.moj.server.AssignmentRepoConfiguration.Repo;
-import nl.moj.server.runtime.Competition;
-import nl.moj.server.model.Result;
-import nl.moj.server.model.Team;
-import nl.moj.server.repository.ResultRepository;
-import nl.moj.server.repository.TeamRepository;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Controller
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class TaskControlController {
 
 	private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
 
-	private final Competition competition;
+	private final CompetitionRuntime competition;
 
 	private final ResultRepository resultRepository;
 
@@ -48,8 +57,17 @@ public class TaskControlController {
 
 	private final FeedbackMessageController feedbackMessageController;
 
+	private final AssignmentService assignmentService;
+
+	private final AssignmentRepository assignmentRepository;
+
+	private final CompetitionRepository competitionRepository;
+
+	@Value("${moj.server.assignmentsRepo}")
+	private String assignmentDirectory;
+
 	@ModelAttribute(name = "assignments")
-	public List<ImmutablePair<String, Integer>> assignments() {
+	public List<ImmutablePair<String, Long>> assignments() {
 		return competition.getAssignmentInfo();
 	}
 
@@ -73,22 +91,44 @@ public class TaskControlController {
 	@MessageMapping("/control/clearCurrentAssignment")
 	@SendToUser("/queue/controlfeedback")
 	public void clearAssignment() {
-		competition.clearCurrentAssignment();
 	}
 
 	@MessageMapping("/control/cloneAssignmentsRepo")
 	@SendToUser("/queue/controlfeedback")
 	public String cloneAssignmentsRepo(Message<String> repoName) {
-		return competition.cloneAndInitAssignmentsFromRepo(repoName.getPayload());
+		assignmentService.updateAssignments(Paths.get(assignmentDirectory));
+
+
+		Competition c = new Competition();
+		c.setUuid(UUID.randomUUID());
+		c.setName("Masters of Java 2018");
+		c.setAssignments(assignmentRepository.findAll().stream().map(createOrderedAssignments(c)).collect(Collectors.toList()));
+		c = competitionRepository.save(c);
+		competition.initializeCompetition(c);
+		
+		return "Assignments initialized";
+	}
+
+	private Function<Assignment, OrderedAssignment> createOrderedAssignments(Competition c) {
+		AtomicInteger count = new AtomicInteger(0);
+		return a -> {
+			OrderedAssignment oa = new OrderedAssignment();
+			oa.setAssignment(a);
+			oa.setCompetition(c);
+			oa.setUuid(UUID.randomUUID());
+			oa.setOrder(count.getAndIncrement());
+			return oa;
+		};
 	}
 
 	@GetMapping("/control")
 	public String taskControl(Model model) {
 		if (competition.getCurrentAssignment() != null) {
-			model.addAttribute("timeLeft", competition.getRemainingTime());
-			model.addAttribute("time", competition.getCurrentAssignment().getSolutionTime());
-			model.addAttribute("running", competition.getCurrentAssignment().isRunning());
-			model.addAttribute("currentAssignment", competition.getCurrentAssignment().getName());
+			AssignmentState state = competition.getAssignmentRuntime().getState();
+			model.addAttribute("timeLeft", state.getTimeRemaining());
+			model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
+			model.addAttribute("running", competition.getAssignmentRuntime().isRunning());
+			model.addAttribute("currentAssignment", state.getAssignmentDescriptor().getName());
 		} else {
 			model.addAttribute("timeLeft", 0);
 			model.addAttribute("time", 0);

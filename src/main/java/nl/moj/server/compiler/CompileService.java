@@ -1,5 +1,21 @@
-package nl.moj.server.compile;
+package nl.moj.server.compiler;
 
+import lombok.AllArgsConstructor;
+import nl.moj.server.DirectoriesConfiguration;
+import nl.moj.server.FeedbackMessageController;
+import nl.moj.server.SubmitController.SourceMessage;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentFileType;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import javax.tools.*;
+import javax.tools.JavaCompiler.CompilationTask;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -7,32 +23,12 @@ import java.net.URI;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.tools.Diagnostic;
-import javax.tools.DiagnosticCollector;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaCompiler.CompilationTask;
-import javax.tools.JavaFileObject;
-import javax.tools.SimpleJavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.StandardLocation;
-
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
-import nl.moj.server.DirectoriesConfiguration;
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.SubmitController.SourceMessage;
-import nl.moj.server.runtime.Competition;
-import nl.moj.server.files.AssignmentFile;
-
 @Service
+@AllArgsConstructor
 public class CompileService {
 	private final static String JAVA_SOURCE_EXTENSION = ".java";
 
@@ -44,20 +40,11 @@ public class CompileService {
 
 	private FeedbackMessageController feedbackMessageController;
 
-	private Competition competition;
+	private CompetitionRuntime competition;
 
 	private DirectoriesConfiguration directories;
 
-	public CompileService(JavaCompiler javaCompiler, DiagnosticCollector<JavaFileObject> diagnosticCollector,
-			FeedbackMessageController feedbackMessageController, Competition competition,
-			DirectoriesConfiguration directories) {
-		super();
-		this.javaCompiler = javaCompiler;
-		this.diagnosticCollector = diagnosticCollector;
-		this.feedbackMessageController = feedbackMessageController;
-		this.competition = competition;
-		this.directories = directories;
-	}
+	private TeamRepository teamRepository;
 
 	public Supplier<CompileResult> compile(SourceMessage message) {
 		return compile(message, false, false);
@@ -74,22 +61,34 @@ public class CompileService {
 
 	private Supplier<CompileResult> compile(SourceMessage message, boolean withTest, boolean forSubmit) {
 		Supplier<CompileResult> supplier = () -> {
-			Collection<AssignmentFile> assignmentFiles;
+			Team team = teamRepository.findByName(message.getTeam());
+			List<AssignmentFile> assignmentFiles;
 			if (withTest) {
-				assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaAndTestFiles();
+				assignmentFiles = competition.getAssignmentRuntime().getOriginalAssignmentFiles()
+						.stream()
+						.filter( f -> f.getFileType() == AssignmentFileType.READONLY ||
+								f.getFileType() == AssignmentFileType.TEST )
+						.collect(Collectors.toList());
 			} else {
 				if (forSubmit) {
-					assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaAndTestAndSubmitFiles();
+					assignmentFiles = competition.getAssignmentRuntime().getOriginalAssignmentFiles()
+							.stream()
+							.filter( f -> f.getFileType() == AssignmentFileType.READONLY ||
+									f.getFileType() == AssignmentFileType.TEST ||
+									f.getFileType() == AssignmentFileType.SUBMIT )
+							.collect(Collectors.toList());
 				} else {
-					assignmentFiles = competition.getCurrentAssignment().getReadOnlyJavaFiles();
+					assignmentFiles = competition.getAssignmentRuntime().getOriginalAssignmentFiles()
+							.stream()
+							.filter( f -> f.getFileType() == AssignmentFileType.READONLY)
+							.collect(Collectors.toList());
 				}
 			}
 			assignmentFiles.forEach(f -> log.trace(f.getName()));
 			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
 					null);
-			String assignment = competition.getCurrentAssignment().getName();
-			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(),
-					message.getTeam());
+			String assignment = competition.getCurrentAssignment().getAssignment().getName();
+			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), message.getTeam());
 
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream().map(a -> {
 				JavaFileObject jfo = createJavaFileObject(a.getFilename(), a.getContent());

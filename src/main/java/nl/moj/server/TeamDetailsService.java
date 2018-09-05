@@ -1,9 +1,8 @@
 package nl.moj.server;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
+import lombok.RequiredArgsConstructor;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -12,9 +11,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import lombok.RequiredArgsConstructor;
-import nl.moj.server.model.Team;
-import nl.moj.server.repository.TeamRepository;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

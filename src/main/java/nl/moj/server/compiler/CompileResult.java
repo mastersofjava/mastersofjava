@@ -1,4 +1,4 @@
-package nl.moj.server.compile;
+package nl.moj.server.compiler;
 
 import java.util.ArrayList;
 import java.util.List;

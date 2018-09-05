@@ -3,6 +3,7 @@ name: workload-balancer
 display-name: Workload Balancer
 author:
   name: Mark
+  company: First8
   website: https://first8.nl
 
 image: src/main/resources/icon.png
@@ -24,8 +25,7 @@ scoring-rules:
   test-penalty: 20%
 
 assignment-files:
-  assignment:
-  - src/main/resources/workloadbalancerCase.txt
+  assignment: src/main/resources/workloadbalancerCase.txt
   editable:
   - src/main/java/WorkloadBalancerImpl.java
   readonly:

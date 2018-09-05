@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,7 +29,10 @@ public class AssignmentService {
 
 	public AssignmentDescriptor getAssignmentDescriptor(Assignment assignment) {
 		try {
-			return yamlObjectMapper.readValue(Files.newInputStream(Paths.get(assignment.getAssignmentDescriptor())), AssignmentDescriptor.class);
+			Path descriptor = Paths.get(assignment.getAssignmentDescriptor());
+			AssignmentDescriptor assignmentDescriptor = yamlObjectMapper.readValue(Files.newInputStream(descriptor), AssignmentDescriptor.class);
+			assignmentDescriptor.setDirectory(descriptor.getParent());
+			return assignmentDescriptor;
 		} catch( Exception e ) {
 			throw new AssignmentServiceException("Unable to read assignment descriptor "+assignment.getAssignmentDescriptor()+".",e);
 		}
@@ -49,6 +53,7 @@ public class AssignmentService {
 				Assignment a = new Assignment();
 				a.setAssignmentDescriptor(d.getAssignmentDescriptor());
 				a.setName(d.getName());
+				a.setUuid(UUID.randomUUID());
 				return assignmentRepository.save(a);
 			}
 		}).collect(Collectors.toList());

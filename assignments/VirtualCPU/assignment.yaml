@@ -3,6 +3,7 @@ name: virtual-cpu
 display-name: Virtual CPU
 author:
   name: Mark
+  company: First8
   website: https://first8.nl
 
 image: assets/images/icon.png
@@ -25,8 +26,7 @@ scoring-rules:
   test-penalty: 20%
 
 assignment-files:
-  assignment:
-    - src/main/resources/VirtualCPUCase.txt
+  assignment: src/main/resources/VirtualCPUCase.txt
   editable:
     - src/main/java/VirtualCPU.java
   tests:

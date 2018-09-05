@@ -1,5 +1,6 @@
 moj:
   server:
+    assignmentsRepo: /tmp/assignments
     javaExecutable: /Library/Java/JavaVirtualMachines/jdk-9.0.4.jdk/Contents/Home/bin
     directories:
       baseDirectory: /opt/mojserver
@@ -46,11 +47,11 @@ spring:
     driver-class-name: org.h2.Driver     
   thymeleaf:
     mode: HTML
-  flyway:
-    enabled: false
-  #    baseline-on-migrate: true
-  jpa:
-    generate-ddl: true
+#  flyway:
+#    enabled: false
+#    baseline-on-migrate: true
+#  jpa:
+#    generate-ddl: true
 
 logging.level.nl.moj.server: DEBUG
 logging.level.nl.moj.server.persistence: INFO

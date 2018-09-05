@@ -1,18 +1,19 @@
 package nl.moj.server;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
+import lombok.RequiredArgsConstructor;
+import nl.moj.server.repository.ResultRepository;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.util.CollectionUtil;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
-import lombok.RequiredArgsConstructor;
-import nl.moj.server.runtime.Competition;
-import nl.moj.server.model.Team;
-import nl.moj.server.repository.ResultRepository;
-import nl.moj.server.repository.TeamRepository;
-import nl.moj.server.util.CollectionUtil;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -22,7 +23,7 @@ public class FeedbackController {
 
     private final ResultRepository resultRepository;
 
-	private final Competition competition;
+	private final CompetitionRuntime competition;
 
 	@GetMapping("/feedback")
 	public ModelAndView feedback() {
@@ -38,11 +39,14 @@ public class FeedbackController {
         List<String> testNames = new ArrayList<>();
 
         if (competition.getCurrentAssignment() != null) {
-            testNames = competition.getCurrentAssignment().getTestNames();
-            model.addObject("assignment", competition.getCurrentAssignment().getName());
-            model.addObject("timeLeft", competition.getRemainingTime());
-            model.addObject("time", competition.getCurrentAssignment().getSolutionTime());
-            model.addObject("running", competition.getCurrentAssignment().isRunning());
+        	AssignmentState state = competition.getAssignmentRuntime().getState();
+
+            testNames = state.getTestNames();
+
+            model.addObject("assignment", state.getAssignmentDescriptor().getName());
+            model.addObject("timeLeft", state.getTimeRemaining());
+            model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());
+            model.addObject("running", competition.getAssignmentRuntime().isRunning());
         } else {
             model.addObject("assignment", "-");
             model.addObject("timeLeft", 0);

@@ -12,6 +12,8 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AssignmentDescriptor {
 
+	private Path directory;
+
 	@JsonProperty("name")
 	private String name;
 	@JsonProperty("display-name")

@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.UUID;
 
 /**
  * @author Ejnar Kaekebeke
@@ -20,6 +21,9 @@ public class Assignment {
 	@GeneratedValue(generator = "id_seq", strategy = GenerationType.SEQUENCE)
 	@Column(name = "id", nullable = false)
 	private Long id;
+
+	@Column(name="uuid", unique=true, nullable=false)
+	private UUID uuid;
 	
 	@Column(name = "name", unique = true, nullable = false)
 	private String name;

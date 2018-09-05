@@ -1,6 +1,21 @@
 package nl.moj.server.test;
 
-import static java.lang.Math.min;
+import nl.moj.server.DirectoriesConfiguration;
+import nl.moj.server.FeedbackMessageController;
+import nl.moj.server.UnitTestLimitsConfiguration;
+import nl.moj.server.compiler.CompileResult;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.ScoreService;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentState;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.stream.LogOutputStream;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -14,22 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.stream.LogOutputStream;
-
-import nl.moj.server.DirectoriesConfiguration;
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.UnitTestLimitsConfiguration;
-import nl.moj.server.runtime.Competition;
-import nl.moj.server.runtime.ScoreService;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.files.AssignmentFile;
+import static java.lang.Math.min;
 
 @Service
 public class TestService {
@@ -47,15 +47,15 @@ public class TestService {
 
 	private String javaExecutable;;
 
-	private Competition competition;
+	private CompetitionRuntime competition;
 
 	private ScoreService scoreService;
 
 	private FeedbackMessageController feedbackMessageController;
 
 	public TestService(UnitTestLimitsConfiguration limits, @Qualifier("testing") Executor testing,
-			DirectoriesConfiguration directories, @Value("${moj.server.javaExecutable}") String javaExecutable,
-			Competition competition, ScoreService scoreService, FeedbackMessageController feedbackMessageController) {
+					   DirectoriesConfiguration directories, @Value("${moj.server.javaExecutable}") String javaExecutable,
+					   CompetitionRuntime competition, ScoreService scoreService, FeedbackMessageController feedbackMessageController) {
 		super();
 		this.limits = limits;
 		this.testing = testing;
@@ -79,7 +79,7 @@ public class TestService {
 				if (compileResult.isSuccessful()) {
 					List<TestResult> result = new ArrayList<>();
 					List<String> tests = compileResult.getTests();
-					List<AssignmentFile> testFiles = competition.getCurrentAssignment().getTestFiles().stream()
+					List<AssignmentFile> testFiles = competition.getAssignmentRuntime().getOriginalAssignmentFiles().stream()
 							.filter(f -> tests.contains(f.getName())).collect(Collectors.toList());
 					for (AssignmentFile assignmentFile : testFiles) {
 						try {
@@ -114,7 +114,8 @@ public class TestService {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
 			public TestResult get() {
-				String assignment = competition.getCurrentAssignment().getName();
+				AssignmentState state = competition.getAssignmentRuntime().getState();
+				String assignment = state.getAssignmentDescriptor().getName();
 				int finalScore = 0;
 				final Integer submissionTime = compileResult.getScoreAtSubmissionTime(); // Identical to score at
 																							// submission time
@@ -123,8 +124,8 @@ public class TestService {
 
 						StringBuilder sb = new StringBuilder();
 						boolean success = true;
-						List<AssignmentFile> testFiles = competition.getCurrentAssignment().getSubmitFiles();
-						testFiles.addAll(competition.getCurrentAssignment().getTestFiles());
+						List<AssignmentFile> testFiles = state.getSubmitFiles();
+						testFiles.addAll(state.getTestFiles());
 						testFiles.forEach(f -> log.trace(f.getName()));
 						try {
 							for (AssignmentFile assignmentFile : testFiles) {
@@ -155,7 +156,7 @@ public class TestService {
 						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
 					} finally {
-						competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), submissionTime,
+						competition.getAssignmentRuntime().addFinishedTeam(compileResult.getUser(), submissionTime,
 								finalScore);
 					}
 
@@ -165,7 +166,7 @@ public class TestService {
 							"Submit Test", 0);
 					feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
 					setFinalAssignmentScore(compileFailedResult, assignment, 0);
-					competition.getCurrentAssignment().addFinishedTeam(compileResult.getUser(), submissionTime, 0);
+					competition.getAssignmentRuntime().addFinishedTeam(compileResult.getUser(), submissionTime, 0);
 					return compileFailedResult;
 				}
 			}

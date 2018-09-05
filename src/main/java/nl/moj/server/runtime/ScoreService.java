@@ -3,7 +3,7 @@ package nl.moj.server.runtime;
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.model.Result;
 import nl.moj.server.repository.ResultRepository;
-import nl.moj.server.repository.TeamRepository;
+import nl.moj.server.teams.repository.TeamRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +27,7 @@ public class ScoreService {
 	}
 
 	public void initializeScoreAtStart(String teamname, String assignment) {
-        resultRepository.save(new Result(teamRepository.findByName(teamname), assignment, 0, null, null));
+        resultRepository.save(new Result(teamRepository.findByName(teamname), assignment, 0, 0, 0));
 	}
 
 	/**

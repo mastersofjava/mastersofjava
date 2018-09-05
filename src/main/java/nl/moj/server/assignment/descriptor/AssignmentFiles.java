@@ -23,4 +23,5 @@ public class AssignmentFiles {
 	private List<Path> hiddenTests;
 	@JsonProperty("solution")
 	private List<Path> solution;
+	
 }
