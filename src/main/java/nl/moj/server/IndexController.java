@@ -34,14 +34,14 @@ public class IndexController {
 	}
 
 	private void addModel(Model model, Principal user) {
-		AssignmentState state = competition.getAssignmentRuntime().getState();
+		AssignmentState state = competition.getAssignmentState();
 		Team team = teamRepository.findByName(user.getName());
 
 		List<AssignmentFile> files = new ArrayList<>();
-		if (competition.getAssignmentRuntime().isRunning() && !competition.getAssignmentRuntime().isTeamFinished(user.getName())) {
-			files.addAll(competition.getAssignmentRuntime().getTeamAssignmentFiles(team));
+		if (state.isRunning() && !state.isTeamFinished(user.getName())) {
+			files.addAll(competition.getTeamAssignmentFiles(team));
 		} else {
-			files.addAll(competition.getAssignmentRuntime().getOriginalAssignmentFiles());
+			files.addAll(state.getAssignmentFiles());
 		}
 		files.sort((arg0, arg1) -> {
 			if (arg0.getFileType().equals(AssignmentFileType.TASK.TASK)) {
@@ -55,7 +55,7 @@ public class IndexController {
 		model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
 		model.addAttribute("testnames", state.getTestNames());
 		model.addAttribute("files", files);
-		model.addAttribute("running", competition.getAssignmentRuntime().isRunning());
+		model.addAttribute("running", state.isRunning());
 		model.addAttribute("finished", false); //competition.getCurrentAssignment().isTeamFinished(user.getName()));
 		model.addAttribute("submittime", 0);//competition.getCurrentAssignment().getTeamSubmitTime(user.getName()));
 		model.addAttribute("finalscore", 0);//competition.getCurrentAssignment().getTeamFinalScore(user.getName()));

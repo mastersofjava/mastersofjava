@@ -40,8 +40,8 @@ public class ScoreService {
 	 * @param scoreAtSubmissionTime
 	 * @return
 	 */
-	public Integer registerScoreAtSubmission(String teamname, String assignment, int scoreAtSubmissionTime) {
-		int score = 0;
+	public Long registerScoreAtSubmission(String teamname, String assignment, Long scoreAtSubmissionTime) {
+		Long score = 0L;
 		if (scoreAtSubmissionTime > 0) {
 			score = scoreAtSubmissionTime + bonusForSuccessfulSubmission;
 			
@@ -49,7 +49,8 @@ public class ScoreService {
 		log.debug("Team {} submitted {}. assignment score {} + bonus {} = {}",
 		        teamname, assignment, scoreAtSubmissionTime, bonusForSuccessfulSubmission, score );
         Result result = resultRepository.findByTeamAndAssignment(teamRepository.findByName(teamname), assignment);
-        result.setScore(score);
+        // TODO fix possible precision loss.
+        result.setScore(score.intValue());
         resultRepository.save(result);
         return score;
 	}

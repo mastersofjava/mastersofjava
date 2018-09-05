@@ -79,7 +79,7 @@ public class TestService {
 				if (compileResult.isSuccessful()) {
 					List<TestResult> result = new ArrayList<>();
 					List<String> tests = compileResult.getTests();
-					List<AssignmentFile> testFiles = competition.getAssignmentRuntime().getOriginalAssignmentFiles().stream()
+					List<AssignmentFile> testFiles = competition.getAssignmentState().getAssignmentFiles().stream()
 							.filter(f -> tests.contains(f.getName())).collect(Collectors.toList());
 					for (AssignmentFile assignmentFile : testFiles) {
 						try {
@@ -114,10 +114,10 @@ public class TestService {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
 			public TestResult get() {
-				AssignmentState state = competition.getAssignmentRuntime().getState();
+				AssignmentState state = competition.getAssignmentState();
 				String assignment = state.getAssignmentDescriptor().getName();
-				int finalScore = 0;
-				final Integer submissionTime = compileResult.getScoreAtSubmissionTime(); // Identical to score at
+				Long finalScore = 0L;
+				final Long submissionTime = compileResult.getScoreAtSubmissionTime(); // Identical to score at
 																							// submission time
 				if (compileResult.isSuccessful()) {
 					try {
@@ -145,8 +145,10 @@ public class TestService {
 						}
 						TestResult result = new TestResult(sb.toString(), compileResult.getUser(), success,
 								"Submit Test", submissionTime);
+						// TODO we should not register this here, this needs to be done in the score service probably.
 						finalScore = setFinalAssignmentScore(result, assignment, submissionTime);
-						feedbackMessageController.sendTestFeedbackMessage(result, true, finalScore);
+						// TODO fix possible precision loss
+						feedbackMessageController.sendTestFeedbackMessage(result, true, finalScore.intValue());
 						return result;
 					} catch (Exception e) {
 						log.error("Exception Running tests", e);
@@ -156,17 +158,20 @@ public class TestService {
 						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
 					} finally {
-						competition.getAssignmentRuntime().addFinishedTeam(compileResult.getUser(), submissionTime,
+						// TODO we should not register this here, this needs to be done in the score service probably.
+						competition.registerFinishedTeam(compileResult.getUser(), submissionTime,
 								finalScore);
 					}
 
 				} else { // Compile failed
 					final TestResult compileFailedResult = new TestResult(
 							"Submit Test - Compilation failed->test failed", compileResult.getUser(), false,
-							"Submit Test", 0);
+							"Submit Test", 0L);
 					feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
-					setFinalAssignmentScore(compileFailedResult, assignment, 0);
-					competition.getAssignmentRuntime().addFinishedTeam(compileResult.getUser(), submissionTime, 0);
+
+					// TODO we should not register this here, this needs to be done in the score service probably.
+					setFinalAssignmentScore(compileFailedResult, assignment, 0L);
+					competition.registerFinishedTeam(compileResult.getUser(), submissionTime, 0L);
 					return compileFailedResult;
 				}
 			}
@@ -174,9 +179,9 @@ public class TestService {
 
 	}
 
-	private Integer setFinalAssignmentScore(TestResult testResult, String assignment, int scoreAtSubmissionTime) {
-		int score = scoreService.registerScoreAtSubmission(testResult.getUser(), assignment,
-				testResult.isSuccessful() ? scoreAtSubmissionTime : 0);
+	private Long setFinalAssignmentScore(TestResult testResult, String assignment, Long scoreAtSubmissionTime) {
+		Long score = scoreService.registerScoreAtSubmission(testResult.getUser(), assignment,
+				testResult.isSuccessful() ? scoreAtSubmissionTime : 0L);
 		feedbackMessageController.sendRefreshToRankingsPage();
 		return score;
 	}

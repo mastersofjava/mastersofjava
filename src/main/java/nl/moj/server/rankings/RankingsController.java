@@ -33,11 +33,11 @@ public class RankingsController {
 		model.addAttribute("bottom3", parts.get(2));
 		model.addAttribute("bottom4", parts.get(3));
 		if( competition.getCurrentAssignment() != null ) {
-			AssignmentState state = competition.getAssignmentRuntime().getState();
+			AssignmentState state = competition.getAssignmentState();
 			model.addAttribute("assignment", state.getAssignmentDescriptor().getName());
 			model.addAttribute("timeLeft", state.getTimeRemaining());
 			model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
-			model.addAttribute("running", competition.getAssignmentRuntime().isRunning());
+			model.addAttribute("running", state.isRunning());
 		} else {
 			model.addAttribute("assignment", "-");
 			model.addAttribute("timeLeft", 0);

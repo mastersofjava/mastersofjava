@@ -2,8 +2,10 @@ package nl.moj.server.runtime.model;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Singular;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,6 +16,11 @@ public class AssignmentState {
 	private AssignmentDescriptor assignmentDescriptor;
 	private Long timeRemaining;
 	private List<AssignmentFile> assignmentFiles;
+	private boolean running;
+	
+	@Singular
+	@Builder.Default
+	private List<TeamStatus> finishedTeams = new ArrayList<>();
 
 	public List<String> getTestNames() {
 		return assignmentFiles
@@ -31,5 +38,9 @@ public class AssignmentState {
 		return assignmentFiles
 				.stream().filter(f -> f.getFileType() == AssignmentFileType.SUBMIT)
 				.collect(Collectors.toList());
+	}
+
+	public boolean isTeamFinished(String team) {
+		return finishedTeams.stream().anyMatch( t -> t.getTeam().getName().equals(team));
 	}
 }

@@ -11,6 +11,7 @@ import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.TeamStatus;
 import nl.moj.server.sound.SoundService;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
@@ -57,11 +58,14 @@ public class AssignmentRuntime {
 	@Getter
 	private boolean running;
 
+	private List<TeamStatus> finishedTeams;
+
 	public void start(OrderedAssignment orderedAssignment) {
 		clearHandlers();
 		this.orderedAssignment = orderedAssignment;
 		this.assignment = orderedAssignment.getAssignment();
 		this.assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
+		this.finishedTeams = new ArrayList<>();
 
 		// init assignment sources;
 		initOriginalAssignmentFiles();
@@ -92,6 +96,7 @@ public class AssignmentRuntime {
 		log.info("Stopped assignment {}", assignment.getName());
 	}
 
+	// TODO this should probably not be here
 	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
 		List<AssignmentFile> teamFiles = new ArrayList<>();
 		Path teamAssignmentBase = resolveTeamAssignmentBaseDirectory(team);
@@ -113,6 +118,8 @@ public class AssignmentRuntime {
 				.timeRemaining(getTimeRemaining())
 				.assignmentDescriptor(assignmentDescriptor)
 				.assignmentFiles(originalAssignmentFiles)
+				.running(running)
+				.finishedTeams(finishedTeams)
 				.build();
 	}
 
@@ -216,9 +223,12 @@ public class AssignmentRuntime {
 	}
 
 	private Long getTimeRemaining() {
-		long remaining = assignmentDescriptor.getDuration().getSeconds() - timer.getTime(TimeUnit.SECONDS);
-		if (remaining < 0) {
-			remaining = 0;
+		long remaining = 0;
+		if( assignmentDescriptor != null && timer != null ) {
+			remaining = assignmentDescriptor.getDuration().getSeconds() - timer.getTime(TimeUnit.SECONDS);
+			if (remaining < 0) {
+				remaining = 0;
+			}
 		}
 		return remaining;
 	}
@@ -244,11 +254,7 @@ public class AssignmentRuntime {
 		}, 1, 10, TimeUnit.SECONDS);
 	}
 
-	// does this goe here?
-	public boolean isTeamFinished(String name) {
-		return false;
-	}
-
-	public void addFinishedTeam(String user, Integer submissionTime, int finalScore) {
+	public void addFinishedTeam(TeamStatus team) {
+		finishedTeams.add(team);
 	}
 }

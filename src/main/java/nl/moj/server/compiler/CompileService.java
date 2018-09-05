@@ -7,6 +7,7 @@ import nl.moj.server.SubmitController.SourceMessage;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
+import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.io.FileUtils;
@@ -63,22 +64,23 @@ public class CompileService {
 		Supplier<CompileResult> supplier = () -> {
 			Team team = teamRepository.findByName(message.getTeam());
 			List<AssignmentFile> assignmentFiles;
+			AssignmentState state = competition.getAssignmentState();
 			if (withTest) {
-				assignmentFiles = competition.getAssignmentRuntime().getOriginalAssignmentFiles()
+				assignmentFiles = state.getAssignmentFiles()
 						.stream()
 						.filter( f -> f.getFileType() == AssignmentFileType.READONLY ||
 								f.getFileType() == AssignmentFileType.TEST )
 						.collect(Collectors.toList());
 			} else {
 				if (forSubmit) {
-					assignmentFiles = competition.getAssignmentRuntime().getOriginalAssignmentFiles()
+					assignmentFiles = state.getAssignmentFiles()
 							.stream()
 							.filter( f -> f.getFileType() == AssignmentFileType.READONLY ||
 									f.getFileType() == AssignmentFileType.TEST ||
 									f.getFileType() == AssignmentFileType.SUBMIT )
 							.collect(Collectors.toList());
 				} else {
-					assignmentFiles = competition.getAssignmentRuntime().getOriginalAssignmentFiles()
+					assignmentFiles = state.getAssignmentFiles()
 							.stream()
 							.filter( f -> f.getFileType() == AssignmentFileType.READONLY)
 							.collect(Collectors.toList());

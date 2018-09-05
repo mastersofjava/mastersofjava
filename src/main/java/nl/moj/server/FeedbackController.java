@@ -39,14 +39,14 @@ public class FeedbackController {
         List<String> testNames = new ArrayList<>();
 
         if (competition.getCurrentAssignment() != null) {
-        	AssignmentState state = competition.getAssignmentRuntime().getState();
+        	AssignmentState state = competition.getAssignmentState();
 
             testNames = state.getTestNames();
 
             model.addObject("assignment", state.getAssignmentDescriptor().getName());
             model.addObject("timeLeft", state.getTimeRemaining());
             model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());
-            model.addObject("running", competition.getAssignmentRuntime().isRunning());
+            model.addObject("running", state.isRunning());
         } else {
             model.addObject("assignment", "-");
             model.addObject("timeLeft", 0);

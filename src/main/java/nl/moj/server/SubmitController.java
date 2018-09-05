@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import lombok.Data;
 import nl.moj.server.compiler.CompileService;
 import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.test.TestService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,10 +92,12 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		if (!competition.getAssignmentRuntime().isTeamFinished(user.getName())) {
-			long scoreAtSubmissionTime = competition.getAssignmentRuntime().getState().getTimeRemaining();
+		// TODO we need to handle resubmits
+		AssignmentState state = competition.getAssignmentState();
+		if (!state.isTeamFinished(user.getName())) {
+			long scoreAtSubmissionTime = state.getTimeRemaining();
 			message.setTeam(user.getName());
-			message.setScoreAtSubmissionTime((int)scoreAtSubmissionTime);
+			message.setScoreAtSubmissionTime(scoreAtSubmissionTime);
 			CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
 					.orTimeout(timeout, TimeUnit.SECONDS)
 					.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing);
@@ -108,10 +111,10 @@ public class SubmitController {
 		private String team;
 		private Map<String, String> source;
 		private List<String> tests;
-		private Integer scoreAtSubmissionTime;
+		private Long scoreAtSubmissionTime;
 
 		public SourceMessage(String team, Map<String, String> source, List<String> tests,
-				Integer scoreAtSubmissionTime) {
+				Long scoreAtSubmissionTime) {
 			this.team = team;
 			this.source = source;
 			this.tests = tests;

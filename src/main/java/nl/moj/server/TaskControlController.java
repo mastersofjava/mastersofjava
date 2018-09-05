@@ -124,10 +124,10 @@ public class TaskControlController {
 	@GetMapping("/control")
 	public String taskControl(Model model) {
 		if (competition.getCurrentAssignment() != null) {
-			AssignmentState state = competition.getAssignmentRuntime().getState();
+			AssignmentState state = competition.getAssignmentState();
 			model.addAttribute("timeLeft", state.getTimeRemaining());
 			model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
-			model.addAttribute("running", competition.getAssignmentRuntime().isRunning());
+			model.addAttribute("running", state.isRunning());
 			model.addAttribute("currentAssignment", state.getAssignmentDescriptor().getName());
 		} else {
 			model.addAttribute("timeLeft", 0);

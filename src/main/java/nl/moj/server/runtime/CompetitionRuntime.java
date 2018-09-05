@@ -7,6 +7,11 @@ import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.TeamStatus;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
 
@@ -21,15 +26,14 @@ import java.util.stream.Collectors;
 public class CompetitionRuntime {
 
 
-	// this should probably be hidden.
-	@Getter
 	private final AssignmentRuntime assignmentRuntime;
 
 	private final AssignmentService assignmentService;
 
+	private final TeamRepository teamRepository;
+
 	@Getter
 	private Competition competition;
-
 
 	public void initializeCompetition(Competition competition) {
 		log.info("Initializing competition {}", competition.getName());
@@ -41,6 +45,10 @@ public class CompetitionRuntime {
 			return assignmentRuntime.getOrderedAssignment();
 		}
 		return null;
+	}
+
+	public AssignmentState getAssignmentState() {
+		return assignmentRuntime.getState();
 	}
 
 	public void startAssignment(String name) {
@@ -68,5 +76,23 @@ public class CompetitionRuntime {
 					AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(v.getAssignment());
 					return ImmutablePair.of(ad.getName(), ad.getDuration().toSeconds());
 				}).sorted().collect(Collectors.toList());
+	}
+
+	public void registerFinishedTeam(String user, Long submissionTime, Long finalScore) {
+		if( assignmentRuntime.getOrderedAssignment() != null ) {
+			Team team = teamRepository.findByName(user);
+			assignmentRuntime.addFinishedTeam(TeamStatus.builder()
+					.team(team)
+					.score(finalScore)
+					.submitTime(submissionTime)
+					.build());
+		}
+	}
+
+	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
+		if( assignmentRuntime.getOrderedAssignment() != null ) {
+			return assignmentRuntime.getTeamAssignmentFiles(team);
+		}
+		return Collections.emptyList();
 	}
 }
