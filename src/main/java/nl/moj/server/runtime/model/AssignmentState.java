@@ -2,7 +2,6 @@ package nl.moj.server.runtime.model;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Singular;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 
 import java.util.ArrayList;
@@ -18,7 +17,6 @@ public class AssignmentState {
 	private List<AssignmentFile> assignmentFiles;
 	private boolean running;
 	
-	@Singular
 	@Builder.Default
 	private List<TeamStatus> finishedTeams = new ArrayList<>();
 

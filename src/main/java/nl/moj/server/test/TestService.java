@@ -33,9 +33,8 @@ import static java.lang.Math.min;
 
 @Service
 public class TestService {
-	private static final Logger log = LoggerFactory.getLogger(TestService.class);
-
 	public static final String SECURITY_POLICY_FOR_UNIT_TESTS = "securityPolicyForUnitTests.policy";
+	private static final Logger log = LoggerFactory.getLogger(TestService.class);
 	private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
 			Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
@@ -45,7 +44,8 @@ public class TestService {
 
 	private DirectoriesConfiguration directories;
 
-	private String javaExecutable;;
+	private String javaExecutable;
+	;
 
 	private CompetitionRuntime competition;
 
@@ -88,9 +88,12 @@ public class TestService {
 							feedbackMessageController.sendTestFeedbackMessage(tr, false, 0);
 							result.add(tr);
 						} catch (Exception e) {
-							final TestResult dummyResult = new TestResult(
-									"Server error running tests - contact the Organizer", compileResult.getUser(),
-									false, assignmentFile.getFilename());
+							final TestResult dummyResult = TestResult.builder()
+									.result("Server error running tests - contact the Organizer")
+									.user(compileResult.getUser())
+									.successful(false)
+									.testname(assignmentFile.getFilename())
+									.build();
 							feedbackMessageController.sendTestFeedbackMessage(dummyResult, false, 0);
 							result.add(dummyResult);
 						}
@@ -106,7 +109,7 @@ public class TestService {
 	/**
 	 * Test the solution provided by the team against the Submit test and assignment
 	 * tests. All tests have to succeed.
-	 * 
+	 *
 	 * @param compileResult
 	 * @return the combined TestResult
 	 */
@@ -118,7 +121,7 @@ public class TestService {
 				String assignment = state.getAssignmentDescriptor().getName();
 				Long finalScore = 0L;
 				final Long submissionTime = compileResult.getScoreAtSubmissionTime(); // Identical to score at
-																							// submission time
+				// submission time
 				if (compileResult.isSuccessful()) {
 					try {
 
@@ -137,14 +140,24 @@ public class TestService {
 								}
 							}
 						} catch (Exception e) {
-							final TestResult dummyResult = new TestResult(
-									"Server error running tests - contact the Organizer", compileResult.getUser(),
-									false, e.getMessage());
+							final TestResult dummyResult = TestResult.builder()
+									.result("Server error running tests - contact the Organizer")
+									.user(compileResult.getUser())
+									.successful(false)
+									.testname(e.getMessage())
+									.build();
 							feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 							return dummyResult;
 						}
-						TestResult result = new TestResult(sb.toString(), compileResult.getUser(), success,
-								"Submit Test", submissionTime);
+
+						final TestResult result = TestResult.builder()
+								.result(sb.toString())
+								.user(compileResult.getUser())
+								.successful(success)
+								.testname("Submit Test")
+								.scoreAtSubmissionTime(submissionTime)
+								.build();
+
 						// TODO we should not register this here, this needs to be done in the score service probably.
 						finalScore = setFinalAssignmentScore(result, assignment, submissionTime);
 						// TODO fix possible precision loss
@@ -152,9 +165,13 @@ public class TestService {
 						return result;
 					} catch (Exception e) {
 						log.error("Exception Running tests", e);
-						final TestResult dummyResult = new TestResult(
-								"Server error running tests - contact the Organizer", compileResult.getUser(), false,
-								"Submit Test");
+						final TestResult dummyResult = TestResult.builder()
+								.result("Server error running tests - contact the Organizer")
+								.user(compileResult.getUser())
+								.successful(false)
+								.testname("Submit Test")
+								.scoreAtSubmissionTime(0L)
+								.build();
 						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
 					} finally {
@@ -164,9 +181,14 @@ public class TestService {
 					}
 
 				} else { // Compile failed
-					final TestResult compileFailedResult = new TestResult(
-							"Submit Test - Compilation failed->test failed", compileResult.getUser(), false,
-							"Submit Test", 0L);
+					final TestResult compileFailedResult = TestResult.builder()
+							.result("Submit Test - Compilation failed->test failed")
+							.user(compileResult.getUser())
+							.successful(false)
+							.testname("Submit Test")
+							.scoreAtSubmissionTime(0L)
+							.build();
+
 					feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
 
 					// TODO we should not register this here, this needs to be done in the score service probably.
@@ -243,7 +265,12 @@ public class TestService {
 
 			log.debug("success {}", success);
 			log.info("finished unittest: {}", file.getName());
-			return new TestResult(result, compileResult.getUser(), success, file.getName());
+			return TestResult.builder()
+					.result(result)
+					.user(compileResult.getUser())
+					.successful(success)
+					.testname(file.getName())
+					.build();
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
 		}
@@ -295,9 +322,9 @@ public class TestService {
 		private final int maxSize;
 		private final int maxLines;
 		private final int maxLineLenght;
-		private int lineCount = 0;
 		private final String lineTruncatedMessage;
 		private final String outputTruncMessage;
+		private int lineCount = 0;
 
 		public LengthLimitedOutputCatcher() {
 			this.maxSize = limits.getUnitTestOutput().getMaxChars();
