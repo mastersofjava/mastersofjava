@@ -75,11 +75,11 @@ public class AssignmentRuntime {
 		// mark assignment as running
 		running = true;
 
-		// play the gong
-		soundService.playGong();
-
 		// send start to clients.
 		feedbackMessageController.sendStartToTeams(assignment.getName());
+
+		// play the gong
+		soundService.playGong();
 
 		log.info("Started assignment {}", assignment.getName());
 	}
