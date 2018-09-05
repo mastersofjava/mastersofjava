@@ -1,5 +1,6 @@
 moj:
   server:
+    assignmentsRepo: /tmp/assignments
     javaExecutable: /Library/Java/JavaVirtualMachines/jdk-9.0.4.jdk/Contents/Home/bin
     directories:
       teamDirectory: teams
@@ -37,7 +38,7 @@ spring:
       enabled: true
       path: /h2
   datasource:
-    url: jdbc:h2:file:/tmp/mojserver/db/test
+    url: jdbc:h2:mem:test
     username: sa
     password: sa
     driver-class-name: org.h2.Driver
