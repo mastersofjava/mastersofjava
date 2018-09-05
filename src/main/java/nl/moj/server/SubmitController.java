@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import lombok.Data;
 import nl.moj.server.compiler.CompileService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.test.TestService;
@@ -101,6 +102,7 @@ public class SubmitController {
 	}
 
 	@JsonDeserialize(using = SourceMessageDeserializer.class)
+	@Data
 	public static class SourceMessage {
 
 		private String team;
@@ -120,41 +122,13 @@ public class SubmitController {
 			this.source = source;
 			this.tests = tests;
 		}
-
-		public String getTeam() {
-			return team;
-		}
-
-		public void setTeam(String team) {
-			this.team = team;
-		}
-
-		public Map<String, String> getSource() {
-			return source;
-		}
-
-		public void setSource(Map<String, String> source) {
-			this.source = source;
-		}
-
-		public List<String> getTests() {
-			return tests;
-		}
-
-		public void setTests(List<String> tests) {
-			this.tests = tests;
-		}
-
-		public Integer getScoreAtSubmissionTime() {
-			return scoreAtSubmissionTime;
-		}
-
-		public void setScoreAtSubmissionTime(Integer scoreAtSubmissionTime) {
-			this.scoreAtSubmissionTime = scoreAtSubmissionTime;
-		}
 	}
 
-	private class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
+	public static class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
+
+		public SourceMessageDeserializer() {
+		}
+
 		@Override
 		public SourceMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
 				throws IOException {
