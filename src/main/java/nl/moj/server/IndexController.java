@@ -1,27 +1,27 @@
 package nl.moj.server;
 
-import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
+import lombok.AllArgsConstructor;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentFileType;
+import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import nl.moj.server.competition.Competition;
-import nl.moj.server.files.AssignmentFile;
-import nl.moj.server.files.FileType;
+
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
+@AllArgsConstructor
 public class IndexController {
 
-	private Competition competition;
-
-	public IndexController(Competition competition) {
-		super();
-		this.competition = competition;
-	}
+	private CompetitionRuntime competition;
+	private TeamRepository teamRepository;
 
 	@GetMapping("/")
 	public String index(Model model, @AuthenticationPrincipal Principal user) {
@@ -34,39 +34,31 @@ public class IndexController {
 	}
 
 	private void addModel(Model model, Principal user) {
-		List<AssignmentFile> files = new ArrayList<>();
-		if (competition.getCurrentAssignment().isRunning() && !competition.getCurrentAssignment().isTeamFinished(user.getName())) {
-			List<AssignmentFile> backupFiles = competition.getBackupFilesForTeam(user.getName());
-			if (!backupFiles.isEmpty()) {
-				files.addAll(backupFiles);
-			} else {
-				files.addAll(competition.getCurrentAssignment().getEditableFiles());
-			}
-		} else {
-			files.addAll(competition.getCurrentAssignment().getEditableFiles());
-		}
-		files.addAll(competition.getCurrentAssignment().getReadOnlyJavaFiles());
-		files.addAll(competition.getCurrentAssignment().getTaskFiles());
-		files.sort(new Comparator<AssignmentFile>() {
+		AssignmentState state = competition.getAssignmentState();
+		Team team = teamRepository.findByName(user.getName());
 
-			@Override
-			public int compare(AssignmentFile arg0, AssignmentFile arg1) {
-				if (arg0.getFileType().equals(FileType.TASK)) {
-					return -10;
-				}
-				return 10;
+		List<AssignmentFile> files = new ArrayList<>();
+		if (state.isRunning() && !state.isTeamFinished(user.getName())) {
+			files.addAll(competition.getTeamAssignmentFiles(team));
+		} else {
+			files.addAll(state.getAssignmentFiles());
+		}
+		files.sort((arg0, arg1) -> {
+			if (arg0.getFileType().equals(AssignmentFileType.TASK.TASK)) {
+				return -10;
 			}
+			return 10;
 		});
-		model.addAttribute("assignment", competition.getCurrentAssignment().getName());
+		model.addAttribute("assignment", state.getAssignmentDescriptor().getName());
 		model.addAttribute("team", user.getName());
-		model.addAttribute("timeLeft", competition.getRemainingTime());
-		model.addAttribute("time", competition.getCurrentAssignment().getSolutionTime());
-		model.addAttribute("testnames", competition.getCurrentAssignment().getTestNames());
+		model.addAttribute("timeLeft", state.getTimeRemaining());
+		model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
+		model.addAttribute("testnames", state.getTestNames());
 		model.addAttribute("files", files);
-		model.addAttribute("running", competition.getCurrentAssignment().isRunning());
-		model.addAttribute("finished", competition.getCurrentAssignment().isTeamFinished(user.getName()));
-		model.addAttribute("submittime", competition.getCurrentAssignment().getTeamSubmitTime(user.getName()));
-		model.addAttribute("finalscore", competition.getCurrentAssignment().getTeamFinalScore(user.getName()));
+		model.addAttribute("running", state.isRunning());
+		model.addAttribute("finished", false); //competition.getCurrentAssignment().isTeamFinished(user.getName()));
+		model.addAttribute("submittime", 0);//competition.getCurrentAssignment().getTeamSubmitTime(user.getName()));
+		model.addAttribute("finalscore", 0);//competition.getCurrentAssignment().getTeamFinalScore(user.getName()));
 	}
 
 }

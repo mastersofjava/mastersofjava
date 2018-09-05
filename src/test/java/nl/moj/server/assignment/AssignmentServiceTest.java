@@ -1,0 +1,95 @@
+package nl.moj.server.assignment;
+
+import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.repository.AssignmentRepository;
+import nl.moj.server.assignment.service.AssignmentService;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class AssignmentServiceTest {
+
+	@Autowired
+	private AssignmentService assignmentService;
+
+	@Autowired
+	private AssignmentRepository assignmentRepository;
+
+	@Before
+	public void before() {
+		assignmentRepository.deleteAll();
+	}
+
+	@Test
+	public void shouldDiscoverAssignments() {
+		List<Assignment> assignments = assignmentService.updateAssignments(path("/assignments"));
+
+		assignments.forEach(a -> {
+			assertThat(a.getId()).isNotNull();
+			assertThat(a.getName()).isNotBlank();
+			assertThat(a.getAssignmentDescriptor()).contains("/assignments/");
+		});
+	}
+
+	@Test
+	public void shouldUpdateAssignments() {
+		List<Assignment> assignments = assignmentService.updateAssignments(path("/assignments"));
+
+		assertThat(assignments.size()).isEqualTo(2);
+		assignments.forEach(a -> {
+			assertThat(a.getId()).isNotNull();
+			assertThat(a.getName()).isNotBlank();
+			assertThat(a.getAssignmentDescriptor()).contains("/assignments/");
+		});
+
+		List<Assignment> updatedAssignments = assignmentService.updateAssignments(path("/assignments-updated"));
+
+		assertThat(updatedAssignments.size()).isEqualTo(2);
+		updatedAssignments.forEach(a -> {
+			assertThat(a.getId()).isNotNull();
+			assertThat(a.getName()).isNotBlank();
+			assertThat(a.getAssignmentDescriptor()).contains("/assignments-updated/");
+
+		});
+	}
+
+	@Test
+	public void shouldGetAssignmentDescriptor() {
+		List<Assignment> assignments = assignmentService.updateAssignments(path("/assignments"));
+
+		assertThat(assignments.size()).isEqualTo(2);
+		assignments.forEach(a -> {
+			assertThat(a.getId()).isNotNull();
+			assertThat(a.getName()).isNotBlank();
+			assertThat(a.getAssignmentDescriptor()).contains("/assignments/");
+		});
+
+
+		assignments.forEach( a -> {
+			AssignmentDescriptor d = assignmentService.getAssignmentDescriptor(a);
+			assertThat(d).isNotNull();
+			assertThat(d.getName()).isNotBlank();
+			assertThat(d.getDuration()).isNotNull();
+			assertThat(d.getScoringRules()).isNotNull();
+			assertThat(d.getAssignmentFiles()).isNotNull();
+		});
+	}
+
+	//-- private helper methods --//
+
+	private Path path(String resource) {
+		return Paths.get(AssignmentServiceTest.class.getResource(resource).getPath());
+	}
+}

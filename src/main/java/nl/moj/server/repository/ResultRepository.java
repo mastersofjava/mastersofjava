@@ -1,13 +1,13 @@
 package nl.moj.server.repository;
 
-import java.util.List;
-
+import nl.moj.server.model.Result;
+import nl.moj.server.teams.model.Team;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import nl.moj.server.model.Result;
-import nl.moj.server.model.Team;
+
+import java.util.List;
 
 @Repository
 public interface ResultRepository extends JpaRepository<Result, Long> {

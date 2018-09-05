@@ -1,5 +1,23 @@
 package nl.moj.server;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import lombok.Data;
+import nl.moj.server.compiler.CompileService;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.test.TestService;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+
 import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -9,25 +27,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
-
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-
-import nl.moj.server.competition.Competition;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.compile.CompileService;
-import nl.moj.server.test.TestService;
 
 @Controller
 @MessageMapping("/submit")
@@ -43,11 +42,11 @@ public class SubmitController {
 
 	private Integer timeout;
 
-	private Competition competition;
+	private CompetitionRuntime competition;
 
 	public SubmitController(CompileService compileService, TestService testService,
-			@Qualifier("compiling") Executor compiling, @Qualifier("testing") Executor testing,
-			@Value("${moj.server.timeout}") Integer timeout, Competition competition) {
+							@Qualifier("compiling") Executor compiling, @Qualifier("testing") Executor testing,
+							@Value("${moj.server.timeout}") Integer timeout, CompetitionRuntime competition) {
 		super();
 		this.compileService = compileService;
 		this.testService = testService;
@@ -93,8 +92,10 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		if (!competition.getCurrentAssignment().isTeamFinished(user.getName())) {
-			int scoreAtSubmissionTime = competition.getRemainingTime();
+		// TODO we need to handle resubmits
+		AssignmentState state = competition.getAssignmentState();
+		if (!state.isTeamFinished(user.getName())) {
+			long scoreAtSubmissionTime = state.getTimeRemaining();
 			message.setTeam(user.getName());
 			message.setScoreAtSubmissionTime(scoreAtSubmissionTime);
 			CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
@@ -104,15 +105,16 @@ public class SubmitController {
 	}
 
 	@JsonDeserialize(using = SourceMessageDeserializer.class)
+	@Data
 	public static class SourceMessage {
 
 		private String team;
 		private Map<String, String> source;
 		private List<String> tests;
-		private Integer scoreAtSubmissionTime;
+		private Long scoreAtSubmissionTime;
 
 		public SourceMessage(String team, Map<String, String> source, List<String> tests,
-				Integer scoreAtSubmissionTime) {
+				Long scoreAtSubmissionTime) {
 			this.team = team;
 			this.source = source;
 			this.tests = tests;
@@ -123,41 +125,13 @@ public class SubmitController {
 			this.source = source;
 			this.tests = tests;
 		}
-
-		public String getTeam() {
-			return team;
-		}
-
-		public void setTeam(String team) {
-			this.team = team;
-		}
-
-		public Map<String, String> getSource() {
-			return source;
-		}
-
-		public void setSource(Map<String, String> source) {
-			this.source = source;
-		}
-
-		public List<String> getTests() {
-			return tests;
-		}
-
-		public void setTests(List<String> tests) {
-			this.tests = tests;
-		}
-
-		public Integer getScoreAtSubmissionTime() {
-			return scoreAtSubmissionTime;
-		}
-
-		public void setScoreAtSubmissionTime(Integer scoreAtSubmissionTime) {
-			this.scoreAtSubmissionTime = scoreAtSubmissionTime;
-		}
 	}
 
-	private class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
+	public static class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
+
+		public SourceMessageDeserializer() {
+		}
+
 		@Override
 		public SourceMessage deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
 				throws IOException {

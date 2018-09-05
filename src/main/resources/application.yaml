@@ -1,5 +1,6 @@
 moj:
   server:
+    assignmentsRepo: /tmp/assignments
     javaExecutable: /Library/Java/JavaVirtualMachines/jdk-9.0.4.jdk/Contents/Home/bin
     directories:
       baseDirectory: /opt/mojserver
@@ -44,18 +45,16 @@ spring:
     username: sa
     password: sa
     driver-class-name: org.h2.Driver     
-    initialize: false
   thymeleaf:
     mode: HTML
 #  flyway:
+#    enabled: false
 #    baseline-on-migrate: true
-server.session.timeout: 36000
-security.basic.enabled: false
+#  jpa:
+#    generate-ddl: true
 
-logging.file: mojserver.log
-#logging.level.nl.moj.server: DEBUG
-#logging.level.nl.moj.server.persistence: INFO
-#logging.level.nl.moj.server.persistence.TeamMapper: INFO
-#logging.level.nl.moj.server.persistence.ResultMapper: INFO
-#logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL
-...
+logging.level.nl.moj.server: DEBUG
+logging.level.nl.moj.server.persistence: INFO
+logging.level.nl.moj.server.persistence.TeamMapper: INFO
+logging.level.nl.moj.server.persistence.ResultMapper: INFO
+logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL

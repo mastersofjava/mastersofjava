@@ -61,7 +61,7 @@ public class WorkloadbalancerOrderSequenceTest {
 
 	@Test
 	public void testOrderSequence() {
-		WorkloadbalancerImpl instance = new WorkloadbalancerImpl();
+		WorkloadBalancerImpl instance = new WorkloadBalancerImpl();
 		int threeDayJob = 3;
 		int twoDayJob = 2;
 		List<List<Order>> orders = null;

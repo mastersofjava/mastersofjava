@@ -1,18 +1,16 @@
 package nl.moj.server;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.TaskControlController.TaskMessage;
+import nl.moj.server.compiler.CompileResult;
+import nl.moj.server.test.TestResult;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import nl.moj.server.TaskControlController.TaskMessage;
-import nl.moj.server.compile.CompileResult;
-import nl.moj.server.test.TestResult;
-
 @Controller
+@Slf4j
 public class FeedbackMessageController {
 
-	private static final Logger log = LoggerFactory.getLogger(FeedbackMessageController.class);
 
 	private SimpMessagingTemplate template;
 
@@ -50,12 +48,16 @@ public class FeedbackMessageController {
 		template.convertAndSend("/queue/rankings", "refresh");
 	}
 
-	public void sendRemainingTime(Integer remainingTime, Integer totalTime) {
-		//log.info("sendRemainingTime {} ", remainingTime);
-		TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
-		taskTimeMessage.setRemainingTime(String.valueOf(remainingTime));
-		taskTimeMessage.setTotalTime(String.valueOf(totalTime));
-		template.convertAndSend("/queue/time", taskTimeMessage);
+	public void sendRemainingTime(Long remainingTime, Long totalTime) {
+		try {
+			log.info("Sending remaining time: r={}, t={}", remainingTime, totalTime);
+			TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
+			taskTimeMessage.setRemainingTime(String.valueOf(remainingTime));
+			taskTimeMessage.setTotalTime(String.valueOf(totalTime));
+			template.convertAndSend("/queue/time", taskTimeMessage);
+		} catch( Exception e ) {
+			log.warn("Failed to send remaining time.", e);
+		}
 	}
 	
 	public static class TestFeedbackMessage {

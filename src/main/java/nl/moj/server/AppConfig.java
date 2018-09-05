@@ -1,5 +1,8 @@
 package nl.moj.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import nl.moj.server.util.NamedThreadFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -66,6 +69,27 @@ public class AppConfig {
 		return new ScheduledExecutorFactoryBean();
 	}
 
+	@Bean(name = "objectMapper")
+	public ObjectMapper jsonObjectMapper() {
+		ObjectMapper objectMapper = new ObjectMapper();
+		return objectMapper;
+	}
+
+	@Bean(name = "yamlObjectMapper")
+	public ObjectMapper yamlObjectMapper() {
+		ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
+		yamlObjectMapper.registerModule(new JavaTimeModule());
+
+		return yamlObjectMapper;
+	}
+
+//	@Bean
+//	public ServletServerContainerFactoryBean createServletServerContainerFactoryBean() {
+//		ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+//		container.setMaxTextMessageBufferSize(100000);
+//		container.setMaxBinaryMessageBufferSize(100000);
+//		return container;
+//	}
 
 	@Configuration
 	public class WebConfig implements WebMvcConfigurer {
@@ -73,7 +97,7 @@ public class AppConfig {
 		@Override
 		public void addResourceHandlers(ResourceHandlerRegistry registry) {
 			Path path = Paths.get(directories.getJavaDocDirectory());
-			if(!path.isAbsolute()) {
+			if (!path.isAbsolute()) {
 				path = Paths.get(directories.getBaseDirectory(), directories.getJavaDocDirectory());
 				System.out.println("javadoc -> " + path.toAbsolutePath().toUri().toString());
 			}
@@ -242,5 +266,4 @@ public class AppConfig {
 			super(AppConfig.SecurityConfig.class);
 		}
 	}
-
 }
