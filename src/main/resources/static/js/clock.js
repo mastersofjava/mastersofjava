@@ -59,5 +59,6 @@ function Clock( initialOffset ) {
       if (this.time - this.current > 1) {
         this.finished = true;
         this.current = this.time - 0.1;
-    }
+      }
+    };
 }

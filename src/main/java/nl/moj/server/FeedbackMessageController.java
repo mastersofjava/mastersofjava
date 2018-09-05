@@ -50,6 +50,7 @@ public class FeedbackMessageController {
 
 	public void sendRemainingTime(Long remainingTime, Long totalTime) {
 		try {
+			log.info("Sending remaining time: r={}, t={}", remainingTime, totalTime);
 			TaskTimeMessage taskTimeMessage = new TaskTimeMessage();
 			taskTimeMessage.setRemainingTime(String.valueOf(remainingTime));
 			taskTimeMessage.setTotalTime(String.valueOf(totalTime));
