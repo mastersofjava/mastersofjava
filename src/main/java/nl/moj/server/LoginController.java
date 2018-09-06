@@ -1,6 +1,7 @@
 package nl.moj.server;
 
 import lombok.RequiredArgsConstructor;
+import nl.moj.server.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.slf4j.Logger;
@@ -21,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+
+import static nl.moj.server.model.Role.ROLE_USER;
 
 @Controller
 @RequiredArgsConstructor
@@ -53,11 +56,11 @@ public class LoginController {
     		model.addAttribute("errors", "Passwords don't match");
     		return "register";
     	}
-    	team.setRole("ROLE_USER");
+    	team.setRole(ROLE_USER);
     	team.setPassword(encoder.encode(team.getPassword()));
         teamRepository.save(team);
     	SecurityContext context = SecurityContextHolder.getContext();
-    	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
+    	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.ROLE_USER.toString())));
     	context.setAuthentication(authentication);
     	Path teamdir = Paths.get(directories.getBaseDirectory(), directories.getTeamDirectory(), authentication.getName());
 		if (!Files.exists(teamdir)) {

@@ -2,6 +2,7 @@ package nl.moj.server.rankings;
 
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.model.Ranking;
+import nl.moj.server.model.Role;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public class RankingsMapper {
     public List<Ranking> getRankings() {
         List<Ranking> rankings = new ArrayList<>();
 
-        teamRepository.findAll().forEach(t -> rankings.add(Ranking.builder()
+        teamRepository.findAllByRole(Role.ROLE_USER).forEach(t -> rankings.add(Ranking.builder()
                 .team(t.getName())
                 //TODO fixme
                 .totalScore(0)

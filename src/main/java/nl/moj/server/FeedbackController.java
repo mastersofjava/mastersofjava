@@ -1,6 +1,7 @@
 package nl.moj.server;
 
 import lombok.RequiredArgsConstructor;
+import nl.moj.server.model.Role;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentState;
@@ -28,7 +29,7 @@ public class FeedbackController {
 	@GetMapping("/feedback")
 	public ModelAndView feedback() {
 		ModelAndView model = new ModelAndView("testfeedback");
-		List<Team> allTeams = teamRepository.findAllByRole("ROLE_USER");
+		List<Team> allTeams = teamRepository.findAllByRole(Role.ROLE_USER);
 		orderTeamsByHighestTotalScore(allTeams);
 
 		List<List<Team>> partitionedTeams = CollectionUtil.partition(allTeams, 3);

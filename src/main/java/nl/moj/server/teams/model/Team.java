@@ -3,6 +3,7 @@ package nl.moj.server.teams.model;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import nl.moj.server.model.Result;
+import nl.moj.server.model.Role;
 import nl.moj.server.model.Test;
 
 import javax.persistence.*;
@@ -19,20 +20,27 @@ public class Team {
 	@GeneratedValue(generator = "id_seq", strategy = GenerationType.SEQUENCE)
 	@Column(name = "id", nullable = false)
 	private Long id;
+
 	@Column(name = "name", nullable = false, unique = true)
 	private String name;
+
 	@Column(name = "password")
 	private String password;
+
 	@Column(name = "cpassword")
-	private String cpassword;
+	private String cpassword; // WTF? Remove this asap
+
+	@Enumerated(EnumType.STRING)
 	@Column(name = "role")
-	private String role;
+	private Role role;
+
 	@Column(name = "country")
 	private String country;
+
 	@Column(name = "company")
 	private String company;
 
-	public Team(String name, String role, String country, String company) {
+	public Team(String name, Role role, String country, String company) {
 		super();
 		this.name = name;
 		this.role = role;
