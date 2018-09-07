@@ -63,30 +63,7 @@ public class CompileService {
 	private Supplier<CompileResult> compile(SourceMessage message, boolean withTest, boolean forSubmit) {
 		Supplier<CompileResult> supplier = () -> {
 			Team team = teamRepository.findByName(message.getTeam());
-			List<AssignmentFile> assignmentFiles;
-			AssignmentState state = competition.getAssignmentState();
-			if (withTest) {
-				assignmentFiles = state.getAssignmentFiles()
-						.stream()
-						.filter( f -> f.getFileType() == AssignmentFileType.READONLY ||
-								f.getFileType() == AssignmentFileType.TEST )
-						.collect(Collectors.toList());
-			} else {
-				if (forSubmit) {
-					assignmentFiles = state.getAssignmentFiles()
-							.stream()
-							.filter( f -> f.getFileType() == AssignmentFileType.READONLY ||
-									f.getFileType() == AssignmentFileType.TEST ||
-									f.getFileType() == AssignmentFileType.SUBMIT )
-							.collect(Collectors.toList());
-				} else {
-					assignmentFiles = state.getAssignmentFiles()
-							.stream()
-							.filter( f -> f.getFileType() == AssignmentFileType.READONLY)
-							.collect(Collectors.toList());
-				}
-			}
-			assignmentFiles.forEach(f -> log.trace(f.getName()));
+			List<AssignmentFile> assignmentFiles = createAssignmentFiles(withTest, forSubmit);
 			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
 					null);
 			String assignment = competition.getCurrentAssignment().getAssignment().getName();
@@ -151,6 +128,34 @@ public class CompileService {
 		return supplier;
 	}
 
+	private List<AssignmentFile> createAssignmentFiles(boolean withTest, boolean forSubmit) {
+		List<AssignmentFile> assignmentFiles;
+		AssignmentState state = competition.getAssignmentState();
+		if (withTest) {
+			assignmentFiles = state.getAssignmentFiles()
+					.stream()
+					.filter( f -> f.getFileType() == AssignmentFileType.READONLY ||
+							f.getFileType() == AssignmentFileType.TEST								)
+					.collect(Collectors.toList());
+		} else {
+			if (forSubmit) {
+				assignmentFiles = state.getAssignmentFiles()
+						.stream()
+						.filter( f -> f.getFileType() == AssignmentFileType.READONLY ||
+								f.getFileType() == AssignmentFileType.TEST ||
+								f.getFileType() == AssignmentFileType.SUBMIT)
+						.collect(Collectors.toList());
+			} else {
+				assignmentFiles = state.getAssignmentFiles()
+						.stream()
+						.filter( f -> f.getFileType() == AssignmentFileType.READONLY)
+						.collect(Collectors.toList());
+			}
+		}
+		assignmentFiles.forEach(f -> log.trace(f.getName()));
+		return assignmentFiles;
+	}
+	
 	private List<String> createCompilerOptions() {
 		List<String> options = new ArrayList<>();
 		// enable all recommended warnings.

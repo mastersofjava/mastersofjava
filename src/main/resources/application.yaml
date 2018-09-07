@@ -9,6 +9,7 @@ moj:
       libDirectory: lib
       soundDirectory: sounds
       javaDocDirectory: javadoc
+      resourceDirectory: resources
     assignments:
       repos:
         -

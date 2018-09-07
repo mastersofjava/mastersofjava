@@ -11,6 +11,7 @@ public class DirectoriesConfiguration {
 	private String libDirectory;
 	private String soundDirectory;
 	private String javaDocDirectory;
+	private String resourceDirectory;
 
 	public String getBaseDirectory() {
 		return baseDirectory;
@@ -58,5 +59,13 @@ public class DirectoriesConfiguration {
 
 	public void setJavaDocDirectory(String javaDocDirectory) {
 		this.javaDocDirectory = javaDocDirectory;
+	}
+
+	public String getResourceDirectory() {
+		return resourceDirectory;
+	}
+
+	public void setResourceDirectory(String resourceDirectory) {
+		this.resourceDirectory = resourceDirectory;
 	}
 }
