@@ -60,7 +60,14 @@ public class AssignmentRuntime {
 
 	private List<TeamStatus> finishedTeams;
 
-	public void start(OrderedAssignment orderedAssignment) {
+	/**
+	 * Starts the given {@link OrderedAssignment} and returns
+	 * a Future&lt;?&gt; referencing which completes when the
+	 * assignment is supposed to end.
+	 * @param orderedAssignment the assignment to start.
+	 * @return the {@link Future}
+	 */
+	public Future<?> start(OrderedAssignment orderedAssignment) {
 		clearHandlers();
 		this.orderedAssignment = orderedAssignment;
 		this.assignment = orderedAssignment.getAssignment();
@@ -73,8 +80,12 @@ public class AssignmentRuntime {
 		// cleanup historical assignment data
 		initTeamsForAssignment();
 
+		// play the gong
+		scheduledExecutorService.schedule(soundService::playGong, 0, TimeUnit.SECONDS);
+
+		// TODO this could be nicer in the sense we should bundle all futures.
 		// start the timers
-		startTimers();
+		Future<?> stopHandle = startTimers();
 
 		// mark assignment as running
 		running = true;
@@ -82,15 +93,16 @@ public class AssignmentRuntime {
 		// send start to clients.
 		feedbackMessageController.sendStartToTeams(assignment.getName());
 
-		// play the gong
-		soundService.playGong();
-
 		log.info("Started assignment {}", assignment.getName());
+
+		return stopHandle;
 	}
 
 	public void stop() {
 		feedbackMessageController.sendStopToTeams(assignment.getName());
-		clearHandlers();
+		if( getTimeRemaining() > 0 ) {
+			clearHandlers();
+		}
 		running = false;
 
 		log.info("Stopped assignment {}", assignment.getName());
@@ -214,12 +226,14 @@ public class AssignmentRuntime {
 		scoreService.removeScoresForAssignment(assignmentDescriptor.getName());
 	}
 
-	private void startTimers() {
+	private Future<?> startTimers() {
 		timer = StopWatch.createStarted();
-		handlers.add(scheduleStop());
+		Future<?> stop = scheduleStop();
+		handlers.add(stop);
 		handlers.add(scheduleAssignmentEndingNotification(120));
 		handlers.add(scheduleAssignmentEndingNotification(60));
 		handlers.add(scheduleTimeSync());
+		return stop;
 	}
 
 	private Long getTimeRemaining() {

@@ -66,7 +66,10 @@ public class AppConfig {
 
 	@Bean
 	public ScheduledExecutorFactoryBean scheduledExecutorFactoryBean() {
-		return new ScheduledExecutorFactoryBean();
+		ScheduledExecutorFactoryBean fb = new ScheduledExecutorFactoryBean();
+		fb.setPoolSize(5);
+		fb.setContinueScheduledExecutionAfterException(true);
+		return fb;
 	}
 
 	@Bean(name = "objectMapper")

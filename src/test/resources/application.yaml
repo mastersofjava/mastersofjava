@@ -8,7 +8,7 @@ moj:
       libDirectory: lib
       soundDirectory: sounds
       javaDocDirectory: javadoc
-      base-directory: game-server/moj-data
+      base-directory: moj-game-server/moj-data
     assignments:
       repos:
         - name: "practice-assignments"
