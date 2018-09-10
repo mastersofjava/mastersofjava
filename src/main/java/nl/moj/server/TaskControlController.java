@@ -41,6 +41,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static nl.moj.server.model.Role.ROLE_USER;
+
 @Controller
 @RequiredArgsConstructor
 public class TaskControlController {
@@ -187,7 +189,7 @@ public class TaskControlController {
 				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(TeamHeaders.class).withFirstRecordAsHeader()
 						.parse(in);
 				for (CSVRecord r : records) {
-					Team t = new Team(r.get(TeamHeaders.NAME), "ROLE_USER", r.get(TeamHeaders.COUNTRY),
+					Team t = new Team(r.get(TeamHeaders.NAME), ROLE_USER, r.get(TeamHeaders.COUNTRY),
 							r.get(TeamHeaders.COMPANY));
 					teamRepository.save(t);
 				}
@@ -206,7 +208,7 @@ public class TaskControlController {
 		response.setHeader("Content-Disposition", "attachment; filename=\"teams.csv\"");
 		try (CSVPrinter printer = new CSVPrinter(response.getWriter(),
 				CSVFormat.DEFAULT.withHeader(TeamHeaders.class))) {
-			List<Team> allTeams = teamRepository.findAllByRole("ROLE_USER");
+			List<Team> allTeams = teamRepository.findAllByRole(ROLE_USER);
 			allTeams.forEach((t) -> {
 				try {
 					printer.printRecord(t.getName(), t.getCompany(), t.getCountry());
