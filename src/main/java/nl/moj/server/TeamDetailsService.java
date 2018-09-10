@@ -31,7 +31,7 @@ public class TeamDetailsService implements UserDetailsService {
 
 	private Collection<? extends GrantedAuthority> getAuthorities(Team team) {
 		List<GrantedAuthority> authList = new ArrayList<>();
-		SimpleGrantedAuthority sGA = new SimpleGrantedAuthority(team.getRole());
+		SimpleGrantedAuthority sGA = new SimpleGrantedAuthority(team.getRole().toString());
 		authList.add(sGA);
 		return authList;
 	}

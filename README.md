@@ -22,6 +22,9 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 
 ### Gebruik
 
+#### Start applicatie
+Run class MojServerApplication
+
 #### Start opgave
 - open [http://localhost:8080/control](http://localhost:8080/control)
 - login met control/f8!moj20!7
