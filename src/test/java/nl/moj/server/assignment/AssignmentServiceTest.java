@@ -1,8 +1,8 @@
 package nl.moj.server.assignment;
 
+import nl.moj.server.DbUtil;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,11 +24,11 @@ public class AssignmentServiceTest {
 	private AssignmentService assignmentService;
 
 	@Autowired
-	private AssignmentRepository assignmentRepository;
+	private DbUtil dbUtil;
 
 	@Before
 	public void before() {
-		assignmentRepository.deleteAll();
+		dbUtil.cleanup();
 	}
 
 	@Test

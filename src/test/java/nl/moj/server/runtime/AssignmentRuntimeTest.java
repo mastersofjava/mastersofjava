@@ -1,5 +1,6 @@
 package nl.moj.server.runtime;
 
+import nl.moj.server.DbUtil;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
@@ -36,10 +37,14 @@ public class AssignmentRuntimeTest {
 	@Autowired
 	private CompetitionRepository competitionRepository;
 
+	@Autowired
+	private DbUtil dbUtil;
+
 	private Competition competition;
 
 	@Before
 	public void init() {
+		dbUtil.cleanup();
 	    competition = createCompetition();
 
 	}
