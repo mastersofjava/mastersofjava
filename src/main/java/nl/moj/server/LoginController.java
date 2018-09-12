@@ -1,7 +1,6 @@
 package nl.moj.server;
 
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.slf4j.Logger;
@@ -44,15 +43,15 @@ public class LoginController {
 
     @PostMapping("/register")
     public String registerSubmit(Model model, @ModelAttribute Team team) {
-    	if(team.getName() == ""|| team.getPassword() == ""|| team.getCpassword() == ""){
+    	if (team.getName() == ""|| team.getPassword() == ""|| team.getCpassword() == "") {
     		model.addAttribute("errors", "Not all fields are filled in");
     		return "register";
     	}
-    	if(teamRepository.findByName(team.getName()) != null){
+    	if (teamRepository.findByName(team.getName()) != null) {
     		model.addAttribute("errors", "Name already in use");
     		return "register";
     	}
-    	if(!team.getCpassword().equals(team.getPassword())){
+    	if (!team.getCpassword().equals(team.getPassword())) {
     		model.addAttribute("errors", "Passwords don't match");
     		return "register";
     	}
@@ -60,7 +59,7 @@ public class LoginController {
     	team.setPassword(encoder.encode(team.getPassword()));
         teamRepository.save(team);
     	SecurityContext context = SecurityContextHolder.getContext();
-    	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.ROLE_USER.toString())));
+    	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority(ROLE_USER.toString())));
     	context.setAuthentication(authentication);
     	Path teamdir = Paths.get(directories.getBaseDirectory(), directories.getTeamDirectory(), authentication.getName());
 		if (!Files.exists(teamdir)) {

@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -85,9 +86,12 @@ public class TaskControlController {
 	}
 
 	@MessageMapping("/control/stoptask")
-	public void stopTask(TaskMessage message) {
-		competition.stopCurrentAssignment();
-		feedbackMessageController.sendStopToTeams(message.taskName);
+	public void stopTask() {
+	    if (null != competition.getCurrentAssignment()) {
+            String stoppedTask = competition.getCurrentAssignment().getAssignment().getName();
+            competition.stopCurrentAssignment();
+            feedbackMessageController.sendStopToTeams(stoppedTask);
+        }
 	}
 
 	@MessageMapping("/control/clearCurrentAssignment")

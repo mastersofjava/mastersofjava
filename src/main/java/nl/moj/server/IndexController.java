@@ -7,6 +7,8 @@ import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,8 +22,10 @@ import java.util.List;
 @AllArgsConstructor
 public class IndexController {
 
+	private static final Logger log = LoggerFactory.getLogger(IndexController.class);
 	private CompetitionRuntime competition;
 	private TeamRepository teamRepository;
+
 
 	@GetMapping("/")
 	public String index(Model model, @AuthenticationPrincipal Principal user) {

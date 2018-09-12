@@ -12,12 +12,15 @@ import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.runtime.model.TeamStatus;
+import nl.moj.server.sound.Sound;
 import nl.moj.server.sound.SoundService;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.PathUtil;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -25,10 +28,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 
@@ -37,19 +43,22 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class AssignmentRuntime {
 
-	private final AssignmentService assignmentService;
-	private final ScheduledExecutorService scheduledExecutorService;
-	private final FeedbackMessageController feedbackMessageController;
-	private final TeamService teamService;
-	private final ScoreService scoreService;
-	private final SoundService soundService;
+    public static final long WARNING_TIMER = 40L; // seconds
+    public static final long CRITICAL_TIMER = 25L; // seconds
+    public static final long TIMESYNC_FREQUENCY = 2000L; // millis
 
-	private StopWatch timer;
-	@Getter
+    private final AssignmentService assignmentService;
+    private final FeedbackMessageController feedbackMessageController;
+    private final TeamService teamService;
+    private final ScoreService scoreService;
+    private final SoundService soundService;
+    private final TaskScheduler taskScheduler;
+    private StopWatch timer;
+
+    @Getter
 	private OrderedAssignment orderedAssignment;
 	private Assignment assignment;
 	private AssignmentDescriptor assignmentDescriptor;
-
 	private List<Future<?>> handlers;
 
 	@Getter
@@ -60,6 +69,11 @@ public class AssignmentRuntime {
 
 	private List<TeamStatus> finishedTeams;
 
+    @Async
+    /**
+     * Start an assignment
+     * @param orderedAssignment The assignment to start
+     */
 	public void start(OrderedAssignment orderedAssignment) {
 		clearHandlers();
 		this.orderedAssignment = orderedAssignment;
@@ -83,20 +97,24 @@ public class AssignmentRuntime {
 		feedbackMessageController.sendStartToTeams(assignment.getName());
 
 		// play the gong
-		soundService.playGong();
-
-		log.info("Started assignment {}", assignment.getName());
+        taskScheduler.schedule(() ->
+                soundService.playGong(),
+                inSeconds(0)
+        );
+        log.info("Started assignment {}", assignment.getName());
 	}
 
+    /**
+     * Stop the current assignment
+     */
 	public void stop() {
 		feedbackMessageController.sendStopToTeams(assignment.getName());
 		clearHandlers();
 		running = false;
-
-		log.info("Stopped assignment {}", assignment.getName());
+        log.info("Stopped assignment {}", assignment.getName());
 	}
 
-	// TODO this should probably not be here
+// TODO this should probably not be here
 	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
 		List<AssignmentFile> teamFiles = new ArrayList<>();
 		Path teamAssignmentBase = resolveTeamAssignmentBaseDirectory(team);
@@ -214,18 +232,19 @@ public class AssignmentRuntime {
 		scoreService.removeScoresForAssignment(assignmentDescriptor.getName());
 	}
 
-	private void startTimers() {
-		timer = StopWatch.createStarted();
-		handlers.add(scheduleStop());
-		handlers.add(scheduleAssignmentEndingNotification(120));
-		handlers.add(scheduleAssignmentEndingNotification(60));
-		handlers.add(scheduleTimeSync());
-	}
+    public void startTimers() {
+        clearHandlers();
+        timer = StopWatch.createStarted();
+        handlers.add(scheduleStop());
+        handlers.add(scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration().toSeconds() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
+        handlers.add(scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration().toSeconds() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
+        handlers.add(scheduleTimeSync());
+    }
 
-	private Long getTimeRemaining() {
+    private Long getTimeRemaining() {
 		long remaining = 0;
-		if( assignmentDescriptor != null && timer != null ) {
-			remaining = assignmentDescriptor.getDuration().getSeconds() - timer.getTime(TimeUnit.SECONDS);
+        if (assignmentDescriptor != null && timer != null) {
+            remaining = assignmentDescriptor.getDuration().getSeconds() - timer.getTime(TimeUnit.SECONDS);
 			if (remaining < 0) {
 				remaining = 0;
 			}
@@ -240,21 +259,32 @@ public class AssignmentRuntime {
 		this.handlers = new ArrayList<>();
 	}
 
-	private Future<?> scheduleStop() {
-		return scheduledExecutorService.schedule(this::stop, assignmentDescriptor.getDuration().getSeconds(), TimeUnit.SECONDS);
+    @Async
+    public Future<?> scheduleStop() {
+        return taskScheduler.schedule(this::stop, inSeconds(assignmentDescriptor.getDuration().getSeconds()));
 	}
 
-	private Future<?> scheduleAssignmentEndingNotification(int secondsBeforeEnd) {
-		return scheduledExecutorService.schedule(() -> soundService.playTicTac(secondsBeforeEnd), assignmentDescriptor.getDuration().getSeconds() - secondsBeforeEnd, TimeUnit.SECONDS);
+	@Async
+    public Future<?> scheduleAssignmentEndingNotification(long start, long duration, Sound sound) {
+        return taskScheduler.schedule(() -> soundService.play(sound, duration), inSeconds(start));
 	}
 
-	private Future<?> scheduleTimeSync() {
-		return scheduledExecutorService.scheduleAtFixedRate(() -> {
-			feedbackMessageController.sendRemainingTime(getTimeRemaining(), assignmentDescriptor.getDuration().getSeconds());
-		}, 1, 10, TimeUnit.SECONDS);
+    @Async
+    public Future<?> scheduleTimeSync() {
+        return taskScheduler.scheduleAtFixedRate(
+                () -> {
+                    feedbackMessageController.sendRemainingTime(getTimeRemaining(), assignmentDescriptor.getDuration().getSeconds());
+                },
+                TIMESYNC_FREQUENCY
+        );
 	}
 
 	public void addFinishedTeam(TeamStatus team) {
 		finishedTeams.add(team);
 	}
+
+	private Date inSeconds(long sec) {
+        return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
+
+    }
 }
