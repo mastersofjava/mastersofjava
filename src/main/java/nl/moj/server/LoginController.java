@@ -1,7 +1,7 @@
 package nl.moj.server;
 
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.model.Role;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.slf4j.Logger;
@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-import static nl.moj.server.model.Role.ROLE_USER;
+import static nl.moj.server.teams.model.Role.ROLE_USER;
 
 @Controller
 @RequiredArgsConstructor

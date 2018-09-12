@@ -1,23 +1,21 @@
 package nl.moj.server.teams.model;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import nl.moj.server.model.Result;
-import nl.moj.server.model.Role;
-import nl.moj.server.model.Test;
 
 import javax.persistence.*;
-import java.util.List;
 
 @Entity
 @Data
 @Table(name = "teams")
 @NoArgsConstructor(force = true)
-@SequenceGenerator(name="id_seq", sequenceName = "teams_seq")
+@SequenceGenerator(name="teams_seq", sequenceName = "teams_seq")
+@EqualsAndHashCode(of={"name"})
 public class Team {
 
 	@Id
-	@GeneratedValue(generator = "id_seq", strategy = GenerationType.SEQUENCE)
+	@GeneratedValue(generator = "teams_seq", strategy = GenerationType.SEQUENCE)
 	@Column(name = "id", nullable = false)
 	private Long id;
 

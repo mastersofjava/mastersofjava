@@ -1,5 +1,6 @@
 package nl.moj.server.runtime;
 
+import nl.moj.server.DbUtil;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
@@ -36,12 +37,19 @@ public class AssignmentRuntimeTest {
 	@Autowired
 	private CompetitionRepository competitionRepository;
 
+	@Autowired
+	private CompetitionRuntime competitionRuntime;
+
+	@Autowired
+	private DbUtil dbUtil;
+
 	private Competition competition;
 
 	@Before
 	public void init() {
+		dbUtil.cleanup();
 	    competition = createCompetition();
-
+	    competitionRuntime.startCompetition(competition);
 	}
 
 	@Test
@@ -49,7 +57,7 @@ public class AssignmentRuntimeTest {
 		OrderedAssignment oa = competition.getAssignmentsInOrder().get(0);
 		AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(oa.getAssignment());
 
-		Future<?> stopHandle = assignmentRuntime.start(oa);
+		Future<?> stopHandle = assignmentRuntime.start(oa, competitionRuntime.getCompetitionSession());
 
 		try {
 			stopHandle.get(ad.getDuration().toSeconds() + 1, TimeUnit.SECONDS);

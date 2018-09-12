@@ -7,6 +7,7 @@ import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
@@ -59,6 +60,7 @@ public class AssignmentRuntime {
 	private boolean running;
 
 	private List<TeamStatus> finishedTeams;
+	private CompetitionSession competitionSession;
 
 	/**
 	 * Starts the given {@link OrderedAssignment} and returns
@@ -67,8 +69,9 @@ public class AssignmentRuntime {
 	 * @param orderedAssignment the assignment to start.
 	 * @return the {@link Future}
 	 */
-	public Future<?> start(OrderedAssignment orderedAssignment) {
+	public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) {
 		clearHandlers();
+		this.competitionSession = competitionSession;
 		this.orderedAssignment = orderedAssignment;
 		this.assignment = orderedAssignment.getAssignment();
 		this.assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
@@ -104,7 +107,6 @@ public class AssignmentRuntime {
 			clearHandlers();
 		}
 		running = false;
-
 		log.info("Stopped assignment {}", assignment.getName());
 	}
 
@@ -207,7 +209,7 @@ public class AssignmentRuntime {
 	}
 
 	private void initTeamScore(Team team) {
-		scoreService.initializeScoreAtStart(team.getName(), assignment.getName());
+		scoreService.initializeScoreAtStart(team, assignment,competitionSession);
 	}
 
 	private void cleanupTeamAssignmentData(Team team) {
@@ -223,7 +225,7 @@ public class AssignmentRuntime {
 	}
 
 	private void cleanupTeamScores() {
-		scoreService.removeScoresForAssignment(assignmentDescriptor.getName());
+		scoreService.removeScoresForAssignment(assignment);
 	}
 
 	private Future<?> startTimers() {

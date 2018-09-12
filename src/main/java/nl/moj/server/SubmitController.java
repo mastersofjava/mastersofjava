@@ -10,6 +10,8 @@ import lombok.Data;
 import nl.moj.server.compiler.CompileService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.test.TestService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,9 +46,11 @@ public class SubmitController {
 
 	private CompetitionRuntime competition;
 
+	private TeamRepository teamRepository;
+
 	public SubmitController(CompileService compileService, TestService testService,
 							@Qualifier("compiling") Executor compiling, @Qualifier("testing") Executor testing,
-							@Value("${moj.server.timeout}") Integer timeout, CompetitionRuntime competition) {
+							@Value("${moj.server.timeout}") Integer timeout, CompetitionRuntime competition, TeamRepository teamRepository) {
 		super();
 		this.compileService = compileService;
 		this.testService = testService;
@@ -54,6 +58,7 @@ public class SubmitController {
 		this.testing = testing;
 		this.timeout = timeout;
 		this.competition = competition;
+		this.teamRepository = teamRepository;
 	}
 
 	@MessageMapping("/compile")
@@ -93,8 +98,9 @@ public class SubmitController {
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		// TODO we need to handle resubmits
+		Team team = teamRepository.findByName(user.getName());
 		AssignmentState state = competition.getAssignmentState();
-		if (!state.isTeamFinished(user.getName())) {
+		if (!state.isTeamFinished(team)) {
 			long scoreAtSubmissionTime = state.getTimeRemaining();
 			message.setTeam(user.getName());
 			message.setScoreAtSubmissionTime(scoreAtSubmissionTime);

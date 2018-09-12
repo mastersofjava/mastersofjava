@@ -1,4 +1,4 @@
-package nl.moj.server.model;
+package nl.moj.server.test;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,37 +11,36 @@ import javax.persistence.*;
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@Table(name = "result")
-public class Result {
+@Table(name = "tests")
+public class Test {
 
-    public Result(Team team, String assignment, Integer score, Integer penalty, Integer credit) {
+    public Test(Team team, String assignment, String testName, Integer success, Integer failure) {
         super();
         this.team = team;
         this.assignment = assignment;
-        this.score = score;
-        this.penalty = penalty;
-        this.credit = credit;
+        this.testName = testName;
+        this.success = success;
+        this.failure = failure;
     }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
-	private Long id;
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name="team_id", nullable = false)
 	private Team team;
 
     @Column(name = "assignment", nullable = false)
-	private String assignment;
+    private String assignment;
 
-    @Column(name = "score", nullable = false)
-	private Integer score;
+    @Column(name = "test_name", nullable = false)
+    private String testName;
 
-    @Column(name = "penalty", nullable = false)
-	private Integer penalty;
+    @Column(name = "success", nullable = false)
+    private Integer success;
 
-    @Column(name = "credit", nullable = false)
-	private Integer credit;
-    
+    @Column(name = "failure", nullable = false)
+    private Integer failure;
 }
