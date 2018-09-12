@@ -1,7 +1,7 @@
 package nl.moj.server;
 
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.model.Role;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentState;
@@ -61,8 +61,8 @@ public class FeedbackController {
 	}
 
     private void orderTeamsByHighestTotalScore(List<Team> allTeams) {
-		allTeams.sort(Comparator.comparingInt(t -> resultRepository.getTotalScore(t)));
+		if( competition.getCompetitionSession() != null ) {
+			allTeams.sort(Comparator.comparingInt(t -> resultRepository.getTotalScore(t, competition.getCompetitionSession())));
+		}
 	}
-	
-
 }

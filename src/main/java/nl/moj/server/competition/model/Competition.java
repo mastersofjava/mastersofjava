@@ -10,11 +10,11 @@ import java.util.*;
 @Entity
 @Table(name = "competitions")
 @NoArgsConstructor(force = true)
-@SequenceGenerator(name="id_seq", sequenceName = "competitions_seq")
+@SequenceGenerator(name="competitions_seq", sequenceName = "competitions_seq")
 public class Competition {
 
 	@Id
-	@GeneratedValue(generator = "id_seq", strategy = GenerationType.SEQUENCE)
+	@GeneratedValue(generator = "competitions_seq", strategy = GenerationType.SEQUENCE)
 	@Column(name = "id", nullable = false)
 	private Long id;
 
@@ -26,7 +26,7 @@ public class Competition {
 
 	@OneToMany(mappedBy = "competition", cascade = CascadeType.ALL)
 	private List<OrderedAssignment> assignments;
-
+	
 	public List<OrderedAssignment> getAssignmentsInOrder() {
 		List<OrderedAssignment> copy = new ArrayList<>(assignments);
 		copy.sort(Comparator.comparingInt(OrderedAssignment::getOrder));

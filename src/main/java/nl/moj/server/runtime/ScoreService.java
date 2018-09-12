@@ -1,8 +1,11 @@
 package nl.moj.server.runtime;
 
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.model.Result;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.repository.ResultRepository;
+import nl.moj.server.runtime.model.Result;
+import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,15 +22,23 @@ public class ScoreService {
 
 	private final TeamRepository teamRepository;
 
+	
     @Value("${moj.server.competition.bonusForSuccessfulSubmission}")
 	private int bonusForSuccessfulSubmission;
 
-	public void removeScoresForAssignment(String assignment) {
+	public void removeScoresForAssignment(Assignment assignment) {
 		resultRepository.findAllByAssignment(assignment).forEach(resultRepository::delete);
 	}
 
-	public void initializeScoreAtStart(String teamname, String assignment) {
-        resultRepository.save(new Result(teamRepository.findByName(teamname), assignment, 0, 0, 0));
+	public void initializeScoreAtStart(Team team, Assignment assignment, CompetitionSession competitionSession) {
+		Result result = new Result();
+		result.setAssignment(assignment);
+		result.setCompetitionSession(competitionSession);
+		result.setTeam(team);
+		result.setScore(0);
+		result.setPenalty(0);
+		result.setCredit(0);
+        resultRepository.save(result);
 	}
 
 	/**
@@ -40,7 +51,7 @@ public class ScoreService {
 	 * @param scoreAtSubmissionTime
 	 * @return
 	 */
-	public Long registerScoreAtSubmission(String teamname, String assignment, Long scoreAtSubmissionTime) {
+	public Long registerScoreAtSubmission(String teamname, Assignment assignment, Long scoreAtSubmissionTime) {
 		Long score = 0L;
 		if (scoreAtSubmissionTime > 0) {
 			score = scoreAtSubmissionTime + bonusForSuccessfulSubmission;
