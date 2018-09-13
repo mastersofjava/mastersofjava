@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static nl.moj.server.model.Role.ROLE_USER;
+import static nl.moj.server.teams.model.Role.ROLE_USER;
 
 @Controller
 @RequiredArgsConstructor
@@ -62,8 +62,8 @@ public class FeedbackController {
 	}
 
     private void orderTeamsByHighestTotalScore(List<Team> allTeams) {
-		allTeams.sort(Comparator.comparingInt(t -> resultRepository.getTotalScore(t)));
+		if( competition.getCompetitionSession() != null ) {
+			allTeams.sort(Comparator.comparingInt(t -> resultRepository.getTotalScore(t, competition.getCompetitionSession())));
+		}
 	}
-	
-
 }

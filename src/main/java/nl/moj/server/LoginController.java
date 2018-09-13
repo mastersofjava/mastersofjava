@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-import static nl.moj.server.model.Role.ROLE_USER;
+import static nl.moj.server.teams.model.Role.ROLE_USER;
 
 @Controller
 @RequiredArgsConstructor

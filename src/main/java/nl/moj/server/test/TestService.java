@@ -3,6 +3,7 @@ package nl.moj.server.test;
 import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.UnitTestLimitsConfiguration;
+import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.compiler.CompileResult;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
@@ -118,7 +119,7 @@ public class TestService {
 			@Override
 			public TestResult get() {
 				AssignmentState state = competition.getAssignmentState();
-				String assignment = state.getAssignmentDescriptor().getName();
+				Assignment assignment = competition.getCurrentAssignment().getAssignment();
 				Long finalScore = 0L;
 				final Long submissionTime = compileResult.getScoreAtSubmissionTime(); // Identical to score at
 				// submission time
@@ -201,7 +202,7 @@ public class TestService {
 
 	}
 
-	private Long setFinalAssignmentScore(TestResult testResult, String assignment, Long scoreAtSubmissionTime) {
+	private Long setFinalAssignmentScore(TestResult testResult, Assignment assignment, Long scoreAtSubmissionTime) {
 		Long score = scoreService.registerScoreAtSubmission(testResult.getUser(), assignment,
 				testResult.isSuccessful() ? scoreAtSubmissionTime : 0L);
 		feedbackMessageController.sendRefreshToRankingsPage();

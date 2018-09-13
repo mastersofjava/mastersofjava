@@ -1,6 +1,8 @@
 package nl.moj.server.repository;
 
-import nl.moj.server.model.Result;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.runtime.model.Result;
 import nl.moj.server.teams.model.Team;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,12 +14,14 @@ import java.util.List;
 @Repository
 public interface ResultRepository extends JpaRepository<Result, Long> {
 
-    List<Result> findAllByAssignment(String assignment);
+	List<Result> findAllByAssignment(Assignment assignment);
 
-    Result findByTeamAndAssignment(Team team, String assignment);
+	Result findByTeamAndAssignment(Team team, Assignment assignment);
 
-    @Query("SELECT SUM(r.score) FROM Result r WHERE r.team.name = :#{#team.name}")
-    Integer getTotalScore(@Param("team") Team team);
+	@Query("SELECT SUM(r.score) FROM Result r WHERE r.team = :team AND r.competitionSession = :session")
+	Integer getTotalScore(@Param("team") Team team, @Param("session") CompetitionSession session);
 
-    List<Result> findAllByOrderByTeamNameAsc();
+	List<Result> findAllByOrderByTeamNameAsc();
+
+	List<Result> findAllByTeamAndCompetitionSession(Team team, CompetitionSession session);
 }

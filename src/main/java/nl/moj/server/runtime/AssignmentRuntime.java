@@ -7,6 +7,7 @@ import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
@@ -31,9 +32,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -43,9 +42,13 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class AssignmentRuntime {
 
-    public static final long WARNING_TIMER = 40L; // seconds
-    public static final long CRITICAL_TIMER = 25L; // seconds
-    public static final long TIMESYNC_FREQUENCY = 2000L; // millis
+    public static final long WARNING_TIMER = 30L; // seconds
+    public static final long CRITICAL_TIMER = 10L; // seconds
+    public static final long TIMESYNC_FREQUENCY = 10000L; // millis
+    public static final String STOP = "STOP";
+    public static final String WARNING_SOUND = "WARNING_SOUND";
+    public static final String CRITICAL_SOUND = "CRITICAL_SOUND";
+    public static final String TIMESYNC = "TIMESYNC";
 
     private final AssignmentService assignmentService;
     private final FeedbackMessageController feedbackMessageController;
@@ -59,7 +62,7 @@ public class AssignmentRuntime {
 	private OrderedAssignment orderedAssignment;
 	private Assignment assignment;
 	private AssignmentDescriptor assignmentDescriptor;
-	private List<Future<?>> handlers;
+    private Map<String, Future<?>> handlers;
 
 	@Getter
 	private List<AssignmentFile> originalAssignmentFiles;
@@ -68,14 +71,19 @@ public class AssignmentRuntime {
 	private boolean running;
 
 	private List<TeamStatus> finishedTeams;
+	private CompetitionSession competitionSession;
 
+	/**
+	 * Starts the given {@link OrderedAssignment} and returns
+	 * a Future&lt;?&gt; referencing which completes when the
+	 * assignment is supposed to end.
+	 * @param orderedAssignment the assignment to start.
+	 * @return the {@link Future}
+	 */
     @Async
-    /**
-     * Start an assignment
-     * @param orderedAssignment The assignment to start
-     */
-	public void start(OrderedAssignment orderedAssignment) {
+	public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) {
 		clearHandlers();
+		this.competitionSession = competitionSession;
 		this.orderedAssignment = orderedAssignment;
 		this.assignment = orderedAssignment.getAssignment();
 		this.assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
@@ -87,8 +95,10 @@ public class AssignmentRuntime {
 		// cleanup historical assignment data
 		initTeamsForAssignment();
 
+        // play the gong
+        taskScheduler.schedule(() -> soundService.playGong(), inSeconds(0));
 		// start the timers
-		startTimers();
+        Future<?> stopHandle = startTimers();
 
 		// mark assignment as running
 		running = true;
@@ -96,12 +106,9 @@ public class AssignmentRuntime {
 		// send start to clients.
 		feedbackMessageController.sendStartToTeams(assignment.getName());
 
-		// play the gong
-        taskScheduler.schedule(() ->
-                soundService.playGong(),
-                inSeconds(0)
-        );
         log.info("Started assignment {}", assignment.getName());
+
+		return stopHandle;
 	}
 
     /**
@@ -109,9 +116,13 @@ public class AssignmentRuntime {
      */
 	public void stop() {
 		feedbackMessageController.sendStopToTeams(assignment.getName());
-		clearHandlers();
+		if (getTimeRemaining() > 0) {
+            clearHandlers();
+		} else {
+		    this.handlers.get(TIMESYNC).cancel(true);
+        }
 		running = false;
-        log.info("Stopped assignment {}", assignment.getName());
+		log.info("Stopped assignment {}", assignment.getName());
 	}
 
 // TODO this should probably not be here
@@ -213,7 +224,7 @@ public class AssignmentRuntime {
 	}
 
 	private void initTeamScore(Team team) {
-		scoreService.initializeScoreAtStart(team.getName(), assignment.getName());
+		scoreService.initializeScoreAtStart(team, assignment,competitionSession);
 	}
 
 	private void cleanupTeamAssignmentData(Team team) {
@@ -229,16 +240,17 @@ public class AssignmentRuntime {
 	}
 
 	private void cleanupTeamScores() {
-		scoreService.removeScoresForAssignment(assignmentDescriptor.getName());
+		scoreService.removeScoresForAssignment(assignment);
 	}
 
-    public void startTimers() {
-        clearHandlers();
+	private Future<?> startTimers() {
         timer = StopWatch.createStarted();
-        handlers.add(scheduleStop());
-        handlers.add(scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration().toSeconds() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
-        handlers.add(scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration().toSeconds() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
-        handlers.add(scheduleTimeSync());
+        Future<?> stop = scheduleStop();
+        handlers.put(STOP, stop);
+        handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration().toSeconds() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
+        handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration().toSeconds() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
+        handlers.put(TIMESYNC, scheduleTimeSync());
+        return stop;
     }
 
     private Long getTimeRemaining() {
@@ -254,9 +266,11 @@ public class AssignmentRuntime {
 
 	private void clearHandlers() {
 		if (this.handlers != null) {
-			this.handlers.forEach(h -> h.cancel(true));
+			this.handlers.forEach((k, v) -> {
+                v.cancel(true);
+			});
 		}
-		this.handlers = new ArrayList<>();
+		this.handlers = new HashMap<>();
 	}
 
     @Async

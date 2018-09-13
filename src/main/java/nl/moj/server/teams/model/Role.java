@@ -1,4 +1,4 @@
-package nl.moj.server.model;
+package nl.moj.server.teams.model;
 
 public enum Role {
 

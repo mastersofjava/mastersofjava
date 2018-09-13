@@ -14,12 +14,12 @@ import java.util.UUID;
 })
 @Data
 @NoArgsConstructor(force = true)
-@SequenceGenerator(name="id_seq", sequenceName = "ordered_assignments_seq")
+@SequenceGenerator(name="ordered_assignments_seq", sequenceName = "ordered_assignments_seq")
 @EqualsAndHashCode(of={"uuid"})
 public class OrderedAssignment {
 
 	@Id
-	@GeneratedValue(generator = "id_seq", strategy = GenerationType.SEQUENCE)
+	@GeneratedValue(generator = "ordered_assignments_seq", strategy = GenerationType.SEQUENCE)
 	@Column(name = "id", nullable = false)
 	private Long id;
 

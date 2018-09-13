@@ -8,10 +8,10 @@ import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
-import nl.moj.server.model.Result;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.Result;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.csv.CSVFormat;
@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -42,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static nl.moj.server.model.Role.ROLE_USER;
+import static nl.moj.server.teams.model.Role.ROLE_USER;
 
 @Controller
 @RequiredArgsConstructor
@@ -110,7 +109,7 @@ public class TaskControlController {
 		c.setName("Masters of Java 2018");
 		c.setAssignments(assignmentRepository.findAll().stream().map(createOrderedAssignments(c)).collect(Collectors.toList()));
 		c = competitionRepository.save(c);
-		competition.initializeCompetition(c);
+		competition.startCompetition(c);
 		
 		return "Assignments initialized";
 	}
@@ -175,19 +174,13 @@ public class TaskControlController {
 				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(ResultHeaders.class)
 						.withFirstRecordAsHeader().parse(in);
 				for (CSVRecord record : records) {
-					Result r = new Result(teamRepository.findByName(record.get(ResultHeaders.TEAM)), record.get(ResultHeaders.ASSIGNMENT),
-							Integer.valueOf(record.get(ResultHeaders.SCORE)), Integer.valueOf(record.get(ResultHeaders.PENALTY)),
-							Integer.valueOf(record.get(ResultHeaders.CREDIT)));
-					resultRepository.save(r);
+					resultRepository.save(createResultFromRecord(record));
 				}
 			} else if (file.getName().equalsIgnoreCase("results-update.csv")) {
 				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(ResultHeaders.class)
 						.withFirstRecordAsHeader().parse(in);
 				for (CSVRecord record : records) {
-					Result r = new Result(teamRepository.findByName(record.get(ResultHeaders.TEAM)), record.get(ResultHeaders.ASSIGNMENT),
-							Integer.valueOf(record.get(ResultHeaders.SCORE)), Integer.valueOf(record.get(ResultHeaders.PENALTY)),
-							Integer.valueOf(record.get(ResultHeaders.CREDIT)));
-                    resultRepository.save(r);
+                    resultRepository.save(createResultFromRecord(record));
 				}
 			} else {
 				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(TeamHeaders.class).withFirstRecordAsHeader()
@@ -204,6 +197,17 @@ public class TaskControlController {
 			log.error(e.getMessage(), e);
 		}
 		return "control";
+	}
+
+	private Result createResultFromRecord( CSVRecord record ) {
+		Result r = new Result();
+		r.setTeam(teamRepository.findByName(record.get(ResultHeaders.TEAM)));
+		r.setCompetitionSession(competition.getCompetitionSession());
+		r.setAssignment(assignmentRepository.findByName(record.get(ResultHeaders.ASSIGNMENT)));
+		r.setCredit(Integer.valueOf(record.get(ResultHeaders.CREDIT)));
+		r.setPenalty(Integer.valueOf(record.get(ResultHeaders.PENALTY)));
+		r.setScore(Integer.valueOf(record.get(ResultHeaders.SCORE)));
+		return r;
 	}
 
 	@GetMapping(value = "/getteams", produces = "text/csv")

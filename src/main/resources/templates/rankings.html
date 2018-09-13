@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
 
-    <title>Masters of Java 2017 Ranking</title>
+    <title>Masters of Java 2018 Ranking</title>
 
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
           href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
@@ -67,17 +67,22 @@
                         <tr>
                             <th></th>
                             <th class="text-center">Team</th>
-                            <th class="text-center" th:each="assignment,iterStat : ${assignments}">#[[${iterStat.count}]] <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" th:attrappend="data-content=${assignment}"></span></th>
+                            <th class="text-center" th:each="a,iterStat : ${oas}">
+                                #[[${iterStat.count}]] <span class="fa fa-question-circle grey" data-container="body"
+                                                             data-trigger="hover" data-toggle="popover"
+                                                             data-placement="top"
+                                                             th:attrappend="data-content=${a.getAssignment().getName()}"></span></th>
                             <th class="text-center">Total Score</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <!--/*@thymesVar id="top" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
                         <tr th:each="ranking,status : ${top}" th:class="${'rank-'+status.index}">
                             <td class="text-center" th:text="${ranking.rank}"></td>
                             <td th:text="${ranking.team}">teamname</td>
-                            <th:block th:each="result : ${ranking.results}">
-                                <td class="text-center" th:text="${result.score}">0</td>
+                            <th:block th:each="assignment : ${oas}">
+                                <td class="text-center" th:text="${ranking.getAssignmentResult(assignment).getScore()}">
+                                    0
+                                </td>
                             </th:block>
                             <td class="text-center" th:text="${ranking.totalScore}">3</td>
                         </tr>
@@ -94,11 +99,14 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" data-content="You can hover over the scores to see the individual assignment breakdown."></span></th>
+                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body"
+                                                              data-trigger="hover" data-toggle="popover"
+                                                              data-placement="top"
+                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
-                <!--/*@thymesVar id="bottom1" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
                 <tr th:each="ranking : ${bottom1}">
                     <td class="text-center" th:text="${ranking.rank}"></td>
                     <td class="text-center" th:text="${ranking.team}">teamname</td>
@@ -115,11 +123,15 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" data-content="You can hover over the scores to see the individual assignment breakdown."></span></th>
+                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body"
+                                                              data-trigger="hover" data-toggle="popover"
+                                                              data-placement="top"
+                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
-                <!--/*@thymesVar id="bottom2" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <!--/*@thymesVar id="bottom2" type="java.util.List<nl.moj.server.rankings.model.Ranking>"*/-->
                 <tr th:each="ranking : ${bottom2}">
                     <td class="text-center" th:text="${ranking.rank}"></td>
                     <td class="text-center" th:text="${ranking.team}">teamname</td>
@@ -136,11 +148,15 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" data-content="You can hover over the scores to see the individual assignment breakdown."></span></th>
+                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body"
+                                                              data-trigger="hover" data-toggle="popover"
+                                                              data-placement="top"
+                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
-                <!--/*@thymesVar id="bottom3" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <!--/*@thymesVar id="bottom3" type="java.util.List<nl.moj.server.rankings.model.Ranking>"*/-->
                 <tr th:each="ranking : ${bottom3}">
                     <td class="text-center" th:text="${ranking.rank}"></td>
                     <td class="text-center" th:text="${ranking.team}">teamname</td>
@@ -157,11 +173,15 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" data-content="You can hover over the scores to see the individual assignment breakdown."></span></th>
+                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body"
+                                                              data-trigger="hover" data-toggle="popover"
+                                                              data-placement="top"
+                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
-                <!--/*@thymesVar id="bottom4" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <!--/*@thymesVar id="bottom4" type="java.util.List<nl.moj.server.rankings.model.Ranking>"*/-->
                 <tr th:each="ranking : ${bottom4}">
                     <td class="text-center" th:text="${ranking.rank}"></td>
                     <td class="text-center" th:text="${ranking.team}">teamname</td>

@@ -12,7 +12,7 @@
 	</parent>
 
 	<properties>
-		<java.version>9</java.version>
+		<java.version>10</java.version>
 		<lombok.version>1.18.2</lombok.version>
 		<maven-surefire-plugin.version>2.22.0</maven-surefire-plugin.version>
 	</properties>
