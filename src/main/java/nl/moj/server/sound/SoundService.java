@@ -21,16 +21,20 @@ public class SoundService {
 		this.directoriesConfiguration = directoriesConfiguration;
 	}
 
-
 	public void playGong() {
 		play(Sound.GONG, 0);
 	}
 
-	public void playTicTac(int seconds) {
+	public void playTicTac(long seconds) {
 		play(Sound.TIC_TAC, seconds);
 	}
 
-	private void play(Sound sound, int seconds) {
+	/**
+	 * Play the sound for specified seconds
+	 * @param sound
+	 * @param seconds
+	 */
+	public void play(Sound sound, long seconds) {
 		try {
 			SoundPlayer player = new SoundPlayer(sound);
 			player.play(seconds);
@@ -50,7 +54,7 @@ public class SoundService {
 			clip = AudioSystem.getClip();
 		}
 
-		private void play(int seconds) throws IOException, UnsupportedAudioFileException, LineUnavailableException {
+		private void play(long seconds) throws IOException, UnsupportedAudioFileException, LineUnavailableException {
 			CountDownLatch l = new CountDownLatch(1);
 			log.debug("Start playing {}.", song);
 			clip.open(AudioSystem.getAudioInputStream(song.toFile()));

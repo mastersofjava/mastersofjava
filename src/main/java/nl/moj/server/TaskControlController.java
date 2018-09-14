@@ -8,10 +8,10 @@ import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
-import nl.moj.server.runtime.model.Result;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.Result;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.csv.CSVFormat;
@@ -85,9 +85,12 @@ public class TaskControlController {
 	}
 
 	@MessageMapping("/control/stoptask")
-	public void stopTask(TaskMessage message) {
-		competition.stopCurrentAssignment();
-		feedbackMessageController.sendStopToTeams(message.taskName);
+	public void stopTask() {
+	    if (null != competition.getCurrentAssignment()) {
+            String stoppedTask = competition.getCurrentAssignment().getAssignment().getName();
+            competition.stopCurrentAssignment();
+            feedbackMessageController.sendStopToTeams(stoppedTask);
+        }
 	}
 
 	@MessageMapping("/control/clearCurrentAssignment")
