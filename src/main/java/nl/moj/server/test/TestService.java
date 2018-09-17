@@ -1,10 +1,9 @@
 package nl.moj.server.test;
 
-import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.UnitTestLimitsConfiguration;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.compiler.CompileResult;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
 import nl.moj.server.runtime.model.AssignmentFile;
@@ -13,7 +12,6 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.stream.LogOutputStream;
@@ -39,14 +37,9 @@ public class TestService {
 	private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
 			Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-	private UnitTestLimitsConfiguration limits;
-
 	private Executor testing;
 
-	private DirectoriesConfiguration directories;
-
-	private String javaExecutable;
-	;
+	private MojServerProperties mojServerProperties;
 
 	private CompetitionRuntime competition;
 
@@ -54,14 +47,10 @@ public class TestService {
 
 	private FeedbackMessageController feedbackMessageController;
 
-	public TestService(UnitTestLimitsConfiguration limits, @Qualifier("testing") Executor testing,
-					   DirectoriesConfiguration directories, @Value("${moj.server.javaExecutable}") String javaExecutable,
+	public TestService(MojServerProperties mojServerProperties, @Qualifier("testing") Executor testing,
 					   CompetitionRuntime competition, ScoreService scoreService, FeedbackMessageController feedbackMessageController) {
-		super();
-		this.limits = limits;
+		this.mojServerProperties = mojServerProperties;
 		this.testing = testing;
-		this.directories = directories;
-		this.javaExecutable = javaExecutable;
 		this.competition = competition;
 		this.scoreService = scoreService;
 		this.feedbackMessageController = feedbackMessageController;
@@ -212,9 +201,9 @@ public class TestService {
 	private TestResult unittest(AssignmentFile file, CompileResult compileResult) {
 
 		log.info("running unittest: {}", file.getName());
-		File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(),
+		File teamdir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(),
 				compileResult.getUser());
-		File policy = FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(),
+		File policy = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
 				SECURITY_POLICY_FOR_UNIT_TESTS);
 		if (!policy.exists()) {
 			log.error("security policy file not found"); // Exception is swallowed somewhere
@@ -227,13 +216,13 @@ public class TestService {
 			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher();
 			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher();
 			try {
-				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(javaExecutable, "-cp",
+				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(mojServerProperties.getLanguages().getJavaVersion().getRuntime().toString(), "-cp",
 						makeClasspath(compileResult.getUser()), "-Djava.security.manager",
 						"-Djava.security.policy=" + policy.getAbsolutePath(), "org.junit.runner.JUnitCore",
 						file.getName());
 				log.trace("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
 				exitvalue = jUnitCommand.directory(teamdir)
-						.timeout(limits.getUnitTestTimeoutSeconds(), TimeUnit.SECONDS).redirectOutput(jUnitOutput)
+						.timeout(mojServerProperties.getLimits().getUnitTestTimeoutSeconds(), TimeUnit.SECONDS).redirectOutput(jUnitOutput)
 						.redirectError(jUnitError).execute().getExitValue();
 			} catch (TimeoutException e) {
 				// process is automatically destroyed
@@ -244,7 +233,7 @@ public class TestService {
 			}
 			log.debug("exitValue {}", exitvalue);
 			if (isRunTerminated) {
-				jUnitOutput.getBuffer().append('\n').append(limits.getUnitTestOutput().getTestTimoutTermination());
+				jUnitOutput.getBuffer().append('\n').append(mojServerProperties.getLimits().getUnitTestOutput().getTestTimeoutTermination());
 			}
 
 			final boolean success;
@@ -293,10 +282,10 @@ public class TestService {
 
 	private String makeClasspath(String user) {
 		final List<File> classPath = new ArrayList<>();
-		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), user));
+		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(), user));
 		classPath.add(
-				FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(), "junit-4.12.jar"));
-		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(),
+				FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
+		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
 				"hamcrest-all-1.3.jar"));
 		for (File file : classPath) {
 			if (!file.exists()) {
@@ -328,11 +317,11 @@ public class TestService {
 		private int lineCount = 0;
 
 		public LengthLimitedOutputCatcher() {
-			this.maxSize = limits.getUnitTestOutput().getMaxChars();
-			this.maxLines = limits.getUnitTestOutput().getMaxFeedbackLines();
-			this.maxLineLenght = limits.getUnitTestOutput().getMaxLineLen();
-			this.lineTruncatedMessage = limits.getUnitTestOutput().getLineTruncatedMessage();
-			this.outputTruncMessage = limits.getUnitTestOutput().getOutputTruncMessage();
+			this.maxSize = mojServerProperties.getLimits().getUnitTestOutput().getMaxChars();
+			this.maxLines = mojServerProperties.getLimits().getUnitTestOutput().getMaxFeedbackLines();
+			this.maxLineLenght = mojServerProperties.getLimits().getUnitTestOutput().getMaxLineLen();
+			this.lineTruncatedMessage = mojServerProperties.getLimits().getUnitTestOutput().getLineTruncatedMessage();
+			this.outputTruncMessage = mojServerProperties.getLimits().getUnitTestOutput().getOutputTruncMessage();
 		}
 
 		@Override

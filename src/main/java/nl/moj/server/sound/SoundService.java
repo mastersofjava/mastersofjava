@@ -1,7 +1,8 @@
 package nl.moj.server.sound;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.DirectoriesConfiguration;
+import nl.moj.server.config.properties.MojServerProperties;
 import org.springframework.stereotype.Service;
 
 import javax.sound.sampled.*;
@@ -13,13 +14,10 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SoundService {
 
-	private DirectoriesConfiguration directoriesConfiguration;
-
-	public SoundService(DirectoriesConfiguration directoriesConfiguration) {
-		this.directoriesConfiguration = directoriesConfiguration;
-	}
+	private final MojServerProperties mojServerProperties;
 
 	public void playGong() {
 		play(Sound.GONG, 0);
@@ -50,7 +48,7 @@ public class SoundService {
 
 		private SoundPlayer(Sound sound) throws LineUnavailableException {
 
-			this.song = Paths.get(directoriesConfiguration.getBaseDirectory(), directoriesConfiguration.getSoundDirectory(), sound.filename()).toAbsolutePath();
+			this.song = Paths.get(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getSoundDirectory(), sound.filename()).toAbsolutePath();
 			clip = AudioSystem.getClip();
 		}
 

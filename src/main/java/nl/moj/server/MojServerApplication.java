@@ -1,5 +1,6 @@
 package nl.moj.server;
 
+import nl.moj.server.config.properties.MojServerProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -11,7 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 @SpringBootApplication
-@EnableConfigurationProperties(DirectoriesConfiguration.class)
+@EnableConfigurationProperties(MojServerProperties.class)
 public class MojServerApplication {
 
     public static void main(String[] args) {

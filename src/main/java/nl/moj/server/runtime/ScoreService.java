@@ -3,13 +3,13 @@ package nl.moj.server.runtime;
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.model.Result;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,9 +22,7 @@ public class ScoreService {
 
 	private final TeamRepository teamRepository;
 
-	
-    @Value("${moj.server.competition.bonusForSuccessfulSubmission}")
-	private int bonusForSuccessfulSubmission;
+	private final MojServerProperties mojServerProperties;
 
 	public void removeScoresForAssignment(Assignment assignment) {
 		resultRepository.findAllByAssignment(assignment).forEach(resultRepository::delete);
@@ -54,11 +52,11 @@ public class ScoreService {
 	public Long registerScoreAtSubmission(String teamname, Assignment assignment, Long scoreAtSubmissionTime) {
 		Long score = 0L;
 		if (scoreAtSubmissionTime > 0) {
-			score = scoreAtSubmissionTime + bonusForSuccessfulSubmission;
+			score = scoreAtSubmissionTime + mojServerProperties.getCompetition().getSuccessBonus();
 			
 		}
 		log.debug("Team {} submitted {}. assignment score {} + bonus {} = {}",
-		        teamname, assignment, scoreAtSubmissionTime, bonusForSuccessfulSubmission, score );
+		        teamname, assignment, scoreAtSubmissionTime, mojServerProperties.getCompetition().getSuccessBonus(), score );
         Result result = resultRepository.findByTeamAndAssignment(teamRepository.findByName(teamname), assignment);
         // TODO fix possible precision loss.
         result.setScore(score.intValue());

@@ -1,9 +1,9 @@
 package nl.moj.server.compiler;
 
 import lombok.AllArgsConstructor;
-import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.SubmitController.SourceMessage;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
@@ -43,7 +43,7 @@ public class CompileService {
 
 	private CompetitionRuntime competition;
 
-	private DirectoriesConfiguration directories;
+	private MojServerProperties mojServerProperties;
 
 	private TeamRepository teamRepository;
 
@@ -90,7 +90,7 @@ public class CompileService {
 			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
 					null);
 			String assignment = competition.getCurrentAssignment().getAssignment().getName();
-			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), message.getTeam());
+			File teamdir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(), message.getTeam());
 
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream().map(a -> {
 				JavaFileObject jfo = createJavaFileObject(a.getFilename(), a.getContent());
@@ -163,10 +163,10 @@ public class CompileService {
 
 	private List<File> makeClasspath(String user) {
 		final List<File> classPath = new ArrayList<>();
-		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), user));
+		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(), user));
 		classPath.add(
-				FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(), "junit-4.12.jar"));
-		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(),
+				FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
+		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
 				"hamcrest-all-1.3.jar"));
 		for (File file : classPath) {
 			if (!file.exists()) {

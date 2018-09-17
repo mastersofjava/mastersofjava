@@ -1,26 +1,19 @@
 moj:
   server:
-    assignmentsRepo: /tmp/assignments
-    javaExecutable: /Library/Java/JavaVirtualMachines/jdk-9.0.4.jdk/Contents/Home/bin
+    assignment-repo: /tmp/assignments
+    languages:
+      java-versions:
+      - version: 8
+        name: Java 8
+        compiler: /tmp/bin/javac
+        runtime: /tmp/bin/java
     directories:
-      baseDirectory: /opt/mojserver
-      teamDirectory: teams
-      assignmentDirectory: assignments
-      libDirectory: lib
-      soundDirectory: sounds
-      javaDocDirectory: javadoc
-    assignments:
-      repos:
-        -
-          name: "practice-assignments"
-          url: "ssh://git@bitbucket.org/first8/practice-assignments.git"
-          branch: "origin/master"
-        -
-          name: "2017-assignments"
-          url: "ssh://git@bitbucket.org/first8/2017-assignments.git"
-          branch: "origin/new_layout"
-    threads: 20
-    timeout: 5
+      team-directory: teams
+      assignment-directory: assignments
+      lib-directory: lib
+      sound-directory: sounds
+      javadoc-directory: javadoc
+      base-directory: moj-game-server/moj-data
     limits:
       unitTestTimeoutSeconds: 4
       unitTestOutput:
@@ -29,11 +22,19 @@ moj:
         maxLineLen: 1000
         lineTruncatedMessage: "...{truncated}"
         outputTruncMessage: "...{output truncated}"
-        testTimoutTermination: "...{terminated: test time expired}"
-
+        testTimeoutTermination: "...{terminated: test time expired}"
+    runtimes:
+      test:
+        timeout: 10
+        threads: 3
+      compile:
+        timeout: 10
+        threads: 3
+      server:
+        threads: 5
     competition:
-       bonusForSuccessfulSubmission: 400    
-
+      uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
+      success-bonus: 400
 
 spring:
   h2:

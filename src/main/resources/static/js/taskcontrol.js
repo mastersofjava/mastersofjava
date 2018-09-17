@@ -68,9 +68,9 @@ function clearAssignment() {
     stompClient.send("/app/control/clearCurrentAssignment", {}, {});
 }
 
-function cloneAssignmentsRepo() {
+function scanAssignments() {
     var repo = $("input[name='repo']:checked").val();
-    stompClient.send("/app/control/cloneAssignmentsRepo", {}, repo);
+    stompClient.send("/app/control/scanAssignments", {}, repo);
 }
 
 function showOutput(messageOutput) {

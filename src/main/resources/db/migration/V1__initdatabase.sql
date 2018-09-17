@@ -29,7 +29,7 @@ create table competition_sessions (
 );
 create table competitions (
   id   bigint not null,
-  name varchar(255),
+  name varchar(255) not null,
   uuid binary not null,
   primary key (id)
 );
