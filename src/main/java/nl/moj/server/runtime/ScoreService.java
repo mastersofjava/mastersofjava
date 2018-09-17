@@ -60,6 +60,10 @@ public class ScoreService {
 		log.debug("Team {} submitted {}. assignment score {} + bonus {} = {}",
 		        teamname, assignment, scoreAtSubmissionTime, bonusForSuccessfulSubmission, score );
         Result result = resultRepository.findByTeamAndAssignment(teamRepository.findByName(teamname), assignment);
+        if (result==null) {
+        	// todo fix this bug
+        	log.error("no team result fount for team {}, maybe a late joiner in the first assignment?");
+        }
         // TODO fix possible precision loss.
         result.setScore(score.intValue());
         resultRepository.save(result);

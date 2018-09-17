@@ -172,6 +172,9 @@ public class AssignmentRuntime {
 		assignmentDescriptor.getAssignmentFiles().getTests().forEach(p -> {
 			originalAssignmentFiles.add(convertToAssignmentFile(assignmentBase.resolve(p), AssignmentFileType.TEST, true));
 		});
+		assignmentDescriptor.getAssignmentFiles().getHiddenTests().forEach(p -> {
+			originalAssignmentFiles.add(convertToAssignmentFile(assignmentBase.resolve(p), AssignmentFileType.HIDDEN_TEST, true));
+		});
 		originalAssignmentFiles.add(convertToAssignmentFile(assignmentBase.resolve(assignmentDescriptor.getAssignmentFiles().getAssignment()), AssignmentFileType.TASK, true));
 	}
 

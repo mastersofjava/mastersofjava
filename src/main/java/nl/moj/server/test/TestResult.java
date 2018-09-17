@@ -11,7 +11,7 @@ public class TestResult {
 	private String user;
 	private boolean successful;
 	private String testname;
-	private boolean submit;
+//	private boolean submit;
 	private Long scoreAtSubmissionTime;
 	
 }

@@ -2,7 +2,7 @@ package nl.moj.server.runtime.model;
 
 public enum AssignmentFileType {
 	TEST,
-	SUBMIT,
+	HIDDEN_TEST,
 	EDIT,
 	READONLY,
 	TASK, 

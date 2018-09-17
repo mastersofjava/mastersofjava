@@ -33,9 +33,9 @@ public class AssignmentState {
 				.collect(Collectors.toList());
 	}
 
-	public List<AssignmentFile> getSubmitFiles() {
+	public List<AssignmentFile> getHiddenTestFiles() {
 		return assignmentFiles
-				.stream().filter(f -> f.getFileType() == AssignmentFileType.SUBMIT)
+				.stream().filter(f -> f.getFileType() == AssignmentFileType.HIDDEN_TEST)
 				.collect(Collectors.toList());
 	}
 

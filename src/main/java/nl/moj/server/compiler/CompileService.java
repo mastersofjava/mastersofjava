@@ -24,6 +24,7 @@ import java.net.URI;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -67,7 +68,8 @@ public class CompileService {
 			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
 					null);
 			String assignment = competition.getCurrentAssignment().getAssignment().getName();
-			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), message.getTeam());
+			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(),
+					message.getTeam());
 
 			List<JavaFileObject> javaFileObjects = assignmentFiles.stream().map(a -> {
 				JavaFileObject jfo = createJavaFileObject(a.getFilename(), a.getContent());
@@ -132,30 +134,25 @@ public class CompileService {
 		List<AssignmentFile> assignmentFiles;
 		AssignmentState state = competition.getAssignmentState();
 		if (withTest) {
-			assignmentFiles = state.getAssignmentFiles()
-					.stream()
-					.filter( f -> f.getFileType() == AssignmentFileType.READONLY ||
-							f.getFileType() == AssignmentFileType.TEST								)
+			assignmentFiles = state.getAssignmentFiles().stream().filter(
+					f -> f.getFileType() == AssignmentFileType.READONLY || f.getFileType() == AssignmentFileType.TEST)
 					.collect(Collectors.toList());
 		} else {
 			if (forSubmit) {
-				assignmentFiles = state.getAssignmentFiles()
-						.stream()
-						.filter( f -> f.getFileType() == AssignmentFileType.READONLY ||
-								f.getFileType() == AssignmentFileType.TEST ||
-								f.getFileType() == AssignmentFileType.SUBMIT)
+				assignmentFiles = state.getAssignmentFiles().stream()
+						.filter(f -> f.getFileType() == AssignmentFileType.READONLY
+								|| f.getFileType() == AssignmentFileType.TEST
+								|| f.getFileType() == AssignmentFileType.HIDDEN_TEST)
 						.collect(Collectors.toList());
 			} else {
-				assignmentFiles = state.getAssignmentFiles()
-						.stream()
-						.filter( f -> f.getFileType() == AssignmentFileType.READONLY)
-						.collect(Collectors.toList());
+				assignmentFiles = state.getAssignmentFiles().stream()
+						.filter(f -> f.getFileType() == AssignmentFileType.READONLY).collect(Collectors.toList());
 			}
 		}
 		assignmentFiles.forEach(f -> log.trace(f.getName()));
 		return assignmentFiles;
 	}
-	
+
 	private List<String> createCompilerOptions() {
 		List<String> options = new ArrayList<>();
 		// enable all recommended warnings.
@@ -169,10 +166,16 @@ public class CompileService {
 	private List<File> makeClasspath(String user) {
 		final List<File> classPath = new ArrayList<>();
 		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), user));
-		classPath.add(
-				FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(), "junit-4.12.jar"));
-		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(),
-				"hamcrest-all-1.3.jar"));
+//		classPath.add(
+//				FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(), "junit-4.12.jar"));
+//		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(),
+//				"hamcrest-all-1.3.jar"));
+
+		final File libDir = FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory());
+		final String[] extensions = { "jar" };
+		FileUtils.listFiles(libDir, extensions, false).forEach(f -> classPath.add(f));
+
+		log.debug("Compile classpath: ");
 		for (File file : classPath) {
 			if (!file.exists()) {
 				log.error("not found: {}", file.getAbsolutePath());

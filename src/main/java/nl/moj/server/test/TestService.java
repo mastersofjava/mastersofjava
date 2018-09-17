@@ -79,31 +79,38 @@ public class TestService {
 			@Override
 			public List<TestResult> get() {
 				if (compileResult.isSuccessful()) {
-					List<TestResult> result = new ArrayList<>();
 					List<String> tests = compileResult.getTests();
+					List<TestResult> results = new ArrayList<>();
 					List<AssignmentFile> testFiles = competition.getAssignmentState().getAssignmentFiles().stream()
 							.filter(f -> tests.contains(f.getName())).collect(Collectors.toList());
 					for (AssignmentFile assignmentFile : testFiles) {
-						try {
-							TestResult tr = unittest(assignmentFile, compileResult);
-							tr.setSubmit(false);
-							feedbackMessageController.sendTestFeedbackMessage(tr, false, 0);
-							result.add(tr);
-						} catch (Exception e) {
-							final TestResult dummyResult = TestResult.builder()
-									.result("Server error running tests - contact the Organizer")
-									.user(compileResult.getUser()).successful(false)
-									.testname(assignmentFile.getFilename()).build();
-							feedbackMessageController.sendTestFeedbackMessage(dummyResult, false, 0);
-							result.add(dummyResult);
-						}
+						results.add(runTest(compileResult, assignmentFile));
 					}
-					return result;
+					return results;
 				} else {
 					return new ArrayList<>();
 				}
 			}
+
 		}, testing);
+	}
+
+	private TestResult runTest(CompileResult compileResult, AssignmentFile assignmentFile) {
+		try {
+			TestResult tr = unittest(assignmentFile, compileResult);
+//			tr.setSubmit(false);
+			feedbackMessageController.sendTestFeedbackMessage(tr, false, 0);
+			return tr;
+		} catch (Exception e) {
+			return createInternalServerErrorDummyResult(compileResult);
+		}
+	}
+
+	private TestResult createInternalServerErrorDummyResult(CompileResult compileResult) {
+		final TestResult dummyResult = TestResult.builder().result("Server error running tests - contact the Organizer")
+				.user(compileResult.getUser()).successful(false).build();
+		feedbackMessageController.sendTestFeedbackMessage(dummyResult, false, 0);
+		return dummyResult;
 	}
 
 	/**
@@ -121,33 +128,23 @@ public class TestService {
 				Assignment assignment = competition.getCurrentAssignment().getAssignment();
 				Long finalScore = 0L;
 				final Long submissionTime = compileResult.getScoreAtSubmissionTime(); // Identical to score at
-				// submission time
+																						// submission time
 				if (compileResult.isSuccessful()) {
 					try {
 
-						StringBuilder sb = new StringBuilder();
-						boolean success = true;
-						List<AssignmentFile> testFiles = state.getSubmitFiles();
-						testFiles.addAll(state.getTestFiles());
-						testFiles.forEach(f -> log.trace(f.getName()));
-						try {
-							for (AssignmentFile assignmentFile : testFiles) {
-								TestResult tr = unittest(assignmentFile, compileResult);
-								sb.append(tr.getResult());
-								if (success) {
-									success = tr.isSuccessful();
-									log.debug("set success {}", tr.isSuccessful());
-								}
-							}
-						} catch (Exception e) {
-							final TestResult dummyResult = TestResult.builder()
-									.result("Server error running tests - contact the Organizer")
-									.user(compileResult.getUser()).successful(false).testname(e.getMessage()).build();
-							feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
-							return dummyResult;
+						List<TestResult> results = new ArrayList<>();
+
+						List<AssignmentFile> testFiles = state.getTestFiles();
+						testFiles.addAll(state.getHiddenTestFiles());
+						log.debug("Running submit tests:");
+						testFiles.forEach(f -> log.debug(f.getName()));
+						for (AssignmentFile assignmentFile : testFiles) {
+							results.add(runTest(compileResult, assignmentFile));
 						}
 
-						final TestResult result = TestResult.builder().result(sb.toString())
+						boolean success = isSuccess(results);
+
+						final TestResult result = TestResult.builder().result("All tests result in: " + success)
 								.user(compileResult.getUser()).successful(success).testname("Submit Test")
 								.scoreAtSubmissionTime(submissionTime).build();
 
@@ -158,13 +155,8 @@ public class TestService {
 						feedbackMessageController.sendTestFeedbackMessage(result, true, finalScore.intValue());
 						return result;
 					} catch (Exception e) {
-						log.error("Exception Running tests", e);
-						final TestResult dummyResult = TestResult.builder()
-								.result("Server error running tests - contact the Organizer")
-								.user(compileResult.getUser()).successful(false).testname("Submit Test")
-								.scoreAtSubmissionTime(0L).build();
-						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
-						return dummyResult;
+						log.error("Exception Running tests: " + e.getMessage(), e);
+						return createInternalServerErrorDummyResult(compileResult);
 					} finally {
 						// TODO we should not register this here, this needs to be done in the score
 						// service probably.
@@ -185,8 +177,17 @@ public class TestService {
 					return compileFailedResult;
 				}
 			}
+
 		}, testing);
 
+	}
+
+	private boolean isSuccess(List<TestResult> results) {
+		boolean success = true;
+		for (TestResult tr : results) {
+			success = success & tr.isSuccessful();
+		}
+		return success;
 	}
 
 	private Long setFinalAssignmentScore(TestResult testResult, Assignment assignment, Long scoreAtSubmissionTime) {
@@ -274,19 +275,22 @@ public class TestService {
 		}
 	}
 
+	// TODO: cleanup. almost duplicate with CompileService 
 	private String makeClasspath(String user) {
 		final List<File> classPath = new ArrayList<>();
 		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), user));
-		classPath.add(
-				FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(), "junit-4.12.jar"));
-		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(),
-				"hamcrest-all-1.3.jar"));
-		
-		if (directories.getResourceDirectory()==null) {
-			log.warn("no moj.server.directories.resourceDirectory configured in application.yaml, no resources can be used by assignments!");
+		final File libDir = FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory());
+		final String[] extensions = { "jar" };
+		FileUtils.listFiles(libDir, extensions, false).forEach(f -> classPath.add(f));
+
+		if (directories.getResourceDirectory() == null) {
+			log.warn(
+					"no moj.server.directories.resourceDirectory configured in application.yaml, no resources can be used by assignments!");
 		} else {
 			classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getResourceDirectory()));
 		}
+		
+		log.debug("Test classpath: ");
 		for (File file : classPath) {
 			if (!file.exists()) {
 				log.error("not found: {}", file.getAbsolutePath());
