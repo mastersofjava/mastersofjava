@@ -6,18 +6,19 @@ import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.runtime.model.TeamStatus;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,12 +33,21 @@ public class CompetitionRuntime {
 
 	private final TeamRepository teamRepository;
 
+	private final CompetitionSessionRepository competitionSessionRepository;
+
 	@Getter
 	private Competition competition;
 
-	public void initializeCompetition(Competition competition) {
-		log.info("Initializing competition {}", competition.getName());
+	@Getter
+	private CompetitionSession competitionSession;
+
+	private List<OrderedAssignment> completedAssignments;
+
+	public void startCompetition(Competition competition) {
+		log.info("Starting competition {}", competition.getName());
 		this.competition = competition;
+		this.competitionSession = competitionSessionRepository.save(createNewCompetitionSession(competition));
+		this.completedAssignments = new ArrayList<>();
 	}
 
 	public OrderedAssignment getCurrentAssignment() {
@@ -47,23 +57,42 @@ public class CompetitionRuntime {
 		return null;
 	}
 
+	public CompetitionState getCompetitionState() {
+		if (competitionSession != null) {
+			return CompetitionState.builder()
+					.completedAssignments(completedAssignments)
+					.build();
+		}
+		return CompetitionState.builder().build();
+	}
+
 	public AssignmentState getAssignmentState() {
 		return assignmentRuntime.getState();
 	}
 
 	public void startAssignment(String name) {
+		stopCurrentAssignment();
 		competition.getAssignments().stream()
 				.filter(a -> a.getAssignment().getName().equals(name))
-				.forEach(assignmentRuntime::start);
+				.forEach(a -> {
+					assignmentRuntime.start(a, competitionSession);
+					if (!completedAssignments.contains(a)) {
+						completedAssignments.add(a);
+					}
+				});
 	}
 
 	public void stopCurrentAssignment() {
-		assignmentRuntime.stop();
+		if (assignmentRuntime.getOrderedAssignment() != null) {
+			assignmentRuntime.stop();
+		}
 	}
 
-	public List<String> getAssignmentNames() {
-		return competition.getAssignments().stream()
-				.map(a -> a.getAssignment().getName()).collect(Collectors.toList());
+	private CompetitionSession createNewCompetitionSession(Competition competition) {
+		CompetitionSession competitionSession = new CompetitionSession();
+		competitionSession.setUuid(UUID.randomUUID());
+		competitionSession.setCompetition(competition);
+		return competitionSession;
 	}
 
 	public List<ImmutablePair<String, Long>> getAssignmentInfo() {
@@ -79,7 +108,7 @@ public class CompetitionRuntime {
 	}
 
 	public void registerFinishedTeam(String user, Long submissionTime, Long finalScore) {
-		if( assignmentRuntime.getOrderedAssignment() != null ) {
+		if (assignmentRuntime.getOrderedAssignment() != null) {
 			Team team = teamRepository.findByName(user);
 			assignmentRuntime.addFinishedTeam(TeamStatus.builder()
 					.team(team)
@@ -90,7 +119,7 @@ public class CompetitionRuntime {
 	}
 
 	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
-		if( assignmentRuntime.getOrderedAssignment() != null ) {
+		if (assignmentRuntime.getOrderedAssignment() != null) {
 			return assignmentRuntime.getTeamAssignmentFiles(team);
 		}
 		return Collections.emptyList();

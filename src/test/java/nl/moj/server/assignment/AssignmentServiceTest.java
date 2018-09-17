@@ -1,8 +1,8 @@
 package nl.moj.server.assignment;
 
+import nl.moj.server.DbUtil;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,10 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
+import static nl.moj.server.TestUtil.classpathResourceToPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
@@ -25,16 +24,16 @@ public class AssignmentServiceTest {
 	private AssignmentService assignmentService;
 
 	@Autowired
-	private AssignmentRepository assignmentRepository;
+	private DbUtil dbUtil;
 
 	@Before
 	public void before() {
-		assignmentRepository.deleteAll();
+		dbUtil.cleanup();
 	}
 
 	@Test
 	public void shouldDiscoverAssignments() {
-		List<Assignment> assignments = assignmentService.updateAssignments(path("/assignments"));
+		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 
 		assignments.forEach(a -> {
 			assertThat(a.getId()).isNotNull();
@@ -45,7 +44,7 @@ public class AssignmentServiceTest {
 
 	@Test
 	public void shouldUpdateAssignments() {
-		List<Assignment> assignments = assignmentService.updateAssignments(path("/assignments"));
+		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 
 		assertThat(assignments.size()).isEqualTo(2);
 		assignments.forEach(a -> {
@@ -54,7 +53,7 @@ public class AssignmentServiceTest {
 			assertThat(a.getAssignmentDescriptor()).contains("/assignments/");
 		});
 
-		List<Assignment> updatedAssignments = assignmentService.updateAssignments(path("/assignments-updated"));
+		List<Assignment> updatedAssignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments-updated"));
 
 		assertThat(updatedAssignments.size()).isEqualTo(2);
 		updatedAssignments.forEach(a -> {
@@ -67,7 +66,7 @@ public class AssignmentServiceTest {
 
 	@Test
 	public void shouldGetAssignmentDescriptor() {
-		List<Assignment> assignments = assignmentService.updateAssignments(path("/assignments"));
+		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 
 		assertThat(assignments.size()).isEqualTo(2);
 		assignments.forEach(a -> {
@@ -85,11 +84,5 @@ public class AssignmentServiceTest {
 			assertThat(d.getScoringRules()).isNotNull();
 			assertThat(d.getAssignmentFiles()).isNotNull();
 		});
-	}
-
-	//-- private helper methods --//
-
-	private Path path(String resource) {
-		return Paths.get(AssignmentServiceTest.class.getResource(resource).getPath());
 	}
 }

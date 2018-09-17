@@ -1,0 +1,39 @@
+# file paths are taken relative to this file.
+name: assignment-1
+display-name: Assignment 1
+author:
+  name: Mr Crazy
+  company: First8
+  website: https://first8.nl
+
+image: src/main/resources/icon.png
+sponsor-image: src/main/resources/sponsor.png
+
+labels:
+- algorithm
+
+difficulty: 3
+java-version: 8
+duration: PT15S
+submit-timeout: PT5S
+test-timeout: PT5S
+
+scoring-rules:
+  maximum-resubmits: 2
+  resubmit-penalty: 50%
+  success-bonus: 200
+  test-penalty: 20%
+
+assignment-files:
+  assignment: src/main/resources/workloadbalancerCase.txt
+  editable:
+  - src/main/java/WorkloadBalancerImpl.java
+  readonly:
+  - src/main/java/Order.java
+  tests:
+  - src/test/java/WorkloadbalancerDaysinListTest.java
+  - src/test/java/WorkloadbalancerOrderCountPerDayTest.java
+  hidden-tests:
+  - src/test/java/WorkloadbalancerOrderSequenceTest.java
+  solution:
+  - src/main/resources/workloadbalancerCase.solution

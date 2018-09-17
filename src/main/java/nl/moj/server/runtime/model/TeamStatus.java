@@ -9,6 +9,10 @@ import nl.moj.server.teams.model.Team;
 public class TeamStatus {
 
 	private Team team;
-	private Long submitTime;
-	private Long score;
+
+	@Builder.Default
+	private Long submitTime = 0L;
+
+	@Builder.Default
+	private Long score = 0L;
 }

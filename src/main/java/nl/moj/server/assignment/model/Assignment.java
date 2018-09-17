@@ -1,6 +1,7 @@
 package nl.moj.server.assignment.model;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Table(name = "assignments")
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name="id_seq", sequenceName = "assignments_seq")
+@EqualsAndHashCode(of={"uuid"})
 public class Assignment {
 
 	@Id
