@@ -16,5 +16,6 @@ public class Directories {
 	private String libDirectory = "lib";
 	private String soundDirectory = "sounds";
 	private String javadocDirectory = "javadoc";
+	private String resourceDirectory = "resources";
 	
 }

@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -96,7 +97,7 @@ public class AssignmentRuntime {
 		initTeamsForAssignment();
 
         // play the gong
-        taskScheduler.schedule(() -> soundService.playGong(), inSeconds(0));
+        taskScheduler.schedule(soundService::playGong, Instant.now());
 		// start the timers
         Future<?> stopHandle = startTimers();
 

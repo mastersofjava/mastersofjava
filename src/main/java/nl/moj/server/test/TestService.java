@@ -8,13 +8,13 @@ import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.stream.LogOutputStream;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -80,10 +80,8 @@ public class TestService {
 						} catch (Exception e) {
 							final TestResult dummyResult = TestResult.builder()
 									.result("Server error running tests - contact the Organizer")
-									.user(compileResult.getUser())
-									.successful(false)
-									.testname(assignmentFile.getFilename())
-									.build();
+									.user(compileResult.getUser()).successful(false)
+									.testname(assignmentFile.getFilename()).build();
 							feedbackMessageController.sendTestFeedbackMessage(dummyResult, false, 0);
 							result.add(dummyResult);
 						}
@@ -132,23 +130,17 @@ public class TestService {
 						} catch (Exception e) {
 							final TestResult dummyResult = TestResult.builder()
 									.result("Server error running tests - contact the Organizer")
-									.user(compileResult.getUser())
-									.successful(false)
-									.testname(e.getMessage())
-									.build();
+									.user(compileResult.getUser()).successful(false).testname(e.getMessage()).build();
 							feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 							return dummyResult;
 						}
 
-						final TestResult result = TestResult.builder()
-								.result(sb.toString())
-								.user(compileResult.getUser())
-								.successful(success)
-								.testname("Submit Test")
-								.scoreAtSubmissionTime(submissionTime)
-								.build();
+						final TestResult result = TestResult.builder().result(sb.toString())
+								.user(compileResult.getUser()).successful(success).testname("Submit Test")
+								.scoreAtSubmissionTime(submissionTime).build();
 
-						// TODO we should not register this here, this needs to be done in the score service probably.
+						// TODO we should not register this here, this needs to be done in the score
+						// service probably.
 						finalScore = setFinalAssignmentScore(result, assignment, submissionTime);
 						// TODO fix possible precision loss
 						feedbackMessageController.sendTestFeedbackMessage(result, true, finalScore.intValue());
@@ -157,31 +149,25 @@ public class TestService {
 						log.error("Exception Running tests", e);
 						final TestResult dummyResult = TestResult.builder()
 								.result("Server error running tests - contact the Organizer")
-								.user(compileResult.getUser())
-								.successful(false)
-								.testname("Submit Test")
-								.scoreAtSubmissionTime(0L)
-								.build();
+								.user(compileResult.getUser()).successful(false).testname("Submit Test")
+								.scoreAtSubmissionTime(0L).build();
 						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
 					} finally {
-						// TODO we should not register this here, this needs to be done in the score service probably.
-						competition.registerFinishedTeam(compileResult.getUser(), submissionTime,
-								finalScore);
+						// TODO we should not register this here, this needs to be done in the score
+						// service probably.
+						competition.registerFinishedTeam(compileResult.getUser(), submissionTime, finalScore);
 					}
 
 				} else { // Compile failed
 					final TestResult compileFailedResult = TestResult.builder()
-							.result("Submit Test - Compilation failed->test failed")
-							.user(compileResult.getUser())
-							.successful(false)
-							.testname("Submit Test")
-							.scoreAtSubmissionTime(0L)
-							.build();
+							.result("Submit Test - Compilation failed->test failed").user(compileResult.getUser())
+							.successful(false).testname("Submit Test").scoreAtSubmissionTime(0L).build();
 
 					feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
 
-					// TODO we should not register this here, this needs to be done in the score service probably.
+					// TODO we should not register this here, this needs to be done in the score
+					// service probably.
 					setFinalAssignmentScore(compileFailedResult, assignment, 0L);
 					competition.registerFinishedTeam(compileResult.getUser(), submissionTime, 0L);
 					return compileFailedResult;
@@ -213,14 +199,14 @@ public class TestService {
 		try {
 			boolean isRunTerminated = false;
 			int exitvalue = 0;
-			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher();
-			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher();
+			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(mojServerProperties);
+			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(mojServerProperties);
 			try {
 				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(mojServerProperties.getLanguages().getJavaVersion().getRuntime().toString(), "-cp",
 						makeClasspath(compileResult.getUser()), "-Djava.security.manager",
 						"-Djava.security.policy=" + policy.getAbsolutePath(), "org.junit.runner.JUnitCore",
 						file.getName());
-				log.trace("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
+				log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
 				exitvalue = jUnitCommand.directory(teamdir)
 						.timeout(mojServerProperties.getLimits().getUnitTestTimeoutSeconds(), TimeUnit.SECONDS).redirectOutput(jUnitOutput)
 						.redirectError(jUnitError).execute().getExitValue();
@@ -255,12 +241,8 @@ public class TestService {
 
 			log.debug("success {}", success);
 			log.info("finished unittest: {}", file.getName());
-			return TestResult.builder()
-					.result(result)
-					.user(compileResult.getUser())
-					.successful(success)
-					.testname(file.getName())
-					.build();
+			return TestResult.builder().result(result).user(compileResult.getUser()).successful(success)
+					.testname(file.getName()).build();
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
 		}
@@ -287,9 +269,17 @@ public class TestService {
 				FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
 		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
 				"hamcrest-all-1.3.jar"));
+		
+		if (mojServerProperties.getDirectories().getResourceDirectory()==null) {
+			log.warn("no moj.server.directories.resourceDirectory configured in application.yaml, no resources can be used by assignments!");
+		} else {
+			classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getResourceDirectory()));
+		}
 		for (File file : classPath) {
 			if (!file.exists()) {
 				log.error("not found: {}", file.getAbsolutePath());
+			} else {
+				log.debug("on cp: {}", file.getAbsolutePath());
 			}
 		}
 		StringBuilder sb = new StringBuilder();
@@ -298,64 +288,6 @@ public class TestService {
 			sb.append(System.getProperty("path.separator"));
 		}
 		return sb.toString();
-	}
-
-	/**
-	 * Support class to capture a limited shard of potentially huge output. The
-	 * output is limited to a maximum number of lines, a maximum number of chars per
-	 * line, and a total maximum number of characters.
-	 *
-	 * @author hartmut
-	 */
-	private final class LengthLimitedOutputCatcher extends LogOutputStream {
-		private final StringBuilder buffer = new StringBuilder();
-		private final int maxSize;
-		private final int maxLines;
-		private final int maxLineLenght;
-		private final String lineTruncatedMessage;
-		private final String outputTruncMessage;
-		private int lineCount = 0;
-
-		public LengthLimitedOutputCatcher() {
-			this.maxSize = mojServerProperties.getLimits().getUnitTestOutput().getMaxChars();
-			this.maxLines = mojServerProperties.getLimits().getUnitTestOutput().getMaxFeedbackLines();
-			this.maxLineLenght = mojServerProperties.getLimits().getUnitTestOutput().getMaxLineLen();
-			this.lineTruncatedMessage = mojServerProperties.getLimits().getUnitTestOutput().getLineTruncatedMessage();
-			this.outputTruncMessage = mojServerProperties.getLimits().getUnitTestOutput().getOutputTruncMessage();
-		}
-
-		@Override
-		protected void processLine(String line) {
-			if (lineCount < maxLines) {
-				final int maxAppendFromBufferSize = min(line.length(), maxSize - buffer.length() + 1);
-				final int maxAppendFromLineLimit = min(maxAppendFromBufferSize, maxLineLenght);
-				if (maxAppendFromLineLimit > 0) {
-					final boolean isLineTruncated = maxAppendFromLineLimit < line.length();
-					if (isLineTruncated) {
-						buffer.append(line.substring(0, maxAppendFromLineLimit)).append(lineTruncatedMessage);
-					} else {
-						buffer.append(line);
-					}
-					buffer.append('\n');
-				}
-			} else if (lineCount == maxLines) {
-				buffer.append(outputTruncMessage);
-			}
-			lineCount++;
-		}
-
-		public StringBuilder getBuffer() {
-			return buffer;
-		}
-
-		@Override
-		public String toString() {
-			return buffer.toString();
-		}
-
-		public int length() {
-			return buffer.length();
-		}
 	}
 
 }
