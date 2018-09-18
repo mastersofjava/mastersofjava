@@ -3,6 +3,7 @@ package nl.moj.server.config.properties;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import javax.validation.constraints.NotEmpty;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = "moj.server.languages")
 public class Languages {
 
+	@NotEmpty
 	private List<JavaVersion> javaVersions = new ArrayList<>();
 
 	public JavaVersion getJavaVersion(String version) {
@@ -29,7 +31,6 @@ public class Languages {
 	}
 
 	@Data
-	@ConfigurationProperties
 	public static class JavaVersion {
 
 		private String version;

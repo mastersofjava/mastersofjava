@@ -70,7 +70,7 @@ function clearAssignment() {
 
 function scanAssignments() {
     var repo = $("input[name='repo']:checked").val();
-    stompClient.send("/app/control/scanAssignments", {}, repo);
+    stompClient.send("/app/control/scanAssignments", {}, {});
 }
 
 function showOutput(messageOutput) {

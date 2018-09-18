@@ -11,8 +11,8 @@ public class Limits {
 	
 	private UnitTestOutput unitTestOutput = new UnitTestOutput();
 
-	@ConfigurationProperties
 	@Data
+	@ConfigurationProperties
 	public static class UnitTestOutput {
 	
 		private Integer maxFeedbackLines = 1000;

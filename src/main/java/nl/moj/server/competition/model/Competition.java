@@ -24,7 +24,7 @@ public class Competition {
 	@Column(name="name", nullable = false)
 	private String name;
 
-	@OneToMany(mappedBy = "competition", cascade = CascadeType.ALL)
+	@OneToMany(mappedBy = "competition", orphanRemoval = true, cascade = CascadeType.ALL)
 	private List<OrderedAssignment> assignments;
 	
 	public List<OrderedAssignment> getAssignmentsInOrder() {

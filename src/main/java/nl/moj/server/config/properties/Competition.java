@@ -2,8 +2,8 @@ package nl.moj.server.config.properties;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.lang.NonNull;
 
+import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Data
@@ -12,7 +12,7 @@ public class Competition {
 
 	private int successBonus = 400;
 
-	@NonNull
+	@NotNull
 	private UUID uuid;
 	
 }

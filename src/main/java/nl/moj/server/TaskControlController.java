@@ -20,7 +20,6 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
@@ -33,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -90,7 +90,7 @@ public class TaskControlController {
 
 	@MessageMapping("/control/scanAssignments")
 	@SendToUser("/queue/controlfeedback")
-	public String cloneAssignmentsRepo(Message<String> repoName) {
+	public String cloneAssignmentsRepo() {
 		assignmentService.updateAssignments(mojServerProperties.getAssignmentRepo());
 		UUID competitionUuid = mojServerProperties.getCompetition().getUuid();
 		Competition c = competitionRepository.findByUuid(competitionUuid);
@@ -99,8 +99,15 @@ public class TaskControlController {
 			c.setUuid(competitionUuid);
 		}
 		c.setName("Masters of Java 2018");
+
+		// wipe assignments
+		c.setAssignments(new ArrayList<>());
+		c = competitionRepository.save(c);
+
+		// re-add updated assignments
 		c.setAssignments(assignmentRepository.findAll().stream().map(createOrderedAssignments(c)).collect(Collectors.toList()));
 		c = competitionRepository.save(c);
+		
 		competition.startCompetition(c);
 		
 		return "Assignments scanned, reload to show them.";
