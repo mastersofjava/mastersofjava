@@ -56,9 +56,10 @@ function Clock( initialOffset ) {
     };
 
     this.stop = function() {
-      if (this.time - this.current > 1) {
-        this.finished = true;
-        this.current = this.time - 0.1;
-      }
+      var $assignmentClock = $('#assignment-clock');
+      var $circle = $('.circle_animation', $assignmentClock);
+      this.finished = true;
+      this.current = this.time;
+      $('h2', $assignmentClock).text("0:00");
     };
 }
