@@ -57,7 +57,6 @@ function Clock( initialOffset ) {
 
     this.stop = function() {
       var $assignmentClock = $('#assignment-clock');
-      var $circle = $('.circle_animation', $assignmentClock);
       this.finished = true;
       this.current = this.time;
       $('h2', $assignmentClock).text("0:00");
