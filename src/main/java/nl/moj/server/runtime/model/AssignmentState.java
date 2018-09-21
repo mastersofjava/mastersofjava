@@ -2,6 +2,7 @@ package nl.moj.server.runtime.model;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.teams.model.Team;
 
@@ -11,15 +12,13 @@ import java.util.stream.Collectors;
 
 @Getter
 @Builder
+@Slf4j
 public class AssignmentState {
 
 	private AssignmentDescriptor assignmentDescriptor;
 	private Long timeRemaining;
 	private List<AssignmentFile> assignmentFiles;
 	private boolean running;
-	
-	@Builder.Default
-	private List<TeamStatus> finishedTeams = new ArrayList<>();
 
 	public List<String> getTestNames() {
 		return assignmentFiles
@@ -39,11 +38,4 @@ public class AssignmentState {
 				.collect(Collectors.toList());
 	}
 
-	public boolean isTeamFinished(Team team) {
-		return finishedTeams.stream().anyMatch( t -> t.getTeam().equals(team));
-	}
-
-	public TeamStatus getTeamStatus(Team team) {
-		return finishedTeams.stream().filter( t -> t.getTeam().equals(team)).findFirst().orElse(TeamStatus.builder().team(team).build());
-	}
 }

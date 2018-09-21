@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.compiler.CompileService;
+import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.teams.model.Team;
@@ -31,6 +33,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 @Controller
+@Slf4j
 @MessageMapping("/submit")
 public class SubmitController {
 
@@ -48,9 +51,16 @@ public class SubmitController {
 
 	private TeamRepository teamRepository;
 
-	public SubmitController(CompileService compileService, TestService testService,
-							@Qualifier("compiling") Executor compiling, @Qualifier("testing") Executor testing,
-							@Value("${moj.server.timeout}") Integer timeout, CompetitionRuntime competition, TeamRepository teamRepository) {
+	private AssignmentRuntime assigmentRuntime;
+
+	public SubmitController(CompileService compileService,
+                            TestService testService,
+                            @Qualifier("compiling") Executor compiling,
+                            @Qualifier("testing") Executor testing,
+                            @Value("${moj.server.timeout}") Integer timeout,
+                            CompetitionRuntime competition,
+                            TeamRepository teamRepository,
+                            AssignmentRuntime assignmentRuntime) {
 		super();
 		this.compileService = compileService;
 		this.testService = testService;
@@ -59,6 +69,7 @@ public class SubmitController {
 		this.timeout = timeout;
 		this.competition = competition;
 		this.teamRepository = teamRepository;
+		this.assigmentRuntime = assignmentRuntime;
 	}
 
 	@MessageMapping("/compile")
@@ -97,16 +108,18 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-		// TODO we need to handle resubmits
+
 		Team team = teamRepository.findByName(user.getName());
 		AssignmentState state = competition.getAssignmentState();
-		if (!state.isTeamFinished(team)) {
+        if (!assigmentRuntime.isTeamFinished(team) && assigmentRuntime.hasResubmits(team.getName())) {
 			long scoreAtSubmissionTime = state.getTimeRemaining();
 			message.setTeam(user.getName());
 			message.setScoreAtSubmissionTime(scoreAtSubmissionTime);
 			CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
 					.orTimeout(timeout, TimeUnit.SECONDS)
 					.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing);
+		} else {
+			log.warn("Team {} tried to submit but is already finished", user.getName());
 		}
 	}
 

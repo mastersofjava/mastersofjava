@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.SubmitController.SourceMessage;
+import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
@@ -45,6 +46,8 @@ public class CompileService {
 
 	private DirectoriesConfiguration directories;
 
+	private AssignmentRuntime assignmentRuntime;
+
 	private TeamRepository teamRepository;
 
 	public Supplier<CompileResult> compile(SourceMessage message) {
@@ -62,7 +65,6 @@ public class CompileService {
 
 	private Supplier<CompileResult> compile(SourceMessage message, boolean withTest, boolean forSubmit) {
 		Supplier<CompileResult> supplier = () -> {
-			Team team = teamRepository.findByName(message.getTeam());
 			List<AssignmentFile> assignmentFiles;
 			AssignmentState state = competition.getAssignmentState();
 			if (withTest) {
@@ -138,12 +140,12 @@ public class CompileService {
 				diagnosticCollector = new DiagnosticCollector<>();
 				log.debug("compileSuccess: {}\n{}", false, result);
 				List<String> tests = new ArrayList<>();
-				compileResult = new CompileResult(result, tests, message.getTeam(), false,
-						message.getScoreAtSubmissionTime());
+				compileResult = new CompileResult(result, message.getTeam(), tests, false,
+						message.getScoreAtSubmissionTime(), assignmentRuntime.remainingResubmits(message.getTeam()));
 			} else {
 				log.debug("compileSuccess: {}", true);
-				compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(),
-						message.getTeam(), true, message.getScoreAtSubmissionTime());
+				compileResult = new CompileResult("Files compiled successfully.\n", message.getTeam(), message.getTests(),
+						 true, message.getScoreAtSubmissionTime(), assignmentRuntime.remainingResubmits(message.getTeam()));
 			}
 			feedbackMessageController.sendCompileFeedbackMessage(compileResult);
 			return compileResult;

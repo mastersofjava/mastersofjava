@@ -55,7 +55,7 @@ function connectControl() {
         console.log('subscribe to /control/queue/stop');
         stomp.subscribe("/queue/stop", function (msg) {
             disable();
-            if( clock ) {
+            if (clock) {
                 clock.stop();
             }
         });
@@ -65,6 +65,13 @@ function connectControl() {
             if (clock) {
                 clock.sync(message.remainingTime, message.totalTime);
             }
+        });
+        console.log('Subscribe to /user/queue/disable');
+        stomp.subscribe('/user/queue/disable', function (msg) {
+            console.log("Disabled: ", msg);
+            var message = JSON.parse(msg.body);
+            appendOutput(message.text);
+            disable();
         });
     });
 }
@@ -82,7 +89,6 @@ function connectButtons() {
     });
     $('#submit').click(function (e) {
         resetTabColor();
-        $('#btn-open-submit').attr('disabled', 'disabled');
         $('#confirm-submit-modal').modal('hide');
         timerActive = false;
         submit();
@@ -162,11 +168,22 @@ function updateAlertContainerWithScore(message) {
                 + '<p>your score is</p><strong>'
                 + message.score + '</strong></div>');
     } else {
-        $('#alert-container')
-            .empty()
-            .append(
-                '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
-                + '<p>your score is 0</p></div>');
+        if (parseInt(message.remainingResubmits) === 0) {
+            $('#alert-container')
+                .empty()
+                .append(
+                    '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
+                    + '<p>You have no more resubmits left. Your final score is 0</p></div>');
+        } else {
+            if (parseInt(message.remainingResubmits) > 0) {
+                $('#alert-container')
+                    .empty()
+                    .append(
+                        '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
+                        + '<p>But you still have ' + message.remainingResubmits + ' resubmits left :-)</p></div>');
+            }
+
+        }
     }
 }
 
@@ -240,7 +257,6 @@ function getContent() {
 }
 
 function submit() {
-    disable();
     resetOutput();
     stomp.send("/app/submit/submit", {}, JSON.stringify({
         'sources': getContent()

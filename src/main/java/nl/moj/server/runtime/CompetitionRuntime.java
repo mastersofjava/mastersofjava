@@ -107,13 +107,13 @@ public class CompetitionRuntime {
 				}).sorted().collect(Collectors.toList());
 	}
 
-	public void registerFinishedTeam(String user, Long submissionTime, Long finalScore) {
+	public void registerFinishedTeam(String user, Long timeScore, Long finalScore) {
 		if (assignmentRuntime.getOrderedAssignment() != null) {
 			Team team = teamRepository.findByName(user);
 			assignmentRuntime.addFinishedTeam(TeamStatus.builder()
 					.team(team)
 					.score(finalScore)
-					.submitTime(submissionTime)
+					.submitTime(timeScore)
 					.build());
 		}
 	}

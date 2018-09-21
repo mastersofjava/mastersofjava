@@ -3,6 +3,9 @@ package nl.moj.server;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.TaskControlController.TaskMessage;
 import nl.moj.server.compiler.CompileResult;
+import nl.moj.server.message.CompileFeedbackMessage;
+import nl.moj.server.message.TaskTimeMessage;
+import nl.moj.server.message.TestFeedbackMessage;
 import nl.moj.server.test.TestResult;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -23,16 +26,23 @@ public class FeedbackMessageController {
 		log.info("sending testResult feedback");
 		template.convertAndSendToUser(testResult.getUser(), "/queue/feedback",
 				new TestFeedbackMessage(testResult.getUser(), testResult.getTestname(), testResult.getResult(),
-						testResult.isSuccessful(), submit, score));
+						testResult.isSuccessful(), submit, score, testResult.getRemainingResubmits()));
 		template.convertAndSend("/queue/feedbackpage", new TestFeedbackMessage(testResult.getUser(),
-				testResult.getTestname(), null, testResult.isSuccessful(), submit, score));
+				testResult.getTestname(), null, testResult.isSuccessful(), submit, score, testResult.getRemainingResubmits()));
 	}
 
 	public void sendCompileFeedbackMessage(CompileResult compileResult) {
 		log.info("sending compileResult feedback, {}", compileResult.isSuccessful());
 		template.convertAndSendToUser(compileResult.getUser(), "/queue/compilefeedback",
 				new CompileFeedbackMessage(compileResult.getUser(), compileResult.getResult(),
-						compileResult.isSuccessful(), !compileResult.getTests().isEmpty()));
+						compileResult.isSuccessful(), !compileResult.getTests().isEmpty(), compileResult.getRemainingResubmits()));
+	}
+
+	public void sendDisableFeedbackMessage(TestResult testResult) {
+		log.info("sending disable submit feedback to (), assignment successful? {}", testResult.getUser(), testResult.isSuccessful());
+		template.convertAndSendToUser(testResult.getUser(), "/queue/disable",
+				new CompileFeedbackMessage(testResult.getUser(), testResult.getResult(),
+						testResult.isSuccessful(), false, testResult.getRemainingResubmits()));
 	}
 
 	public void sendStartToTeams(String taskname) {
@@ -57,146 +67,6 @@ public class FeedbackMessageController {
 			template.convertAndSend("/queue/time", taskTimeMessage);
 		} catch( Exception e ) {
 			log.warn("Failed to send remaining time.", e);
-		}
-	}
-	
-	public static class TestFeedbackMessage {
-		private String team;
-		private String test;
-		private String text;
-		private boolean success;
-		private boolean submit;
-		private int score;
-
-		public TestFeedbackMessage() {
-		}
-
-		public TestFeedbackMessage(String team, String test, String text, boolean success, Boolean submit, int score) {
-			super();
-			this.team = team;
-			this.test = test;
-			this.text = text;
-			this.success = success;
-			this.submit = submit;
-			this.setScore(score);
-		}
-
-		public String getTeam() {
-			return team;
-		}
-
-		public void setTeam(String team) {
-			this.team = team;
-		}
-
-		public String getTest() {
-			return test;
-		}
-
-		public void setTest(String test) {
-			this.test = test;
-		}
-
-		public String getText() {
-			return text;
-		}
-
-		public void setText(String text) {
-			this.text = text;
-		}
-
-		public boolean isSuccess() {
-			return success;
-		}
-
-		public void setSuccess(boolean success) {
-			this.success = success;
-		}
-
-		public boolean isSubmit() {
-			return submit;
-		}
-
-		public void setSubmit(boolean submit) {
-			this.submit = submit;
-		}
-
-		public int getScore() {
-			return score;
-		}
-
-		public void setScore(int score) {
-			this.score = score;
-		}
-	}
-
-	public static class CompileFeedbackMessage {
-
-		private String team;
-		private String text;
-		private boolean success;
-		private boolean forTest;
-		
-
-		public CompileFeedbackMessage(String team, String text, boolean success, boolean forTest) {
-			super();
-			this.team = team;
-			this.text = text;
-			this.success = success;
-			this.forTest = forTest;
-		}
-
-		public String getTeam() {
-			return team;
-		}
-
-		public void setTeam(String team) {
-			this.team = team;
-		}
-
-		public String getText() {
-			return text;
-		}
-
-		public void setText(String text) {
-			this.text = text;
-		}
-
-		public boolean isSuccess() {
-			return success;
-		}
-
-		public void setSuccess(boolean success) {
-			this.success = success;
-		}
-
-		public boolean isForTest() {
-			return forTest;
-		}
-
-		public void setForTest(boolean forTest) {
-			this.forTest = forTest;
-		}
-	}
-	
-	private static class TaskTimeMessage {
-		private String remainingTime;
-		private String totalTime;
-
-		public String getRemainingTime() {
-			return remainingTime;
-		}
-
-		public void setRemainingTime(String remainingTime) {
-			this.remainingTime = remainingTime;
-		}
-
-		public String getTotalTime() {
-			return totalTime;
-		}
-
-		public void setTotalTime(String totalTime) {
-			this.totalTime = totalTime;
 		}
 	}
 

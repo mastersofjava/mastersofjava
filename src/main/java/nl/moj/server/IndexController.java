@@ -2,6 +2,7 @@ package nl.moj.server;
 
 import lombok.AllArgsConstructor;
 import nl.moj.server.rankings.service.RankingsService;
+import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
@@ -28,6 +29,7 @@ public class IndexController {
 	private TeamRepository teamRepository;
 	private RankingsService rankingsService;
 
+	private AssignmentRuntime assignmentRuntime;
 
 	@GetMapping("/")
 	public String index(Model model, @AuthenticationPrincipal Principal user) {
@@ -44,7 +46,7 @@ public class IndexController {
 		Team team = teamRepository.findByName(user.getName());
 
 		List<AssignmentFile> files = new ArrayList<>();
-		if (state.isRunning() && !state.isTeamFinished(team)) {
+		if (state.isRunning() && !assignmentRuntime.isTeamFinished(team)) {
 			files.addAll(competition.getTeamAssignmentFiles(team));
 		} else {
 			files.addAll(state.getAssignmentFiles());
@@ -62,9 +64,9 @@ public class IndexController {
 		model.addAttribute("testnames", state.getTestNames());
 		model.addAttribute("files", files);
 		model.addAttribute("running", state.isRunning());
-		model.addAttribute("finished", state.isTeamFinished(team));
-		model.addAttribute("submittime", state.getTeamStatus(team).getSubmitTime());
-		model.addAttribute("finalscore", state.getTeamStatus(team).getScore());
+		model.addAttribute("finished", assignmentRuntime.isTeamFinished(team));
+		model.addAttribute("submittime", assignmentRuntime.getTeamStatus(team).getSubmitTime());
+		model.addAttribute("finalscore", assignmentRuntime.getTeamStatus(team).getScore());
 	}
 
 }

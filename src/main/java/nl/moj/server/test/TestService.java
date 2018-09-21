@@ -4,7 +4,9 @@ import nl.moj.server.DirectoriesConfiguration;
 import nl.moj.server.FeedbackMessageController;
 import nl.moj.server.UnitTestLimitsConfiguration;
 import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.compiler.CompileResult;
+import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
 import nl.moj.server.runtime.model.AssignmentFile;
@@ -46,7 +48,6 @@ public class TestService {
 	private DirectoriesConfiguration directories;
 
 	private String javaExecutable;
-	;
 
 	private CompetitionRuntime competition;
 
@@ -54,9 +55,17 @@ public class TestService {
 
 	private FeedbackMessageController feedbackMessageController;
 
-	public TestService(UnitTestLimitsConfiguration limits, @Qualifier("testing") Executor testing,
-					   DirectoriesConfiguration directories, @Value("${moj.server.javaExecutable}") String javaExecutable,
-					   CompetitionRuntime competition, ScoreService scoreService, FeedbackMessageController feedbackMessageController) {
+	private AssignmentRuntime assignmentRuntime;
+
+	public TestService(UnitTestLimitsConfiguration limits,
+                       @Qualifier("testing") Executor testing,
+					   DirectoriesConfiguration directories,
+                       @Value("${moj.server.javaExecutable}") String javaExecutable,
+					   CompetitionRuntime competition,
+                       ScoreService scoreService,
+                       FeedbackMessageController feedbackMessageController,
+                       AssignmentRuntime assignmentRuntime
+                       ) {
 		super();
 		this.limits = limits;
 		this.testing = testing;
@@ -65,6 +74,7 @@ public class TestService {
 		this.competition = competition;
 		this.scoreService = scoreService;
 		this.feedbackMessageController = feedbackMessageController;
+        this.assignmentRuntime = assignmentRuntime;
 	}
 
 	/**
@@ -118,14 +128,12 @@ public class TestService {
 		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
 			@Override
 			public TestResult get() {
+                assignmentRuntime.addSubmit(compileResult.getUser());
 				AssignmentState state = competition.getAssignmentState();
 				Assignment assignment = competition.getCurrentAssignment().getAssignment();
-				Long finalScore = 0L;
-				final Long submissionTime = compileResult.getScoreAtSubmissionTime(); // Identical to score at
-				// submission time
+				final Long timeScore = compileResult.getScoreAtSubmissionTime(); // Identical to score at submission time
 				if (compileResult.isSuccessful()) {
 					try {
-
 						StringBuilder sb = new StringBuilder();
 						boolean success = true;
 						List<AssignmentFile> testFiles = state.getSubmitFiles();
@@ -134,7 +142,7 @@ public class TestService {
 						try {
 							for (AssignmentFile assignmentFile : testFiles) {
 								TestResult tr = unittest(assignmentFile, compileResult);
-								sb.append(tr.getResult());
+                                sb.append(tr.getResult());
 								if (success) {
 									success = tr.isSuccessful();
 									log.debug("set success {}", tr.isSuccessful());
@@ -156,12 +164,16 @@ public class TestService {
 								.user(compileResult.getUser())
 								.successful(success)
 								.testname("Submit Test")
-								.scoreAtSubmissionTime(submissionTime)
+								.scoreAtSubmissionTime(timeScore)
 								.build();
 
-						// TODO we should not register this here, this needs to be done in the score service probably.
-						finalScore = setFinalAssignmentScore(result, assignment, submissionTime);
-						// TODO fix possible precision loss
+						if (!result.isSuccessful()) {
+                            registerFailedResult(result, assignment, timeScore);
+                        } else {
+                            scoreService.setFinalAssignmentScore(result, assignment, timeScore);
+                            feedbackMessageController.sendDisableFeedbackMessage(result);
+                        }
+                        Long finalScore = scoreService.calculateScore(compileResult.getUser(), assignment, timeScore);
 						feedbackMessageController.sendTestFeedbackMessage(result, true, finalScore.intValue());
 						return result;
 					} catch (Exception e) {
@@ -175,10 +187,6 @@ public class TestService {
 								.build();
 						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
 						return dummyResult;
-					} finally {
-						// TODO we should not register this here, this needs to be done in the score service probably.
-						competition.registerFinishedTeam(compileResult.getUser(), submissionTime,
-								finalScore);
 					}
 
 				} else { // Compile failed
@@ -188,26 +196,33 @@ public class TestService {
 							.successful(false)
 							.testname("Submit Test")
 							.scoreAtSubmissionTime(0L)
+                            .remainingResubmits(assignmentRuntime.remainingResubmits(compileResult.getUser()))
 							.build();
-
+                    registerFailedResult(compileFailedResult, assignment, timeScore);
 					feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
-
-					// TODO we should not register this here, this needs to be done in the score service probably.
-					setFinalAssignmentScore(compileFailedResult, assignment, 0L);
-					competition.registerFinishedTeam(compileResult.getUser(), submissionTime, 0L);
-					return compileFailedResult;
+                    return compileFailedResult;
 				}
 			}
 		}, testing);
 
 	}
 
-	private Long setFinalAssignmentScore(TestResult testResult, Assignment assignment, Long scoreAtSubmissionTime) {
-		Long score = scoreService.registerScoreAtSubmission(testResult.getUser(), assignment,
-				testResult.isSuccessful() ? scoreAtSubmissionTime : 0L);
-		feedbackMessageController.sendRefreshToRankingsPage();
-		return score;
-	}
+    /**
+     * Register a failed result and if the team has no more resubmits, set the final score for that team to 0;
+     * @param failedResult The failed result
+     * @param assignment The assignment
+     * @param timeScore The score for time left
+     */
+    private void registerFailedResult(TestResult failedResult, Assignment assignment, Long timeScore) {
+        boolean hasResubmits = assignmentRuntime.hasResubmits(failedResult.getUser());
+        log.info("Team {} still has resubmits for assignment {} ? {}", failedResult.getUser(), assignment.getName(), hasResubmits);
+        if (!hasResubmits) {
+            log.info("No more resubmits for team {}, so final score is 0", failedResult.getUser());
+            competition.registerFinishedTeam(failedResult.getUser(), timeScore, 0L);
+            feedbackMessageController.sendDisableFeedbackMessage(failedResult);
+            feedbackMessageController.sendRefreshToRankingsPage();
+        }
+    }
 
 	private TestResult unittest(AssignmentFile file, CompileResult compileResult) {
 

@@ -70,10 +70,11 @@ public class AssignmentRuntime {
 	@Getter
 	private boolean running;
 
-	private List<TeamStatus> finishedTeams;
+    private List<TeamStatus> finishedTeams;
 	private CompetitionSession competitionSession;
 
-	/**
+    private Map<String, Integer> submits = new HashMap<>();
+    /**
 	 * Starts the given {@link OrderedAssignment} and returns
 	 * a Future&lt;?&gt; referencing which completes when the
 	 * assignment is supposed to end.
@@ -148,11 +149,10 @@ public class AssignmentRuntime {
 				.assignmentDescriptor(assignmentDescriptor)
 				.assignmentFiles(originalAssignmentFiles)
 				.running(running)
-				.finishedTeams(finishedTeams)
 				.build();
 	}
 
-	private String readPathContent(Path p) {
+    private String readPathContent(Path p) {
 		try {
 			return IOUtils.toString(Files.newInputStream(p, StandardOpenOption.READ), StandardCharsets.UTF_8);
 		} catch (IOException e) {
@@ -194,6 +194,7 @@ public class AssignmentRuntime {
 			cleanupTeamAssignmentData(t);
 			initTeamScore(t);
 			initTeamAssignmentData(t);
+            submits.put(t.getName(), 0);
 		});
 	}
 
@@ -293,12 +294,34 @@ public class AssignmentRuntime {
         );
 	}
 
-	public void addFinishedTeam(TeamStatus team) {
-		finishedTeams.add(team);
-	}
+    public boolean isTeamFinished(Team team) {
+        return finishedTeams.stream().anyMatch( t -> t.getTeam().equals(team));
+    }
 
-	private Date inSeconds(long sec) {
+    public TeamStatus getTeamStatus(Team team) {
+        return finishedTeams.stream().filter( t -> t.getTeam().equals(team)).findFirst().orElse(TeamStatus.builder().team(team).build());
+    }
+
+    public void addFinishedTeam(TeamStatus team) {
+        finishedTeams.add(team);
+    }
+
+    public boolean hasResubmits(String team) {
+        log.info("Team {} has used {} of {} submits", team, submits.getOrDefault(team, 0), assignmentDescriptor.getScoringRules().getMaximumResubmits());
+	    return remainingResubmits(team) > 0;
+    }
+
+    public int remainingResubmits(String team) {
+        return assignmentDescriptor.getScoringRules().getMaximumResubmits() - (submits.getOrDefault(team, 0));
+    }
+
+    public void addSubmit(String team) {
+        Integer noSubmits = submits.getOrDefault(team, 0);
+        log.info("Team {} has submitted {} times", team, noSubmits);
+        submits.put(team, ++noSubmits);
+    }
+
+    private Date inSeconds(long sec) {
         return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
-
     }
 }
