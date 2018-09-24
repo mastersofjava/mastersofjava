@@ -35,14 +35,14 @@ public class FeedbackMessageController {
 		log.info("sending compileResult feedback, {}", compileResult.isSuccessful());
 		template.convertAndSendToUser(compileResult.getUser(), "/queue/compilefeedback",
 				new CompileFeedbackMessage(compileResult.getUser(), compileResult.getResult(),
-						compileResult.isSuccessful(), !compileResult.getTests().isEmpty(), compileResult.getRemainingResubmits()));
+						compileResult.isSuccessful(), !compileResult.getTests().isEmpty()));
 	}
 
 	public void sendDisableFeedbackMessage(TestResult testResult) {
 		log.info("sending disable submit feedback to (), assignment successful? {}", testResult.getUser(), testResult.isSuccessful());
 		template.convertAndSendToUser(testResult.getUser(), "/queue/disable",
 				new CompileFeedbackMessage(testResult.getUser(), testResult.getResult(),
-						testResult.isSuccessful(), false, testResult.getRemainingResubmits()));
+						testResult.isSuccessful(), false));
 	}
 
 	public void sendStartToTeams(String taskname) {

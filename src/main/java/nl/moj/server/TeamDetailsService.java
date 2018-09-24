@@ -1,6 +1,8 @@
 package nl.moj.server;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.springframework.security.core.GrantedAuthority;
@@ -11,14 +13,20 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TeamDetailsService implements UserDetailsService {
 
+	private final MojServerProperties mojServerProperties;
     private final TeamRepository teamRepository;
 
 	@Override
@@ -34,5 +42,17 @@ public class TeamDetailsService implements UserDetailsService {
 		SimpleGrantedAuthority sGA = new SimpleGrantedAuthority(team.getRole().toString());
 		authList.add(sGA);
 		return authList;
+	}
+
+	public void initTeam(String name) {
+		Path teamdir = Paths.get(mojServerProperties.getDirectories().getBaseDirectory(),
+				mojServerProperties.getDirectories().getTeamDirectory(), name);
+		if (!Files.exists(teamdir)) {
+			try {
+				Files.createDirectories(teamdir);
+			} catch (IOException e) {
+				log.error("error while creating team directory", e);
+			}
+		}
 	}
 }

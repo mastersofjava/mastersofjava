@@ -1,13 +1,13 @@
 package nl.moj.server;
 
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.AssignmentRepoConfiguration.Repo;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentState;
@@ -20,8 +20,6 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
@@ -34,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,13 +47,13 @@ public class TaskControlController {
 
 	private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
 
+	private final MojServerProperties mojServerProperties;
+
 	private final CompetitionRuntime competition;
 
 	private final ResultRepository resultRepository;
 
 	private final TeamRepository teamRepository;
-
-	private final AssignmentRepoConfiguration repos;
 
 	private final FeedbackMessageController feedbackMessageController;
 
@@ -65,17 +63,9 @@ public class TaskControlController {
 
 	private final CompetitionRepository competitionRepository;
 
-	@Value("${moj.server.assignmentsRepo}")
-	private String assignmentDirectory;
-
 	@ModelAttribute(name = "assignments")
 	public List<ImmutablePair<String, Long>> assignments() {
 		return competition.getAssignmentInfo();
-	}
-
-	@ModelAttribute(name = "repos")
-	public List<Repo> repos() {
-		return repos.getRepos();
 	}
 
 	@MessageMapping("/control/starttask")
@@ -98,20 +88,29 @@ public class TaskControlController {
 	public void clearAssignment() {
 	}
 
-	@MessageMapping("/control/cloneAssignmentsRepo")
+	@MessageMapping("/control/scanAssignments")
 	@SendToUser("/queue/controlfeedback")
-	public String cloneAssignmentsRepo(Message<String> repoName) {
-		assignmentService.updateAssignments(Paths.get(assignmentDirectory));
-
-
-		Competition c = new Competition();
-		c.setUuid(UUID.randomUUID());
+	public String cloneAssignmentsRepo() {
+		assignmentService.updateAssignments(mojServerProperties.getAssignmentRepo());
+		UUID competitionUuid = mojServerProperties.getCompetition().getUuid();
+		Competition c = competitionRepository.findByUuid(competitionUuid);
+		if( c == null ) {
+			c = new Competition();
+			c.setUuid(competitionUuid);
+		}
 		c.setName("Masters of Java 2018");
+
+		// wipe assignments
+		c.setAssignments(new ArrayList<>());
+		c = competitionRepository.save(c);
+
+		// re-add updated assignments
 		c.setAssignments(assignmentRepository.findAll().stream().map(createOrderedAssignments(c)).collect(Collectors.toList()));
 		c = competitionRepository.save(c);
+		
 		competition.startCompetition(c);
 		
-		return "Assignments initialized";
+		return "Assignments scanned, reload to show them.";
 	}
 
 	private Function<Assignment, OrderedAssignment> createOrderedAssignments(Competition c) {

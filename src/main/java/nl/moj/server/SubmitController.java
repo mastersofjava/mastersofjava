@@ -9,14 +9,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.compiler.CompileService;
-import nl.moj.server.runtime.AssignmentRuntime;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.test.TestService;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,8 +32,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 @Controller
-@Slf4j
 @MessageMapping("/submit")
+@Slf4j
 public class SubmitController {
 
 	private CompileService compileService;
@@ -43,54 +42,43 @@ public class SubmitController {
 
 	private Executor compiling;
 
-	private Executor testing;
-
-	private Integer timeout;
+	private MojServerProperties mojServerProperties;
 
 	private CompetitionRuntime competition;
 
 	private TeamRepository teamRepository;
 
-	private AssignmentRuntime assigmentRuntime;
-
-	public SubmitController(CompileService compileService,
-                            TestService testService,
-                            @Qualifier("compiling") Executor compiling,
-                            @Qualifier("testing") Executor testing,
-                            @Value("${moj.server.timeout}") Integer timeout,
-                            CompetitionRuntime competition,
-                            TeamRepository teamRepository,
-                            AssignmentRuntime assignmentRuntime) {
+	public SubmitController(CompileService compileService, TestService testService,
+							@Qualifier("compiling") Executor compiling,
+							MojServerProperties mojServerProperties, CompetitionRuntime competition, TeamRepository teamRepository) {
 		super();
 		this.compileService = compileService;
 		this.testService = testService;
 		this.compiling = compiling;
-		this.testing = testing;
-		this.timeout = timeout;
+		this.mojServerProperties = mojServerProperties;
 		this.competition = competition;
 		this.teamRepository = teamRepository;
-		this.assigmentRuntime = assignmentRuntime;
 	}
 
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		message.setTeam(user.getName());
-		CompletableFuture.supplyAsync(compileService.compile(message), compiling).orTimeout(timeout, TimeUnit.SECONDS);
+		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
+				.orTimeout(mojServerProperties.getRuntimes().getCompile().getTimeout(), TimeUnit.SECONDS);
 	}
 
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		message.setTeam(user.getName());
-		CompletableFuture<Void> completableFuture = CompletableFuture
-				.supplyAsync(compileService.compileWithTest(message), testing)
-				.thenAccept(compileResult -> testService.testAll(compileResult)).whenComplete((value, ex) -> { 
-					if (value != null) {
-						System.out.println("Result: " + value);
-					} else {
-						// ... or return an error value:
-						System.out.println("Error code: -1. Root cause: " + ex.getCause().getMessage());
+		CompletableFuture
+				.supplyAsync(compileService.compileWithTest(message), compiling)
+				.thenCompose(compileResult -> testService.testAll(compileResult))
+				.orTimeout(mojServerProperties.getRuntimes().getTest().getTimeout(), TimeUnit.SECONDS)
+				.whenComplete((testResults, error) -> {
+					if( error != null ) {
+						log.error("Testing failed: {}", error.getMessage(), error);
 					}
 				});
 	}
@@ -108,18 +96,26 @@ public class SubmitController {
 	@MessageMapping("/submit")
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
-
+		// TODO we need to handle resubmits
 		Team team = teamRepository.findByName(user.getName());
 		AssignmentState state = competition.getAssignmentState();
-        if (!assigmentRuntime.isTeamFinished(team) && assigmentRuntime.hasResubmits(team.getName())) {
-			long scoreAtSubmissionTime = state.getTimeRemaining();
+        if (state.isSubmitAllowedForTeam(team)) {
+        	competition.registerSubmit(team);
+
+        	long scoreAtSubmissionTime = state.getTimeRemaining();
 			message.setTeam(user.getName());
 			message.setScoreAtSubmissionTime(scoreAtSubmissionTime);
-			CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
-					.orTimeout(timeout, TimeUnit.SECONDS)
-					.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing);
-		} else {
-			log.warn("Team {} tried to submit but is already finished", user.getName());
+			CompletableFuture.supplyAsync(compileService.compileForSubmit(message), compiling)
+					.thenCompose(compileResult -> testService.testSubmit(compileResult))
+					.orTimeout(mojServerProperties.getRuntimes().getTest().getTimeout(), TimeUnit.SECONDS)
+					.whenComplete( (testResult,error) -> {
+						if( error != null ) {
+							log.error("Testing failed: {}", error.getMessage(), error);
+						}
+						if( testResult != null ) {
+							log.debug("Test result: {}", testResult.isSuccessful());
+						}
+					} );
 		}
 	}
 

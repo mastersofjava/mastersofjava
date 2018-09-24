@@ -11,13 +11,12 @@ import java.util.List;
 public class CompileResult {
 
 	private String result;
-	private String user;
 
 	@Builder.Default
 	private List<String> tests = new ArrayList<>();
 
+	private String user;
 	private boolean successful;
 	private Long scoreAtSubmissionTime;
-	private int remainingResubmits;
 
 }

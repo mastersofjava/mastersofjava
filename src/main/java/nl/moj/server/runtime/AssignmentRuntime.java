@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -70,10 +71,8 @@ public class AssignmentRuntime {
 	@Getter
 	private boolean running;
 
-    private List<TeamStatus> finishedTeams;
+    private Map<Team,TeamStatus> teamStatuses;
 	private CompetitionSession competitionSession;
-
-    private Map<String, Integer> submits = new HashMap<>();
     /**
 	 * Starts the given {@link OrderedAssignment} and returns
 	 * a Future&lt;?&gt; referencing which completes when the
@@ -88,7 +87,7 @@ public class AssignmentRuntime {
 		this.orderedAssignment = orderedAssignment;
 		this.assignment = orderedAssignment.getAssignment();
 		this.assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
-		this.finishedTeams = new ArrayList<>();
+		this.teamStatuses = new HashMap<>();
 
 		// init assignment sources;
 		initOriginalAssignmentFiles();
@@ -97,7 +96,7 @@ public class AssignmentRuntime {
 		initTeamsForAssignment();
 
         // play the gong
-        taskScheduler.schedule(() -> soundService.playGong(), inSeconds(0));
+        taskScheduler.schedule(soundService::playGong, Instant.now());
 		// start the timers
         Future<?> stopHandle = startTimers();
 
@@ -149,6 +148,7 @@ public class AssignmentRuntime {
 				.assignmentDescriptor(assignmentDescriptor)
 				.assignmentFiles(originalAssignmentFiles)
 				.running(running)
+				.teamStatuses(teamStatuses)
 				.build();
 	}
 
@@ -194,7 +194,7 @@ public class AssignmentRuntime {
 			cleanupTeamAssignmentData(t);
 			initTeamScore(t);
 			initTeamAssignmentData(t);
-            submits.put(t.getName(), 0);
+			teamStatuses.put(t, TeamStatus.init(t));
 		});
 	}
 
@@ -241,7 +241,7 @@ public class AssignmentRuntime {
 	}
 
 	private void cleanupTeamScores() {
-		scoreService.removeScoresForAssignment(assignment);
+		scoreService.removeScoresForAssignment(assignment, competitionSession);
 	}
 
 	private Future<?> startTimers() {
@@ -293,35 +293,45 @@ public class AssignmentRuntime {
                 TIMESYNC_FREQUENCY
         );
 	}
+    
+//    public boolean hasResubmits(String team) {
+//        log.info("Team {} has used {} of {} submits", team, submits.getOrDefault(team, 0), assignmentDescriptor.getScoringRules().getMaximumResubmits());
+//	    return remainingResubmits(team) > 0;
+//    }
 
-    public boolean isTeamFinished(Team team) {
-        return finishedTeams.stream().anyMatch( t -> t.getTeam().equals(team));
-    }
+//    public int remainingResubmits(String team) {
+//        return assignmentDescriptor.getScoringRules().getMaximumResubmits() - (submits.getOrDefault(team, 0));
+//    }
 
-    public TeamStatus getTeamStatus(Team team) {
-        return finishedTeams.stream().filter( t -> t.getTeam().equals(team)).findFirst().orElse(TeamStatus.builder().team(team).build());
-    }
-
-    public void addFinishedTeam(TeamStatus team) {
-        finishedTeams.add(team);
-    }
-
-    public boolean hasResubmits(String team) {
-        log.info("Team {} has used {} of {} submits", team, submits.getOrDefault(team, 0), assignmentDescriptor.getScoringRules().getMaximumResubmits());
-	    return remainingResubmits(team) > 0;
-    }
-
-    public int remainingResubmits(String team) {
-        return assignmentDescriptor.getScoringRules().getMaximumResubmits() - (submits.getOrDefault(team, 0));
-    }
-
-    public void addSubmit(String team) {
-        Integer noSubmits = submits.getOrDefault(team, 0);
-        log.info("Team {} has submitted {} times", team, noSubmits);
-        submits.put(team, ++noSubmits);
-    }
+//    public void addSubmit(String team) {
+//        Integer noSubmits = submits.getOrDefault(team, 0);
+//        log.info("Team {} has submitted {} times", team, noSubmits);
+//        submits.put(team, ++noSubmits);
+//    }
 
     private Date inSeconds(long sec) {
         return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
     }
+
+    void registerAssignmentCompleted(Team team, Long timeScore, Long finalScore) {
+		update(teamStatuses.get(team).toBuilder()
+		.submitTime(timeScore)
+		.score(finalScore)
+		.build());
+	}
+
+	void registerSubmitForTeam(Team team) {
+		TeamStatus s = teamStatuses.get(team);
+	 	update(s.toBuilder()
+			.submits(s.getSubmits()+1)
+			.build()
+		);
+	}
+
+	private TeamStatus update(TeamStatus status) {
+		teamStatuses.put(status.getTeam(), status);
+		return status;
+	}
+
+
 }

@@ -1,8 +1,10 @@
 package nl.moj.server.runtime;
 
 import lombok.RequiredArgsConstructor;
+import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.model.Result;
 import nl.moj.server.teams.model.Team;
@@ -10,7 +12,6 @@ import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.test.TestResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,12 +24,10 @@ public class ScoreService {
 
 	private final TeamRepository teamRepository;
 
-	
-    @Value("${moj.server.competition.bonusForSuccessfulSubmission}")
-	private int bonusForSuccessfulSubmission;
+	private final MojServerProperties mojServerProperties;
 
-	public void removeScoresForAssignment(Assignment assignment) {
-		resultRepository.findAllByAssignment(assignment).forEach(resultRepository::delete);
+	public void removeScoresForAssignment(Assignment assignment, CompetitionSession competitionSession) {
+		resultRepository.findAllByAssignmentAndCompetitionSession(assignment,competitionSession).forEach(resultRepository::delete);
 	}
 
 	public void initializeScoreAtStart(Team team, Assignment assignment, CompetitionSession competitionSession) {
@@ -47,38 +46,43 @@ public class ScoreService {
      * Old score is always 0
      * new score is seconds left plus bonus.
      *
-     * @param teamname
+     * @param team
      * @param assignment
-     * @param scoreAtSubmissionTime
+     * @param submissionTime
      * @return
      */
-    public Long registerScoreAtSubmission(String teamname, Assignment assignment, Long scoreAtSubmissionTime) {
+    public Long registerScoreAtSubmission(Team team, Assignment assignment, AssignmentDescriptor ad, Long submissionTime) {
         Long score = 0L;
-        if (scoreAtSubmissionTime > 0) {
-            score = scoreAtSubmissionTime + bonusForSuccessfulSubmission;
-
+        Integer bonusForSuccessfulSubmission = 0;
+        if (submissionTime > 0) {
+            score = submissionTime;
+			if( ad.getScoringRules().getSuccessBonus() != null && ad.getScoringRules().getSuccessBonus() > 0) {
+				bonusForSuccessfulSubmission = ad.getScoringRules().getSuccessBonus();
+			} else {
+				bonusForSuccessfulSubmission = ad.getScoringRules().getSuccessBonus();
+			}
+			score += bonusForSuccessfulSubmission;
         }
-        Result result = resultRepository.findByTeamAndAssignment(teamRepository.findByName(teamname), assignment);
+        Result result = resultRepository.findByTeamAndAssignment(team, assignment);
         // TODO fix possible precision loss.
         result.setScore(score.intValue());
         resultRepository.save(result);
         log.debug("Saved score for Team {} in assignment {}. Score {} + bonus {} = {}",
-                teamname, assignment.getName(), scoreAtSubmissionTime, bonusForSuccessfulSubmission, score );
+                team.getName(), assignment.getName(), submissionTime, bonusForSuccessfulSubmission, score );
         return score;
     }
 
-    public Long calculateScore(String teamname, Assignment assignment, Long scoreAtSubmissionTime) {
-        Long score = 0L;
-        if (scoreAtSubmissionTime > 0) {
-            score = scoreAtSubmissionTime + bonusForSuccessfulSubmission;
-        }
-        log.debug("Team {} submitted {}. assignment score {} + bonus {} = {}", teamname, assignment.getName(), scoreAtSubmissionTime, bonusForSuccessfulSubmission, score);
-        return score;
-    }
+//    public Long calculateScore(Team team, Assignment assignment, Long submissionTime) {
+//        Long score = 0L;
+//        if (submissionTime > 0) {
+//            score = submissionTime + bonusForSuccessfulSubmission;
+//        }
+//        log.debug("Team {} submitted {} and scored {} + bonus {} = {}", team.getName(), assignment.getName(), submissionTime, bonusForSuccessfulSubmission, score);
+//        return score;
+//    }
 
-    public Long setFinalAssignmentScore(TestResult testResult, Assignment assignment, Long scoreAtSubmissionTime) {
-		Long score = registerScoreAtSubmission(testResult.getUser(), assignment, testResult.isSuccessful() ? scoreAtSubmissionTime : 0L);
+    public Long setFinalAssignmentScore(TestResult testResult, Assignment assignment, AssignmentDescriptor ad, Long scoreAtSubmissionTime) {
+		Long score = registerScoreAtSubmission(teamRepository.findByName(testResult.getUser()), assignment, ad, testResult.isSuccessful() ? scoreAtSubmissionTime : 0L);
 		return score;
 	}
-
 }

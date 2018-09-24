@@ -8,8 +8,8 @@ import lombok.Setter;
 public class CompileFeedbackMessage extends FeedbackMessage {
     private boolean forTest;
 
-    public CompileFeedbackMessage(String team, String text, boolean success, boolean forTest, int remainingResubmits) {
-        super(team, text, success, remainingResubmits);
+    public CompileFeedbackMessage(String team, String text, boolean success, boolean forTest) {
+        super(team, text, success, -1);
         this.forTest = forTest;
     }
 

@@ -12,7 +12,6 @@ import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.runtime.model.CompetitionState;
-import nl.moj.server.runtime.model.TeamStatus;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -107,14 +106,15 @@ public class CompetitionRuntime {
 				}).sorted().collect(Collectors.toList());
 	}
 
-	public void registerFinishedTeam(String user, Long timeScore, Long finalScore) {
+	public void registerAssignmentCompleted(Team team, Long timeScore, Long finalScore) {
 		if (assignmentRuntime.getOrderedAssignment() != null) {
-			Team team = teamRepository.findByName(user);
-			assignmentRuntime.addFinishedTeam(TeamStatus.builder()
-					.team(team)
-					.score(finalScore)
-					.submitTime(timeScore)
-					.build());
+			assignmentRuntime.registerAssignmentCompleted(team, timeScore, finalScore);
+		}
+	}
+
+	public void registerSubmit(Team team) {
+		if (assignmentRuntime.getOrderedAssignment() != null) {
+			assignmentRuntime.registerSubmitForTeam(team);
 		}
 	}
 
