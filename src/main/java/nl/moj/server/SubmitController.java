@@ -7,14 +7,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.compiler.CompileService;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.test.TestService;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 @Controller
 @MessageMapping("/submit")
+@Slf4j
 public class SubmitController {
 
 	private CompileService compileService;
@@ -42,7 +44,7 @@ public class SubmitController {
 
 	private Executor testing;
 
-	private Integer timeout;
+	private MojServerProperties mojServerProperties;
 
 	private CompetitionRuntime competition;
 
@@ -50,13 +52,13 @@ public class SubmitController {
 
 	public SubmitController(CompileService compileService, TestService testService,
 							@Qualifier("compiling") Executor compiling, @Qualifier("testing") Executor testing,
-							@Value("${moj.server.timeout}") Integer timeout, CompetitionRuntime competition, TeamRepository teamRepository) {
+							MojServerProperties mojServerProperties, CompetitionRuntime competition, TeamRepository teamRepository) {
 		super();
 		this.compileService = compileService;
 		this.testService = testService;
 		this.compiling = compiling;
 		this.testing = testing;
-		this.timeout = timeout;
+		this.mojServerProperties = mojServerProperties;
 		this.competition = competition;
 		this.teamRepository = teamRepository;
 	}
@@ -65,21 +67,21 @@ public class SubmitController {
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		message.setTeam(user.getName());
-		CompletableFuture.supplyAsync(compileService.compile(message), compiling).orTimeout(timeout, TimeUnit.SECONDS);
+		CompletableFuture.supplyAsync(compileService.compile(message), compiling)
+				.orTimeout(mojServerProperties.getRuntimes().getCompile().getTimeout(), TimeUnit.SECONDS);
 	}
 
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		message.setTeam(user.getName());
-		CompletableFuture<Void> completableFuture = CompletableFuture
-				.supplyAsync(compileService.compileWithTest(message), testing)
-				.thenAccept(compileResult -> testService.testAll(compileResult)).whenComplete((value, ex) -> { 
-					if (value != null) {
-						System.out.println("Result: " + value);
-					} else {
-						// ... or return an error value:
-						System.out.println("Error code: -1. Root cause: " + ex.getCause().getMessage());
+		CompletableFuture
+				.supplyAsync(compileService.compileWithTest(message), compiling)
+				.thenCompose(compileResult -> testService.testAll(compileResult))
+				.orTimeout(mojServerProperties.getRuntimes().getTest().getTimeout(), TimeUnit.SECONDS)
+				.whenComplete((testResults, error) -> {
+					if( error != null ) {
+						log.error("Testing failed: {}", error.getMessage(), error);
 					}
 				});
 	}
@@ -104,9 +106,17 @@ public class SubmitController {
 			long scoreAtSubmissionTime = state.getTimeRemaining();
 			message.setTeam(user.getName());
 			message.setScoreAtSubmissionTime(scoreAtSubmissionTime);
-			CompletableFuture.supplyAsync(compileService.compileForSubmit(message), testing)
-					.orTimeout(timeout, TimeUnit.SECONDS)
-					.thenComposeAsync(compileResult -> testService.testSubmit(compileResult), testing);
+			CompletableFuture.supplyAsync(compileService.compileForSubmit(message), compiling)
+					.thenCompose(compileResult -> testService.testSubmit(compileResult))
+					.orTimeout(mojServerProperties.getRuntimes().getTest().getTimeout(), TimeUnit.SECONDS)
+					.whenComplete( (testResult,error) -> {
+						if( error != null ) {
+							log.error("Testing failed: {}", error.getMessage(), error);
+						}
+						if( testResult != null ) {
+							log.debug("Test result: {}", testResult.isSuccessful());
+						}
+					} );
 		}
 	}
 

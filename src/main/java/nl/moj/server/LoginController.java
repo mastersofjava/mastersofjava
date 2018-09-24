@@ -1,6 +1,7 @@
 package nl.moj.server;
 
 import lombok.RequiredArgsConstructor;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.slf4j.Logger;
@@ -34,7 +35,7 @@ public class LoginController {
 	
 	private final PasswordEncoder encoder;
 	
-	private final DirectoriesConfiguration directories;
+	private final MojServerProperties mojServerProperties;
 
 	@GetMapping("/login")
     public String loginForm(Model model) {
@@ -61,7 +62,7 @@ public class LoginController {
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority(ROLE_USER.toString())));
     	context.setAuthentication(authentication);
-    	Path teamdir = Paths.get(directories.getBaseDirectory(), directories.getTeamDirectory(), authentication.getName());
+    	Path teamdir = Paths.get(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(), authentication.getName());
 		if (!Files.exists(teamdir)) {
 			try {
 				Files.createDirectory(teamdir);

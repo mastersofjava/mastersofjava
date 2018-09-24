@@ -89,23 +89,9 @@
 
 </div>
 
-<div class="row">
-    <div class="col-6">
-        <th:block th:each="repo : ${repos}">
-            <div class="form-check input-group radio">
-                <label class="form-check-label">
-                    <input class="form-check-input" type="radio" name="repo"
-                           th:text="' ' + ${repo.name} +| / | + ${repo.branch}" th:value="${repo.name}"
-                           th:id="${repo.name}"/>
-                </label>
-            </div>
-        </th:block>
-    </div>
-</div>
-
 <div class="row p-2">
     <div class="p-2 col-6">
-        <button id="clone" class="btn btn-primary" onclick="cloneAssignmentsRepo();">Clone assignments repo</button>
+        <button id="clone" class="btn btn-primary" onclick="scanAssignments();">Scan Assignments</button>
         <p id="response"></p>
     </div>
 </div>
