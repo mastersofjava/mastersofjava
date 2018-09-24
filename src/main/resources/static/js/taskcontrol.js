@@ -28,7 +28,7 @@ function connect() {
         });
         console.log('subscribe to /control/queue/start');
         stompClient.subscribe('/queue/start', function (msg) {
-            window.location.reload();
+            window.setTimeout(function(){window.location.reload();},1000);
         });
         console.log('subscribe to /control/queue/stop');
         stompClient.subscribe('/queue/stop', function (msg) {

@@ -49,8 +49,7 @@ function connectControl() {
         $('#status').append('<span>Connected</span>');
         console.log('subscribe to /control/queue/start');
         stomp.subscribe('/queue/start', function (msg) {
-            console.log("window reloading: received",msg)
-            window.location.reload();
+            window.setTimeout(function(){window.location.reload()},1000);
         });
         console.log('subscribe to /control/queue/stop');
         stomp.subscribe("/queue/stop", function (msg) {
