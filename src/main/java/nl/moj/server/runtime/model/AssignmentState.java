@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.teams.model.Team;
 
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AssignmentState {
 
+	private Assignment assignment;
 	private AssignmentDescriptor assignmentDescriptor;
 	private Long timeRemaining;
 	private List<AssignmentFile> assignmentFiles;
@@ -36,9 +38,10 @@ public class AssignmentState {
 				.collect(Collectors.toList());
 	}
 
-	public List<AssignmentFile> getSubmitFiles() {
+	public List<AssignmentFile> getSubmitTestFiles() {
 		return assignmentFiles
-				.stream().filter(f -> f.getFileType() == AssignmentFileType.SUBMIT)
+				.stream().filter(f -> f.getFileType() == AssignmentFileType.SUBMIT ||
+						f.getFileType() == AssignmentFileType.TEST)
 				.collect(Collectors.toList());
 	}
 

@@ -3,42 +3,61 @@ var editors = [];
 var clock = null;
 
 $(document).ready(function () {
-    connectFeedback();
+    connectCompetition();
     connectControl();
     connectButtons();
+
     initializeAssignmentClock();
     initializeCodeMirrors();
 });
 
-function connectFeedback() {
-    var socket = new SockJS('/submit');
-    var stompTestFeedbackClient = Stomp.over(socket);
-    stompTestFeedbackClient.debug = null;
-    stompTestFeedbackClient.connect({}, function (frame) {
-        stompTestFeedbackClient.subscribe('/user/queue/feedback',
-            function (msg) {
-                var message = JSON.parse(msg.body);
-                if (!message.submit) {
-                    appendOutput(message.text);
-                    updateOutputHeaderColor(message.success);
-                } else {
-                    updateAlertContainerWithScore(message);
+function connectCompetition() {
+    var socket = new SockJS("/ws/competition");
+    var stomp = Stomp.over(socket);
+    stomp.debug = null;
+    stomp.connect({}, function (frame) {
+        stomp.subscribe('/user/queue/competition',
+            function (data) {
+                var msg = JSON.parse(data.body);
+                console.log('received:',msg);
+                if (userHandlers.hasOwnProperty(msg.messageType)) {
+                    userHandlers[msg.messageType](msg);
                 }
             });
-        stompTestFeedbackClient.subscribe('/user/queue/compilefeedback',
-            function (msg) {
-                var message = JSON.parse(msg.body);
-                if (!message.forTest) {
-                    appendOutput(message.text);
-                    updateOutputHeaderColor(message.success);
-                } else {
-                    if (!message.success) {
-                        updateOutputHeaderColor(message.success);
-                    }
-                    appendOutput(message.text);
+        stomp.subscribe("/queue/competition",
+            function (data) {
+                var msg = JSON.parse(data.body);
+                if (handlers.hasOwnProperty(msg.messageType)) {
+                    handlers[msg.messageType](msg);
                 }
             });
     });
+
+    var userHandlers = {};
+    userHandlers['COMPILE'] = function (msg) {
+        appendOutput(msg.message);
+        updateOutputHeaderColor(msg.success);
+
+    };
+    userHandlers['TEST'] = function (msg) {
+        appendOutput(msg.message);
+        if (!msg.success) {
+            updateOutputHeaderColor(msg.success);
+        }
+    };
+    userHandlers['SUBMIT'] = function (msg) {
+        if( msg.success || msg.remainingResubmits <= 0) {
+            disable();
+        }
+        updateAlertContainerWithScore(msg);
+    };
+
+    var handlers = {};
+    handlers['TIMER_SYNC'] = function (msg) {
+        if (clock) {
+            clock.sync(msg.remainingTime, msg.totalTime);
+        }
+    };
 }
 
 function connectControl() {
@@ -49,7 +68,9 @@ function connectControl() {
         $('#status').append('<span>Connected</span>');
         console.log('subscribe to /control/queue/start');
         stomp.subscribe('/queue/start', function (msg) {
-            window.setTimeout(function(){window.location.reload()},1000);
+            window.setTimeout(function () {
+                window.location.reload()
+            }, 1000);
         });
         console.log('subscribe to /control/queue/stop');
         stomp.subscribe("/queue/stop", function (msg) {
@@ -57,20 +78,6 @@ function connectControl() {
             if (clock) {
                 clock.stop();
             }
-        });
-        console.log('Subscribe to /control/queue/time');
-        stomp.subscribe('/queue/time', function (taskTimeMessage) {
-            var message = JSON.parse(taskTimeMessage.body);
-            if (clock) {
-                clock.sync(message.remainingTime, message.totalTime);
-            }
-        });
-        console.log('Subscribe to /user/queue/disable');
-        stomp.subscribe('/user/queue/disable', function (msg) {
-            console.log("Disabled: ", msg);
-            var message = JSON.parse(msg.body);
-            appendOutput(message.text);
-            disable();
         });
     });
 }
@@ -158,7 +165,6 @@ function updateOutputHeaderColor(success) {
 }
 
 function updateAlertContainerWithScore(message) {
-    console.log(message);
     if (message.success === true) {
         $('#alert-container')
             .empty()

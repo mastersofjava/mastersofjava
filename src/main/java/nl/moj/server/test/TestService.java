@@ -1,15 +1,8 @@
 package nl.moj.server.test;
 
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.compiler.CompileResult;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.ScoreService;
 import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -25,10 +18,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 public class TestService {
@@ -36,178 +27,38 @@ public class TestService {
 	private static final Logger log = LoggerFactory.getLogger(TestService.class);
 	private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
 			Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-	private final TeamRepository teamRepository;
 
-	private Executor testing;
+	private Executor executor;
 
 	private MojServerProperties mojServerProperties;
 
-	private CompetitionRuntime competition;
-
-	private ScoreService scoreService;
-
-	private FeedbackMessageController feedbackMessageController;
-
-	public TestService(MojServerProperties mojServerProperties, @Qualifier("testing") Executor testing,
-					   CompetitionRuntime competition, ScoreService scoreService, FeedbackMessageController feedbackMessageController,
-					   TeamRepository teamRepository) {
+	public TestService(MojServerProperties mojServerProperties, @Qualifier("testing") Executor executor) {
 		this.mojServerProperties = mojServerProperties;
-		this.testing = testing;
-		this.competition = competition;
-		this.scoreService = scoreService;
-		this.feedbackMessageController = feedbackMessageController;
-		this.teamRepository = teamRepository;
+		this.executor = executor;
 	}
 
-	/**
-	 * Tests all normal unit tests. The Submit test will NOT be tested.
-	 *
-	 * @param compileResult
-	 * @return
-	 */
-	public CompletableFuture<List<TestResult>> testAll(CompileResult compileResult) {
-		return CompletableFuture.supplyAsync(new Supplier<List<TestResult>>() {
-			@Override
-			public List<TestResult> get() {
-				if (compileResult.isSuccessful()) {
-					List<TestResult> result = new ArrayList<>();
-					List<String> tests = compileResult.getTests();
-					List<AssignmentFile> testFiles = competition.getAssignmentState().getAssignmentFiles().stream()
-							.filter(f -> tests.contains(f.getName())).collect(Collectors.toList());
-					for (AssignmentFile assignmentFile : testFiles) {
-						try {
-							TestResult tr = unittest(assignmentFile, compileResult);
-							tr.setSubmit(false);
-							feedbackMessageController.sendTestFeedbackMessage(tr, false, 0);
-							result.add(tr);
-						} catch (Exception e) {
-							final TestResult dummyResult = TestResult.builder()
-									.result("Server error running tests - contact the Organizer")
-									.user(compileResult.getUser()).successful(false)
-									.testname(assignmentFile.getFilename()).build();
-							feedbackMessageController.sendTestFeedbackMessage(dummyResult, false, 0);
-							result.add(dummyResult);
-						}
-					}
-					return result;
-				} else {
-					return new ArrayList<>();
+	public CompletableFuture<List<TestResult>> runTests(Team team, List<AssignmentFile> tests) {
+		return CompletableFuture.supplyAsync(() -> {
+			List<TestResult> results = new ArrayList<>();
+			for (AssignmentFile test : tests) {
+				try {
+					results.add(runTest(team, test));
+				} catch (Exception e) {
+					results.add(TestResult.builder()
+							.message("Server error running tests - contact the Organizer")
+							.team(team).successful(false).testName(test.getName()).build());
+
 				}
 			}
-		}, testing);
+			return results;
+		}, executor);
 	}
 
-	/**
-	 * Test the solution provided by the team against the Submit test and assignment
-	 * tests. All tests have to succeed.
-	 *
-	 * @param compileResult
-	 * @return the combined TestResult
-	 */
-	public CompletableFuture<TestResult> testSubmit(CompileResult compileResult) {
-		return CompletableFuture.supplyAsync(new Supplier<TestResult>() {
-			@Override
-			public TestResult get() {
-				Team team = teamRepository.findByName(compileResult.getUser());
-				AssignmentState state = competition.getAssignmentState();
-				Assignment assignment = competition.getCurrentAssignment().getAssignment();
-				Long finalScore = 0L;
-				final Long submissionTime = compileResult.getScoreAtSubmissionTime(); // Identical to score at
-				// submission time
-				if (compileResult.isSuccessful()) {
-					try {
+	private TestResult runTest(Team team, AssignmentFile file) {
 
-						StringBuilder sb = new StringBuilder();
-						boolean success = true;
-						List<AssignmentFile> testFiles = state.getSubmitFiles();
-						testFiles.addAll(state.getTestFiles());
-						testFiles.forEach(f -> log.trace(f.getName()));
-						try {
-							for (AssignmentFile assignmentFile : testFiles) {
-								TestResult tr = unittest(assignmentFile, compileResult);
-								sb.append(tr.getResult());
-								if (success) {
-									success = tr.isSuccessful();
-									log.debug("set success {}", tr.isSuccessful());
-								}
-							}
-						} catch (Exception e) {
-							final TestResult dummyResult = TestResult.builder()
-									.result("Server error running tests - contact the Organizer")
-									.user(compileResult.getUser()).successful(false).testname(e.getMessage()).build();
-							feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
-							return dummyResult;
-						}
-
-						final TestResult result = TestResult.builder().result(sb.toString())
-								.user(compileResult.getUser()).successful(success).testname("Submit Test")
-								.scoreAtSubmissionTime(submissionTime).build();
-
-						if (!result.isSuccessful()) {
-                            registerFailedResult(result, assignment, submissionTime);
-                        } else {
-                            finalScore = scoreService.setFinalAssignmentScore(result, assignment, state.getAssignmentDescriptor(), submissionTime);
-                            feedbackMessageController.sendDisableFeedbackMessage(result);
-                        }
-						feedbackMessageController.sendTestFeedbackMessage(result, true, finalScore.intValue());
-						return result;
-					} catch (Exception e) {
-						log.error("Exception Running tests", e);
-						final TestResult dummyResult = TestResult.builder()
-								.result("Server error running tests - contact the Organizer")
-								.user(compileResult.getUser()).successful(false).testname("Submit Test")
-								.scoreAtSubmissionTime(0L).build();
-						feedbackMessageController.sendTestFeedbackMessage(dummyResult, true, 0);
-						return dummyResult;
-					} finally {
-						// TODO we should not register this here, this needs to be done in the score
-						// service probably.
-						competition.registerAssignmentCompleted(team, submissionTime, finalScore);
-					}
-
-				} else { // Compile failed
-					final TestResult compileFailedResult = TestResult.builder()
-							.result("Submit Test - Compilation failed->test failed")
-							.user(compileResult.getUser())
-							.successful(false)
-							.testname("Submit Test")
-							.scoreAtSubmissionTime(0L)
-                            .remainingResubmits(state.getRemainingSubmits(team))
-							.build();
-                    registerFailedResult(compileFailedResult, assignment, submissionTime);
-					feedbackMessageController.sendTestFeedbackMessage(compileFailedResult, true, -1);
-					return compileFailedResult;
-				}
-			}
-		}, testing);
-
-	}
-	
-    /**
-     * Register a failed result and if the team has no more resubmits, set the final score for that team to 0;
-     * @param failedResult The failed result
-     * @param assignment The assignment
-     * @param timeScore The score for time left
-     */
-    private void registerFailedResult(TestResult failedResult, Assignment assignment, Long timeScore) {
-    	AssignmentState state = competition.getAssignmentState();
-    	Team team = teamRepository.findByName(failedResult.getUser());
-        int resubmits = state.getRemainingSubmits(team);
-        if( resubmits > 0 ) {
-			log.info("Team {} still has {} resubmits left for assignment {}", failedResult.getUser(), resubmits, assignment.getName());
-		} else {
-            log.info("Team {} has no resubmits left for assignment {}, final score is 0.", failedResult.getUser(), assignment.getName());
-            competition.registerAssignmentCompleted(team, timeScore, 0L);
-            feedbackMessageController.sendDisableFeedbackMessage(failedResult);
-            feedbackMessageController.sendRefreshToRankingsPage();
-        }
-    }
-
-	private TestResult unittest(AssignmentFile file, CompileResult compileResult) {
-
-		log.info("running unittest: {}", file.getName());
+		log.info("Running unit test: {}", file.getName());
 		File teamdir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(),
-				compileResult.getUser());
+				team.getName());
 		File policy = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
 				SECURITY_POLICY_FOR_UNIT_TESTS);
 		if (!policy.exists()) {
@@ -222,7 +73,7 @@ public class TestService {
 			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(mojServerProperties);
 			try {
 				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(mojServerProperties.getLanguages().getJavaVersion().getRuntime().toString(), "-cp",
-						makeClasspath(compileResult.getUser()), "-Djava.security.manager",
+						makeClasspath(team.getName()), "-Djava.security.manager",
 						"-Djava.security.policy=" + policy.getAbsolutePath(), "org.junit.runner.JUnitCore",
 						file.getName());
 				log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
@@ -231,12 +82,11 @@ public class TestService {
 						.redirectError(jUnitError).execute().getExitValue();
 			} catch (TimeoutException e) {
 				// process is automatically destroyed
-				log.debug("Unit test for {} timed out and got killed", compileResult.getUser());
+				log.debug("Unit test for {} timed out and got killed", team.getName());
 				isRunTerminated = true;
 			} catch (SecurityException se) {
 				log.error(se.getMessage(), se);
 			}
-			log.debug("exitValue {}", exitvalue);
 			if (isRunTerminated) {
 				jUnitOutput.getBuffer().append('\n').append(mojServerProperties.getLimits().getUnitTestOutput().getTestTimeoutTermination());
 			}
@@ -257,11 +107,9 @@ public class TestService {
 				result = jUnitError.toString();
 				success = (exitvalue == 0) && !isRunTerminated;
 			}
-
-			log.debug("success {}", success);
-			log.info("finished unittest: {}", file.getName());
-			return TestResult.builder().result(result).user(compileResult.getUser()).successful(success)
-					.testname(file.getName()).build();
+			log.info("finished unit test: {}", file.getName());
+			return TestResult.builder().message(result).team(team).successful(success)
+					.testName(file.getName()).build();
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
 		}
@@ -288,8 +136,8 @@ public class TestService {
 				FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
 		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
 				"hamcrest-all-1.3.jar"));
-		
-		if (mojServerProperties.getDirectories().getResourceDirectory()==null) {
+
+		if (mojServerProperties.getDirectories().getResourceDirectory() == null) {
 			log.warn("no moj.server.directories.resourceDirectory configured in application.yaml, no resources can be used by assignments!");
 		} else {
 			classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getResourceDirectory()));

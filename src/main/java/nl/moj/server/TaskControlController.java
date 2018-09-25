@@ -8,6 +8,7 @@ import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.message.service.MessageService;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentState;
@@ -55,7 +56,7 @@ public class TaskControlController {
 
 	private final TeamRepository teamRepository;
 
-	private final FeedbackMessageController feedbackMessageController;
+	private final MessageService feedbackMessageController;
 
 	private final AssignmentService assignmentService;
 

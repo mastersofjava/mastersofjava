@@ -2,15 +2,13 @@ package nl.moj.server.test;
 
 import lombok.Builder;
 import lombok.Data;
+import nl.moj.server.teams.model.Team;
 
 @Builder
 @Data
 public class TestResult {
-	private String result;
-	private String user;
+	private Team team;
+	private String message;
 	private boolean successful;
-	private String testname;
-	private boolean submit;
-	private Long scoreAtSubmissionTime;
-	private int remainingResubmits;
+	private String testName;
 }

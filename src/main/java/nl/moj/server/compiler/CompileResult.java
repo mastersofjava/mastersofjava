@@ -1,22 +1,24 @@
 package nl.moj.server.compiler;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import nl.moj.server.teams.model.Team;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@Builder
-@Data
+@Getter
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class CompileResult {
 
-	private String result;
-
-	@Builder.Default
-	private List<String> tests = new ArrayList<>();
-
-	private String user;
+	private Team team;
 	private boolean successful;
-	private Long scoreAtSubmissionTime;
+	private String message;
+
+	public static final CompileResult success(Team team) {
+		return new CompileResult(team,true,"Compiled successfully.");
+	}
+
+	public static final CompileResult fail(Team team, String message) {
+		return new CompileResult(team,false,message);
+	}
 
 }

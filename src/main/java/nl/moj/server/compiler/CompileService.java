@@ -1,92 +1,58 @@
 package nl.moj.server.compiler;
 
-import lombok.AllArgsConstructor;
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.SubmitController;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.config.properties.Languages;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@Slf4j
 public class CompileService {
-	private final static String JAVA_SOURCE_EXTENSION = ".java";
 
-	private static final Logger log = LoggerFactory.getLogger(CompileService.class);
-
-	private FeedbackMessageController feedbackMessageController;
+	private Executor executor;
 
 	private CompetitionRuntime competition;
 
 	private MojServerProperties mojServerProperties;
 
-	private TeamRepository teamRepository;
-	
-	private static URI toURI(String name) {
-		File file = new File(name);
-		if (file.exists()) {
-			return file.toURI();
-		} else {
-			try {
-				final StringBuilder newUri = new StringBuilder();
-				newUri.append("mfm:///");
-				newUri.append(name.replace('.', '/'));
-
-				if (name.endsWith(JAVA_SOURCE_EXTENSION)) {
-					newUri.replace(newUri.length() - JAVA_SOURCE_EXTENSION.length(), newUri.length(),
-							JAVA_SOURCE_EXTENSION);
-				}
-
-				return URI.create(newUri.toString());
-			} catch (Exception exp) {
-				return URI.create("mfm:///org/patrodyne/scripting/java/java_source");
-			}
-		}
+	public CompileService(@Qualifier("compiling") Executor executor, CompetitionRuntime competition, MojServerProperties mojServerProperties) {
+		this.executor = executor;
+		this.competition = competition;
+		this.mojServerProperties = mojServerProperties;
 	}
 
-	public Supplier<CompileResult> compile(SubmitController.SourceMessage message) {
-		return compile(mojServerProperties.getLanguages().getJavaVersion(),message, false, false);
+	public CompletableFuture<CompileResult> compile(Team team, SourceMessage message) {
+		return CompletableFuture.supplyAsync(compileTask(mojServerProperties.getLanguages().getJavaVersion(), team, message),
+				executor);
 	}
 
-	public Supplier<CompileResult> compileForSubmit(SubmitController.SourceMessage message) {
-		return compile(mojServerProperties.getLanguages().getJavaVersion(),message, false, true);
-	}
-
-	public Supplier<CompileResult> compileWithTest(SubmitController.SourceMessage message) {
-		log.debug("compileWithTest");
-		return compile(mojServerProperties.getLanguages().getJavaVersion(),message, true, false);
-	}
-
-	private Supplier<CompileResult> compile(Languages.JavaVersion javaVersion, SubmitController.SourceMessage message, boolean withTest, boolean forSubmit) {
+	private Supplier<CompileResult> compileTask(Languages.JavaVersion javaVersion, Team team, SourceMessage message) {
 		return () -> {
-			List<AssignmentFile> assignmentFiles = createAssignmentFiles(withTest, forSubmit);
+			List<AssignmentFile> assignmentFiles = createAssignmentFiles();
 			String assignment = competition.getCurrentAssignment().getAssignment().getName();
-			File teamdir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(), message.getTeam());
-			Team team = teamRepository.findByName(message.getTeam());
+			File teamdir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(),
+					mojServerProperties.getDirectories().getTeamDirectory(), team.getName());
 			try {
 				FileUtils.cleanDirectory(teamdir);
 			} catch (IOException e) {
@@ -112,7 +78,7 @@ public class CompileService {
 			// C) Java compiler options
 			CompileResult compileResult = null;
 			try {
-				boolean isRunTerminated = false;
+				boolean timedOut = false;
 				int exitvalue = 0;
 				final LengthLimitedOutputCatcher compileOutput = new LengthLimitedOutputCatcher(mojServerProperties);
 				final LengthLimitedOutputCatcher compileErrorOutput = new LengthLimitedOutputCatcher(mojServerProperties);
@@ -120,69 +86,63 @@ public class CompileService {
 					List<String> cmd = new ArrayList<>();
 					cmd.add(javaVersion.getCompiler().toString());
 					cmd.add("-cp");
-					cmd.add(makeClasspath(message.getTeam()).stream().map( f -> f.getAbsoluteFile().toString()).collect(Collectors.joining(File.pathSeparator)));
+					cmd.add(makeClasspath(team.getName()).stream().map(f -> f.getAbsoluteFile().toString()).collect(Collectors.joining(File.pathSeparator)));
 					cmd.add("-Xlint:all");
 					cmd.add("-g:source,lines,vars");
 					cmd.add("-d");
 					cmd.add(teamdir.getAbsoluteFile().toString());
-					assignmentFiles.forEach( a -> {
+					assignmentFiles.forEach(a -> {
 						cmd.add(a.getFile().toAbsolutePath().toString());
 					});
 
 					final ProcessExecutor jUnitCommand = new ProcessExecutor().command(cmd);
 					log.debug("Executing command {}", String.join(" \\\n", cmd));
 					exitvalue = jUnitCommand.directory(teamdir)
-							.timeout(mojServerProperties.getLimits().getUnitTestTimeoutSeconds(), TimeUnit.SECONDS).redirectOutput(compileOutput)
+							.timeout(mojServerProperties.getRuntimes().getCompile().getTimeout(), TimeUnit.SECONDS).redirectOutput(compileOutput)
 							.redirectError(compileErrorOutput).execute().getExitValue();
 				} catch (TimeoutException e) {
 					// process is automatically destroyed
-					log.debug("Compile timed out and got killed", message.getTeam());
-					isRunTerminated = true;
+					log.debug("Compile timed out and got killed", team.getName());
+					timedOut = true;
 				} catch (SecurityException se) {
 					log.error(se.getMessage(), se);
 				}
 				log.debug("exitValue {}", exitvalue);
-				if (isRunTerminated) {
+				if (timedOut) {
 					compileOutput.getBuffer().append('\n').append(mojServerProperties.getLimits().getUnitTestOutput().getTestTimeoutTermination());
 				}
 
-				final boolean success;
 				final String result;
+				// TODO can this be done nicer?
 				if (compileOutput.length() > 0) {
 					// if we still have some output left and exitvalue = 0
-					if (compileOutput.length() > 0 && exitvalue == 0 && !isRunTerminated) {
-						success = true;
-						compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(),
-								team.getName(), true, message.getScoreAtSubmissionTime());
+					if (compileOutput.length() > 0 && exitvalue == 0 && !timedOut) {
+						compileResult = CompileResult.success(team);
 					} else {
-						success = false;
 						stripTeamPathInfo(compileOutput.getBuffer(), FileUtils.getFile(teamdir, "sources", assignment));
-						compileResult = new CompileResult(compileOutput.toString(), message.getTests(),
-								team.getName(), false, message.getScoreAtSubmissionTime());
+						compileResult = CompileResult.fail(team, compileOutput.toString());
 					}
 				} else {
 					log.debug(compileOutput.toString());
 					stripTeamPathInfo(compileErrorOutput.getBuffer(), FileUtils.getFile(teamdir, "sources", assignment));
 					result = compileErrorOutput.toString();
-					success = (exitvalue == 0) && !isRunTerminated;
-					compileResult = new CompileResult(success?"Files compiled successfully.\n":result, message.getTests(),
-							team.getName(), success, message.getScoreAtSubmissionTime());
+					if ((exitvalue == 0) && !timedOut) {
+						compileResult = CompileResult.success(team);
+					} else {
+						compileResult = CompileResult.fail(team, result);
+					}
 				}
-
-				log.debug("compile success {}", success);
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
 			}
-
-			feedbackMessageController.sendCompileFeedbackMessage(compileResult);
 			return compileResult;
 		};
 	}
 
-	private void stripTeamPathInfo(StringBuilder result, File prefix ) {
-		final Matcher matcher = Pattern.compile("^("+prefix.getAbsolutePath()+")/?", Pattern.MULTILINE).matcher(result);
+	private void stripTeamPathInfo(StringBuilder result, File prefix) {
+		final Matcher matcher = Pattern.compile("^(" + prefix.getAbsolutePath() + ")/?", Pattern.MULTILINE).matcher(result);
 		if (matcher.find()) {
-			for( int i = 0; i < matcher.groupCount(); i++ ) {
+			for (int i = 0; i < matcher.groupCount(); i++) {
 				log.debug("group {} = {}", i, matcher.group(i));
 			}
 			log.debug("stripped '{}', from {}", matcher.group(), result.toString());
@@ -193,30 +153,14 @@ public class CompileService {
 		}
 	}
 
-	private List<AssignmentFile> createAssignmentFiles(boolean withTest, boolean forSubmit) {
-		List<AssignmentFile> assignmentFiles;
+	private List<AssignmentFile> createAssignmentFiles() {
 		AssignmentState state = competition.getAssignmentState();
-		if (withTest) {
-			assignmentFiles = state.getAssignmentFiles()
-					.stream()
-					.filter(f -> f.getFileType() == AssignmentFileType.READONLY ||
-							f.getFileType() == AssignmentFileType.TEST)
-					.collect(Collectors.toList());
-		} else {
-			if (forSubmit) {
-				assignmentFiles = state.getAssignmentFiles()
-						.stream()
-						.filter(f -> f.getFileType() == AssignmentFileType.READONLY ||
-								f.getFileType() == AssignmentFileType.TEST ||
-								f.getFileType() == AssignmentFileType.SUBMIT)
-						.collect(Collectors.toList());
-			} else {
-				assignmentFiles = state.getAssignmentFiles()
-						.stream()
-						.filter(f -> f.getFileType() == AssignmentFileType.READONLY)
-						.collect(Collectors.toList());
-			}
-		}
+		List<AssignmentFile> assignmentFiles = state.getAssignmentFiles()
+				.stream()
+				.filter(f -> f.getFileType() == AssignmentFileType.READONLY ||
+						f.getFileType() == AssignmentFileType.TEST ||
+						f.getFileType() == AssignmentFileType.SUBMIT)
+				.collect(Collectors.toList());
 		assignmentFiles.forEach(f -> log.trace(f.getName()));
 		return assignmentFiles;
 	}
