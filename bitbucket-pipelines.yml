@@ -16,16 +16,16 @@ pipelines:
         caches:
         - maven
         script:
-        - mvn -B -X clean install
+        - mvn -B clean install
     develop:
     - step:
         caches:
         - maven
         script:
-        - mvn -B -X clean install
+        - mvn -B clean install
     feature/*:
     - step:
         caches:
         - maven
         script:
-        - mvn -B -X clean install
+        - mvn -B clean install
