@@ -71,17 +71,12 @@ public class TaskControlController {
 
 	@MessageMapping("/control/starttask")
 	public void startTask(TaskMessage message) {
-		feedbackMessageController.sendStartToTeams(message.taskName);
 		competition.startAssignment(message.getTaskName());
 	}
 
 	@MessageMapping("/control/stoptask")
 	public void stopTask() {
-	    if (null != competition.getCurrentAssignment()) {
-            String stoppedTask = competition.getCurrentAssignment().getAssignment().getName();
-            competition.stopCurrentAssignment();
-            feedbackMessageController.sendStopToTeams(stoppedTask);
-        }
+		competition.stopCurrentAssignment();
 	}
 
 	@MessageMapping("/control/clearCurrentAssignment")

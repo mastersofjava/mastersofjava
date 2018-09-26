@@ -15,7 +15,9 @@ public class SubmitResult {
 
 	private final Team team;
 	private final int remainingSubmits;
-	private final long score;
+
+	@Builder.Default
+	private final long score = 0L;
 
 	private CompileResult compileResult;
 	@Builder.Default

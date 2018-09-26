@@ -3,10 +3,7 @@ package nl.moj.server.message.service;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.TaskControlController.TaskMessage;
 import nl.moj.server.compiler.CompileResult;
-import nl.moj.server.message.model.CompileFeedbackMessage;
-import nl.moj.server.message.model.SubmitFeedbackMessage;
-import nl.moj.server.message.model.TestFeedbackMessage;
-import nl.moj.server.message.model.TimerSyncMessage;
+import nl.moj.server.message.model.*;
 import nl.moj.server.submit.SubmitResult;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -46,7 +43,7 @@ public class MessageService {
 	public void sendSubmitFeedback(SubmitResult submitResult) {
 		SubmitFeedbackMessage msg = SubmitFeedbackMessage.builder()
 				.score(submitResult.getScore())
-				.remainingResubmits(submitResult.getRemainingSubmits())
+				.remainingSubmits(submitResult.getRemainingSubmits())
 				.team(submitResult.getTeam().getName())
 				.success(submitResult.isSuccess())
 				.message("TODO")
@@ -69,10 +66,12 @@ public class MessageService {
 
 	public void sendStartToTeams(String taskname) {
 		template.convertAndSend(DEST_START, taskname);
+		template.convertAndSend(DEST_COMPETITION, StartAssignmentMessage.builder().assignment(taskname).build());
 	}
 
 	public void sendStopToTeams(String taskname) {
 		template.convertAndSend(DEST_STOP, new TaskMessage(taskname));
+		template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder().assignment(taskname).build());
 	}
 
 	public void sendRefreshToRankingsPage() {

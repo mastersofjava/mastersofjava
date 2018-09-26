@@ -53,7 +53,7 @@ public class AssignmentRuntime {
 	public static final String TIMESYNC = "TIMESYNC";
 
 	private final AssignmentService assignmentService;
-	private final MessageService feedbackMessageController;
+	private final MessageService messageService;
 	private final TeamService teamService;
 	private final ScoreService scoreService;
 	private final SoundService soundService;
@@ -107,7 +107,7 @@ public class AssignmentRuntime {
 		running = true;
 
 		// send start to clients.
-		feedbackMessageController.sendStartToTeams(assignment.getName());
+		messageService.sendStartToTeams(assignment.getName());
 
 		log.info("Started assignment {}", assignment.getName());
 
@@ -118,7 +118,7 @@ public class AssignmentRuntime {
 	 * Stop the current assignment
 	 */
 	public void stop() {
-		feedbackMessageController.sendStopToTeams(assignment.getName());
+		messageService.sendStopToTeams(assignment.getName());
 		if (getTimeRemaining() > 0) {
 			clearHandlers();
 		} else {
@@ -128,12 +128,12 @@ public class AssignmentRuntime {
 		log.info("Stopped assignment {}", assignment.getName());
 	}
 
-	// TODO this should probably not be here
+	// TODO this should probably not be here SubmitService is a better place for it.
 	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
 		List<AssignmentFile> teamFiles = new ArrayList<>();
 		Path teamAssignmentBase = resolveTeamAssignmentBaseDirectory(team);
 		originalAssignmentFiles.forEach(f -> {
-			Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
+			Path resolvedFile = teamAssignmentBase.resolve(f.getFile().getFileName());
 			if (resolvedFile.toFile().exists() && Files.isReadable(resolvedFile)) {
 				teamFiles.add(f.toBuilder()
 						.content(readPathContent(resolvedFile))
@@ -226,7 +226,7 @@ public class AssignmentRuntime {
 	}
 
 	private Path resolveTeamAssignmentBaseDirectory(Team team) {
-		return teamService.getTeamDirectory(team).resolve(assignment.getName());
+		return teamService.getTeamDirectory(team).resolve("sources").resolve(assignment.getName());
 	}
 
 	private void initTeamScore(Team team) {
@@ -293,7 +293,7 @@ public class AssignmentRuntime {
 	public Future<?> scheduleTimeSync() {
 		return taskScheduler.scheduleAtFixedRate(
 				() -> {
-					feedbackMessageController.sendRemainingTime(getTimeRemaining(), assignmentDescriptor.getDuration().getSeconds());
+					messageService.sendRemainingTime(getTimeRemaining(), assignmentDescriptor.getDuration().getSeconds());
 				},
 				TIMESYNC_FREQUENCY
 		);

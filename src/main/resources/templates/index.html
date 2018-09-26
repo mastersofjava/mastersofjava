@@ -178,7 +178,8 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>This will submit your code. You will not be able to make any modifications to this assignment after submitting.</p>
+                <p>This will submit your code. If you reach the maximum allowed submits of [[${maxSubmits}]] you will no longer be able
+                    to change your code. You have <span id="submits" th:text="${submits}"></span> left.</p>
                 <p>Do you want to continue?</p>
             </div>
             <div class="modal-footer">

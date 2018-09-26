@@ -59,6 +59,8 @@ public class IndexController {
 		model.addAttribute("finished", state.getTeamStatus(team).isCompleted());
 		model.addAttribute("submittime", state.getTeamStatus(team).getSubmitTime());
 		model.addAttribute("finalscore", state.getTeamStatus(team).getScore());
+		model.addAttribute("maxSubmits", state.getAssignmentDescriptor().getScoringRules().getMaximumResubmits() + 1 );
+		model.addAttribute("submits", state.getRemainingSubmits(team));
 	}
 
 }

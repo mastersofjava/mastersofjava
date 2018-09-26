@@ -8,13 +8,16 @@ import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.Score;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.TestService;
+import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @AllArgsConstructor
@@ -28,6 +31,8 @@ public class SubmitService {
 	private final MessageService messageService;
 
 	public void compile(Team team, SourceMessage message) {
+		StopWatch sw = new StopWatch();
+		sw.start();
 		AssignmentState state = competition.getAssignmentState();
 		compileService.compile(team, message)
 				.thenCompose(compileResult -> CompletableFuture.completedFuture(SubmitResult.builder()
@@ -37,6 +42,9 @@ public class SubmitService {
 						.team(team)
 						.build()))
 				.whenComplete((submitResult, error) -> {
+					sw.stop();
+					log.info("compiling took: {}s", sw.getTime(TimeUnit.SECONDS));
+
 					if (error != null) {
 						log.error("Compiling failed: {}", error.getMessage(), error);
 					}
@@ -51,9 +59,14 @@ public class SubmitService {
 	}
 
 	public void test(Team team, SourceMessage message) {
+		StopWatch sw = new StopWatch();
+		sw.start();
 		AssignmentState state = competition.getAssignmentState();
 		compileAndTest(team, message, state, state.getTestFiles())
 				.whenComplete((submitResult, error) -> {
+					sw.stop();
+					log.info("testing took: {}s", sw.getTime(TimeUnit.SECONDS));
+
 					if (error != null) {
 						log.error("Testing failed: {}", error.getMessage(), error);
 					}
@@ -71,21 +84,29 @@ public class SubmitService {
 
 	public void submit(Team team, SourceMessage message) {
 		if (competition.getAssignmentState().isSubmitAllowedForTeam(team)) {
+			StopWatch sw = new StopWatch();
+			sw.start();
+
+
 			competition.registerSubmit(team);
 			AssignmentState state = competition.getAssignmentState();
 			compileAndTest(team, message, state, state.getSubmitTestFiles())
 					.whenComplete((submitResult, error) -> {
+						sw.stop();
+						log.info("submit took: {}s", sw.getTime(TimeUnit.SECONDS));
+
 						if (error != null) {
 							log.error("Submit failed: {}", error.getMessage(), error);
 						}
 						if (submitResult != null) {
-							if (submitResult.isSuccess()) {
-								try {
-									Long finalScore = scoreService.registerScoreAtSubmission(team, state, competition.getCompetitionSession());
-									messageService.sendSubmitFeedback(submitResult.toBuilder().score(finalScore).build());
-								} catch (Exception e) {
-									log.error("Submit failed unexpectedly.", e);
+							try {
+								Score score = scoreService.calculateScore(team, state, competition.getCompetitionSession(), submitResult.isSuccess());
+								if (submitResult.isSuccess() || state.getRemainingSubmits(team) <= 0) {
+									scoreService.registerScore(team, state.getAssignment(), competition.getCompetitionSession(), score);
 								}
+								messageService.sendSubmitFeedback(submitResult.toBuilder().score(score.getFinalScore()).build());
+							} catch (Exception e) {
+								log.error("Submit failed unexpectedly.", e);
 							}
 						}
 					});
