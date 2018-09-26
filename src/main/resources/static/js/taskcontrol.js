@@ -1,5 +1,4 @@
 var stompClient = null;
-var interval = null;
 var clock = null;
 
 $(document).ready(function () {
@@ -16,15 +15,14 @@ function connect() {
         console.log('Connected to control');
         console.log('Subscribe to /user/queue/controlfeedback');
         stompClient.subscribe('/user/queue/controlfeedback', function (messageOutput) {
-            console.log("controlfeedback")
             showOutput(messageOutput.body);
         });
         console.log('Subscribe to /control/queue/time');
         stompClient.subscribe('/queue/time', function (taskTimeMessage) {
             var message = JSON.parse(taskTimeMessage.body);
-           if(clock) {
-               clock.sync(message.remainingTime,message.totalTime);
-           }
+            if (clock) {
+                clock.sync(message.remainingTime, message.totalTime);
+            }
         });
         console.log('subscribe to /control/queue/start');
         stompClient.subscribe('/queue/start', function (msg) {
@@ -32,7 +30,7 @@ function connect() {
         });
         console.log('subscribe to /control/queue/stop');
         stompClient.subscribe('/queue/stop', function (msg) {
-            if(clock) {
+            if (clock) {
                 clock.stop();
             }
         });
@@ -41,6 +39,10 @@ function connect() {
 
 function startTask() {
     var taskname = $("input[name='assignment']:checked").val();
+    if (!taskname) {
+        showOutput("Select a task to start");
+        return;
+    }
     console.log(taskname);
     stompClient.send("/app/control/starttask", {}, JSON.stringify({
         'taskName': taskname
@@ -50,18 +52,10 @@ function startTask() {
     $assignmentClock = $('#assignment-clock');
     $assignmentClock.attr('data-time', tasktime);
     $assignmentClock.attr('data-time-left', tasktime);
-    startClock(tasktime, tasktime);
-    runClock10Sec(tasktime, tasktime, 10)
 }
 
 function stopTask() {
-    var taskname = $("input[name='assignment']:checked").val();
-    console.log(taskname);
-    stompClient.send("/app/control/stoptask", {}, JSON.stringify({
-        'taskName': taskname
-    }));
-    // stop the clock
-    clearInterval(interval);
+    stompClient.send("/app/control/stoptask", {}, {});
 }
 
 function clearAssignment() {
