@@ -61,6 +61,7 @@ public class WorkloadbalancerDaysinListTest {
 
 	@Test
 	public void testDaysinList() {
+
 		WorkloadBalancerImpl instance = new WorkloadBalancerImpl();
 		int threeDayJob = 3;
 		int twoDayJob = 2;

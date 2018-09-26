@@ -56,9 +56,9 @@
                         <li class="nav-item" th:each="file,status : ${files}">
                             <a class="nav-link"
                                th:classappend="${(status.index==0?'active':'') + (file.readOnly?'':' editable')}"
-                               th:id="${file.name}"
-                               th:href="${'#'+file.name + '-tab'}" data-toggle="tab"
-                               th:text="${file.filename}"></a>
+                               th:id="${file.uuid}"
+                               th:href="${'#'+file.uuid + '-tab'}" data-toggle="tab"
+                               th:text="${file.shortName}"></a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" id="output" href="#output-tab" data-toggle="tab">Output</a>
@@ -66,9 +66,9 @@
                     </ul>
                     <div class="tab-content">
                         <div class="tab-pane" th:classappend="${status.index==0?'show active':''}" role="tabpanel"
-                             th:each="file,status : ${files}" th:id="${file.name + '-tab'}">
+                             th:each="file,status : ${files}" th:id="${file.uuid + '-tab'}">
                             <div class="tab-pane-content">
-                                <textarea th:attr="data-cm=${file.name},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-filename=${file.filename}"
+                                <textarea th:attr="data-cm=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
                                           th:utext="${file.content}"></textarea>
                             </div>
                         </div>
@@ -178,7 +178,8 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>This will submit your code. You will not be able to make any modifications to this assignment after submitting.</p>
+                <p>This will submit your code. If you reach the maximum allowed submits of [[${maxSubmits}]] you will no longer be able
+                    to change your code. You have <span id="submits" th:text="${submits}"></span> left.</p>
                 <p>Do you want to continue?</p>
             </div>
             <div class="modal-footer">

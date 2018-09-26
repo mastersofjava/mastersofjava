@@ -7,5 +7,7 @@ public enum AssignmentFileType {
 	READONLY,
 	TASK, 
 	SOLUTION,
-	POM
+	RESOURCE,
+	TEST_RESOURCE,
+	HIDDEN_TEST_RESOURCE;
 }

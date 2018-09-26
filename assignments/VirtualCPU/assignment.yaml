@@ -25,13 +25,18 @@ scoring-rules:
   success-bonus: 200
   test-penalty: 20%
 
+
 assignment-files:
   assignment: src/main/resources/VirtualCPUCase.txt
-  editable:
-    - src/main/java/VirtualCPU.java
-  readonly:
-    - src/main/java/CPUState.java
-  tests:
-    - src/test/java/TestVirtualCPU.java
+  sources:
+    base: src/main/java
+    editable:
+    - VirtualCPU.java
+    readonly:
+    - CPUState.java
+  test-sources:
+    base: src/test/java
+    tests:
+    - TestVirtualCPU.java
   solution:
-    - src/main/resources/VirtualCPUSCase.solution
+  - src/main/resources/workloadbalancerCase.solution

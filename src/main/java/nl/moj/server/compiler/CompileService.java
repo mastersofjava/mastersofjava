@@ -1,181 +1,203 @@
 package nl.moj.server.compiler;
 
-import lombok.AllArgsConstructor;
-import nl.moj.server.DirectoriesConfiguration;
-import nl.moj.server.FeedbackMessageController;
-import nl.moj.server.SubmitController.SourceMessage;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.config.properties.Languages;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.zeroturnaround.exec.ProcessExecutor;
 
-import javax.tools.*;
-import javax.tools.JavaCompiler.CompilationTask;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URI;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@Slf4j
 public class CompileService {
-	private final static String JAVA_SOURCE_EXTENSION = ".java";
 
-	private static final Logger log = LoggerFactory.getLogger(CompileService.class);
-
-	private javax.tools.JavaCompiler javaCompiler;
-
-	private DiagnosticCollector<JavaFileObject> diagnosticCollector;
-
-	private FeedbackMessageController feedbackMessageController;
+	private Executor executor;
 
 	private CompetitionRuntime competition;
 
-	private DirectoriesConfiguration directories;
+	private MojServerProperties mojServerProperties;
 
-	private TeamRepository teamRepository;
-
-	public Supplier<CompileResult> compile(SourceMessage message) {
-		return compile(message, false, false);
+	public CompileService(@Qualifier("compiling") Executor executor, CompetitionRuntime competition, MojServerProperties mojServerProperties) {
+		this.executor = executor;
+		this.competition = competition;
+		this.mojServerProperties = mojServerProperties;
 	}
 
-	public Supplier<CompileResult> compileForSubmit(SourceMessage message) {
-		return compile(message, false, true);
+	public CompletableFuture<CompileResult> compile(Team team, SourceMessage message) {
+		return CompletableFuture.supplyAsync(compileTask(mojServerProperties.getLanguages().getJavaVersion(), team, message),
+				executor);
 	}
 
-	public Supplier<CompileResult> compileWithTest(SourceMessage message) {
-		log.debug("compileWithTest");
-		return compile(message, true, false);
-	}
+	private Supplier<CompileResult> compileTask(Languages.JavaVersion javaVersion, Team team, SourceMessage message) {
+		return () -> {
+			List<AssignmentFile> resources = getResourcesToCopy();
 
-	private Supplier<CompileResult> compile(SourceMessage message, boolean withTest, boolean forSubmit) {
-		Supplier<CompileResult> supplier = () -> {
-			Team team = teamRepository.findByName(message.getTeam());
-			List<AssignmentFile> assignmentFiles = createAssignmentFiles(withTest, forSubmit);
-			StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(diagnosticCollector, null,
-					null);
+			List<AssignmentFile> assignmentFiles = getReadonlyAssignmentFilesToCompile();
 			String assignment = competition.getCurrentAssignment().getAssignment().getName();
-			File teamdir = FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(),
-					message.getTeam());
-
-			List<JavaFileObject> javaFileObjects = assignmentFiles.stream().map(a -> {
-				JavaFileObject jfo = createJavaFileObject(a.getFilename(), a.getContent());
-				return jfo;
-			}).collect(Collectors.toList());
+			// TODO this should be somewhere else
+			File teamAssignmentDir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(),
+					mojServerProperties.getDirectories().getTeamDirectory(), team.getName(), assignment );
+			File sourcesDir = FileUtils.getFile(teamAssignmentDir, "sources");
+			File classesDir = FileUtils.getFile(teamAssignmentDir, "classes");
 			try {
-				FileUtils.cleanDirectory(teamdir);
+				FileUtils.cleanDirectory(teamAssignmentDir);
+				sourcesDir.mkdirs();
+				classesDir.mkdirs();
 			} catch (IOException e) {
 				log.error("error while cleaning teamdir", e);
 			}
-			message.getSource().forEach((k, v) -> {
+
+			// TODO fix compile result so team knows something is very wrong.
+			resources.forEach( r -> {
 				try {
-					FileUtils.writeStringToFile(FileUtils.getFile(teamdir, "sources", assignment, k), v,
-							Charset.defaultCharset());
+					FileUtils.copyFileToDirectory(r.getAbsoluteFile().toFile(), classesDir);
 				} catch (IOException e) {
-					log.error("error while writing sourcefiles to teamdir", e);
+					log.error("error while writing resources to classes dir", e);
 				}
-				javaFileObjects.add(createJavaFileObject(k, v));
+			});
+
+			// TODO fix compile result so team knows something is very wrong.
+			message.getSources().forEach((uuid, v) -> {
+				AssignmentFile orig = getOriginalAssignmentFile(uuid);
+				File f = sourcesDir.toPath().resolve(orig.getFile()).toFile();
+				try {
+					FileUtils.writeStringToFile(f, v, StandardCharsets.UTF_8);
+				} catch (IOException e) {
+					log.error("error while writing sourcefiles to sources dir", e);
+				}
+				assignmentFiles.add(orig.toBuilder()
+						.absoluteFile(f.toPath())
+						.build());
 			});
 			// C) Java compiler options
-			List<String> options = createCompilerOptions();
-
-			PrintWriter err = new PrintWriter(System.err);
-			log.info("compiling {} classes", javaFileObjects.size());
-			List<File> files = new ArrayList<>();
-			FileUtils.listFiles(teamdir, new String[] { "class" }, true).stream()
-					.forEach(f -> FileUtils.deleteQuietly(f));
-			files.add(teamdir);
-			// Create a compilation task.
+			CompileResult compileResult = null;
 			try {
-				standardFileManager.setLocation(StandardLocation.CLASS_OUTPUT, files);
-				standardFileManager.setLocation(StandardLocation.CLASS_PATH, makeClasspath(message.getTeam()));
-			} catch (IOException e) {
+				boolean timedOut = false;
+				int exitvalue = 0;
+				final LengthLimitedOutputCatcher compileOutput = new LengthLimitedOutputCatcher(mojServerProperties);
+				final LengthLimitedOutputCatcher compileErrorOutput = new LengthLimitedOutputCatcher(mojServerProperties);
+				try {
+					List<String> cmd = new ArrayList<>();
+					cmd.add(javaVersion.getCompiler().toString());
+					cmd.add("-cp");
+					cmd.add(makeClasspath(classesDir).stream().map(f -> f.getAbsoluteFile().toString()).collect(Collectors.joining(File.pathSeparator)));
+					cmd.add("-Xlint:all");
+					cmd.add("-g:source,lines,vars");
+					cmd.add("-d");
+					cmd.add(classesDir.getAbsoluteFile().toString());
+					assignmentFiles.forEach(a -> {
+						cmd.add(a.getAbsoluteFile().toString());
+					});
+
+					final ProcessExecutor jUnitCommand = new ProcessExecutor().command(cmd);
+					log.debug("Executing command {}", String.join(" \\\n", cmd));
+					exitvalue = jUnitCommand.directory(teamAssignmentDir)
+							.timeout(mojServerProperties.getRuntimes().getCompile().getTimeout(), TimeUnit.SECONDS).redirectOutput(compileOutput)
+							.redirectError(compileErrorOutput).execute().getExitValue();
+				} catch (TimeoutException e) {
+					// process is automatically destroyed
+					log.debug("Compile timed out and got killed", team.getName());
+					timedOut = true;
+				} catch (SecurityException se) {
+					log.error(se.getMessage(), se);
+				}
+				log.debug("exitValue {}", exitvalue);
+				if (timedOut) {
+					compileOutput.getBuffer().append('\n').append(mojServerProperties.getLimits().getUnitTestOutput().getTestTimeoutTermination());
+				}
+
+				final String result;
+				// TODO can this be done nicer?
+				if (compileOutput.length() > 0) {
+					// if we still have some output left and exitvalue = 0
+					if (compileOutput.length() > 0 && exitvalue == 0 && !timedOut) {
+						compileResult = CompileResult.success(team);
+					} else {
+						stripTeamPathInfo(compileOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir, "sources", assignment));
+						compileResult = CompileResult.fail(team, compileOutput.toString());
+					}
+				} else {
+					log.debug(compileOutput.toString());
+					stripTeamPathInfo(compileErrorOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir, "sources", assignment));
+					result = compileErrorOutput.toString();
+					if ((exitvalue == 0) && !timedOut) {
+						compileResult = CompileResult.success(team);
+					} else {
+						compileResult = CompileResult.fail(team, result);
+					}
+				}
+			} catch (Exception e) {
 				log.error(e.getMessage(), e);
 			}
-			CompilationTask compilationTask = javaCompiler.getTask(err, standardFileManager, diagnosticCollector,
-					options, null, javaFileObjects);
-			CompileResult compileResult;
-			if (!compilationTask.call()) {
-				StringBuilder sb = new StringBuilder();
-				for (Diagnostic<?> diagnostic : diagnosticCollector.getDiagnostics()) {
-					sb.append(report(diagnostic));
-				}
-				String result = sb.toString();
-				diagnosticCollector = new DiagnosticCollector<>();
-				log.debug("compileSuccess: {}\n{}", false, result);
-				List<String> tests = new ArrayList<>();
-				compileResult = new CompileResult(result, tests, message.getTeam(), false,
-						message.getScoreAtSubmissionTime());
-			} else {
-				log.debug("compileSuccess: {}", true);
-				compileResult = new CompileResult("Files compiled successfully.\n", message.getTests(),
-						message.getTeam(), true, message.getScoreAtSubmissionTime());
-			}
-			feedbackMessageController.sendCompileFeedbackMessage(compileResult);
 			return compileResult;
 		};
-		return supplier;
 	}
 
-	private List<AssignmentFile> createAssignmentFiles(boolean withTest, boolean forSubmit) {
-		List<AssignmentFile> assignmentFiles;
-		AssignmentState state = competition.getAssignmentState();
-		if (withTest) {
-			assignmentFiles = state.getAssignmentFiles().stream().filter(
-					f -> f.getFileType() == AssignmentFileType.READONLY || f.getFileType() == AssignmentFileType.TEST)
-					.collect(Collectors.toList());
-		} else {
-			if (forSubmit) {
-				assignmentFiles = state.getAssignmentFiles().stream()
-						.filter(f -> f.getFileType() == AssignmentFileType.READONLY
-								|| f.getFileType() == AssignmentFileType.TEST
-								|| f.getFileType() == AssignmentFileType.HIDDEN_TEST)
-						.collect(Collectors.toList());
-			} else {
-				assignmentFiles = state.getAssignmentFiles().stream()
-						.filter(f -> f.getFileType() == AssignmentFileType.READONLY).collect(Collectors.toList());
+	private AssignmentFile getOriginalAssignmentFile(String uuid) {
+		return competition.getAssignmentState().getAssignmentFiles().stream()
+				.filter( f -> f.getUuid().toString().equals(uuid)).findFirst().orElseThrow(() -> new RuntimeException("Could not find original assignment file for UUID " + uuid));
+	}
+
+	private void stripTeamPathInfo(StringBuilder result, File prefix) {
+		final Matcher matcher = Pattern.compile("^(" + prefix.getAbsolutePath() + ")/?", Pattern.MULTILINE).matcher(result);
+		if (matcher.find()) {
+			for (int i = 0; i < matcher.groupCount(); i++) {
+				log.debug("group {} = {}", i, matcher.group(i));
+			}
+			log.debug("stripped '{}', from {}", matcher.group(), result.toString());
+			result.delete(0, matcher.end());
+			if (result.length() > 0 && result.charAt(0) == '\n') {
+				result.deleteCharAt(0);
 			}
 		}
-		assignmentFiles.forEach(f -> log.trace(f.getName()));
-		return assignmentFiles;
 	}
 
-	private List<String> createCompilerOptions() {
-		List<String> options = new ArrayList<>();
-		// enable all recommended warnings.
-		options.add("-Xlint:all");
-		// enable debugging for line numbers and local variables.
-		options.add("-g:source,lines,vars");
-
-		return options;
+	private List<AssignmentFile> getReadonlyAssignmentFilesToCompile() {
+		return competition.getAssignmentState().getAssignmentFiles()
+				.stream()
+				.filter(f -> f.getFileType() == AssignmentFileType.READONLY ||
+						f.getFileType() == AssignmentFileType.TEST ||
+						f.getFileType() == AssignmentFileType.HIDDEN_TEST)
+				.collect(Collectors.toList());
 	}
 
-	private List<File> makeClasspath(String user) {
+	private List<AssignmentFile> getResourcesToCopy() {
+		return competition.getAssignmentState().getAssignmentFiles()
+				.stream()
+				.filter(f -> f.getFileType() == AssignmentFileType.RESOURCE ||
+						f.getFileType() == AssignmentFileType.TEST_RESOURCE ||
+						f.getFileType() == AssignmentFileType.HIDDEN_TEST_RESOURCE)
+				.collect(Collectors.toList());
+	}
+
+	private List<File> makeClasspath(File classesDir) {
 		final List<File> classPath = new ArrayList<>();
-		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory(), user));
-//		classPath.add(
-//				FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(), "junit-4.12.jar"));
-//		classPath.add(FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory(),
-//				"hamcrest-all-1.3.jar"));
-
-		final File libDir = FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory());
-		final String[] extensions = { "jar" };
-		FileUtils.listFiles(libDir, extensions, false).forEach(f -> classPath.add(f));
-
-		log.debug("Compile classpath: ");
+		classPath.add(classesDir);
+		classPath.add(
+				FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
+		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
+				"hamcrest-all-1.3.jar"));
 		for (File file : classPath) {
 			if (!file.exists()) {
 				log.error("not found: {}", file.getAbsolutePath());
@@ -184,58 +206,5 @@ public class CompileService {
 			}
 		}
 		return classPath;
-	}
-
-	private String report(Diagnostic<?> dg) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(dg.getKind() + "> Line=" + dg.getLineNumber() + ", Column=" + dg.getColumnNumber() + "\n");
-		sb.append("Message> " + dg.getMessage(null) + "\n");
-		return sb.toString();
-	}
-
-	private static JavaFileObject createJavaFileObject(String className, String sourceCode) {
-		return new SourceJavaFileObject(className, sourceCode);
-	}
-
-	private static URI toURI(String name) {
-		File file = new File(name);
-		if (file.exists()) {
-			return file.toURI();
-		} else {
-			try {
-				final StringBuilder newUri = new StringBuilder();
-				newUri.append("mfm:///");
-				newUri.append(name.replace('.', '/'));
-
-				if (name.endsWith(JAVA_SOURCE_EXTENSION)) {
-					newUri.replace(newUri.length() - JAVA_SOURCE_EXTENSION.length(), newUri.length(),
-							JAVA_SOURCE_EXTENSION);
-				}
-
-				return URI.create(newUri.toString());
-			} catch (Exception exp) {
-				return URI.create("mfm:///org/patrodyne/scripting/java/java_source");
-			}
-		}
-	}
-
-	/**
-	 * A subclass of JavaFileObject used to represent Java source coming from a
-	 * string.
-	 *
-	 * Removed unused method: public Reader openReader().
-	 */
-	private static class SourceJavaFileObject extends SimpleJavaFileObject {
-		private final String sourceCode;
-
-		protected SourceJavaFileObject(String name, String sourceCode) {
-			super(toURI(name), Kind.SOURCE);
-			this.sourceCode = sourceCode;
-		}
-
-		@Override
-		public CharBuffer getCharContent(boolean ignoreEncodingErrors) {
-			return CharBuffer.wrap(sourceCode);
-		}
 	}
 }

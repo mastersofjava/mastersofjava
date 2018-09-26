@@ -1,0 +1,1 @@
+Some simple test data resource file.
