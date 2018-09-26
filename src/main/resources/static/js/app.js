@@ -105,8 +105,9 @@ function initializeCodeMirrors() {
             editors.push({
                 'cm': cm,
                 'readonly': cm.isReadOnly(),
-                'filename': $(this).attr('data-cm-filename'),
-                'textarea': this
+                'name': $(this).attr('data-cm-name'),
+                'textarea': this,
+                'uuid': $(this).attr('data-cm')
             });
 
             $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
@@ -253,7 +254,7 @@ function getContent() {
     $.each(editors, function (idx, val) {
         if (!val.readonly) {
             var file = {
-                filename: val.filename,
+                uuid: val.uuid,
                 content: val.cm.getValue()
             };
             editables.push(file);

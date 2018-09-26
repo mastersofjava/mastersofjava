@@ -73,8 +73,10 @@ public class TestService {
 			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(mojServerProperties);
 			try {
 				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(mojServerProperties.getLanguages().getJavaVersion().getRuntime().toString(), "-cp",
-						makeClasspath(team.getName()), "-Djava.security.manager",
-						"-Djava.security.policy=" + policy.getAbsolutePath(), "org.junit.runner.JUnitCore",
+						makeClasspath(team, file.getAssignment()),
+						"-Djava.security.manager",
+						"-Djava.security.policy=" + policy.getAbsolutePath(),
+						"org.junit.runner.JUnitCore",
 						file.getName());
 				log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
 				exitvalue = jUnitCommand.directory(teamdir)
@@ -129,19 +131,17 @@ public class TestService {
 		}
 	}
 
-	private String makeClasspath(String user) {
+	private String makeClasspath(Team team, String assignment) {
+		File teamAssignmentDir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(),
+				mojServerProperties.getDirectories().getTeamDirectory(), team.getName(), assignment );
+		File classesDir = FileUtils.getFile(teamAssignmentDir, "classes");
 		final List<File> classPath = new ArrayList<>();
-		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(), user));
+		classPath.add(classesDir);
 		classPath.add(
 				FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
 		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
 				"hamcrest-all-1.3.jar"));
 
-		if (mojServerProperties.getDirectories().getResourceDirectory() == null) {
-			log.warn("no moj.server.directories.resourceDirectory configured in application.yaml, no resources can be used by assignments!");
-		} else {
-			classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getResourceDirectory()));
-		}
 		for (File file : classPath) {
 			if (!file.exists()) {
 				log.error("not found: {}", file.getAbsolutePath());

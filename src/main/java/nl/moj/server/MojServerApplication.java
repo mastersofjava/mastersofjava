@@ -37,22 +37,19 @@ public class MojServerApplication {
 		Directories directories = mojServerProperties.getDirectories();
 
 		if (!FileUtils.getFile(directories.getBaseDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory()).mkdir();
+			FileUtils.getFile(directories.getBaseDirectory()).mkdirs();
 		}
 		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory()).mkdir();
+			FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory()).mkdirs();
 		}
 		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory()).mkdir();
+			FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory()).mkdirs();
 		}
 		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).mkdir();
+			FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).mkdirs();
 		}
 		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getSoundDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory(), directories.getSoundDirectory()).mkdir();
-		}
-		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getResourceDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory(), directories.getResourceDirectory()).mkdir();
+			FileUtils.getFile(directories.getBaseDirectory(), directories.getSoundDirectory()).mkdirs();
 		}
 	}
 }

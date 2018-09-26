@@ -10,7 +10,6 @@ import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.runtime.model.TeamStatus;
 import nl.moj.server.sound.Sound;
@@ -131,9 +130,9 @@ public class AssignmentRuntime {
 	// TODO this should probably not be here SubmitService is a better place for it.
 	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
 		List<AssignmentFile> teamFiles = new ArrayList<>();
-		Path teamAssignmentBase = resolveTeamAssignmentBaseDirectory(team);
+		Path teamAssignmentBase = resolveTeamAssignmentBaseDirectory(team).resolve("sources");
 		originalAssignmentFiles.forEach(f -> {
-			Path resolvedFile = teamAssignmentBase.resolve(f.getFile().getFileName());
+			Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
 			if (resolvedFile.toFile().exists() && Files.isReadable(resolvedFile)) {
 				teamFiles.add(f.toBuilder()
 						.content(readPathContent(resolvedFile))
@@ -166,30 +165,7 @@ public class AssignmentRuntime {
 	}
 
 	private void initOriginalAssignmentFiles() {
-		originalAssignmentFiles = new ArrayList<>();
-		Path assignmentBase = assignmentDescriptor.getDirectory();
-		assignmentDescriptor.getAssignmentFiles().getEditable().forEach(p -> {
-			originalAssignmentFiles.add(convertToAssignmentFile(assignmentBase.resolve(p), AssignmentFileType.EDIT, false));
-		});
-		assignmentDescriptor.getAssignmentFiles().getReadonly().forEach(p -> {
-			originalAssignmentFiles.add(convertToAssignmentFile(assignmentBase.resolve(p), AssignmentFileType.READONLY, true));
-		});
-		assignmentDescriptor.getAssignmentFiles().getTests().forEach(p -> {
-			originalAssignmentFiles.add(convertToAssignmentFile(assignmentBase.resolve(p), AssignmentFileType.TEST, true));
-		});
-		originalAssignmentFiles.add(convertToAssignmentFile(assignmentBase.resolve(assignmentDescriptor.getAssignmentFiles().getAssignment()), AssignmentFileType.TASK, true));
-	}
-
-	private AssignmentFile convertToAssignmentFile(Path p, AssignmentFileType type, boolean readOnly) {
-		return AssignmentFile.builder()
-				.assignment(assignment.getName())
-				.content(readPathContent(p))
-				.file(p)
-				.filename(p.getFileName().toString())
-				.name(p.getFileName().toString().substring(0, p.getFileName().toString().indexOf(".")))
-				.fileType(type)
-				.readOnly(readOnly)
-				.build();
+		originalAssignmentFiles = new JavaAssignmentFileResolver().resolve(assignmentDescriptor);
 	}
 
 	private void initTeamsForAssignment() {
@@ -208,17 +184,6 @@ public class AssignmentRuntime {
 		try {
 			// create empty assignment directory
 			Files.createDirectories(assignmentDirectory);
-
-			// copy assignment files
-//			Path src = assignmentDescriptor.getDirectory();
-//
-//			assignmentDescriptor.getAssignmentFiles().getSources().forEach( p -> {
-//				try {
-//					Files.copy(src.resolve(p), assignmentDirectory.resolve(p));
-//				} catch (IOException e) {
-//					throw new RuntimeException("Unable to copy assignment sources for team " + team, e);
-//				}
-//			});
 		} catch (IOException e) {
 			throw new RuntimeException("Unable to delete team assignment directory " + assignmentDirectory, e);
 		}
@@ -226,7 +191,7 @@ public class AssignmentRuntime {
 	}
 
 	private Path resolveTeamAssignmentBaseDirectory(Team team) {
-		return teamService.getTeamDirectory(team).resolve("sources").resolve(assignment.getName());
+		return teamService.getTeamDirectory(team).resolve(assignment.getName());
 	}
 
 	private void initTeamScore(Team team) {
@@ -298,22 +263,7 @@ public class AssignmentRuntime {
 				TIMESYNC_FREQUENCY
 		);
 	}
-
-//    public boolean hasResubmits(String team) {
-//        log.info("Team {} has used {} of {} submits", team, submits.getOrDefault(team, 0), assignmentDescriptor.getScoringRules().getMaximumResubmits());
-//	    return remainingResubmits(team) > 0;
-//    }
-
-//    public int remainingResubmits(String team) {
-//        return assignmentDescriptor.getScoringRules().getMaximumResubmits() - (submits.getOrDefault(team, 0));
-//    }
-
-//    public void addSubmit(String team) {
-//        Integer noSubmits = submits.getOrDefault(team, 0);
-//        log.info("Team {} has submitted {} times", team, noSubmits);
-//        submits.put(team, ++noSubmits);
-//    }
-
+	
 	private Date inSeconds(long sec) {
 		return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
 	}

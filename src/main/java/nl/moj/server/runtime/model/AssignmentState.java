@@ -40,7 +40,7 @@ public class AssignmentState {
 
 	public List<AssignmentFile> getSubmitTestFiles() {
 		return assignmentFiles
-				.stream().filter(f -> f.getFileType() == AssignmentFileType.SUBMIT ||
+				.stream().filter(f -> f.getFileType() == AssignmentFileType.HIDDEN_TEST ||
 						f.getFileType() == AssignmentFileType.TEST)
 				.collect(Collectors.toList());
 	}

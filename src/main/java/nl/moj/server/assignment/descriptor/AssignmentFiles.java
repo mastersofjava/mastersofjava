@@ -14,15 +14,19 @@ public class AssignmentFiles {
 
 	@JsonProperty("assignment")
 	private Path assignment;
-	@JsonProperty("editable")
-	private List<Path> editable = new ArrayList<>();
-	@JsonProperty("readonly")
-	private List<Path> readonly  = new ArrayList<>();
-	@JsonProperty("tests")
-	private List<Path> tests  = new ArrayList<>();
-	@JsonProperty("hidden-tests")
-	private List<Path> hiddenTests = new ArrayList<>();
+	
 	@JsonProperty("solution")
 	private List<Path> solution = new ArrayList<>();
-	
+
+	@JsonProperty("sources")
+	private Sources sources = new Sources();
+
+	@JsonProperty("resources")
+	private Resources resources = new Resources();
+
+	@JsonProperty("test-sources")
+	private TestSources testSources = new TestSources();
+
+	@JsonProperty("test-resources")
+	private TestResources testResources = new TestResources();
 }

@@ -27,7 +27,7 @@ public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
 			ArrayNode sourceArray = (ArrayNode) node.get("sources");
 			for (int i = 0; i < sourceArray.size(); i++) {
 				JsonNode sourceElement = sourceArray.get(i);
-				sources.put(sourceElement.get("filename").textValue(), sourceElement.get("content").textValue());
+				sources.put(sourceElement.get("uuid").textValue(), sourceElement.get("content").textValue());
 			}
 		}
 		List<String> tests = new ArrayList<>();
