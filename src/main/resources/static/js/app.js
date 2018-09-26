@@ -3,71 +3,75 @@ var editors = [];
 var clock = null;
 
 $(document).ready(function () {
-    connectFeedback();
-    connectControl();
+    connectCompetition();
     connectButtons();
+
     initializeAssignmentClock();
     initializeCodeMirrors();
 });
 
-function connectFeedback() {
-    var socket = new SockJS('/submit');
-    var stompTestFeedbackClient = Stomp.over(socket);
-    stompTestFeedbackClient.debug = null;
-    stompTestFeedbackClient.connect({}, function (frame) {
-        stompTestFeedbackClient.subscribe('/user/queue/feedback',
-            function (msg) {
-                var message = JSON.parse(msg.body);
-                if (!message.submit) {
-                    appendOutput(message.text);
-                    updateOutputHeaderColor(message.success);
-                } else {
-                    updateAlertContainerWithScore(message);
-                }
-            });
-        stompTestFeedbackClient.subscribe('/user/queue/compilefeedback',
-            function (msg) {
-                var message = JSON.parse(msg.body);
-                if (!message.forTest) {
-                    appendOutput(message.text);
-                    updateOutputHeaderColor(message.success);
-                } else {
-                    if (!message.success) {
-                        updateOutputHeaderColor(message.success);
-                    }
-                    appendOutput(message.text);
-                }
-            });
-    });
-}
-
-function connectControl() {
-    var socket = new SockJS('/control');
+function connectCompetition() {
+    var socket = new SockJS("/ws/competition");
     stomp = Stomp.over(socket);
     stomp.debug = null;
     stomp.connect({}, function (frame) {
         $('#status').append('<span>Connected</span>');
-        console.log('subscribe to /control/queue/start');
-        stomp.subscribe('/queue/start', function (msg) {
-            window.setTimeout(function(){window.location.reload()},1000);
-        });
-        console.log('subscribe to /control/queue/stop');
-        stomp.subscribe("/queue/stop", function (msg) {
-            disable();
-            if( clock ) {
-                clock.stop();
-            }
-        });
-        console.log('Subscribe to /control/queue/time');
-        stomp.subscribe('/queue/time', function (taskTimeMessage) {
-            var message = JSON.parse(taskTimeMessage.body);
-            if (clock) {
-                clock.sync(message.remainingTime, message.totalTime);
-            }
-        });
+        stomp.subscribe('/user/queue/competition',
+            function (data) {
+                var msg = JSON.parse(data.body);
+                console.log('received:',msg);
+                if (userHandlers.hasOwnProperty(msg.messageType)) {
+                    userHandlers[msg.messageType](msg);
+                }
+            });
+        stomp.subscribe("/queue/competition",
+            function (data) {
+                var msg = JSON.parse(data.body);
+                console.log('received:',msg);
+                if (handlers.hasOwnProperty(msg.messageType)) {
+                    handlers[msg.messageType](msg);
+                }
+            });
     });
-}
 
+    var userHandlers = {};
+    userHandlers['COMPILE'] = function (msg) {
+        appendOutput(msg.message);
+        updateOutputHeaderColor(msg.success);
+
+    };
+    userHandlers['TEST'] = function (msg) {
+        appendOutput(msg.test + ':\r\n' + msg.message);
+        if (!msg.success) {
+            updateOutputHeaderColor(msg.success);
+        }
+    };
+    userHandlers['SUBMIT'] = function (msg) {
+        if( !msg.success && msg.remainingSubmits > 0) {
+            enable();
+        }
+        updateSubmits(msg.remainingSubmits);
+        updateAlertContainerWithScore(msg);
+    };
+
+    var handlers = {};
+    handlers['TIMER_SYNC'] = function (msg) {
+        if (clock) {
+            clock.sync(msg.remainingTime, msg.totalTime);
+        }
+    };
+    handlers['START_ASSIGNMENT'] = function(msg) {
+        window.setTimeout(function () {
+            window.location.reload()
+        }, 1000);
+    };
+    handlers['STOP_ASSIGNMENT'] = function(msg) {
+        disable();
+        if (clock) {
+            clock.stop();
+        }
+    }
+}
 
 function connectButtons() {
     $('#compile').click(function (e) {
@@ -81,7 +85,6 @@ function connectButtons() {
     });
     $('#submit').click(function (e) {
         resetTabColor();
-        $('#btn-open-submit').attr('disabled', 'disabled');
         $('#confirm-submit-modal').modal('hide');
         timerActive = false;
         submit();
@@ -152,7 +155,6 @@ function updateOutputHeaderColor(success) {
 }
 
 function updateAlertContainerWithScore(message) {
-    console.log(message);
     if (message.success === true) {
         $('#alert-container')
             .empty()
@@ -161,11 +163,21 @@ function updateAlertContainerWithScore(message) {
                 + '<p>your score is</p><strong>'
                 + message.score + '</strong></div>');
     } else {
-        $('#alert-container')
-            .empty()
-            .append(
-                '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
-                + '<p>your score is 0</p></div>');
+        if (parseInt(message.remainingSubmits) <= 0) {
+            $('#alert-container')
+                .empty()
+                .append(
+                    '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
+                    + '<p>You have no more resubmits left. Your final score is 0</p></div>');
+        } else {
+            if (parseInt(message.remainingSubmits) > 0) {
+                $('#alert-container')
+                    .empty()
+                    .append(
+                        '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
+                        + '<p>But you still have ' + message.remainingSubmits + ' resubmits left :-)</p></div>');
+            }
+        }
     }
 }
 
@@ -213,13 +225,25 @@ function test() {
 }
 
 function disable() {
-    $('#compile').attr('disabled', 'disabled');
-    $('#test').attr('disabled', 'disabled');
-    $('#show-tests').attr('disabled', 'disabled');
-    $('#btn-open-submit').attr('disabled', 'disabled');
+    $('#compile').prop('disabled', true);
+    $('#test').prop('disabled', true);
+    $('#show-tests').prop('disabled', true);
+    $('#btn-open-submit').prop('disabled', true);
     $.each(editors, function (idx, val) {
         if (!val.readonly) {
             val.cm.setOption("readOnly", true);
+        }
+    });
+}
+
+function enable() {
+    $('#compile').prop('disabled', false);
+    $('#test').prop('disabled', false);
+    $('#show-tests').prop('disabled', false);
+    $('#btn-open-submit').prop('disabled', false);
+    $.each(editors, function (idx, val) {
+        if (!val.readonly) {
+            val.cm.setOption("readOnly", false);
         }
     });
 }
@@ -253,4 +277,8 @@ function showSubmitDetails() {
         .append(
             '<div class="alert alert-info p-4" role="alert"><h4 class="alert-heading">Assignment Submitted</h4><p>Well done! You have submitted the assignment for final review. '
             + 'Chill out and wait a few seconds until the results are displayed.</p></div>');
+}
+
+function updateSubmits(count) {
+    $('#submits').text(count);
 }

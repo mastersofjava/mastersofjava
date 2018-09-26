@@ -1,31 +1,29 @@
 package nl.moj.server.runtime;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.repository.ResultRepository;
+import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.runtime.model.Result;
+import nl.moj.server.runtime.model.Score;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ScoreService {
-
-	private static final Logger log = LoggerFactory.getLogger(ScoreService.class);
 
 	private final ResultRepository resultRepository;
 
-	private final TeamRepository teamRepository;
-
 	private final MojServerProperties mojServerProperties;
 
-	public void removeScoresForAssignment(Assignment assignment) {
-		resultRepository.findAllByAssignment(assignment).forEach(resultRepository::delete);
+	public void removeScoresForAssignment(Assignment assignment, CompetitionSession competitionSession) {
+		resultRepository.findAllByAssignmentAndCompetitionSession(assignment,competitionSession).forEach(resultRepository::delete);
 	}
 
 	public void initializeScoreAtStart(Team team, Assignment assignment, CompetitionSession competitionSession) {
@@ -39,28 +37,35 @@ public class ScoreService {
         resultRepository.save(result);
 	}
 
-	/**
-	 * Scores can only be registered once per assignment per team.
-	 * Old score is always 0
-	 * new score is seconds left plus bonus.
-	 * 
-	 * @param teamname
+    /**
+     * Scores can only be registered once per assignment per team.
+     *
+     * @param team
 	 * @param assignment
-	 * @param scoreAtSubmissionTime
-	 * @return
-	 */
-	public Long registerScoreAtSubmission(String teamname, Assignment assignment, Long scoreAtSubmissionTime) {
-		Long score = 0L;
-		if (scoreAtSubmissionTime > 0) {
-			score = scoreAtSubmissionTime + mojServerProperties.getCompetition().getSuccessBonus();
-			
+	 * @param session
+	 * @param score
+     */
+    public void registerScore(Team team, Assignment assignment, CompetitionSession session, Score score) {
+		Result result = resultRepository.findByTeamAndAssignmentAndCompetitionSession(team, assignment, session);
+		result.setScore(score.getFinalScore().intValue());
+		log.debug("Registered final score of {} for team {} in assignment {}.", score.getFinalScore(), team.getName(), assignment.getName());
+	}
+
+	public Score calculateScore(Team team, AssignmentState state, CompetitionSession session, boolean success) {
+		if( success ) {
+			AssignmentDescriptor ad = state.getAssignmentDescriptor();
+			long submitBonus;
+			if (ad.getScoringRules().getSuccessBonus() != null && ad.getScoringRules().getSuccessBonus() > 0) {
+				submitBonus = ad.getScoringRules().getSuccessBonus();
+			} else {
+				submitBonus = mojServerProperties.getCompetition().getSuccessBonus();
+			}
+
+			return Score.builder()
+					.timeRemaining(state.getTimeRemaining())
+					.submitBonus(submitBonus)
+					.build();
 		}
-		log.debug("Team {} submitted {}. assignment score {} + bonus {} = {}",
-		        teamname, assignment, scoreAtSubmissionTime, mojServerProperties.getCompetition().getSuccessBonus(), score );
-        Result result = resultRepository.findByTeamAndAssignment(teamRepository.findByName(teamname), assignment);
-        // TODO fix possible precision loss.
-        result.setScore(score.intValue());
-        resultRepository.save(result);
-        return score;
+		return Score.builder().build();
 	}
 }

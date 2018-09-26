@@ -10,15 +10,15 @@ import lombok.Data;
 public class ScoringRules {
 
     @JsonProperty("maximum-resubmits")
-    private Integer maximumResubmits;
+    private Integer maximumResubmits = 0;
 
     @JsonProperty("resubmit-penalty")
-    private String resubmitPenalty;
+    private String resubmitPenalty = null;
 
     @JsonProperty("success-bonus")
-    private Integer successBonus;
+    private Integer successBonus = null;
 
     @JsonProperty("test-penalty")
-    private String testPenalty;
+    private String testPenalty = null;
 
 }
