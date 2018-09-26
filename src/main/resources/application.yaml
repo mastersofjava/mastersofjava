@@ -14,7 +14,6 @@ moj:
       sound-directory: sounds
       javadoc-directory: javadoc
       base-directory: moj-game-server/moj-data
-      resourceDirectory: resources
     limits:
       unitTestTimeoutSeconds: 4
       unitTestOutput:
