@@ -121,7 +121,11 @@ public class AssignmentRuntime {
 		if (getTimeRemaining() > 0) {
 			clearHandlers();
 		} else {
-			this.handlers.get(TIMESYNC).cancel(true);
+			try {
+				this.handlers.get(TIMESYNC).cancel(true);
+			}catch(NullPointerException e) {
+				log.debug("assignment stopped without being started, not canceling timesync handler since it doesn't exist");
+			}
 		}
 		running = false;
 		log.info("Stopped assignment {}", assignment.getName());
@@ -165,7 +169,13 @@ public class AssignmentRuntime {
 	}
 
 	private void initOriginalAssignmentFiles() {
-		originalAssignmentFiles = new JavaAssignmentFileResolver().resolve(assignmentDescriptor);
+		try {
+			originalAssignmentFiles = new JavaAssignmentFileResolver().resolve(assignmentDescriptor);
+		} catch(Exception e) {
+			// log exception here since it may get swallowed by async calls
+			log.error("Unable to parse assignment files for assignment {}: {}", assignmentDescriptor.getDisplayName(), e.getMessage(), e);
+			throw new RuntimeException(e);
+		}
 	}
 
 	private void initTeamsForAssignment() {
