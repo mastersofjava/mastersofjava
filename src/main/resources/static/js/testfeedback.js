@@ -50,6 +50,7 @@ function connectControl() {
 function process(message) {
     var team = message.team;
     var test = message.test;
+    var submit = message.messageType === 'SUBMIT';
     var id = team + '-' + test;
 
     var testTd = $('#' + id);
@@ -58,7 +59,7 @@ function process(message) {
     });
     var row = teamTd.closest($('tr'));
     if (message.success) {
-        if (message.submit) {
+        if (submit) {
             row.removeClass('table-danger')
             row.addClass('table-success')
         }
@@ -66,7 +67,7 @@ function process(message) {
         testTd.addClass('fa fa-check');
         testTd.css('color', 'green');
     } else {
-        if (message.submit) {
+        if (submit) {
             row.removeClass('table-success')
             row.addClass('table-danger')
         }

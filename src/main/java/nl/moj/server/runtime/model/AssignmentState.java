@@ -45,6 +45,11 @@ public class AssignmentState {
 				.collect(Collectors.toList());
 	}
 
+	public List<AssignmentFile> getVisibleFiles() {
+		return assignmentFiles
+				.stream().filter( f -> f.getFileType().isVisible())
+				.collect(Collectors.toList());
+	}
 
 	public TeamStatus getTeamStatus(Team team) {
 		return teamStatuses.get(team);

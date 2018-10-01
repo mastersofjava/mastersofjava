@@ -2,7 +2,9 @@ package nl.moj.server.runtime.model;
 
 import lombok.Builder;
 import lombok.Data;
+import org.apache.tika.mime.MediaType;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.UUID;
 
@@ -16,7 +18,7 @@ public class AssignmentFile {
 
 	private final String shortName;
 
-	private final String content;
+	private final byte[] content;
 
 	private final AssignmentFileType fileType;
 
@@ -26,5 +28,11 @@ public class AssignmentFile {
 
 	private final Path file;
 
+	private final MediaType mediaType;
+
 	private final boolean readOnly;
+
+	public String getContentAsString() {
+		return new String(getContent(), StandardCharsets.UTF_8);
+	}
 }

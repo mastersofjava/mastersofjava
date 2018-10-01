@@ -43,5 +43,7 @@ assignment-files:
     base: src/test/resources
     files:
     - test-data.txt
+    hidden-files:
+    - sponsor.png
   solution:
   - src/main/resources/workloadbalancerCase.solution
