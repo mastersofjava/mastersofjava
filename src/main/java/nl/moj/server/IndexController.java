@@ -37,12 +37,6 @@ public class IndexController {
 		Team team = teamRepository.findByName(user.getName());
 
 		List<AssignmentFile> files = competition.getTeamAssignmentFiles(team);
-
-//		if (state.isRunning() && !state.getTeamStatus(team).isCompleted()) {
-//			files.addAll(competition.getTeamAssignmentFiles(team));
-//		} else {
-//			files.addAll(state.getVisibleFiles());
-//		}
 		
 		// TODO ugly
 		files.sort((arg0, arg1) -> {

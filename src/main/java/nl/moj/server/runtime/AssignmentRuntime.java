@@ -283,6 +283,7 @@ public class AssignmentRuntime {
 		update(teamStatuses.get(team).toBuilder()
 				.submitTime(timeScore)
 				.score(finalScore)
+				.completed(true)
 				.build());
 	}
 

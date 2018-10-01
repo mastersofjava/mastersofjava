@@ -103,6 +103,7 @@ public class SubmitService {
 								Score score = scoreService.calculateScore(team, state, competition.getCompetitionSession(), submitResult.isSuccess());
 								if (submitResult.isSuccess() || state.getRemainingSubmits(team) <= 0) {
 									scoreService.registerScore(team, state.getAssignment(), competition.getCompetitionSession(), score);
+									competition.registerAssignmentCompleted(team,score.getTimeRemaining(), score.getFinalScore());
 								}
 								messageService.sendSubmitFeedback(submitResult.toBuilder().score(score.getFinalScore()).build());
 							} catch (Exception e) {
