@@ -13,7 +13,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -37,12 +36,15 @@ public class IndexController {
 		AssignmentState state = competition.getAssignmentState();
 		Team team = teamRepository.findByName(user.getName());
 
-		List<AssignmentFile> files = new ArrayList<>();
-		if (state.isRunning() && !state.getTeamStatus(team).isCompleted()) {
-			files.addAll(competition.getTeamAssignmentFiles(team));
-		} else {
-			files.addAll(state.getAssignmentFiles());
-		}
+		List<AssignmentFile> files = competition.getTeamAssignmentFiles(team);
+
+//		if (state.isRunning() && !state.getTeamStatus(team).isCompleted()) {
+//			files.addAll(competition.getTeamAssignmentFiles(team));
+//		} else {
+//			files.addAll(state.getVisibleFiles());
+//		}
+		
+		// TODO ugly
 		files.sort((arg0, arg1) -> {
 			if (arg0.getFileType().equals(AssignmentFileType.TASK.TASK)) {
 				return -10;

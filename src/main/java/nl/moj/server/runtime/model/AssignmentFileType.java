@@ -1,13 +1,23 @@
 package nl.moj.server.runtime.model;
 
 public enum AssignmentFileType {
-	TEST,
-	HIDDEN_TEST,
-	EDIT,
-	READONLY,
-	TASK, 
-	SOLUTION,
-	RESOURCE,
-	TEST_RESOURCE,
-	HIDDEN_TEST_RESOURCE;
+	TEST(true),
+	HIDDEN_TEST(false),
+	EDIT(true),
+	READONLY(true),
+	TASK(true),
+	SOLUTION(false),
+	RESOURCE(true),
+	TEST_RESOURCE(true),
+	HIDDEN_TEST_RESOURCE(false);
+
+	private boolean visible;
+
+	AssignmentFileType( boolean visible ) {
+		this.visible = visible;
+	}
+
+	public boolean isVisible() {
+		return this.visible;
+	}
 }

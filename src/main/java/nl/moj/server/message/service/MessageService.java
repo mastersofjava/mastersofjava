@@ -14,10 +14,9 @@ public class MessageService {
 
 	private static final String DEST_COMPETITION = "/queue/competition";
 	private static final String DEST_TESTRESULTS = "/queue/feedbackpage";
-	private static final String DEST_FEEDBACK = "/queue/feedback";
 	private static final String DEST_START = "/queue/start";
 	private static final String DEST_STOP = "/queue/stop";
-
+	private static final String DEST_RANKINGS = "/queue/rankings";
 
 	private SimpMessagingTemplate template;
 
@@ -41,6 +40,8 @@ public class MessageService {
 	}
 
 	public void sendSubmitFeedback(SubmitResult submitResult) {
+		sendTestFeedback(submitResult);
+		
 		SubmitFeedbackMessage msg = SubmitFeedbackMessage.builder()
 				.score(submitResult.getScore())
 				.remainingSubmits(submitResult.getRemainingSubmits())
@@ -51,6 +52,8 @@ public class MessageService {
 
 		log.info("Sending submit results: {}", msg);
 		template.convertAndSendToUser(msg.getTeam(), DEST_COMPETITION, msg);
+		template.convertAndSend(DEST_TESTRESULTS, msg);
+		template.convertAndSend(DEST_RANKINGS, "refresh");
 	}
 
 	public void sendCompileFeedback(SubmitResult submitResult) {
@@ -72,11 +75,6 @@ public class MessageService {
 	public void sendStopToTeams(String taskname) {
 		template.convertAndSend(DEST_STOP, new TaskMessage(taskname));
 		template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder().assignment(taskname).build());
-	}
-
-	public void sendRefreshToRankingsPage() {
-		log.info("sending refresh to /queue/rankings");
-		template.convertAndSend("/queue/rankings", "refresh");
 	}
 
 	public void sendRemainingTime(Long remainingTime, Long totalTime) {

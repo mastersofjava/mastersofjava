@@ -24,7 +24,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -123,7 +122,7 @@ public class AssignmentRuntime {
 		} else {
 			try {
 				this.handlers.get(TIMESYNC).cancel(true);
-			}catch(NullPointerException e) {
+			} catch (NullPointerException e) {
 				log.debug("assignment stopped without being started, not canceling timesync handler since it doesn't exist");
 			}
 		}
@@ -135,16 +134,18 @@ public class AssignmentRuntime {
 	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
 		List<AssignmentFile> teamFiles = new ArrayList<>();
 		Path teamAssignmentBase = resolveTeamAssignmentBaseDirectory(team).resolve("sources");
-		originalAssignmentFiles.forEach(f -> {
-			Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
-			if (resolvedFile.toFile().exists() && Files.isReadable(resolvedFile)) {
-				teamFiles.add(f.toBuilder()
-						.content(readPathContent(resolvedFile))
-						.build());
-			} else {
-				teamFiles.add(f.toBuilder().build());
-			}
-		});
+		originalAssignmentFiles.stream()
+				.filter(f -> f.getFileType().isVisible())
+				.forEach(f -> {
+					Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
+					if (resolvedFile.toFile().exists() && Files.isReadable(resolvedFile)) {
+						teamFiles.add(f.toBuilder()
+								.content(readPathContent(resolvedFile))
+								.build());
+					} else {
+						teamFiles.add(f.toBuilder().build());
+					}
+				});
 		return teamFiles;
 	}
 
@@ -160,9 +161,9 @@ public class AssignmentRuntime {
 				.build();
 	}
 
-	private String readPathContent(Path p) {
+	private byte[] readPathContent(Path p) {
 		try {
-			return IOUtils.toString(Files.newInputStream(p, StandardOpenOption.READ), StandardCharsets.UTF_8);
+			return IOUtils.toByteArray(Files.newInputStream(p, StandardOpenOption.READ));
 		} catch (IOException e) {
 			throw new RuntimeException("Unable to read assignment file " + p, e);
 		}
@@ -171,7 +172,7 @@ public class AssignmentRuntime {
 	private void initOriginalAssignmentFiles() {
 		try {
 			originalAssignmentFiles = new JavaAssignmentFileResolver().resolve(assignmentDescriptor);
-		} catch(Exception e) {
+		} catch (Exception e) {
 			// log exception here since it may get swallowed by async calls
 			log.error("Unable to parse assignment files for assignment {}: {}", assignmentDescriptor.getDisplayName(), e.getMessage(), e);
 			throw new RuntimeException(e);
@@ -273,7 +274,7 @@ public class AssignmentRuntime {
 				TIMESYNC_FREQUENCY
 		);
 	}
-	
+
 	private Date inSeconds(long sec) {
 		return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
 	}

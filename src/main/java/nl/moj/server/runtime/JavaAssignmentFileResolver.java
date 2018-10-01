@@ -1,13 +1,18 @@
 package nl.moj.server.runtime;
 
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.*;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import org.apache.commons.io.IOUtils;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.detect.Detector;
+import org.apache.tika.io.TikaInputStream;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -15,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 public class JavaAssignmentFileResolver {
 
 	public List<AssignmentFile> resolve(AssignmentDescriptor ad) {
@@ -79,7 +85,24 @@ public class JavaAssignmentFileResolver {
 				.fileType(type)
 				.readOnly(readOnly)
 				.uuid(UUID.randomUUID())
+				.mediaType(resolveMediaType(ap))
 				.build();
+	}
+
+	private MediaType resolveMediaType(Path file ) {
+		try {
+			TikaConfig config = TikaConfig.getDefaultConfig();
+			Detector detector = config.getDetector();
+
+			TikaInputStream stream = TikaInputStream.get(file);
+
+			Metadata metadata = new Metadata();
+			metadata.add(Metadata.RESOURCE_NAME_KEY, file.getFileName().toString());
+			return detector.detect(stream, metadata);
+		} catch( Exception e ) {
+			log.warn("Unable to determine MediaType for {}, assuming text/plain.",e);
+			return MediaType.TEXT_PLAIN;
+		}
 	}
 
 	private String getShortName( Path file ) {
@@ -90,9 +113,9 @@ public class JavaAssignmentFileResolver {
 		return file.toString().substring(0, file.toString().indexOf(".")).replace(File.separatorChar, '.');
 	}
 
-	private String readPathContent(Path p) {
+	private byte[] readPathContent(Path p) {
 		try {
-			return IOUtils.toString(Files.newInputStream(p, StandardOpenOption.READ), StandardCharsets.UTF_8);
+			return IOUtils.toByteArray(Files.newInputStream(p, StandardOpenOption.READ));
 		} catch (IOException e) {
 			throw new RuntimeException("Unable to read assignment file " + p, e);
 		}

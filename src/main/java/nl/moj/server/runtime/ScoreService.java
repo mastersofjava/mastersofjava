@@ -48,6 +48,7 @@ public class ScoreService {
     public void registerScore(Team team, Assignment assignment, CompetitionSession session, Score score) {
 		Result result = resultRepository.findByTeamAndAssignmentAndCompetitionSession(team, assignment, session);
 		result.setScore(score.getFinalScore().intValue());
+		resultRepository.save(result);
 		log.debug("Registered final score of {} for team {} in assignment {}.", score.getFinalScore(), team.getName(), assignment.getName());
 	}
 
