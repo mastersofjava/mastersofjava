@@ -15,7 +15,7 @@ moj:
       javadoc-directory: javadoc
       base-directory: moj-game-server/moj-data
     limits:
-      unitTestTimeoutSeconds: 4
+      unitTestTimeoutSeconds: 30
       unitTestOutput:
         maxFeedbackLines: 1000
         maxChars: 100000
@@ -25,7 +25,7 @@ moj:
         testTimeoutTermination: "...{terminated: test time expired}"
     runtimes:
       test:
-        timeout: 10
+        timeout: 30
         threads: 3
       compile:
         timeout: 10

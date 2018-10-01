@@ -141,6 +141,8 @@ public class TestService {
 				FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
 		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
 				"hamcrest-all-1.3.jar"));
+		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(),
+				mojServerProperties.getDirectories().getLibDirectory(), "asciiart-core-1.1.0.jar"));
 
 		for (File file : classPath) {
 			if (!file.exists()) {
