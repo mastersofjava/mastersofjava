@@ -32,10 +32,16 @@ import org.springframework.stereotype.Service;
  *     <li>test penalty</li>
  * </ul>
  * <h2>Submit Bonus</h2>
- * <p>The submit bonus is applied on a successful (code compiles and all tests pass) submit.</p>
+ * <p>
+ *     The submit bonus is applied on a successful (code compiles and all tests pass) submit. Percentage
+ *     based values ( >= 0%, <= 100%) and numeric values ( >= 0 ) are allowed.
+ * </p>
  *
  * <h2>Resubmit Penalty</h2>
- * <p>The submit penalty is applied on submits. The first submit is always free.</p>
+ * <p>
+ *     The submit penalty is applied on submits. Percentage based values ( >= 0%, <= 100%) and numeric
+ *     values ( >= 0 ) are allowed. The first submit is always free.
+ * </p>
  *
  * <h3>Percentage penalty is calculated as follows:</h3>
  * <pre>  timeLeftInSeconds - ((100 - submitPenalty) ^ (submits - 1)) * timeLeftInSeconds</pre>
@@ -113,9 +119,9 @@ public class ScoreService {
 			try {
 				// the first submit is always free, hence submits - 1.
 				return calculatePenaltyValue(initialScore, submits - 1, penalty);
-			} catch (NumberFormatException nfe) {
-				log.warn("Cannot use submit penalty from '{}'. Expected a number or percentage, ignoring and using a value of 0.", penalty);
-				log.trace("Cannot use submit penalty from '{}'. Expected a number or percentage, ignoring and using a value of 0.", penalty, nfe);
+			} catch (Exception nfe) {
+				log.warn("Cannot use submit penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty);
+				log.trace("Cannot use submit penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty, nfe);
 			}
 		}
 		return 0L;
@@ -126,9 +132,9 @@ public class ScoreService {
 			String penalty = ad.getScoringRules().getTestPenalty().trim();
 			try {
 				return calculatePenaltyValue(initialScore, testRuns, penalty);
-			} catch (NumberFormatException nfe) {
-				log.warn("Cannot use test penalty from '{}'. Expected a number or percentage, ignoring and using a value of 0.", penalty);
-				log.trace("Cannot use test penalty from '{}'. Expected a number or percentage, ignoring and using a value of 0.", penalty, nfe);
+			} catch (Exception nfe) {
+				log.warn("Cannot use test penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty);
+				log.trace("Cannot use test penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty, nfe);
 			}
 		}
 		return 0L;
@@ -137,10 +143,16 @@ public class ScoreService {
 	private Long calculatePenaltyValue(Long initialScore, Integer count, String penalty) throws NumberFormatException {
 		if (penalty.endsWith("%") && initialScore != null && initialScore > 0 && count > 0) {
 			Long p = 100L - Long.valueOf(penalty.substring(0, penalty.length() - 1));
+			if( p < 0 ) {
+				throw new IllegalArgumentException("Penalty percentage value must be <= 100%");
+			}
 			return initialScore - Math.round(initialScore * Math.pow((p.doubleValue() / 100.0), count.doubleValue()));
 		} else {
 			Long p = Long.valueOf(penalty);
-			return p * (count);
+			if( p < 0 ) {
+				throw new IllegalArgumentException("Penalty value must be >= 0.");
+			}
+			return p * count;
 		}
 	}
 
