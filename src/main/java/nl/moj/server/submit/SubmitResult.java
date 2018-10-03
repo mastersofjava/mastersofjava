@@ -23,8 +23,6 @@ public class SubmitResult {
 	@Builder.Default
 	private List<TestResult> testResults = new ArrayList<>();
 
-	public boolean isSuccess() {
-		return compileResult != null && compileResult.isSuccessful() &&
-				testResults.stream().allMatch(TestResult::isSuccessful);
-	}
+	@Builder.Default
+	private boolean success = false;
 }

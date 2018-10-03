@@ -5,6 +5,7 @@ import nl.moj.server.TaskControlController.TaskMessage;
 import nl.moj.server.compiler.CompileResult;
 import nl.moj.server.message.model.*;
 import nl.moj.server.submit.SubmitResult;
+import nl.moj.server.test.TestResult;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
@@ -25,23 +26,19 @@ public class MessageService {
 		this.template = template;
 	}
 
-	public void sendTestFeedback(SubmitResult testResult) {
-		testResult.getTestResults().forEach(tr -> {
-			TestFeedbackMessage msg = TestFeedbackMessage.builder()
-					.success(tr.isSuccessful())
-					.team(tr.getTeam().getName())
-					.test(tr.getTestName())
-					.message(tr.getMessage())
-					.build();
-			log.info("Sending test results: {}", msg);
-			template.convertAndSendToUser(msg.getTeam(), DEST_COMPETITION, msg);
-			template.convertAndSend(DEST_TESTRESULTS, msg);
-		});
+	public void sendTestFeedback(TestResult tr) {
+		TestFeedbackMessage msg = TestFeedbackMessage.builder()
+				.success(tr.isSuccessful())
+				.team(tr.getTeam().getName())
+				.test(tr.getTestName())
+				.message(tr.getMessage())
+				.build();
+		log.info("Sending test results: {}", msg);
+		template.convertAndSendToUser(msg.getTeam(), DEST_COMPETITION, msg);
+		template.convertAndSend(DEST_TESTRESULTS, msg);
 	}
 
 	public void sendSubmitFeedback(SubmitResult submitResult) {
-		sendTestFeedback(submitResult);
-		
 		SubmitFeedbackMessage msg = SubmitFeedbackMessage.builder()
 				.score(submitResult.getScore())
 				.remainingSubmits(submitResult.getRemainingSubmits())
@@ -56,8 +53,7 @@ public class MessageService {
 		template.convertAndSend(DEST_RANKINGS, "refresh");
 	}
 
-	public void sendCompileFeedback(SubmitResult submitResult) {
-		CompileResult result = submitResult.getCompileResult();
+	public void sendCompileFeedback(CompileResult result) {
 		CompileFeedbackMessage msg = CompileFeedbackMessage.builder()
 				.success(result.isSuccessful())
 				.team(result.getTeam().getName())
