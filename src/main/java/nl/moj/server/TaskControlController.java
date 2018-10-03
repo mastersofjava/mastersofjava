@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.assignment.service.AssignmentServiceException;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
@@ -87,26 +88,31 @@ public class TaskControlController {
 	@MessageMapping("/control/scanAssignments")
 	@SendToUser("/queue/controlfeedback")
 	public String cloneAssignmentsRepo() {
-		assignmentService.updateAssignments(mojServerProperties.getAssignmentRepo());
-		UUID competitionUuid = mojServerProperties.getCompetition().getUuid();
-		Competition c = competitionRepository.findByUuid(competitionUuid);
-		if( c == null ) {
-			c = new Competition();
-			c.setUuid(competitionUuid);
+		try {
+			assignmentService.updateAssignments(mojServerProperties.getAssignmentRepo());
+			UUID competitionUuid = mojServerProperties.getCompetition().getUuid();
+			Competition c = competitionRepository.findByUuid(competitionUuid);
+			if (c == null) {
+				c = new Competition();
+				c.setUuid(competitionUuid);
+			}
+			c.setName("Masters of Java 2018");
+
+			// wipe assignments
+			c.setAssignments(new ArrayList<>());
+			c = competitionRepository.save(c);
+
+			// re-add updated assignments
+			c.setAssignments(assignmentRepository.findAll().stream().map(createOrderedAssignments(c)).collect(Collectors.toList()));
+			c = competitionRepository.save(c);
+
+			competition.startCompetition(c);
+
+			return "Assignments scanned, reload to show them.";
+		} catch( AssignmentServiceException ase ) {
+			log.error("Scanning assignments failed.",ase);
+			return ase.getMessage();
 		}
-		c.setName("Masters of Java 2018");
-
-		// wipe assignments
-		c.setAssignments(new ArrayList<>());
-		c = competitionRepository.save(c);
-
-		// re-add updated assignments
-		c.setAssignments(assignmentRepository.findAll().stream().map(createOrderedAssignments(c)).collect(Collectors.toList()));
-		c = competitionRepository.save(c);
-		
-		competition.startCompetition(c);
-		
-		return "Assignments scanned, reload to show them.";
 	}
 
 	private Function<Assignment, OrderedAssignment> createOrderedAssignments(Competition c) {

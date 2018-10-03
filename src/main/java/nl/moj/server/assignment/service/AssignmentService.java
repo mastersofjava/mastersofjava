@@ -1,11 +1,12 @@
 package nl.moj.server.assignment.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.model.AssignmentDescriptorValidationResult;
 import nl.moj.server.assignment.repository.AssignmentRepository;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -19,13 +20,19 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class AssignmentService {
 
-	@Qualifier("yamlObjectMapper")
 	private final ObjectMapper yamlObjectMapper;
 
 	private final AssignmentRepository assignmentRepository;
+
+	private final AssignmentDescriptorValidator assignmentDescriptorValidator;
+
+	public AssignmentService(@Qualifier("yamlObjectMapper") ObjectMapper yamlObjectMapper, AssignmentRepository assignmentRepository, AssignmentDescriptorValidator assignmentDescriptorValidator) {
+		this.yamlObjectMapper = yamlObjectMapper;
+		this.assignmentRepository = assignmentRepository;
+		this.assignmentDescriptorValidator = assignmentDescriptorValidator;
+	}
 
 	public AssignmentDescriptor getAssignmentDescriptor(Assignment assignment) {
 		try {
@@ -38,25 +45,51 @@ public class AssignmentService {
 		}
 	}
 
-	public List<Assignment> updateAssignments(Path base) {
-
+	public List<Assignment> updateAssignments(Path base) throws AssignmentServiceException {
 		log.info("Discovering assignments from {}.", base);
+		List<Assignment> assignments = findAssignments(base);
+		// validate
+		List<String> invalid = assignments.stream()
+				.map(this::validateAssignment)
+				.filter( r -> !r.isValid() )
+				.map(AssignmentDescriptorValidationResult::getAssignment)
+				.collect(Collectors.toList());
+		if( invalid.isEmpty()) {
+			// update or create
+			return assignments.stream().map(d -> {
+				Assignment current = assignmentRepository.findByName(d.getName());
+				if (current != null) {
+					log.info("Updating existing assignment {}.", current.getName());
+					current.setAssignmentDescriptor(d.getAssignmentDescriptor());
+					return assignmentRepository.save(current);
+				} else {
+					log.info("Added new assignment {}.", d.getName());
+					Assignment a = new Assignment();
+					a.setAssignmentDescriptor(d.getAssignmentDescriptor());
+					a.setName(d.getName());
+					a.setUuid(UUID.randomUUID());
+					return assignmentRepository.save(a);
+				}
+			}).collect(Collectors.toList());
+		} else {
+			throw new AssignmentServiceException("Problems during assignment update of assignment(s) '" + Strings.join(invalid, ',') +
+					"' see the logs for information. Correct problems and try again.");
+		}
+	}
 
-		return findAssignments(base).stream().map( d -> {
-			Assignment current = assignmentRepository.findByName(d.getName());
-			if( current != null ) {
-				log.info("Updating existing assignment {}.", current.getName());
-				current.setAssignmentDescriptor(d.getAssignmentDescriptor());
-				return assignmentRepository.save(current);
-			} else {
-				log.info("Added new assignment {}.", d.getName());
-				Assignment a = new Assignment();
-				a.setAssignmentDescriptor(d.getAssignmentDescriptor());
-				a.setName(d.getName());
-				a.setUuid(UUID.randomUUID());
-				return assignmentRepository.save(a);
+	private AssignmentDescriptorValidationResult validateAssignment(Assignment a) {
+		// check if assignment descriptor can be read.
+		try {
+			AssignmentDescriptor ad = getAssignmentDescriptor(a);
+			AssignmentDescriptorValidationResult validationResult = assignmentDescriptorValidator.validate(ad);
+			if( !validationResult.isValid() ) {
+				log.error("Validation of assignment {} failed. Problems found: \n{}", a.getName(), Strings.join(validationResult.getValidationMessages(), '\n'));
 			}
-		}).collect(Collectors.toList());
+			return validationResult;
+		} catch( Exception e ) {
+			log.error("Unable to parse assignment descriptor for assignment "+a.getName()+".", e);
+			return new AssignmentDescriptorValidationResult(a.getName(),null);
+		}
 	}
 
 	private List<Assignment> findAssignments(Path base) {

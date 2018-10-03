@@ -47,26 +47,51 @@ public class ScoreService {
      */
     public void registerScore(Team team, Assignment assignment, CompetitionSession session, Score score) {
 		Result result = resultRepository.findByTeamAndAssignmentAndCompetitionSession(team, assignment, session);
-		result.setScore(score.getFinalScore().intValue());
+		result.setScore(score.getTotalScore().intValue());
+		result.setCredit(score.getInitialScore().intValue());
+		result.setPenalty(score.getTotalPenalty().intValue());
 		resultRepository.save(result);
-		log.debug("Registered final score of {} for team {} in assignment {}.", score.getFinalScore(), team.getName(), assignment.getName());
+		log.debug("Registered final score of {} for team {} in assignment {}.", score.getTotalScore(), team.getName(), assignment.getName());
 	}
 
-	public Score calculateScore(Team team, AssignmentState state, CompetitionSession session, boolean success) {
+	public Score calculateScore(Team team, AssignmentState state, boolean success) {
 		if( success ) {
 			AssignmentDescriptor ad = state.getAssignmentDescriptor();
-			long submitBonus;
-			if (ad.getScoringRules().getSuccessBonus() != null && ad.getScoringRules().getSuccessBonus() > 0) {
-				submitBonus = ad.getScoringRules().getSuccessBonus();
-			} else {
-				submitBonus = mojServerProperties.getCompetition().getSuccessBonus();
-			}
-
 			return Score.builder()
-					.timeRemaining(state.getTimeRemaining())
-					.submitBonus(submitBonus)
+					.initialScore(state.getTimeRemaining())
+					.submitBonus(calculateSubmitBonus(ad))
+					.resubmitPenalty(calculateSubmitPenalty(ad,state.getTimeRemaining(),state.getTeamStatus(team).getSubmits()))
 					.build();
 		}
 		return Score.builder().build();
+	}
+
+	private Long calculateSubmitPenalty(AssignmentDescriptor ad, Long initialScore, Integer submits) {
+		if( submits != null && submits > 1 && ad.getScoringRules().getResubmitPenalty() != null ) {
+			Integer resubmits = submits -1;
+			String penalty = ad.getScoringRules().getResubmitPenalty().trim();
+			try {
+				if (penalty.endsWith("%") && initialScore != null && initialScore > 0) {
+					Long p = Long.valueOf(penalty.substring(0, penalty.length() - 1));
+					return initialScore - Math.round(initialScore * Math.pow((p.doubleValue() / 100.0), resubmits.doubleValue()));
+				} else {
+					Long p = Long.valueOf(penalty);
+					return p * (submits - 1);
+				}
+			} catch( NumberFormatException nfe ) {
+				log.warn("Cannot use submit penalty from '"+penalty+"'. Expected a number or percentage, ignoring and using a value of 0.", nfe);
+			}
+		}
+    	return 0L;
+	}
+
+	private long calculateSubmitBonus(AssignmentDescriptor ad) {
+		long submitBonus;
+		if (ad.getScoringRules().getSuccessBonus() != null ) {
+			submitBonus = ad.getScoringRules().getSuccessBonus();
+		} else {
+			submitBonus = mojServerProperties.getCompetition().getSuccessBonus();
+		}
+		return submitBonus;
 	}
 }
