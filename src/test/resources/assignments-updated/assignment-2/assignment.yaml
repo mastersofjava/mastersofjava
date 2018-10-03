@@ -27,14 +27,18 @@ scoring-rules:
 
 assignment-files:
   assignment: assets/assignment-2.txt
-  editable:
-  - src/main/java/Assignment2.java
-  readonly:
-  - src/main/java/Model.java
-  tests:
-  - src/test/java/Test1.java
-  - src/test/java/Test2.java
-  hidden-tests:
-  - src/test/java/Test3.java
+  sources:
+    base: src/main/java
+    editable:
+    - Assignment2.java
+    readonly:
+    - Model.java
+  test-sources:
+    base: src/test/java
+    tests:
+    - Test1.java
+    - Test2.java
+    hidden-tests:
+    - Test3.java
   solution:
   - assets/solution/Assignment2.java

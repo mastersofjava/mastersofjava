@@ -70,13 +70,13 @@ public class SubmitService {
 						}
 						if (ctr != null) {
 							try {
-								Score score = scoreService.calculateScore(team, state, competition.getCompetitionSession(), ctr.isSuccess());
+								Score score = scoreService.calculateScore(team, state, ctr.isSuccess());
 								if (ctr.isSuccess() || state.getRemainingSubmits(team) <= 0) {
 									scoreService.registerScore(team, state.getAssignment(), competition.getCompetitionSession(), score);
-									competition.registerAssignmentCompleted(team, score.getTimeRemaining(), score.getFinalScore());
+									competition.registerAssignmentCompleted(team, score.getInitialScore(), score.getTotalScore());
 								}
 								messageService.sendSubmitFeedback(SubmitResult.builder()
-										.score(score.getFinalScore())
+										.score(score.getTotalScore())
 										.compileResult(ctr.getCompileResult())
 										.testResults(ctr.getTestResults())
 										.remainingSubmits(state.getRemainingSubmits(team))

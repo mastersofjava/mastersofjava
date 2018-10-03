@@ -8,11 +8,17 @@ import lombok.Getter;
 public class Score {
 	
  	@Builder.Default
- 	private final Long timeRemaining = 0L;
+ 	private final Long initialScore = 0L;
  	@Builder.Default
  	private final Long submitBonus = 0L;
+	@Builder.Default
+ 	private final Long resubmitPenalty = 0L;
 
- 	public Long getFinalScore() {
- 		return timeRemaining + submitBonus;
+ 	public Long getTotalScore() {
+ 		return initialScore + submitBonus - resubmitPenalty;
+	}
+
+	public Long getTotalPenalty() {
+ 		return resubmitPenalty;
 	}
 }
