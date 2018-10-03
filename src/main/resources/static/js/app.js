@@ -169,14 +169,14 @@ function updateAlertContainerWithScore(message) {
                 .empty()
                 .append(
                     '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
-                    + '<p>You have no more resubmits left. Your final score is 0</p></div>');
+                    + '<p>You have no more submits left. Your final score is 0</p></div>');
         } else {
             if (parseInt(message.remainingSubmits) > 0) {
                 $('#alert-container')
                     .empty()
                     .append(
                         '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
-                        + '<p>But you still have ' + message.remainingSubmits + ' resubmits left :-)</p></div>');
+                        + '<p>But you still have ' + message.remainingSubmits + ' submits left :-)</p></div>');
             }
         }
     }
