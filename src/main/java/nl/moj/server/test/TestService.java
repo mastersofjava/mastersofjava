@@ -42,7 +42,7 @@ public class TestService {
 			List<TestResult> results = new ArrayList<>();
 			for (AssignmentFile test : tests) {
 				try {
-					results.add(runTest(team, test));
+					results.add(executeTest(team, test));
 				} catch (Exception e) {
 					results.add(TestResult.builder()
 							.message("Server error running tests - contact the Organizer")
@@ -54,7 +54,11 @@ public class TestService {
 		}, executor);
 	}
 
-	private TestResult runTest(Team team, AssignmentFile file) {
+	public CompletableFuture<TestResult> runTest(Team team, AssignmentFile test) {
+		return CompletableFuture.supplyAsync(() -> executeTest(team, test), executor);
+	}
+
+	private TestResult executeTest(Team team, AssignmentFile file) {
 
 		log.info("Running unit test: {}", file.getName());
 		File teamdir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(),
