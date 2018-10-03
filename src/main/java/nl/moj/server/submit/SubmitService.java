@@ -119,7 +119,7 @@ public class SubmitService {
 					messageService.sendTestFeedback(tr);
 					return tr;
 				})));
-		return combine((CompletableFuture<TestResult>[]) cfs.toArray());
+		return combine(cfs.toArray(new CompletableFuture[]{}));
 	}
 
 	private <T> CompletableFuture<List<T>> combine(CompletableFuture<T>... futures) {
