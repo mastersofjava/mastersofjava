@@ -287,7 +287,7 @@ public class AssignmentRuntime {
 				.build());
 	}
 
-	void registerSubmitForTeam(Team team) {
+	void registerSubmit(Team team) {
 		TeamStatus s = teamStatuses.get(team);
 		update(s.toBuilder()
 				.submits(s.getSubmits() + 1)
@@ -301,4 +301,19 @@ public class AssignmentRuntime {
 	}
 
 
+	public void registerTestRun(Team team) {
+		TeamStatus s = teamStatuses.get(team);
+		update(s.toBuilder()
+				.testRuns(s.getTestRuns() + 1)
+				.build()
+		);
+	}
+
+	public void registerCompileRun(Team team) {
+		TeamStatus s = teamStatuses.get(team);
+		update(s.toBuilder()
+				.compileRuns(s.getCompileRuns() + 1)
+				.build()
+		);
+	}
 }

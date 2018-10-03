@@ -2,9 +2,11 @@ package nl.moj.server.runtime.model;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 @Builder(toBuilder = true)
 @Getter
+@ToString
 public class Score {
 	
  	@Builder.Default
@@ -13,12 +15,18 @@ public class Score {
  	private final Long submitBonus = 0L;
 	@Builder.Default
  	private final Long resubmitPenalty = 0L;
+	@Builder.Default
+	private final Long testPenalty = 0L;
 
  	public Long getTotalScore() {
- 		return initialScore + submitBonus - resubmitPenalty;
+ 		Long score = initialScore + submitBonus - resubmitPenalty - testPenalty;
+ 		if( score < 0 ) {
+ 			return 0L;
+		}
+		return score;
 	}
 
 	public Long getTotalPenalty() {
- 		return resubmitPenalty;
+ 		return resubmitPenalty + testPenalty;
 	}
 }

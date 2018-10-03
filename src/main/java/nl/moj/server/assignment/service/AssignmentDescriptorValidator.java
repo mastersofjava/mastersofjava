@@ -143,8 +143,8 @@ public class AssignmentDescriptorValidator {
 			}
 			try {
 				long v = Long.valueOf(value.replace("%", ""));
-				if( v < 0 ) {
-					result.addValidationMessage(String.format("%s must be >= 0", valueName));
+				if( v < 0 || v > 100 ) {
+					result.addValidationMessage(String.format("%s must be >= 0 and <= 100.", valueName));
 				}
 			} catch (NumberFormatException nfe) {
 				result.addValidationMessage(String.format("%s invalid, must be a number (e.g. 25) or a percentage string (e.g. 25%%).", valueName));
