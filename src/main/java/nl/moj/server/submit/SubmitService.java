@@ -20,8 +20,10 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -122,13 +124,9 @@ public class SubmitService {
 
 	private <T> CompletableFuture<List<T>> combine(CompletableFuture<T>... futures) {
 		return CompletableFuture.allOf(futures)
-				.thenApply(ignores -> {
-					List<T> results = new ArrayList<>();
-					for (CompletableFuture<T> f : futures) {
-						results.add(f.join());
-					}
-					return results;
-				});
+				.thenApply(ignores -> Arrays.stream(futures)
+						.map(CompletableFuture::join)
+						.collect(Collectors.toList()));
 
 
 	}
