@@ -1,15 +1,5 @@
 package nl.moj.server.runtime;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.springframework.stereotype.Service;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +14,11 @@ import nl.moj.server.runtime.model.AssignmentState;
 import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -124,7 +119,7 @@ public class CompetitionRuntime {
 
 	public void registerSubmit(Team team) {
 		if (assignmentRuntime.getOrderedAssignment() != null) {
-			assignmentRuntime.registerSubmitForTeam(team);
+			assignmentRuntime.registerSubmit(team);
 		}
 	}
 
@@ -133,5 +128,17 @@ public class CompetitionRuntime {
 			return assignmentRuntime.getTeamAssignmentFiles(team);
 		}
 		return Collections.emptyList();
+	}
+
+	public void registerTestRun(Team team) {
+		if (assignmentRuntime.getOrderedAssignment() != null) {
+			assignmentRuntime.registerTestRun(team);
+		}
+	}
+
+	public void registerCompileRun(Team team) {
+		if (assignmentRuntime.getOrderedAssignment() != null) {
+			assignmentRuntime.registerCompileRun(team);
+		}
 	}
 }

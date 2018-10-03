@@ -20,6 +20,12 @@ public class TeamStatus {
 	private Integer submits = 0;
 
 	@Builder.Default
+	private Integer testRuns = 0;
+
+	@Builder.Default
+	private Integer compileRuns = 0;
+
+	@Builder.Default
 	private boolean completed = false;
 
 	public static TeamStatus init(Team team) {
@@ -29,6 +35,8 @@ public class TeamStatus {
 				.submitTime(0L)
 				.team(team)
 				.submits(0)
+				.testRuns(0)
+				.compileRuns(0)
 				.build();
 	}
 }

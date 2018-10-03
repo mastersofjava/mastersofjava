@@ -16,7 +16,6 @@ import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.TestResult;
 import nl.moj.server.test.TestService;
-import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -37,6 +36,7 @@ public class SubmitService {
 	private final MessageService messageService;
 
 	public void compile(Team team, SourceMessage message) {
+		competition.registerCompileRun(team);
 		compileService.compile(team, message)
 				.whenComplete((compileResult, error) -> {
 					messageService.sendCompileFeedback(compileResult);
@@ -47,9 +47,8 @@ public class SubmitService {
 	}
 
 	public void test(Team team, SourceMessage message) {
-		StopWatch sw = new StopWatch();
-		sw.start();
 		AssignmentState state = competition.getAssignmentState();
+		competition.registerTestRun(team);
 		compileAndTest(team, message, state, state.getTestFiles())
 				.whenComplete((submitResult, error) -> {
 					if (error != null) {
