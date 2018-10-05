@@ -289,10 +289,11 @@ public class AssignmentRuntime {
 
 	void registerSubmit(Team team) {
 		TeamStatus s = teamStatuses.get(team);
-		update(s.toBuilder()
+		s = update(s.toBuilder()
 				.submits(s.getSubmits() + 1)
 				.build()
 		);
+		log.info("Team {} submitted assignment {} {} time(s).", team.getName(), assignment.getName(), s.getSubmits());
 	}
 
 	private TeamStatus update(TeamStatus status) {
@@ -303,17 +304,19 @@ public class AssignmentRuntime {
 
 	public void registerTestRun(Team team) {
 		TeamStatus s = teamStatuses.get(team);
-		update(s.toBuilder()
+		s = update(s.toBuilder()
 				.testRuns(s.getTestRuns() + 1)
 				.build()
 		);
+		log.info("Team {} tested assignment {} {} time(s).", team.getName(), assignment.getName(), s.getTestRuns());
 	}
 
 	public void registerCompileRun(Team team) {
 		TeamStatus s = teamStatuses.get(team);
-		update(s.toBuilder()
+		s = update(s.toBuilder()
 				.compileRuns(s.getCompileRuns() + 1)
 				.build()
 		);
+		log.info("Team {} compiled assignment {} {} time(s).", team.getName(), assignment.getName(), s.getCompileRuns());
 	}
 }

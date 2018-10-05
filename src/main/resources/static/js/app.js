@@ -36,11 +36,13 @@ function connectCompetition() {
 
     var userHandlers = {};
     userHandlers['COMPILE'] = function (msg) {
+        enable();
         appendOutput(msg.message);
         updateOutputHeaderColor(msg.success);
 
     };
     userHandlers['TEST'] = function (msg) {
+        enable();
         appendOutput(msg.test + ':\r\n' + msg.message);
         if (!msg.success) {
             updateOutputHeaderColor(msg.success);
@@ -184,7 +186,7 @@ function updateAlertContainerWithScore(message) {
 
 function appendOutput(txt) {
     $('#output-content').append('<pre>' + escape(txt) + '</pre>');
-    $('#output').tab('show');
+    showOutput();
 }
 
 function escape(txt) {
@@ -207,18 +209,23 @@ function escape(txt) {
 }
 
 function compile() {
+    disable();
     resetOutput();
+    appendOutput("Compiling ....");
+    showOutput();
     stomp.send("/app/submit/compile", {}, JSON.stringify({
         'sources': getContent()
     }));
 }
 
 function test() {
+    disable();
     resetOutput();
+    appendOutput("Compiling and testing ....");
     var tests = $("#test-modal input:checkbox:checked").map(function () {
         return $(this).val();
     }).get();
-
+    showOutput();
     stomp.send("/app/submit/test", {}, JSON.stringify({
         'sources': getContent(),
         'tests': tests
@@ -266,10 +273,15 @@ function getContent() {
 function submit() {
     disable();
     resetOutput();
+    showOutput();
     stomp.send("/app/submit/submit", {}, JSON.stringify({
         'sources': getContent()
     }));
     showSubmitDetails();
+}
+
+function showOutput() {
+    $('#output').tab('show');
 }
 
 function showSubmitDetails() {
