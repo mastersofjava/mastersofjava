@@ -31,7 +31,4 @@ public class PathUtil {
 			}
 		});
 	}
-
-	public static void copy(Path source, Path target) {
-	}
 }

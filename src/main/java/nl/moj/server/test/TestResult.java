@@ -11,4 +11,7 @@ public class TestResult {
 	private String message;
 	private boolean successful;
 	private String testName;
+
+	@Builder.Default
+	private boolean timeout = false;
 }

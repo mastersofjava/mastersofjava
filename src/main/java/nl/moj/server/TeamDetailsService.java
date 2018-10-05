@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -45,8 +44,8 @@ public class TeamDetailsService implements UserDetailsService {
 	}
 
 	public void initTeam(String name) {
-		Path teamdir = Paths.get(mojServerProperties.getDirectories().getBaseDirectory(),
-				mojServerProperties.getDirectories().getTeamDirectory(), name);
+		Path teamdir = mojServerProperties.getDirectories().getBaseDirectory().resolve(
+				mojServerProperties.getDirectories().getTeamDirectory()).resolve(name);
 		if (!Files.exists(teamdir)) {
 			try {
 				Files.createDirectories(teamdir);

@@ -6,8 +6,8 @@ author:
   company: First8
   website: https://first8.nl
 
-image: src/main/resources/icon.png
-sponsor-image: src/main/resources/sponsor.png
+image: assets/images/icon.png
+sponsor-image: assets/images/sponsor.png
 
 labels:
 - algorithm
@@ -16,7 +16,7 @@ difficulty: 3
 java-version: 8
 duration: PT15S
 submit-timeout: PT5S
-test-timeout: PT5S
+test-timeout: PT2S
 
 scoring-rules:
   maximum-resubmits: 2
@@ -25,23 +25,18 @@ scoring-rules:
   test-penalty: 20%
 
 assignment-files:
-  assignment: src/main/resources/workloadbalancerCase.txt
+  assignment: assets/assignment1.txt
   sources:
     base: src/main/java
     editable:
-    - WorkloadBalancerImpl.java
-    readonly:
-    - Order.java
+    - Assignment1.java
   test-sources:
     base: src/test/java
     tests:
-    - WorkloadbalancerDaysinListTest.java
-    - WorkloadbalancerOrderCountPerDayTest.java
-    hidden-test:
-    - WorkloadbalancerOrderSequenceTest.java
+    - TimesOutTest.java
   test-resources:
     base: src/test/resources
     files:
     - test-data.txt
   solution:
-  - src/main/resources/workloadbalancerCase.solution
+  - assets/solution/Assignment1.java

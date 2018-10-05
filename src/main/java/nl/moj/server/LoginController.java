@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
 import static nl.moj.server.teams.model.Role.ROLE_USER;
@@ -62,7 +61,9 @@ public class LoginController {
     	SecurityContext context = SecurityContextHolder.getContext();
     	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority(ROLE_USER.toString())));
     	context.setAuthentication(authentication);
-    	Path teamdir = Paths.get(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(), authentication.getName());
+    	Path teamdir = mojServerProperties.getDirectories().getBaseDirectory()
+				.resolve(mojServerProperties.getDirectories().getTeamDirectory())
+				.resolve(authentication.getName());
 		if (!Files.exists(teamdir)) {
 			try {
 				Files.createDirectory(teamdir);

@@ -3,17 +3,21 @@ package nl.moj.server.config.properties;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.time.Duration;
+
 @Data
 @ConfigurationProperties(prefix = "moj.server.limits")
 public class Limits {
 
-	private Integer unitTestTimeoutSeconds = 4;
+	private Duration compileTimeout = Duration.ofSeconds(4);
+	private Duration testTimeout = Duration.ofSeconds(4);
 	
-	private UnitTestOutput unitTestOutput = new UnitTestOutput();
+	private OutputLimits testOutputLimits = new OutputLimits();
+	private OutputLimits compileOutputLimits = new OutputLimits();
 
 	@Data
 	@ConfigurationProperties
-	public static class UnitTestOutput {
+	public static class OutputLimits {
 	
 		private Integer maxFeedbackLines = 1000;
 		private Integer maxChars = 10000;
@@ -21,7 +25,7 @@ public class Limits {
 		
 		private String lineTruncatedMessage = "...{truncated}";
 		private String outputTruncMessage = "...{output truncated}";
-		private String testTimeoutTermination = "...{terminated: test time expired}";
+		private String timeoutMessage = "...{terminated: time expired}";
 		
 	}
 }

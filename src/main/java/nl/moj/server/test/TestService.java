@@ -1,6 +1,8 @@
 package nl.moj.server.test;
 
+import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -32,51 +35,39 @@ public class TestService {
 
 	private MojServerProperties mojServerProperties;
 
-	public TestService(MojServerProperties mojServerProperties, @Qualifier("testing") Executor executor) {
+	private CompetitionRuntime competition;
+
+	public TestService(MojServerProperties mojServerProperties, @Qualifier("testing") Executor executor, CompetitionRuntime competition) {
 		this.mojServerProperties = mojServerProperties;
 		this.executor = executor;
-	}
-
-	public CompletableFuture<List<TestResult>> runTests(Team team, List<AssignmentFile> tests) {
-		return CompletableFuture.supplyAsync(() -> {
-			List<TestResult> results = new ArrayList<>();
-			for (AssignmentFile test : tests) {
-				try {
-					results.add(executeTest(team, test));
-				} catch (Exception e) {
-					results.add(TestResult.builder()
-							.message("Server error running tests - contact the Organizer")
-							.team(team).successful(false).testName(test.getName()).build());
-
-				}
-			}
-			return results;
-		}, executor);
+		this.competition = competition;
 	}
 
 	public CompletableFuture<TestResult> runTest(Team team, AssignmentFile test) {
-		return CompletableFuture.supplyAsync(() -> executeTest(team, test), executor);
+		return CompletableFuture.supplyAsync(() -> executeTest(team, test, competition.getAssignmentState().getAssignmentDescriptor()), executor);
 	}
 
-	private TestResult executeTest(Team team, AssignmentFile file) {
-
+	private TestResult executeTest(Team team, AssignmentFile file, AssignmentDescriptor ad) {
 		log.info("Running unit test: {}", file.getName());
-		File teamdir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getTeamDirectory(),
+		File teamdir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(), mojServerProperties.getDirectories().getTeamDirectory(),
 				team.getName());
-		File policy = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
+		File policy = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(), mojServerProperties.getDirectories().getLibDirectory(),
 				SECURITY_POLICY_FOR_UNIT_TESTS);
+		Duration timeout = ad.getTestTimeout() != null ? ad.getTestTimeout() :
+				mojServerProperties.getLimits().getTestTimeout();
+
 		if (!policy.exists()) {
 			log.error("security policy file not found"); // Exception is swallowed somewhere
 			throw new RuntimeException("security policy file not found");
 		}
 
 		try {
-			boolean isRunTerminated = false;
+			boolean isTimeout = false;
 			int exitvalue = 0;
-			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(mojServerProperties);
-			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(mojServerProperties);
+			final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(mojServerProperties.getLimits().getTestOutputLimits());
+			final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(mojServerProperties.getLimits().getTestOutputLimits());
 			try {
-				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(mojServerProperties.getLanguages().getJavaVersion().getRuntime().toString(), "-cp",
+				final ProcessExecutor jUnitCommand = new ProcessExecutor().command(mojServerProperties.getLanguages().getJavaVersion(ad.getJavaVersion()).getRuntime().toString(), "-cp",
 						makeClasspath(team, file.getAssignment()),
 						"-Djava.security.manager",
 						"-Djava.security.policy=" + policy.getAbsolutePath(),
@@ -84,17 +75,17 @@ public class TestService {
 						file.getName());
 				log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
 				exitvalue = jUnitCommand.directory(teamdir)
-						.timeout(mojServerProperties.getLimits().getUnitTestTimeoutSeconds(), TimeUnit.SECONDS).redirectOutput(jUnitOutput)
+						.timeout(timeout.toSeconds(), TimeUnit.SECONDS).redirectOutput(jUnitOutput)
 						.redirectError(jUnitError).execute().getExitValue();
 			} catch (TimeoutException e) {
 				// process is automatically destroyed
 				log.debug("Unit test for {} timed out and got killed", team.getName());
-				isRunTerminated = true;
+				isTimeout = true;
 			} catch (SecurityException se) {
 				log.error(se.getMessage(), se);
 			}
-			if (isRunTerminated) {
-				jUnitOutput.getBuffer().append('\n').append(mojServerProperties.getLimits().getUnitTestOutput().getTestTimeoutTermination());
+			if (isTimeout) {
+				jUnitOutput.getBuffer().append('\n').append(mojServerProperties.getLimits().getTestOutputLimits().getTimeoutMessage());
 			}
 
 			final boolean success;
@@ -102,7 +93,7 @@ public class TestService {
 			if (jUnitOutput.length() > 0) {
 				stripJUnitPrefix(jUnitOutput.getBuffer());
 				// if we still have some output left and exitvalue = 0
-				if (jUnitOutput.length() > 0 && exitvalue == 0 && !isRunTerminated) {
+				if (jUnitOutput.length() > 0 && exitvalue == 0 && !isTimeout) {
 					success = true;
 				} else {
 					success = false;
@@ -111,10 +102,11 @@ public class TestService {
 			} else {
 				log.trace(jUnitOutput.toString());
 				result = jUnitError.toString();
-				success = (exitvalue == 0) && !isRunTerminated;
+				success = (exitvalue == 0) && !isTimeout;
 			}
 			log.info("finished unit test: {}", file.getName());
 			return TestResult.builder().message(result).team(team).successful(success)
+					.timeout(isTimeout)
 					.testName(file.getName()).build();
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
@@ -136,16 +128,16 @@ public class TestService {
 	}
 
 	private String makeClasspath(Team team, String assignment) {
-		File teamAssignmentDir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(),
-				mojServerProperties.getDirectories().getTeamDirectory(), team.getName(), assignment );
+		File teamAssignmentDir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(),
+				mojServerProperties.getDirectories().getTeamDirectory(), team.getName(), assignment);
 		File classesDir = FileUtils.getFile(teamAssignmentDir, "classes");
 		final List<File> classPath = new ArrayList<>();
 		classPath.add(classesDir);
 		classPath.add(
-				FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
-		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getLibDirectory(),
+				FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
+		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(), mojServerProperties.getDirectories().getLibDirectory(),
 				"hamcrest-all-1.3.jar"));
-		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory(),
+		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(),
 				mojServerProperties.getDirectories().getLibDirectory(), "asciiart-core-1.1.0.jar"));
 
 		for (File file : classPath) {

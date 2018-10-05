@@ -81,7 +81,7 @@ public class AssignmentRuntime {
 	 * @param orderedAssignment the assignment to start.
 	 * @return the {@link Future}
 	 */
-	@Async
+//	@Async
 	public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) {
 		clearHandlers();
 		this.competitionSession = competitionSession;

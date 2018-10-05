@@ -36,6 +36,8 @@ public class AssignmentDescriptor {
 	private Duration submitTimeout;
 	@JsonProperty("test-timeout")
 	private Duration testTimeout;
+	@JsonProperty("compile-timeout")
+	private Duration compileTimeout;
 	
 	@JsonProperty("scoring-rules")
 	private ScoringRules scoringRules;

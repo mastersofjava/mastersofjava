@@ -35,62 +35,73 @@ public class SubmitService {
 	private final ScoreService scoreService;
 	private final MessageService messageService;
 
-	public void compile(Team team, SourceMessage message) {
+	public CompletableFuture<SubmitResult> compile(Team team, SourceMessage message) {
 		competition.registerCompileRun(team);
-		compileService.compile(team, message)
+		return compileService.compile(team, message)
 				.whenComplete((compileResult, error) -> {
 					messageService.sendCompileFeedback(compileResult);
 					if (error != null) {
 						log.error("Compiling failed: {}", error.getMessage(), error);
 					}
-				});
+				}).thenApply(cr -> SubmitResult.builder()
+						.success(cr.isSuccessful())
+						.compileResult(cr)
+						.build());
 	}
 
-	public void test(Team team, SourceMessage message) {
+	public CompletableFuture<SubmitResult> test(Team team, SourceMessage message) {
 		AssignmentState state = competition.getAssignmentState();
 		competition.registerTestRun(team);
-		compileAndTest(team, message, state, state.getTestFiles())
+		return compileAndTest(team, message, state.getTestFiles())
 				.whenComplete((submitResult, error) -> {
 					if (error != null) {
 						log.error("Testing failed: {}", error.getMessage(), error);
 					}
-				});
+				}).thenApply(r -> SubmitResult.builder()
+						.success(r.isSuccess())
+						.compileResult(r.getCompileResult())
+						.testResults(r.getTestResults())
+						.build());
 	}
 
 
-	public void submit(Team team, SourceMessage message) {
+	public CompletableFuture<SubmitResult> submit(Team team, SourceMessage message) {
 		if (competition.getAssignmentState().isSubmitAllowedForTeam(team)) {
 			competition.registerSubmit(team);
 			AssignmentState state = competition.getAssignmentState();
-			compileAndTest(team, message, state, state.getSubmitTestFiles())
-					.whenComplete((ctr, error) -> {
+			return compileAndTest(team, message, state.getSubmitTestFiles())
+					.thenApply(ctr -> {
+						SubmitResult result = SubmitResult.builder()
+								.compileResult(ctr.getCompileResult())
+								.testResults(ctr.getTestResults())
+								.remainingSubmits(state.getRemainingSubmits(team))
+								.success(ctr.isSuccess())
+								.team(team)
+								.build();
+
+						try {
+							Score score = scoreService.calculateScore(team, state, ctr.isSuccess());
+							if (ctr.isSuccess() || state.getRemainingSubmits(team) <= 0) {
+								scoreService.registerScore(team, state.getAssignment(), competition.getCompetitionSession(), score);
+								competition.registerAssignmentCompleted(team, score.getInitialScore(), score.getTotalScore());
+								result = result.toBuilder().score(score.getTotalScore()).build();
+							}
+							messageService.sendSubmitFeedback(result);
+							return result;
+						} catch (Exception e) {
+							log.error("Submit failed unexpectedly.", e);
+						}
+						return result;
+					}).whenComplete((ctr, error) -> {
 						if (error != null) {
 							log.error("Submit failed: {}", error.getMessage(), error);
 						}
-						if (ctr != null) {
-							try {
-								Score score = scoreService.calculateScore(team, state, ctr.isSuccess());
-								if (ctr.isSuccess() || state.getRemainingSubmits(team) <= 0) {
-									scoreService.registerScore(team, state.getAssignment(), competition.getCompetitionSession(), score);
-									competition.registerAssignmentCompleted(team, score.getInitialScore(), score.getTotalScore());
-								}
-								messageService.sendSubmitFeedback(SubmitResult.builder()
-										.score(score.getTotalScore())
-										.compileResult(ctr.getCompileResult())
-										.testResults(ctr.getTestResults())
-										.remainingSubmits(state.getRemainingSubmits(team))
-										.success(ctr.isSuccess())
-										.team(team)
-										.build());
-							} catch (Exception e) {
-								log.error("Submit failed unexpectedly.", e);
-							}
-						}
 					});
 		}
+		return CompletableFuture.completedFuture(SubmitResult.builder().team(team).build());
 	}
 
-	private CompletableFuture<CompileAndTestResult> compileAndTest(Team team, SourceMessage message, AssignmentState state, List<AssignmentFile> tests) {
+	private CompletableFuture<CompileAndTestResult> compileAndTest(Team team, SourceMessage message, List<AssignmentFile> tests) {
 		return compileService.compile(team, message)
 				.thenCompose(compileResult -> {
 					messageService.sendCompileFeedback(compileResult);
