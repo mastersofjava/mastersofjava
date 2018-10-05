@@ -14,14 +14,12 @@ public class Runtimes {
 	@Data
 	@ConfigurationProperties
 	public static final class Test {
-		private long timeout = 5;
 		private int threads = 3;
 	}
 
 	@Data
 	@ConfigurationProperties
 	public static final class Compile {
-		private long timeout = 5;
 		private int threads = 3;
 	}
 

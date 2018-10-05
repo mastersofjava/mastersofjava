@@ -38,7 +38,7 @@ public class WebConfiguration {
 		public void addResourceHandlers(ResourceHandlerRegistry registry) {
 			Path path = Paths.get(mojServerProperties.getDirectories().getJavadocDirectory());
 			if (!path.isAbsolute()) {
-				path = Paths.get(mojServerProperties.getDirectories().getBaseDirectory(),
+				path = mojServerProperties.getDirectories().getBaseDirectory().resolve(
 						mojServerProperties.getDirectories().getJavadocDirectory());
 				System.out.println("javadoc -> " + path.toAbsolutePath().toUri().toString());
 			}

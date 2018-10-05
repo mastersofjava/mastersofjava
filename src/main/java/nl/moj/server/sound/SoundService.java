@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import javax.sound.sampled.*;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -48,7 +47,9 @@ public class SoundService {
 
 		private SoundPlayer(Sound sound) throws LineUnavailableException {
 
-			this.song = Paths.get(mojServerProperties.getDirectories().getBaseDirectory(), mojServerProperties.getDirectories().getSoundDirectory(), sound.filename()).toAbsolutePath();
+			this.song = mojServerProperties.getDirectories().getBaseDirectory()
+					.resolve(mojServerProperties.getDirectories().getSoundDirectory())
+					.resolve(sound.filename()).toAbsolutePath();
 			clip = AudioSystem.getClip();
 		}
 

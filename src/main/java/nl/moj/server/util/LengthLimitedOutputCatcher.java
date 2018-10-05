@@ -1,6 +1,6 @@
 package nl.moj.server.util;
 
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.config.properties.Limits;
 import org.zeroturnaround.exec.stream.LogOutputStream;
 
 import static java.lang.Math.min;
@@ -21,12 +21,12 @@ public class LengthLimitedOutputCatcher extends LogOutputStream {
 	private final String outputTruncMessage;
 	private int lineCount = 0;
 
-	public LengthLimitedOutputCatcher(MojServerProperties mojServerProperties) {
-		this.maxSize = mojServerProperties.getLimits().getUnitTestOutput().getMaxChars();
-		this.maxLines = mojServerProperties.getLimits().getUnitTestOutput().getMaxFeedbackLines();
-		this.maxLineLenght = mojServerProperties.getLimits().getUnitTestOutput().getMaxLineLen();
-		this.lineTruncatedMessage = mojServerProperties.getLimits().getUnitTestOutput().getLineTruncatedMessage();
-		this.outputTruncMessage = mojServerProperties.getLimits().getUnitTestOutput().getOutputTruncMessage();
+	public LengthLimitedOutputCatcher(Limits.OutputLimits limits) {
+		this.maxSize = limits.getMaxChars();
+		this.maxLines = limits.getMaxFeedbackLines();
+		this.maxLineLenght = limits.getMaxLineLen();
+		this.lineTruncatedMessage = limits.getLineTruncatedMessage();
+		this.outputTruncMessage = limits.getOutputTruncMessage();
 	}
 
 	@Override

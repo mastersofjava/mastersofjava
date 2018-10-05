@@ -14,7 +14,9 @@ import java.util.List;
 public class SubmitResult {
 
 	private final Team team;
-	private final int remainingSubmits;
+
+	@Builder.Default
+	private final int remainingSubmits = 0;
 
 	@Builder.Default
 	private final long score = 0L;

@@ -7,7 +7,6 @@ import nl.moj.server.teams.repository.TeamRepository;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 @Service
@@ -18,8 +17,8 @@ public class TeamService {
 	private final TeamRepository teamRepository;
 
 	public Path getTeamDirectory(Team team) {
-		return Paths.get(mojServerProperties.getDirectories().getBaseDirectory(),
-				mojServerProperties.getDirectories().getTeamDirectory(), team.getName());
+		return mojServerProperties.getDirectories().getBaseDirectory().resolve(
+				mojServerProperties.getDirectories().getTeamDirectory()).resolve(team.getName());
 	}
 
 	public List<Team> getTeams() {
