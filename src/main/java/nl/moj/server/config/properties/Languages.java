@@ -1,6 +1,7 @@
 package nl.moj.server.config.properties;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.util.JavaVersionUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @Data
 @ConfigurationProperties(prefix = "moj.server.languages")
+@Slf4j
 public class Languages {
 
 	@NotEmpty
@@ -28,8 +30,7 @@ public class Languages {
 	
 	private boolean isAvailable(JavaVersion javaVersion ) {
 		return javaVersion.getCompiler().toFile().exists() &&
-				javaVersion.getRuntime().toFile().exists() &&
-				javaVersion.getVersion().equals(JavaVersionUtil.getRuntimeMajorVersion(javaVersion));
+				javaVersion.getRuntime().toFile().exists();
 	}
 
 	private JavaVersion javaHomeFallback(Integer version) {
@@ -44,10 +45,14 @@ public class Languages {
 			v.setVersion(JavaVersionUtil.getRuntimeMajorVersion(v));
 
 			if( version != null && version <= v.getVersion()) {
-				return v;
+				log.debug("Using JAVA_HOME since it if an appriopriate version");
+			} else {
+				log.warn("Unable to find runtime for Java version " + version + ", using the fallback version as found in JAVA_HOME which may be an incorrect version");
 			}
+			return v;
+		} else {
+			throw new IllegalArgumentException("No java version defined and no JAVA_HOME specified, cannot run without a javac/java...");
 		}
-		throw new IllegalArgumentException("Unable to find runtime for Java version " + version);
 	}
 
 	@Data
