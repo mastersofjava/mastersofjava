@@ -11,6 +11,11 @@ De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Inte
 - starten in Eclipse via Run as > Spring Boot App
 - commandline: `java - jar server-0.0.1-SNAPSHOT.jar`
 
+### Requirements
+
+- Java 11 of hoger
+- Maven 3.5 of hoger voor builden van source.
+
 ### Voorbereiding
 
 - pas in de `application.yaml` de property `moj.server.basedir` aan naar een pad op je lokale systeem, pas ook de `datasource.url` property aan.
