@@ -1,6 +1,7 @@
 package nl.moj.server.config.properties;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.util.JavaVersionUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -13,17 +14,29 @@ import java.util.List;
 
 @Data
 @ConfigurationProperties(prefix = "moj.server.languages")
+@Slf4j
 public class Languages {
 
 	@NotEmpty
 	private List<JavaVersion> javaVersions = new ArrayList<>();
 
 	public JavaVersion getJavaVersion(Integer version) {
+		
+		log.debug("Configured versions: ");
+		javaVersions.forEach( jv -> {
+			log.debug("Version " + jv.getVersion());
+			log.debug("  Compiler " + jv.getCompiler());
+			log.debug("  Runtime " + jv.getRuntime());
+			log.debug("  -> available =  " + isAvailable(jv));
+			log.debug("  -> version ok =  " + (jv.getVersion() >= version));
+			log.debug("  -> version runtime = " + JavaVersionUtil.getRuntimeMajorVersion(jv));
+		});
+		
 		return javaVersions.stream()
-				.filter(this::isAvailable)
+				.filter( this::isAvailable)
 				.filter( jv -> jv.getVersion() >= version)
 				.findFirst()
-				.orElse(javaHomeFallback(version));
+				.orElseGet( () -> javaHomeFallback(version));
 	}
 	
 	private boolean isAvailable(JavaVersion javaVersion ) {
@@ -44,10 +57,14 @@ public class Languages {
 			v.setVersion(JavaVersionUtil.getRuntimeMajorVersion(v));
 
 			if( version != null && version <= v.getVersion()) {
-				return v;
+				log.debug("Using JAVA_HOME since it if an appriopriate version");
+			} else {
+				log.warn("Unable to find runtime for Java version " + version + ", using the fallback version as found in JAVA_HOME which may be an incorrect version");
 			}
+			return v;
+		} else {
+			throw new IllegalArgumentException("No java version defined and no JAVA_HOME specified, cannot run without a javac/java...");
 		}
-		throw new IllegalArgumentException("Unable to find runtime for Java version " + version);
 	}
 
 	@Data

@@ -17,16 +17,16 @@ public class JavaVersionUtil {
 	public static Integer getRuntimeMajorVersion(Languages.JavaVersion javaVersion) {
 		try {
 			String e = runVersionCommand(javaVersion, "-fullversion");
-			if( e != null ){
+			if (e != null) {
 				Matcher m = VERSION.matcher(e);
-				if( m.find() ) {
+				if (m.find()) {
 					return parseVersion(m.group(1));
 				}
 			}
 			e = runVersionCommand(javaVersion, "-version");
-			if( e != null ) {
+			if (e != null) {
 				Matcher m = VERSION.matcher(e);
-				if( m.find() ) {
+				if (m.find()) {
 					return parseVersion(m.group(1));
 				}
 			}
@@ -54,7 +54,7 @@ public class JavaVersionUtil {
 	private static Integer parseVersion(String version) {
 		try {
 			return Runtime.Version.parse(version).feature();
-		} catch( Exception e ) {
+		} catch (Error e) {
 			return parsePre9Version(version);
 		}
 	}
