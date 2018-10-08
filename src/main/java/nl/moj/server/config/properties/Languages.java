@@ -1,18 +1,16 @@
 package nl.moj.server.config.properties;
 
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.util.JavaVersionUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import javax.validation.constraints.NotEmpty;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.validation.constraints.NotEmpty;
-
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.util.JavaVersionUtil;
 
 @Data
 @ConfigurationProperties(prefix = "moj.server.languages")
@@ -31,18 +29,20 @@ public class Languages {
 			log.debug("  Runtime " + jv.getRuntime());
 			log.debug("  -> available =  " + isAvailable(jv));
 			log.debug("  -> version ok =  " + (jv.getVersion() >= version));
+			log.debug("  -> version runtime = " + JavaVersionUtil.getRuntimeMajorVersion(jv));
 		});
 		
 		return javaVersions.stream()
 				.filter( this::isAvailable)
-				.filter( jv -> jv.getVersion() < version)
+				.filter( jv -> jv.getVersion() >= version)
 				.findFirst()
 				.orElseGet( () -> javaHomeFallback(version));
 	}
 	
 	private boolean isAvailable(JavaVersion javaVersion ) {
 		return javaVersion.getCompiler().toFile().exists() &&
-				javaVersion.getRuntime().toFile().exists();
+				javaVersion.getRuntime().toFile().exists() &&
+				javaVersion.getVersion().equals(JavaVersionUtil.getRuntimeMajorVersion(javaVersion));
 	}
 
 	private JavaVersion javaHomeFallback(Integer version) {
