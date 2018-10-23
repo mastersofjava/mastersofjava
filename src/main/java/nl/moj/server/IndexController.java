@@ -49,7 +49,7 @@ public class IndexController {
 		model.addAttribute("team", user.getName());
 		model.addAttribute("timeLeft", state.getTimeRemaining());
 		model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
-		model.addAttribute("testnames", state.getTestNames());
+		model.addAttribute("tests", state.getTestFiles());
 		model.addAttribute("files", files);
 		model.addAttribute("running", state.isRunning());
 		model.addAttribute("finished", state.getTeamStatus(team).isCompleted());

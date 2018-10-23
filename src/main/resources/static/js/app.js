@@ -114,6 +114,7 @@ function initializeCodeMirrors() {
 
             $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
                 function (e) {
+                    console.log('shown.bs.tab', e);
                     cm.refresh();
                 });
 
