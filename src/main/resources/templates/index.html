@@ -5,11 +5,11 @@
 
     <title>Masters of Java 2017</title>
 
-    <link rel="stylesheet" th:href="@{/webjars/codemirror-minified/addon/hint/show-hint.css}"/>
-    <link rel="stylesheet" th:href="@{/webjars/codemirror-minified/lib/codemirror.css}"/>
-    <link rel="stylesheet" th:href="@{/webjars/jquery-ui-themes/smoothness/jquery-ui.min.css}"/>
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
-          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/codemirror/addon/hint/show-hint.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/codemirror/lib/codemirror.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
     <link rel="stylesheet" th:href="@{/css/index.css}"/>
 
     <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/apple-touch-icon.png}" href="/static/images/apple-touch-icon.png" />
@@ -51,17 +51,25 @@
                     </div>
                 </div>
                 <div th:unless="${finished}" id="tabs">
-                    <ul class="nav nav-tabs" role="tablist">
+                    <ul class="nav nav-pills" role="tablist">
                         <!--/*@thymesVar id="files" type="java.util.List<nl.moj.server.files.AssignmentFile>"*/-->
                         <li class="nav-item" th:each="file,status : ${files}">
                             <a class="nav-link"
                                th:classappend="${(status.index==0?'active':'') + (file.readOnly?'':' editable')}"
-                               th:id="${file.uuid}"
+                               th:id="${'but-'+file.uuid}"
                                th:href="${'#tab-'+file.uuid}" data-toggle="tab"
-                               th:text="${file.shortName}"></a>
+                            >
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}" class="fas fa-tasks"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).EDIT}" class="fas fa-code"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).READONLY}" class="fas fa-code"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).RESOURCE}" class="fas fa-code"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TEST}" class="fas fa-vial"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TEST_RESOURCE}" class="fas fa-vial"></span>
+                                <span th:text="${file.shortName}"></span>
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="output" href="#output-tab" data-toggle="tab">Output</a>
+                            <a class="nav-link" id="output" href="#output-tab" data-toggle="tab"><span class="fas fa-terminal"></span> Output</a>
                         </li>
                     </ul>
                     <div class="tab-content">
@@ -184,7 +192,7 @@
             </div>
             <div class="modal-footer">
                 <button type="cancel-submit" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-				<button id="submit" class="btn w-50 btn-danger" th:disabled="${finished}">SUBMIT</button>
+                <button id="submit" class="btn w-50 btn-danger" th:disabled="${finished}">SUBMIT</button>
             </div>
         </div>
     </div>
@@ -192,15 +200,15 @@
 
 
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/popper.js/dist/umd/popper.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/jquery-ui/jquery-ui.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 
-<script type="text/javascript" th:src="@{/webjars/codemirror-minified/lib/codemirror.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/codemirror-minified/addon/edit/matchbrackets.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/codemirror-minified/addon/selection/active-line.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/codemirror-minified/addon/hint/show-hint.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/codemirror-minified/mode/clike/clike.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/lib/codemirror.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/addon/edit/matchbrackets.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/addon/selection/active-line.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/addon/hint/show-hint.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/mode/clike/clike.js}"></script>
 
 <script type="text/javascript" th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
