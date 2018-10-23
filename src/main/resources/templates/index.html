@@ -56,7 +56,7 @@
                         <li class="nav-item" th:each="file,status : ${files}">
                             <a class="nav-link"
                                th:classappend="${(status.index==0?'active':'') + (file.readOnly?'':' editable')}"
-                               th:id="${file.uuid}"
+                               th:id="${'but-'+file.uuid}"
                                th:href="${'#tab-'+file.uuid}" data-toggle="tab"
                             >
                                 <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}" class="fas fa-tasks"></span>
