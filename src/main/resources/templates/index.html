@@ -5,6 +5,8 @@
 
     <title>Masters of Java 2017</title>
 
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/fontawesome.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/codemirror/addon/hint/show-hint.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/codemirror/lib/codemirror.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
@@ -49,7 +51,7 @@
                     </div>
                 </div>
                 <div th:unless="${finished}" id="tabs">
-                    <ul class="nav nav-tabs" role="tablist">
+                    <ul class="nav nav-pills" role="tablist">
                         <!--/*@thymesVar id="files" type="java.util.List<nl.moj.server.files.AssignmentFile>"*/-->
                         <li class="nav-item" th:each="file,status : ${files}">
                             <a class="nav-link"
@@ -57,11 +59,17 @@
                                th:id="${file.uuid}"
                                th:href="${'#tab-'+file.uuid}" data-toggle="tab"
                             >
-                                [[${file.shortName}]]
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}" class="fas fa-tasks"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).EDIT}" class="fas fa-code"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).READONLY}" class="fas fa-code"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).RESOURCE}" class="fas fa-code"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TEST}" class="fas fa-vial"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TEST_RESOURCE}" class="fas fa-vial"></span>
+                                <span th:text="${file.shortName}"></span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="output" href="#output-tab" data-toggle="tab">Output</a>
+                            <a class="nav-link" id="output" href="#output-tab" data-toggle="tab"><span class="fas fa-terminal"></span> Output</a>
                         </li>
                     </ul>
                     <div class="tab-content">

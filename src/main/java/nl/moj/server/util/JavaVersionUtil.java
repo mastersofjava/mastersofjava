@@ -54,7 +54,7 @@ public class JavaVersionUtil {
 	private static Integer parseVersion(String version) {
 		try {
 			return Runtime.Version.parse(version).feature();
-		} catch (Error e) {
+		} catch (Throwable e) {
 			return parsePre9Version(version);
 		}
 	}
