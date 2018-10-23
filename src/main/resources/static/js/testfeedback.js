@@ -63,16 +63,16 @@ function process(message) {
             row.removeClass('table-danger')
             row.addClass('table-success')
         }
-        testTd.removeClass('fa fa-close');
-        testTd.addClass('fa fa-check');
+        testTd.removeClass('fas fa-times');
+        testTd.addClass('fas fa-check');
         testTd.css('color', 'green');
     } else {
         if (submit) {
             row.removeClass('table-success')
             row.addClass('table-danger')
         }
-        testTd.removeClass('fa fa-check');
-        testTd.addClass('fa fa-close');
+        testTd.removeClass('fas fa-check');
+        testTd.addClass('fas fa-times');
         testTd.css('color', 'red');
     }
 }

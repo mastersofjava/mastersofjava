@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>Masters of Java 2017</title>
+    <title>Masters of Java 2018</title>
 
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
           href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
@@ -60,7 +60,7 @@
                 </div>
                 <div class="form-group">
                     <label for="country">Country</label>
-                    <select th:field="*{country}" class="form-control">
+                    <select id="country" th:field="*{country}" class="form-control">
                         <option value="België">België</option>
                         <option value="Nederland">Nederland</option>
                     </select>
@@ -84,7 +84,7 @@
 </div>
 
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/popper.js/dist/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 
 </body>

@@ -5,10 +5,9 @@
 
     <title>Masters of Java 2018 Ranking</title>
 
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
-          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
-    <link rel="stylesheet" th:href="@{/webjars/font-awesome/4.7.0/css/font-awesome.min.css}"
-          href="/webjars/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
     <link rel="stylesheet" th:href="@{/css/rankings.css}" href="/static/css/rankings.css"/>
 
     <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/apple-touch-icon.png}"
@@ -68,7 +67,7 @@
                             <th></th>
                             <th class="text-center">Team</th>
                             <th class="text-center" th:each="a,iterStat : ${oas}">
-                                #[[${iterStat.count}]] <span class="fa fa-question-circle grey" data-container="body"
+                                #[[${iterStat.count}]] <span class="fas fa-question-circle grey" data-container="body"
                                                              data-trigger="hover" data-toggle="popover"
                                                              data-placement="top"
                                                              th:attrappend="data-content=${a.getAssignment().getName()}"></span></th>
@@ -99,7 +98,7 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body"
+                    <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
                                                               data-trigger="hover" data-toggle="popover"
                                                               data-placement="top"
                                                               data-content="You can hover over the scores to see the individual assignment breakdown."></span>
@@ -123,7 +122,7 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body"
+                    <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
                                                               data-trigger="hover" data-toggle="popover"
                                                               data-placement="top"
                                                               data-content="You can hover over the scores to see the individual assignment breakdown."></span>
@@ -148,7 +147,7 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body"
+                    <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
                                                               data-trigger="hover" data-toggle="popover"
                                                               data-placement="top"
                                                               data-content="You can hover over the scores to see the individual assignment breakdown."></span>
@@ -173,7 +172,7 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body"
+                    <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
                                                               data-trigger="hover" data-toggle="popover"
                                                               data-placement="top"
                                                               data-content="You can hover over the scores to see the individual assignment breakdown."></span>
@@ -203,7 +202,7 @@
 </div>
 
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/popper.js/dist/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 
 <script type="text/javascript" th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
