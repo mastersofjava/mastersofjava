@@ -9,6 +9,7 @@ import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.PathUtil;
@@ -67,9 +68,17 @@ public abstract class BaseRuntimeTest {
 		dbUtil.cleanup();
 	}
 
+	protected Team addTeam() {
+		Team team = new Team();
+		team.setName(UUID.randomUUID().toString());
+		team.setRole(Role.ROLE_USER);
+		return teamRepository.save(team);
+	}
+
 	private Competition createCompetition() {
 		team = new Team();
 		team.setName(UUID.randomUUID().toString());
+		team.setRole(Role.ROLE_USER);
 		teamRepository.save(team);
 
 		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/runtime/assignments"));
