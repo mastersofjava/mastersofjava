@@ -14,7 +14,7 @@ import java.util.List;
 @Repository
 public interface ResultRepository extends JpaRepository<Result, Long> {
 
-	@Query("SELECT SUM(r.score) FROM Result r WHERE r.team = :team AND r.competitionSession = :session")
+	@Query("SELECT COALESCE(SUM(r.score),0) FROM Result r WHERE r.team = :team AND r.competitionSession = :session")
 	Integer getTotalScore(@Param("team") Team team, @Param("session") CompetitionSession session);
 
 	List<Result> findAllByOrderByTeamNameAsc();
