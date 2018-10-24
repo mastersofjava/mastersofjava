@@ -97,7 +97,7 @@ public class ScoreService {
 		result.setCredit(score.getInitialScore().intValue());
 		result.setPenalty(score.getTotalPenalty().intValue());
 		resultRepository.save(result);
-		log.debug("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, team.getName(), assignment.getName());
+		log.info("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, team.getName(), assignment.getName());
 	}
 
 	public Score calculateScore(Team team, AssignmentState state, boolean success) {
