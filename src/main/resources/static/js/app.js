@@ -109,11 +109,12 @@ function initializeCodeMirrors() {
                 'readonly': cm.isReadOnly(),
                 'name': $(this).attr('data-cm-name'),
                 'textarea': this,
-                'uuid': $(this).attr('data-cm')
+                'uuid': $(this).attr('data-cm-id')
             });
 
             $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
                 function (e) {
+                    console.log('shown.bs.tab', e);
                     cm.refresh();
                 });
 

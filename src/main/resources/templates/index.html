@@ -56,7 +56,7 @@
                         <li class="nav-item" th:each="file,status : ${files}">
                             <a class="nav-link"
                                th:classappend="${(status.index==0?'active':'') + (file.readOnly?'':' editable')}"
-                               th:id="${'but-'+file.uuid}"
+                               th:id="${'cm-'+file.uuid}"
                                th:href="${'#tab-'+file.uuid}" data-toggle="tab"
                             >
                                 <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}" class="fas fa-tasks"></span>
@@ -76,7 +76,7 @@
                         <div class="tab-pane" th:classappend="${status.index==0?'show active':''}" role="tabpanel"
                              th:each="file,status : ${files}" th:id="${'tab-'+file.uuid}">
                             <div class="tab-pane-content">
-                                <textarea th:attr="data-cm=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
+                                <textarea th:attr="data-cm=${'cm-'+file.uuid},data-cm-id=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
                                           th:utext="${file.getContentAsString()}"></textarea>
                             </div>
                         </div>
@@ -159,10 +159,10 @@
             <div class="modal-body">
                 <p>Please select the tests you want to run.</p>
                 <form>
-                    <div class="form-check" th:each="testname : ${testnames}">
+                    <div class="form-check" th:each="test : ${tests}">
                         <label class="form-check-label">
-                            <input name="test" class="form-check-input" type="checkbox" th:value="${testname}" checked="true">
-                            [[${testname}]]
+                            <input name="test" class="form-check-input" type="checkbox" th:value="${test.uuid}" checked="true">
+                            [[${test.shortName}]]
                         </label>
                     </div>
                 </form>

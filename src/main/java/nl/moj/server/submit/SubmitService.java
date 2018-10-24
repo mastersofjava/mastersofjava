@@ -106,7 +106,7 @@ public class SubmitService {
 				.thenCompose(compileResult -> {
 					messageService.sendCompileFeedback(compileResult);
 					if (compileResult.isSuccessful()) {
-						return allTests(team, tests)
+						return allTests(team, tests.stream().filter( t -> message.getTests().contains(t.getUuid().toString())).collect(Collectors.toList()))
 								.thenApply(
 										testResults -> CompileAndTestResult.builder()
 												.compileResult(compileResult)
