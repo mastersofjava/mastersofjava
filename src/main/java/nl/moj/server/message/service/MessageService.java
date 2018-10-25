@@ -5,6 +5,7 @@ import nl.moj.server.TaskControlController.TaskMessage;
 import nl.moj.server.compiler.CompileResult;
 import nl.moj.server.message.model.*;
 import nl.moj.server.submit.SubmitResult;
+import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.TestResult;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -27,19 +28,19 @@ public class MessageService {
 	}
 
 	public void sendTestFeedback(TestResult tr) {
-		TestFeedbackMessage msg = TestFeedbackMessage.builder()
+		TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder()
 				.success(tr.isSuccessful())
-				.team(tr.getTeam().getName())
+				.uuid(tr.getTeam().getUuid())
 				.test(tr.getTestName())
 				.message(tr.getMessage())
 				.build();
 		log.info("Sending test results: {}", msg);
-		template.convertAndSendToUser(msg.getTeam(), DEST_COMPETITION, msg);
+		template.convertAndSendToUser(tr.getTeam().getName(), DEST_COMPETITION, msg);
 		template.convertAndSend(DEST_TESTRESULTS, msg);
 	}
 
 	public void sendSubmitFeedback(SubmitResult submitResult) {
-		SubmitFeedbackMessage msg = SubmitFeedbackMessage.builder()
+		TeamSubmitFeedbackMessage msg = TeamSubmitFeedbackMessage.builder()
 				.score(submitResult.getScore())
 				.remainingSubmits(submitResult.getRemainingSubmits())
 				.team(submitResult.getTeam().getName())
@@ -54,7 +55,7 @@ public class MessageService {
 	}
 
 	public void sendCompileFeedback(CompileResult result) {
-		CompileFeedbackMessage msg = CompileFeedbackMessage.builder()
+		TeamCompileFeedbackMessage msg = TeamCompileFeedbackMessage.builder()
 				.success(result.isSuccessful())
 				.team(result.getTeam().getName())
 				.message(result.getMessage())
@@ -87,4 +88,10 @@ public class MessageService {
 		}
 	}
 
+	public void sendTeamStartedTesting(Team team) {
+		log.info("Sending team '{}' started testing.", team.getName());
+		template.convertAndSend(DEST_TESTRESULTS, TeamStartedTestingMessage.builder()
+				.uuid(team.getUuid())
+				.build());
+	}
 }

@@ -1,4 +1,4 @@
-package nl.moj.server;
+package nl.moj.server.login;
 
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.UUID;
 
 import static nl.moj.server.teams.model.Role.ROLE_USER;
 
@@ -42,24 +43,33 @@ public class LoginController {
     }
 
     @PostMapping("/register")
-    public String registerSubmit(Model model, @ModelAttribute Team team) {
-    	if (team.getName() == ""|| team.getPassword() == ""|| team.getCpassword() == "") {
+    public String registerSubmit(Model model, @ModelAttribute SignupForm form) {
+    	if (form.getName() == ""|| form.getPassword() == ""|| form.getPasswordCheck() == "") {
     		model.addAttribute("errors", "Not all fields are filled in");
     		return "register";
     	}
-    	if (teamRepository.findByName(team.getName()) != null) {
+    	if (teamRepository.findByName(form.getName()) != null) {
     		model.addAttribute("errors", "Name already in use");
     		return "register";
     	}
-    	if (!team.getCpassword().equals(team.getPassword())) {
+    	if (!form.getPasswordCheck().equals(form.getPassword())) {
     		model.addAttribute("errors", "Passwords don't match");
     		return "register";
     	}
-    	team.setRole(ROLE_USER);
-    	team.setPassword(encoder.encode(team.getPassword()));
+
+		SecurityContext context = SecurityContextHolder.getContext();
+		UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(form.getName(), form.getPassword(), Arrays.asList(new SimpleGrantedAuthority(ROLE_USER.toString())));
+
+    	Team team = Team.builder()
+				.company(form.getCompany())
+				.country(form.getCountry())
+				.name(form.getName())
+				.password(encoder.encode(form.getPassword()))
+    	        .role(ROLE_USER)
+				.uuid(UUID.randomUUID())
+				.build();
+
         teamRepository.save(team);
-    	SecurityContext context = SecurityContextHolder.getContext();
-    	UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(team.getName(), team.getPassword(), Arrays.asList(new SimpleGrantedAuthority(ROLE_USER.toString())));
     	context.setAuthentication(authentication);
     	Path teamdir = mojServerProperties.getDirectories().getBaseDirectory()
 				.resolve(mojServerProperties.getDirectories().getTeamDirectory())
@@ -76,7 +86,7 @@ public class LoginController {
     
     @GetMapping("/register")
     public String registrationForm(Model model) {
-        model.addAttribute("team", new Team());
+        model.addAttribute("form", new SignupForm());
         return "register";
     }
     

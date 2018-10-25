@@ -7,12 +7,12 @@ import lombok.ToString;
 @Getter
 @ToString
 @Builder
-public class TestFeedbackMessage {
+public class TeamSubmitFeedbackMessage {
 
-	private final MessageType messageType = MessageType.TEST;
+	private final MessageType messageType = MessageType.SUBMIT;
 	private final String team;
 	private final String message;
-	private final String test;
 	private final boolean success;
-
+    private final long score;
+    private final int remainingSubmits;
 }

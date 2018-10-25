@@ -70,16 +70,14 @@ public abstract class BaseRuntimeTest {
 
 	protected Team addTeam() {
 		Team team = new Team();
-		team.setName(UUID.randomUUID().toString());
+		team.setUuid(UUID.randomUUID());
+		team.setName(team.getUuid().toString());
 		team.setRole(Role.ROLE_USER);
 		return teamRepository.save(team);
 	}
 
 	private Competition createCompetition() {
-		team = new Team();
-		team.setName(UUID.randomUUID().toString());
-		team.setRole(Role.ROLE_USER);
-		teamRepository.save(team);
+		team = addTeam();
 
 		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/runtime/assignments"));
 		AtomicInteger count = new AtomicInteger(0);

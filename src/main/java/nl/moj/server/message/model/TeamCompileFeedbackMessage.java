@@ -7,7 +7,7 @@ import lombok.ToString;
 @Getter
 @ToString
 @Builder
-public class CompileFeedbackMessage {
+public class TeamCompileFeedbackMessage {
 
     private final MessageType messageType = MessageType.COMPILE;
     private final boolean success;
