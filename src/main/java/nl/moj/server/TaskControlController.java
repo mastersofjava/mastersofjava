@@ -153,7 +153,7 @@ public class TaskControlController {
 			List<Result> allResults = resultRepository.findAllByOrderByTeamNameAsc();
 			allResults.forEach((r) -> {
 				try {
-					printer.printRecord(r.getTeam(), r.getAssignment(), r.getScore(), r.getPenalty(), r.getCredit());
+					printer.printRecord(r.getTeam().getUuid(), r.getTeam().getName(), r.getAssignment(), r.getScore(), r.getPenalty(), r.getCredit());
 				} catch (IOException e) {
 					log.error(e.getMessage(), e);
 				}
@@ -187,11 +187,14 @@ public class TaskControlController {
 				Iterable<CSVRecord> records = CSVFormat.DEFAULT.withHeader(TeamHeaders.class).withFirstRecordAsHeader()
 						.parse(in);
 				for (CSVRecord r : records) {
-					Team t = new Team(r.get(TeamHeaders.NAME), ROLE_USER, r.get(TeamHeaders.COUNTRY),
-							r.get(TeamHeaders.COMPANY));
+					Team t = Team.builder()
+							.uuid(UUID.fromString(r.get(TeamHeaders.ID)))
+							.name(r.get(TeamHeaders.NAME))
+							.company(r.get(TeamHeaders.COMPANY))
+							.country(r.get(TeamHeaders.COUNTRY))
+							.build();
 					teamRepository.save(t);
 				}
-
 			}
 
 		} catch (IllegalStateException | IOException e) {
@@ -202,7 +205,7 @@ public class TaskControlController {
 
 	private Result createResultFromRecord( CSVRecord record ) {
 		Result r = new Result();
-		r.setTeam(teamRepository.findByName(record.get(ResultHeaders.TEAM)));
+		r.setTeam(teamRepository.findByUuid(UUID.fromString(record.get(ResultHeaders.TEAM_ID))));
 		r.setCompetitionSession(competition.getCompetitionSession());
 		r.setAssignment(assignmentRepository.findByName(record.get(ResultHeaders.ASSIGNMENT)));
 		r.setCredit(Integer.valueOf(record.get(ResultHeaders.CREDIT)));
@@ -220,7 +223,7 @@ public class TaskControlController {
 			List<Team> allTeams = teamRepository.findAllByRole(ROLE_USER);
 			allTeams.forEach((t) -> {
 				try {
-					printer.printRecord(t.getName(), t.getCompany(), t.getCountry());
+					printer.printRecord(t.getUuid(),t.getName(), t.getCompany(), t.getCountry());
 				} catch (IOException e) {
 					log.error(e.getMessage(), e);
 				}
@@ -231,11 +234,11 @@ public class TaskControlController {
 	}
 
 	private enum ResultHeaders {
-		TEAM, ASSIGNMENT, SCORE, PENALTY, CREDIT
+		TEAM_ID, TEAM, ASSIGNMENT, SCORE, PENALTY, CREDIT
 	}
 
 	private enum TeamHeaders {
-		NAME, COMPANY, COUNTRY
+		ID, NAME, COMPANY, COUNTRY
 	}
 
 	public static class TaskMessage {

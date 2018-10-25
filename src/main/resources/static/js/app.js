@@ -19,7 +19,6 @@ function connectCompetition() {
         stomp.subscribe('/user/queue/competition',
             function (data) {
                 var msg = JSON.parse(data.body);
-                console.log('received:',msg);
                 if (userHandlers.hasOwnProperty(msg.messageType)) {
                     userHandlers[msg.messageType](msg);
                 }
@@ -27,7 +26,6 @@ function connectCompetition() {
         stomp.subscribe("/queue/competition",
             function (data) {
                 var msg = JSON.parse(data.body);
-                console.log('received:',msg);
                 if (handlers.hasOwnProperty(msg.messageType)) {
                     handlers[msg.messageType](msg);
                 }

@@ -123,6 +123,7 @@ public class SubmitService {
 
 	@SuppressWarnings("unchecked")
 	private CompletableFuture<List<TestResult>> allTests(Team team, List<AssignmentFile> tests) {
+		messageService.sendTeamStartedTesting(team);
 		List<CompletableFuture<TestResult>> cfs = new ArrayList<>();
 		tests.forEach(t -> cfs.add(testService.runTest(team, t)
 				.thenApply(tr -> {
