@@ -77,7 +77,8 @@ public abstract class BaseRuntimeTest {
 
 	private Competition createCompetition() {
 		team = new Team();
-		team.setName(UUID.randomUUID().toString());
+		team.setUuid(UUID.randomUUID());
+		team.setName(team.getUuid().toString());
 		team.setRole(Role.ROLE_USER);
 		teamRepository.save(team);
 
