@@ -4,7 +4,35 @@ $(document).ready(function () {
     connectFeedback();
     connectControl();
     initializeAssignmentClock();
+    initSubmissions();
 });
+
+function initSubmissions() {
+    $('tr[data-team]').click(function (e) {
+        e.preventDefault()
+        var uuid = $(this).attr('data-team');
+        $.getJSON('/feedback/submission/' + uuid, function (data) {
+            console.log(data);
+            $tabs = createTabs(data);
+            $('#show-submission-modal .modal-body')
+                .empty().append($tabs);
+            $('#show-submission-modal').modal('show');
+        });
+    });
+}
+
+function createTabs(data) {
+
+    var $div = $('<div>');
+    var $ul = $('<ul class="nav nav-pills" role="tablist">');
+    var $panes = $('<div class="tab-content">');
+    $div.append($ul).append($panes);
+    data.files.forEach(function (f, idx) {
+        $ul.append('<li class="nav-item"><a class="nav-link" href="#tab-' + idx + '" data-toggle="tab" role="tab"><span>' + f.filename + '</span></a></li>');
+        $panes.append('<div class="tab-pane fade' + (idx === 0 ? ' show active' : '' + '') + '" role="tabpanel" id="tab-'+idx+'"><div class="tab-pane-content"><pre>' + f.content + '</pre></div></div>');
+    });
+    return $div;
+}
 
 function connectFeedback() {
 
@@ -64,14 +92,14 @@ function connectControl() {
 
 function startTesting(msg) {
     var uuid = msg.uuid;
-    var $team = $('tr[data-team='+uuid+']');
+    var $team = $('tr[data-team=' + uuid + ']');
 
     $team.removeClass('table-danger table-success');
     $team.addClass('table-info')
-    setTimeout(function(){
+    setTimeout(function () {
         $team.removeClass('table-info')
-    },500);
-    $('span',$team )
+    }, 500);
+    $('span', $team)
         .removeClass('fa-check fa-times fas');
 
 }
@@ -81,8 +109,8 @@ function process(message) {
     var test = message.test;
     var submit = message.messageType === 'SUBMIT';
     var id = team + '-' + test;
-    var $team = $('tr[data-team='+team+']');
-    var $test = $('span[data-test=' + id +' ]');
+    var $team = $('tr[data-team=' + team + ']');
+    var $test = $('span[data-test=' + id + ' ]');
     console.log($team, $test);
     if (message.success) {
         if (submit) {
