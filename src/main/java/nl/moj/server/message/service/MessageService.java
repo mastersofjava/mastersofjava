@@ -43,6 +43,7 @@ public class MessageService {
 		TeamSubmitFeedbackMessage msg = TeamSubmitFeedbackMessage.builder()
 				.score(submitResult.getScore())
 				.remainingSubmits(submitResult.getRemainingSubmits())
+				.uuid(submitResult.getTeam().getUuid())
 				.team(submitResult.getTeam().getName())
 				.success(submitResult.isSuccess())
 				.message("TODO")

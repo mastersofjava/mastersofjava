@@ -39,4 +39,4 @@ assignment-files:
     tests:
     - TestVirtualCPU.java
   solution:
-  - src/main/resources/workloadbalancerCase.solution
+  - src/main/resources/VirtualCPUCase.solution
