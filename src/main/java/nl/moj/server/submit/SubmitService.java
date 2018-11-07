@@ -69,6 +69,7 @@ public class SubmitService {
 		if (competition.getAssignmentState().isSubmitAllowedForTeam(team)) {
 			competition.registerSubmit(team);
 			AssignmentState state = competition.getAssignmentState();
+			message.setTests(state.getSubmitTestFiles().stream().map( t -> t.getUuid().toString()).collect(Collectors.toList()));
 			return compileAndTest(team, message, state.getSubmitTestFiles())
 					.thenApply(ctr -> {
 						SubmitResult result = SubmitResult.builder()
