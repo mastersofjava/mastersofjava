@@ -49,6 +49,8 @@ function connectCompetition() {
     userHandlers['SUBMIT'] = function (msg) {
         if( !msg.success && msg.remainingSubmits > 0) {
             enable();
+        } else {
+            disable();
         }
         updateSubmits(msg.remainingSubmits);
         updateAlertContainerWithScore(msg);
