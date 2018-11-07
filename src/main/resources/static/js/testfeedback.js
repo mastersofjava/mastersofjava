@@ -12,11 +12,26 @@ function connectFeedback() {
     var stompClient = Stomp.over(socket);
     stompClient.debug = null;
     stompClient.connect({}, function (frame) {
-        stompClient.subscribe('/queue/feedbackpage', function (messageOutput) {
-            var message = JSON.parse(messageOutput.body)
-            process(message);
-        });
+        stompClient.subscribe('/queue/feedbackpage',
+            function (data) {
+                var msg = JSON.parse(data.body);
+                console.log("received", msg);
+                if (handlers.hasOwnProperty(msg.messageType)) {
+                    handlers[msg.messageType](msg);
+                }
+            });
     });
+
+    var handlers = {};
+    handlers['SUBMIT'] = function (msg) {
+        process(msg);
+    };
+    handlers['TEST'] = function (msg) {
+        process(msg);
+    };
+    handlers['TEAM_STARTED_TESTING'] = function (msg) {
+        startTesting(msg);
+    };
 }
 
 function connectControl() {
@@ -47,33 +62,44 @@ function connectControl() {
     });
 }
 
+function startTesting(msg) {
+    var uuid = msg.uuid;
+    var $team = $('tr[data-team='+uuid+']');
+
+    $team.removeClass('table-danger table-success');
+    $team.addClass('table-info')
+    setTimeout(function(){
+        $team.removeClass('table-info')
+    },500);
+    $('span',$team )
+        .removeClass('fa-check fa-times fas');
+
+}
+
 function process(message) {
-    var team = message.team;
+    var team = message.uuid;
     var test = message.test;
     var submit = message.messageType === 'SUBMIT';
     var id = team + '-' + test;
-
-    var testTd = $('#' + id);
-    var teamTd = $('td').filter(function () {
-        return $(this).text() === team
-    });
-    var row = teamTd.closest($('tr'));
+    var $team = $('tr[data-team='+team+']');
+    var $test = $('span[data-test=' + id +' ]');
+    console.log($team, $test);
     if (message.success) {
         if (submit) {
-            row.removeClass('table-danger')
-            row.addClass('table-success')
+            $team.removeClass('table-danger')
+            $team.addClass('table-success')
         }
-        testTd.removeClass('fa fa-close');
-        testTd.addClass('fa fa-check');
-        testTd.css('color', 'green');
+        $test.removeClass('fas fa-times');
+        $test.addClass('fas fa-check');
+        $test.css('color', 'green');
     } else {
         if (submit) {
-            row.removeClass('table-success')
-            row.addClass('table-danger')
+            $team.removeClass('table-success')
+            $team.addClass('table-danger')
         }
-        testTd.removeClass('fa fa-check');
-        testTd.addClass('fa fa-close');
-        testTd.css('color', 'red');
+        $test.removeClass('fas fa-check');
+        $test.addClass('fas fa-times');
+        $test.css('color', 'red');
     }
 }
 

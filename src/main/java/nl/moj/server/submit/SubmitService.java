@@ -69,6 +69,7 @@ public class SubmitService {
 		if (competition.getAssignmentState().isSubmitAllowedForTeam(team)) {
 			competition.registerSubmit(team);
 			AssignmentState state = competition.getAssignmentState();
+			message.setTests(state.getSubmitTestFiles().stream().map( t -> t.getUuid().toString()).collect(Collectors.toList()));
 			return compileAndTest(team, message, state.getSubmitTestFiles())
 					.thenApply(ctr -> {
 						SubmitResult result = SubmitResult.builder()
@@ -106,7 +107,7 @@ public class SubmitService {
 				.thenCompose(compileResult -> {
 					messageService.sendCompileFeedback(compileResult);
 					if (compileResult.isSuccessful()) {
-						return allTests(team, tests)
+						return allTests(team, tests.stream().filter( t -> message.getTests().contains(t.getUuid().toString())).collect(Collectors.toList()))
 								.thenApply(
 										testResults -> CompileAndTestResult.builder()
 												.compileResult(compileResult)
@@ -123,6 +124,7 @@ public class SubmitService {
 
 	@SuppressWarnings("unchecked")
 	private CompletableFuture<List<TestResult>> allTests(Team team, List<AssignmentFile> tests) {
+		messageService.sendTeamStartedTesting(team);
 		List<CompletableFuture<TestResult>> cfs = new ArrayList<>();
 		tests.forEach(t -> cfs.add(testService.runTest(team, t)
 				.thenApply(tr -> {

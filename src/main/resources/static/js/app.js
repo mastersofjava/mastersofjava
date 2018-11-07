@@ -19,7 +19,6 @@ function connectCompetition() {
         stomp.subscribe('/user/queue/competition',
             function (data) {
                 var msg = JSON.parse(data.body);
-                console.log('received:',msg);
                 if (userHandlers.hasOwnProperty(msg.messageType)) {
                     userHandlers[msg.messageType](msg);
                 }
@@ -27,7 +26,6 @@ function connectCompetition() {
         stomp.subscribe("/queue/competition",
             function (data) {
                 var msg = JSON.parse(data.body);
-                console.log('received:',msg);
                 if (handlers.hasOwnProperty(msg.messageType)) {
                     handlers[msg.messageType](msg);
                 }
@@ -51,6 +49,8 @@ function connectCompetition() {
     userHandlers['SUBMIT'] = function (msg) {
         if( !msg.success && msg.remainingSubmits > 0) {
             enable();
+        } else {
+            disable();
         }
         updateSubmits(msg.remainingSubmits);
         updateAlertContainerWithScore(msg);
@@ -109,11 +109,12 @@ function initializeCodeMirrors() {
                 'readonly': cm.isReadOnly(),
                 'name': $(this).attr('data-cm-name'),
                 'textarea': this,
-                'uuid': $(this).attr('data-cm')
+                'uuid': $(this).attr('data-cm-id')
             });
 
             $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
                 function (e) {
+                    console.log('shown.bs.tab', e);
                     cm.refresh();
                 });
 

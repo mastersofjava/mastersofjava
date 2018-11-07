@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
 
-    <title>Masters of Java 2017</title>
+    <title>Masters of Java 2018</title>
 
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/solid.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/fontawesome.min.css}"/>
@@ -56,7 +56,7 @@
                         <li class="nav-item" th:each="file,status : ${files}">
                             <a class="nav-link"
                                th:classappend="${(status.index==0?'active':'') + (file.readOnly?'':' editable')}"
-                               th:id="${'but-'+file.uuid}"
+                               th:id="${'cm-'+file.uuid}"
                                th:href="${'#tab-'+file.uuid}" data-toggle="tab"
                             >
                                 <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}" class="fas fa-tasks"></span>
@@ -76,7 +76,7 @@
                         <div class="tab-pane" th:classappend="${status.index==0?'show active':''}" role="tabpanel"
                              th:each="file,status : ${files}" th:id="${'tab-'+file.uuid}">
                             <div class="tab-pane-content">
-                                <textarea th:attr="data-cm=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
+                                <textarea th:attr="data-cm=${'cm-'+file.uuid},data-cm-id=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
                                           th:utext="${file.getContentAsString()}"></textarea>
                             </div>
                         </div>
@@ -91,8 +91,8 @@
 
         <div class="col-3 d-flex flex-column">
             <div class="p-2 align-self-center">
-                <img th:src="@{/images/moj_logo_128x97_2017.png}" class="img-fluid"
-                     src="/static/images/moj_logo_128x97_2017.png"/>
+                <img width="128" height="97" th:src="@{/images/moj_logo.png}" class="img-fluid"
+                     src="/static/images/moj_logo.png"/>
             </div>
             <div class="p-2 align-self-center">
                 <h2>Team: [[${team}]]</h2>
@@ -159,10 +159,10 @@
             <div class="modal-body">
                 <p>Please select the tests you want to run.</p>
                 <form>
-                    <div class="form-check" th:each="testname : ${testnames}">
+                    <div class="form-check" th:each="test : ${tests}">
                         <label class="form-check-label">
-                            <input name="test" class="form-check-input" type="checkbox" th:value="${testname}" checked="true">
-                            [[${testname}]]
+                            <input name="test" class="form-check-input" type="checkbox" th:value="${test.uuid}" checked="true">
+                            [[${test.shortName}]]
                         </label>
                     </div>
                 </form>
@@ -192,7 +192,7 @@
             </div>
             <div class="modal-footer">
                 <button type="cancel-submit" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-				<button id="submit" class="btn w-50 btn-danger" th:disabled="${finished}">SUBMIT</button>
+                <button id="submit" class="btn w-50 btn-danger" th:disabled="${finished}">SUBMIT</button>
             </div>
         </div>
     </div>
@@ -201,7 +201,7 @@
 
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/jquery-ui/jquery-ui.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/popper.js/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 
 <script type="text/javascript" th:src="@{/webjars/codemirror/lib/codemirror.js}"></script>
