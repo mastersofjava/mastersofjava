@@ -1,8 +1,6 @@
-package nl.moj.server;
+package nl.moj.server.feedback;
 
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.feedback.FileSubmission;
-import nl.moj.server.feedback.Submission;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentFileType;
