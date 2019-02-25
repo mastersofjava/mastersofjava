@@ -8,9 +8,13 @@ web-based implementation based on Spring Boot and Java 9.
 
 De applicatie is een spring Boot Web MVC met Thymeleaf, H2 database, Spring Integration en Websockets
 
-- Starten met Java 10.
 - starten in Eclipse via Run as > Spring Boot App
 - commandline: `java - jar server-0.0.1-SNAPSHOT.jar`
+
+### Requirements
+
+- Java 11 of hoger
+- Maven 3.5 of hoger voor builden van source.
 
 ### Voorbereiding
 
