@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.teams.model.Team;
 
 import java.util.HashMap;
@@ -15,16 +16,15 @@ import java.util.stream.Collectors;
 @Getter
 @Builder
 @Slf4j
-public class AssignmentState {
+public class ActiveAssignment {
 
+	private CompetitionSession competitionSession;
 	private Assignment assignment;
 	private AssignmentDescriptor assignmentDescriptor;
+
 	private Long timeRemaining;
 	private List<AssignmentFile> assignmentFiles;
 	private boolean running;
-
-	@Builder.Default
-	private Map<Team, TeamStatus> teamStatuses = new HashMap<>();
 
 	public List<String> getTestNames() {
 		return assignmentFiles
@@ -49,19 +49,5 @@ public class AssignmentState {
 		return assignmentFiles
 				.stream().filter( f -> f.getFileType().isVisible())
 				.collect(Collectors.toList());
-	}
-
-	public TeamStatus getTeamStatus(Team team) {
-		return teamStatuses.get(team);
-	}
-
-	public boolean isSubmitAllowedForTeam(Team team) {
-		TeamStatus s = getTeamStatus(team);
-		return !s.isCompleted() && s.getSubmits() < assignmentDescriptor.getScoringRules().getMaximumResubmits() + 1;
-	}
-
-	public int getRemainingSubmits(Team team) {
-		TeamStatus s = getTeamStatus(team);
-		return assignmentDescriptor.getScoringRules().getMaximumResubmits() + 1 - s.getSubmits();
 	}
 }

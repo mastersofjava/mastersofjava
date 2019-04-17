@@ -9,9 +9,10 @@ import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.message.service.MessageService;
+import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentState;
-import nl.moj.server.runtime.model.TeamStatus;
+import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.sound.Sound;
 import nl.moj.server.sound.SoundService;
 import nl.moj.server.teams.model.Team;
@@ -34,7 +35,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 
 @Component
@@ -42,281 +42,304 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AssignmentRuntime {
 
-	public static final long WARNING_TIMER = 30L; // seconds
-	public static final long CRITICAL_TIMER = 10L; // seconds
-	public static final long TIMESYNC_FREQUENCY = 10000L; // millis
-	public static final String STOP = "STOP";
-	public static final String WARNING_SOUND = "WARNING_SOUND";
-	public static final String CRITICAL_SOUND = "CRITICAL_SOUND";
-	public static final String TIMESYNC = "TIMESYNC";
+    public static final long WARNING_TIMER = 30L; // seconds
+    public static final long CRITICAL_TIMER = 10L; // seconds
+    public static final long TIMESYNC_FREQUENCY = 10000L; // millis
+    public static final String STOP = "STOP";
+    public static final String WARNING_SOUND = "WARNING_SOUND";
+    public static final String CRITICAL_SOUND = "CRITICAL_SOUND";
+    public static final String TIMESYNC = "TIMESYNC";
 
-	private final AssignmentService assignmentService;
-	private final MessageService messageService;
-	private final TeamService teamService;
-	private final ScoreService scoreService;
-	private final SoundService soundService;
-	private final TaskScheduler taskScheduler;
-	private StopWatch timer;
+    private final AssignmentService assignmentService;
+    private final MessageService messageService;
+    private final TeamService teamService;
+    private final ScoreService scoreService;
+    private final SoundService soundService;
+    private final TaskScheduler taskScheduler;
+    private final AssignmentStatusRepository assignmentStatusRepository;
 
-	@Getter
-	private OrderedAssignment orderedAssignment;
-	private Assignment assignment;
-	private AssignmentDescriptor assignmentDescriptor;
-	private Map<String, Future<?>> handlers;
+    private StopWatch timer;
 
-	@Getter
-	private List<AssignmentFile> originalAssignmentFiles;
+    @Getter
+    private OrderedAssignment orderedAssignment;
+    private Assignment assignment;
+    private AssignmentDescriptor assignmentDescriptor;
+    private Map<String, Future<?>> handlers;
 
-	@Getter
-	private boolean running;
+    @Getter
+    private List<AssignmentFile> originalAssignmentFiles;
 
-	private Map<Team, TeamStatus> teamStatuses;
-	private CompetitionSession competitionSession;
+    @Getter
+    private boolean running;
 
-	/**
-	 * Starts the given {@link OrderedAssignment} and returns
-	 * a Future&lt;?&gt; referencing which completes when the
-	 * assignment is supposed to end.
-	 *
-	 * @param orderedAssignment the assignment to start.
-	 * @return the {@link Future}
-	 */
+    private CompetitionSession competitionSession;
+
+    /**
+     * Starts the given {@link OrderedAssignment} and returns
+     * a Future&lt;?&gt; referencing which completes when the
+     * assignment is supposed to end.
+     *
+     * @param orderedAssignment the assignment to start.
+     * @return the {@link Future}
+     */
 //	@Async
-	public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) {
-		clearHandlers();
-		this.competitionSession = competitionSession;
-		this.orderedAssignment = orderedAssignment;
-		this.assignment = orderedAssignment.getAssignment();
-		this.assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
-		this.teamStatuses = new HashMap<>();
+    public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) {
+        clearHandlers();
+        this.competitionSession = competitionSession;
+        this.orderedAssignment = orderedAssignment;
+        this.assignment = orderedAssignment.getAssignment();
+        this.assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
 
-		// init assignment sources;
-		initOriginalAssignmentFiles();
+        // init assignment sources;
+        initOriginalAssignmentFiles();
 
-		// cleanup historical assignment data
-		initTeamsForAssignment();
+        // cleanup historical assignment data
+        initTeamsForAssignment();
 
-		// play the gong
-		taskScheduler.schedule(soundService::playGong, Instant.now());
-		// start the timers
-		Future<?> stopHandle = startTimers();
+        // play the gong
+        taskScheduler.schedule(soundService::playGong, Instant.now());
+        // start the timers
+        Future<?> stopHandle = startTimers();
 
-		// mark assignment as running
-		running = true;
+        // update assignment status start times
+        updateTeamAssignmentStatuses();
 
-		// send start to clients.
-		messageService.sendStartToTeams(assignment.getName());
+        // mark assignment as running
+        running = true;
 
-		log.info("Started assignment {}", assignment.getName());
+        // send start to clients.
+        messageService.sendStartToTeams(assignment.getName());
 
-		return stopHandle;
-	}
+        log.info("Started assignment {}", assignment.getName());
 
-	/**
-	 * Stop the current assignment
-	 */
-	public void stop() {
-		messageService.sendStopToTeams(assignment.getName());
-		if (getTimeRemaining() > 0) {
-			clearHandlers();
-		} else {
-			try {
-				this.handlers.get(TIMESYNC).cancel(true);
-			} catch (NullPointerException e) {
-				log.debug("assignment stopped without being started, not canceling timesync handler since it doesn't exist");
-			}
-		}
-		running = false;
-		log.info("Stopped assignment {}", assignment.getName());
-	}
+        return stopHandle;
+    }
 
-	// TODO this should probably not be here SubmitService is a better place for it.
-	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
-		List<AssignmentFile> teamFiles = new ArrayList<>();
-		Path teamAssignmentBase = resolveTeamAssignmentBaseDirectory(team).resolve("sources");
-		originalAssignmentFiles.stream()
-				.filter(f -> f.getFileType().isVisible())
-				.forEach(f -> {
-					Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
-					if (resolvedFile.toFile().exists() && Files.isReadable(resolvedFile)) {
-						teamFiles.add(f.toBuilder()
-								.content(readPathContent(resolvedFile))
-								.build());
-					} else {
-						teamFiles.add(f.toBuilder().build());
-					}
-				});
-		return teamFiles;
-	}
+    /**
+     * Stop the current assignment
+     */
+    public void stop() {
+        messageService.sendStopToTeams(assignment.getName());
+        if (getTimeRemaining() > 0) {
+            clearHandlers();
+        } else {
+            try {
+                this.handlers.get(TIMESYNC).cancel(true);
+            } catch (NullPointerException e) {
+                log.debug("assignment stopped without being started, not canceling timesync handler since it doesn't exist");
+            }
+        }
+        running = false;
+        log.info("Stopped assignment {}", assignment.getName());
+    }
 
-	public AssignmentState getState() {
-		return AssignmentState.builder()
-				.assignment(assignment)
-				.timeRemaining(getTimeRemaining())
-				.assignmentDescriptor(assignmentDescriptor)
-				.assignmentFiles(originalAssignmentFiles)
-				.running(running)
-				.teamStatuses(teamStatuses.entrySet().stream()
-						.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toBuilder().build())))
-				.build();
-	}
+    // TODO this should probably not be here SubmitService is a better place for it.
+    public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
+        List<AssignmentFile> teamFiles = new ArrayList<>();
+        Path teamAssignmentBase = resolveTeamAssignmentBaseDirectory(team).resolve("sources");
+        originalAssignmentFiles.stream()
+                .filter(f -> f.getFileType().isVisible())
+                .forEach(f -> {
+                    Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
+                    if (resolvedFile.toFile().exists() && Files.isReadable(resolvedFile)) {
+                        teamFiles.add(f.toBuilder()
+                                .content(readPathContent(resolvedFile))
+                                .build());
+                    } else {
+                        teamFiles.add(f.toBuilder().build());
+                    }
+                });
+        return teamFiles;
+    }
 
-	private byte[] readPathContent(Path p) {
-		try {
-			return IOUtils.toByteArray(Files.newInputStream(p, StandardOpenOption.READ));
-		} catch (IOException e) {
-			throw new RuntimeException("Unable to read assignment file " + p, e);
-		}
-	}
+    public ActiveAssignment getState() {
+        return ActiveAssignment.builder()
+                .competitionSession(competitionSession)
+                .assignment(assignment)
+                .timeRemaining(getTimeRemaining())
+                .assignmentDescriptor(assignmentDescriptor)
+                .assignmentFiles(originalAssignmentFiles)
+                .running(running)
+                .build();
+    }
 
-	private void initOriginalAssignmentFiles() {
-		try {
-			originalAssignmentFiles = new JavaAssignmentFileResolver().resolve(assignmentDescriptor);
-		} catch (Exception e) {
-			// log exception here since it may get swallowed by async calls
-			log.error("Unable to parse assignment files for assignment {}: {}", assignmentDescriptor.getDisplayName(), e.getMessage(), e);
-			throw new RuntimeException(e);
-		}
-	}
+    private byte[] readPathContent(Path p) {
+        try {
+            return IOUtils.toByteArray(Files.newInputStream(p, StandardOpenOption.READ));
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to read assignment file " + p, e);
+        }
+    }
 
-	private void initTeamsForAssignment() {
+    private void initOriginalAssignmentFiles() {
+        try {
+            originalAssignmentFiles = new JavaAssignmentFileResolver().resolve(assignmentDescriptor);
+        } catch (Exception e) {
+            // log exception here since it may get swallowed by async calls
+            log.error("Unable to parse assignment files for assignment {}: {}", assignmentDescriptor.getDisplayName(), e
+                    .getMessage(), e);
+            throw new RuntimeException(e);
+        }
+    }
 
-		cleanupTeamScores();
-		teamService.getTeams().forEach(t -> {
-			cleanupTeamAssignmentData(t);
-			initTeamScore(t);
-			initTeamAssignmentData(t);
-			teamStatuses.put(t, TeamStatus.init(t));
-		});
-	}
+    private void initTeamsForAssignment() {
 
-	private void initTeamAssignmentData(Team team) {
-		Path assignmentDirectory = resolveTeamAssignmentBaseDirectory(team);
-		try {
-			// create empty assignment directory
-			Files.createDirectories(assignmentDirectory);
-		} catch (IOException e) {
-			throw new RuntimeException("Unable to delete team assignment directory " + assignmentDirectory, e);
-		}
+        cleanupTeamScores();
+        teamService.getTeams().forEach(t -> {
+            cleanupTeamAssignmentData(t);
+            initTeamScore(t);
+            initTeamAssignmentData(t);
+            initAssignmentStatus(t, assignment);
+        });
+    }
 
-	}
+    private void updateTeamAssignmentStatuses() {
+        assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competitionSession).forEach(as -> {
+            as.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
+            assignmentStatusRepository.save(as);
+        });
+    }
 
-	private Path resolveTeamAssignmentBaseDirectory(Team team) {
-		return teamService.getTeamDirectory(team).resolve(assignment.getName());
-	}
+    private void initTeamAssignmentData(Team team) {
+        Path assignmentDirectory = resolveTeamAssignmentBaseDirectory(team);
+        try {
+            // create empty assignment directory
+            Files.createDirectories(assignmentDirectory);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to delete team assignment directory " + assignmentDirectory, e);
+        }
+    }
 
-	private void initTeamScore(Team team) {
-		scoreService.initializeScoreAtStart(team, assignment, competitionSession);
-	}
+    private void initAssignmentStatus(Team team, Assignment assignment) {
+        AssignmentStatus as = AssignmentStatus.builder()
+                .assignment(assignment)
+                .competitionSession(competitionSession)
+                .uuid(UUID.randomUUID())
+                .team(team)
+                .build();
 
-	private void cleanupTeamAssignmentData(Team team) {
-		// delete historical submitted data.
-		Path assignmentDirectory = resolveTeamAssignmentBaseDirectory(team);
-		try {
-			if (Files.exists(assignmentDirectory)) {
-				PathUtil.delete(assignmentDirectory);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException("Unable to delete team assignment directory " + assignmentDirectory, e);
-		}
-	}
+        assignmentStatusRepository.save(as);
+    }
 
-	private void cleanupTeamScores() {
-		scoreService.removeScoresForAssignment(assignment, competitionSession);
-	}
+    private Path resolveTeamAssignmentBaseDirectory(Team team) {
+        return teamService.getTeamDirectory(team).resolve(assignment.getName());
+    }
 
-	private Future<?> startTimers() {
-		timer = StopWatch.createStarted();
-		Future<?> stop = scheduleStop();
-		handlers.put(STOP, stop);
-		handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration().toSeconds() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
-		handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration().toSeconds() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
-		handlers.put(TIMESYNC, scheduleTimeSync());
-		return stop;
-	}
+    private void initTeamScore(Team team) {
+        scoreService.initializeScoreAtStart(team, assignment, competitionSession);
+    }
 
-	private Long getTimeRemaining() {
-		long remaining = 0;
-		if (assignmentDescriptor != null && timer != null) {
-			remaining = assignmentDescriptor.getDuration().getSeconds() - timer.getTime(TimeUnit.SECONDS);
-			if (remaining < 0) {
-				remaining = 0;
-			}
-		}
-		return remaining;
-	}
+    private void cleanupTeamAssignmentData(Team team) {
+        // delete historical submitted data.
+        Path assignmentDirectory = resolveTeamAssignmentBaseDirectory(team);
+        try {
+            if (Files.exists(assignmentDirectory)) {
+                PathUtil.delete(assignmentDirectory);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to delete team assignment directory " + assignmentDirectory, e);
+        }
+    }
 
-	private void clearHandlers() {
-		if (this.handlers != null) {
-			this.handlers.forEach((k, v) -> {
-				v.cancel(true);
-			});
-		}
-		this.handlers = new HashMap<>();
-	}
+    private void cleanupTeamScores() {
+        scoreService.removeScoresForAssignment(assignment, competitionSession);
+    }
 
-	@Async
-	public Future<?> scheduleStop() {
-		return taskScheduler.schedule(this::stop, inSeconds(assignmentDescriptor.getDuration().getSeconds()));
-	}
+    private Future<?> startTimers() {
+        timer = StopWatch.createStarted();
+        Future<?> stop = scheduleStop();
+        handlers.put(STOP, stop);
+        handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration()
+                .toSeconds() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
+        handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration()
+                .toSeconds() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
+        handlers.put(TIMESYNC, scheduleTimeSync());
+        return stop;
+    }
 
-	@Async
-	public Future<?> scheduleAssignmentEndingNotification(long start, long duration, Sound sound) {
-		return taskScheduler.schedule(() -> soundService.play(sound, duration), inSeconds(start));
-	}
+    private Long getTimeRemaining() {
+        long remaining = 0;
+        if (assignmentDescriptor != null && timer != null) {
+            remaining = assignmentDescriptor.getDuration().getSeconds() - timer.getTime(TimeUnit.SECONDS);
+            if (remaining < 0) {
+                remaining = 0;
+            }
+        }
+        return remaining;
+    }
 
-	@Async
-	public Future<?> scheduleTimeSync() {
-		return taskScheduler.scheduleAtFixedRate(
-				() -> {
-					messageService.sendRemainingTime(getTimeRemaining(), assignmentDescriptor.getDuration().getSeconds());
-				},
-				TIMESYNC_FREQUENCY
-		);
-	}
+    private void clearHandlers() {
+        if (this.handlers != null) {
+            this.handlers.forEach((k, v) -> {
+                v.cancel(true);
+            });
+        }
+        this.handlers = new HashMap<>();
+    }
 
-	private Date inSeconds(long sec) {
-		return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
-	}
+    @Async
+    public Future<?> scheduleStop() {
+        return taskScheduler.schedule(this::stop, inSeconds(assignmentDescriptor.getDuration().getSeconds()));
+    }
 
-	void registerAssignmentCompleted(Team team, Long timeScore, Long finalScore) {
-		update(teamStatuses.get(team).toBuilder()
-				.submitTime(timeScore)
-				.score(finalScore)
-				.completed(true)
-				.build());
-	}
+    @Async
+    public Future<?> scheduleAssignmentEndingNotification(long start, long duration, Sound sound) {
+        return taskScheduler.schedule(() -> soundService.play(sound, duration), inSeconds(start));
+    }
 
-	void registerSubmit(Team team) {
-		TeamStatus s = teamStatuses.get(team);
-		s = update(s.toBuilder()
-				.submits(s.getSubmits() + 1)
-				.build()
-		);
-		log.info("Team {} submitted assignment {} {} time(s).", team.getName(), assignment.getName(), s.getSubmits());
-	}
+    @Async
+    public Future<?> scheduleTimeSync() {
+        return taskScheduler.scheduleAtFixedRate(
+                () -> {
+                    messageService.sendRemainingTime(getTimeRemaining(), assignmentDescriptor.getDuration()
+                            .getSeconds());
+                },
+                TIMESYNC_FREQUENCY
+        );
+    }
 
-	private TeamStatus update(TeamStatus status) {
-		teamStatuses.put(status.getTeam(), status);
-		return status;
-	}
+    private Date inSeconds(long sec) {
+        return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    void registerAssignmentCompleted(Team team, Long timeScore, Long finalScore) {
+//		update(teamStatuses.get(team).toBuilder()
+//				.submitTime(timeScore)
+//				.score(finalScore)
+//				.completed(true)
+//				.build());
+    }
+
+    void registerSubmit(Team team) {
+//		TeamStatus s = teamStatuses.get(team);
+//		s = update(s.toBuilder()
+//				.submits(s.getSubmits() + 1)
+//				.build()
+//		);
+//		log.info("Team {} submitted assignment {} {} time(s).", team.getName(), assignment.getName(), s.getSubmits());
+    }
+
+//	private TeamStatus update(TeamStatus status) {
+//		teamStatuses.put(status.getTeam(), status);
+//		return status;
+//	}
 
 
-	public void registerTestRun(Team team) {
-		TeamStatus s = teamStatuses.get(team);
-		s = update(s.toBuilder()
-				.testRuns(s.getTestRuns() + 1)
-				.build()
-		);
-		log.info("Team {} tested assignment {} {} time(s).", team.getName(), assignment.getName(), s.getTestRuns());
-	}
+    public void registerTestRun(Team team) {
+//		TeamStatus s = teamStatuses.get(team);
+//		s = update(s.toBuilder()
+//				.testRuns(s.getTestRuns() + 1)
+//				.build()
+//		);
+//		log.info("Team {} tested assignment {} {} time(s).", team.getName(), assignment.getName(), s.getTestRuns());
+    }
 
-	public void registerCompileRun(Team team) {
-		TeamStatus s = teamStatuses.get(team);
-		s = update(s.toBuilder()
-				.compileRuns(s.getCompileRuns() + 1)
-				.build()
-		);
-		log.info("Team {} compiled assignment {} {} time(s).", team.getName(), assignment.getName(), s.getCompileRuns());
-	}
+    public void registerCompileRun(Team team) {
+//		TeamStatus s = teamStatuses.get(team);
+//		s = update(s.toBuilder()
+//				.compileRuns(s.getCompileRuns() + 1)
+//				.build()
+//		);
+//		log.info("Team {} compiled assignment {} {} time(s).", team.getName(), assignment.getName(), s.getCompileRuns());
+    }
 }

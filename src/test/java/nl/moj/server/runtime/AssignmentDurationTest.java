@@ -4,6 +4,7 @@ import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.OrderedAssignment;
 import org.assertj.core.api.Assertions;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 	private CompetitionRuntime competitionRuntime;
 
 	@Test
+	@Ignore
 	public void shouldRunForSpecifiedDuration() {
 		OrderedAssignment oa = getCompetition().getAssignmentsInOrder().get(0);
 		AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(oa.getAssignment());

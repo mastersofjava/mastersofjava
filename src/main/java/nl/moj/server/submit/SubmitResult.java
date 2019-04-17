@@ -2,9 +2,9 @@ package nl.moj.server.submit;
 
 import lombok.Builder;
 import lombok.Getter;
-import nl.moj.server.compiler.CompileResult;
+import nl.moj.server.compiler.service.CompileResult;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.test.TestResult;
+import nl.moj.server.test.service.TestResult;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,18 +13,17 @@ import java.util.List;
 @Getter
 public class SubmitResult {
 
-	private final Team team;
+    @Builder.Default
+    private final int remainingSubmits = 0;
 
-	@Builder.Default
-	private final int remainingSubmits = 0;
+    @Builder.Default
+    private final long score = 0L;
 
-	@Builder.Default
-	private final long score = 0L;
+    private CompileResult compileResult;
 
-	private CompileResult compileResult;
-	@Builder.Default
-	private List<TestResult> testResults = new ArrayList<>();
+    @Builder.Default
+    private List<TestResult> testResults = new ArrayList<>();
 
-	@Builder.Default
-	private boolean success = false;
+    @Builder.Default
+    private boolean success = false;
 }

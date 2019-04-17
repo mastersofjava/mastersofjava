@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import nl.moj.server.rankings.model.Ranking;
 import nl.moj.server.rankings.service.RankingsService;
 import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.util.CollectionUtil;
 import org.springframework.stereotype.Controller;
@@ -41,7 +41,7 @@ public class RankingsController {
 		model.addObject("bottom3", parts.get(2));
 		model.addObject("bottom4", parts.get(3));
 		if (competition.getCurrentAssignment() != null) {
-			AssignmentState state = competition.getAssignmentState();
+			ActiveAssignment state = competition.getActiveAssignment();
 			model.addObject("assignment", state.getAssignmentDescriptor().getName());
 			model.addObject("timeLeft", state.getTimeRemaining());
 			model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());

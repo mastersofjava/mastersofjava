@@ -19,3 +19,4 @@ mojserver.log*
 moj-data/
 application-local.yaml
 .factorypath
+create.sql

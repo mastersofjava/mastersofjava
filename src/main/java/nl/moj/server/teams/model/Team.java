@@ -5,18 +5,19 @@ import lombok.*;
 import javax.persistence.*;
 import java.util.UUID;
 
-@Builder
-@AllArgsConstructor(access=AccessLevel.PRIVATE)
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(of={"name"})
-@Table(name = "teams")
 @Entity
-@SequenceGenerator(name="teams_seq", sequenceName = "teams_seq")
+@Table(name = "teams")
+@SequenceGenerator(name="team_id_seq", sequenceName = "teams_seq")
+
+@Builder
+@NoArgsConstructor(force = true)
+@AllArgsConstructor
+@Data
+@EqualsAndHashCode(of={"uuid"})
 public class Team {
 
 	@Id
-	@GeneratedValue(generator = "teams_seq", strategy = GenerationType.SEQUENCE)
+	@GeneratedValue(generator = "team_id_seq", strategy = GenerationType.SEQUENCE)
 	@Column(name = "id", nullable = false)
 	private Long id;
 

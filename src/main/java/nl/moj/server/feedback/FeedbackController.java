@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.CollectionUtil;
@@ -49,7 +49,7 @@ public class FeedbackController {
         List<String> testNames = new ArrayList<>();
 
         if (competition.getCurrentAssignment() != null) {
-        	AssignmentState state = competition.getAssignmentState();
+        	ActiveAssignment state = competition.getActiveAssignment();
 
             testNames = state.getTestNames();
 

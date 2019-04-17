@@ -7,9 +7,11 @@ import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.repository.ResultRepository;
-import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.model.Result;
 import nl.moj.server.runtime.model.Score;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
 import org.springframework.stereotype.Service;
 
@@ -49,7 +51,7 @@ import org.springframework.stereotype.Service;
  * <h3>Fixed penalty is calculated as follows:</h3>
  * <pre>  submitPenalty * (submits - 1)</pre>
  *
- * <h2>Test Penalty</h2>
+ * <h2>TestCase Penalty</h2>
  * <p>The test penalty is applied for every test run being made. It does not matter how many test
  * are run at once.</p>
  *
@@ -65,8 +67,8 @@ import org.springframework.stereotype.Service;
 public class ScoreService {
 
 	private final ResultRepository resultRepository;
-
 	private final MojServerProperties mojServerProperties;
+	private final AssignmentStatusRepository assignmentStatusRepository;
 
 	public void removeScoresForAssignment(Assignment assignment, CompetitionSession competitionSession) {
 		resultRepository.findAllByAssignmentAndCompetitionSession(assignment, competitionSession).forEach(resultRepository::delete);
@@ -100,14 +102,15 @@ public class ScoreService {
 		log.info("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, team.getName(), assignment.getName());
 	}
 
-	public Score calculateScore(Team team, AssignmentState state, boolean success) {
+	public Score calculateScore(Team team, ActiveAssignment state, boolean success) {
 		if (success) {
 			AssignmentDescriptor ad = state.getAssignmentDescriptor();
+			AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),state.getCompetitionSession(),team);
 			return Score.builder()
 					.initialScore(state.getTimeRemaining())
 					.submitBonus(calculateSubmitBonus(ad))
-					.resubmitPenalty(calculateSubmitPenalty(ad, state.getTimeRemaining(), state.getTeamStatus(team).getSubmits()))
-					.testPenalty(calculateTestPenalty(ad, state.getTimeRemaining(), state.getTeamStatus(team).getTestRuns()))
+					.resubmitPenalty(calculateSubmitPenalty(ad, state.getTimeRemaining(), as.getSubmitAttempts().size()))
+					.testPenalty(calculateTestPenalty(ad, state.getTimeRemaining(), as.getTestAttempts().size()))
 					.build();
 		}
 		return Score.builder().build();

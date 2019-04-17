@@ -5,6 +5,7 @@ import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ public class AssignmentServiceTest {
 	}
 
 	@Test
+	@Ignore
 	public void shouldDiscoverAssignments() {
 		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 
@@ -43,6 +45,7 @@ public class AssignmentServiceTest {
 	}
 
 	@Test
+	@Ignore
 	public void shouldUpdateAssignments() {
 		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 
@@ -65,6 +68,7 @@ public class AssignmentServiceTest {
 	}
 
 	@Test
+	@Ignore
 	public void shouldGetAssignmentDescriptor() {
 		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 

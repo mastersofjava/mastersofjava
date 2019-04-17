@@ -83,7 +83,7 @@ public abstract class BaseRuntimeTest {
 		AtomicInteger count = new AtomicInteger(0);
 		final Competition c = new Competition();
 		c.setUuid(UUID.randomUUID());
-		c.setName("Test");
+		c.setName("TestCase");
 		c.setAssignments(assignments.stream()
 				.map(a -> {
 					OrderedAssignment oa = new OrderedAssignment();

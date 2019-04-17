@@ -12,7 +12,7 @@ import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.Result;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
@@ -130,7 +130,7 @@ public class TaskControlController {
 	@GetMapping("/control")
 	public String taskControl(Model model) {
 		if (competition.getCurrentAssignment() != null) {
-			AssignmentState state = competition.getAssignmentState();
+			ActiveAssignment state = competition.getActiveAssignment();
 			model.addAttribute("timeLeft", state.getTimeRemaining());
 			model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
 			model.addAttribute("running", state.isRunning());

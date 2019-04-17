@@ -1,13 +1,14 @@
 package nl.moj.server.submit;
 
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.compiler.CompileService;
+import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.submit.model.SourceMessage;
+import nl.moj.server.submit.service.SubmitService;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
-import nl.moj.server.test.TestService;
+import nl.moj.server.test.service.TestService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;

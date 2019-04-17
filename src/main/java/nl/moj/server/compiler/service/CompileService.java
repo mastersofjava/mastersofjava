@@ -1,12 +1,16 @@
-package nl.moj.server.compiler;
+package nl.moj.server.compiler.service;
 
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.compiler.model.CompileAttempt;
+import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.config.properties.Languages;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
@@ -19,8 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -34,25 +40,37 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CompileService {
 
+	private CompileAttemptRepository compileAttemptRepository;
+	private AssignmentStatusRepository assignmentStatusRepository;
 	private Executor executor;
-
 	private CompetitionRuntime competition;
-
 	private MojServerProperties mojServerProperties;
 
-	public CompileService(@Qualifier("compiling") Executor executor, CompetitionRuntime competition, MojServerProperties mojServerProperties) {
+	public CompileService(@Qualifier("compiling") Executor executor, CompetitionRuntime competition, MojServerProperties mojServerProperties,
+						  CompileAttemptRepository compileAttemptRepository, AssignmentStatusRepository assignmentStatusRepository) {
 		this.executor = executor;
 		this.competition = competition;
 		this.mojServerProperties = mojServerProperties;
+		this.compileAttemptRepository = compileAttemptRepository;
+		this.assignmentStatusRepository = assignmentStatusRepository;
 	}
 
 	public CompletableFuture<CompileResult> compile(Team team, SourceMessage message) {
-		return CompletableFuture.supplyAsync(compileTask(mojServerProperties.getLanguages().getJavaVersion(competition.getAssignmentState().getAssignmentDescriptor().getJavaVersion()), team, message), executor);
+		return CompletableFuture.supplyAsync(compileTask(mojServerProperties.getLanguages().getJavaVersion(competition.getActiveAssignment().getAssignmentDescriptor().getJavaVersion()), team, message), executor);
 	}
 
 	private Supplier<CompileResult> compileTask(Languages.JavaVersion javaVersion, Team team, SourceMessage message) {
 		return () -> {
-			AssignmentState state = competition.getAssignmentState();
+			// TODO should not be here.
+			ActiveAssignment state = competition.getActiveAssignment();
+			AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),state.getCompetitionSession(),team);
+
+			CompileAttempt compileAttempt = CompileAttempt.builder()
+					.assignmentStatus(as)
+					.dateTimeStart(Instant.now())
+					.uuid(UUID.randomUUID())
+					.build();
+
 			List<AssignmentFile> resources = getResourcesToCopy(state);
 			List<AssignmentFile> assignmentFiles = getReadonlyAssignmentFilesToCompile(state);
 			String assignment = competition.getCurrentAssignment().getAssignment().getName();
@@ -91,8 +109,8 @@ public class CompileService {
 						.absoluteFile(f.toPath())
 						.build());
 			});
+
 			// C) Java compiler options
-			CompileResult compileResult = null;
 			try {
 				boolean timedOut = false;
 				int exitvalue = 0;
@@ -134,30 +152,48 @@ public class CompileService {
 				if (compileOutput.length() > 0) {
 					// if we still have some output left and exitvalue = 0
 					if (compileOutput.length() > 0 && exitvalue == 0 && !timedOut) {
-						compileResult = CompileResult.success(team);
+						compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
+								.dateTimeEnd(Instant.now())
+								.success(true)
+								.build());
 					} else {
 						stripTeamPathInfo(compileOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir, "sources", assignment));
-						compileResult = CompileResult.fail(team, compileOutput.toString());
+						compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
+								.dateTimeEnd(Instant.now())
+								.success(false)
+								.compilerOutput(compileOutput.toString())
+								.build());
 					}
 				} else {
 					log.debug(compileOutput.toString());
 					stripTeamPathInfo(compileErrorOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir, "sources", assignment));
-					result = compileErrorOutput.toString();
 					if ((exitvalue == 0) && !timedOut) {
-						compileResult = CompileResult.success(team);
+						compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
+								.dateTimeEnd(Instant.now())
+								.success(true)
+								.build());
 					} else {
-						compileResult = CompileResult.fail(team, result);
+						compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
+								.dateTimeEnd(Instant.now())
+								.success(false)
+								.compilerOutput(compileErrorOutput.toString())
+								.build());
 					}
 				}
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
 			}
-			return compileResult;
+
+			return CompileResult.builder()
+					.compileAttemptUuid(compileAttempt.getUuid())
+					.compileOutput(compileAttempt.getCompilerOutput())
+					.success(compileAttempt.isSuccess())
+					.build();
 		};
 	}
 
 	private AssignmentFile getOriginalAssignmentFile(String uuid) {
-		return competition.getAssignmentState().getAssignmentFiles().stream()
+		return competition.getActiveAssignment().getAssignmentFiles().stream()
 				.filter(f -> f.getUuid().toString().equals(uuid)).findFirst().orElseThrow(() -> new RuntimeException("Could not find original assignment file for UUID " + uuid));
 	}
 
@@ -175,7 +211,7 @@ public class CompileService {
 		}
 	}
 
-	private List<AssignmentFile> getReadonlyAssignmentFilesToCompile(AssignmentState state) {
+	private List<AssignmentFile> getReadonlyAssignmentFilesToCompile(ActiveAssignment state) {
 		return state.getAssignmentFiles()
 				.stream()
 				.filter(f -> f.getFileType() == AssignmentFileType.READONLY ||
@@ -184,7 +220,7 @@ public class CompileService {
 				.collect(Collectors.toList());
 	}
 
-	private List<AssignmentFile> getResourcesToCopy(AssignmentState state) {
+	private List<AssignmentFile> getResourcesToCopy(ActiveAssignment state) {
 		return state.getAssignmentFiles()
 				.stream()
 				.filter(f -> f.getFileType() == AssignmentFileType.RESOURCE ||

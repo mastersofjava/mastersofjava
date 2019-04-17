@@ -19,11 +19,11 @@ public class DbUtil {
 	private CompetitionSessionRepository competitionSessionRepository;
 
 	public void cleanup() {
-		resultRepository.deleteAll();
-		competitionSessionRepository.deleteAll();
-		competitionRepository.deleteAll();
-		assignmentRepository.deleteAll();
-		teamRepository.deleteAll();
+//		resultRepository.deleteAll();
+//		competitionSessionRepository.deleteAll();
+//		competitionRepository.deleteAll();
+//		assignmentRepository.deleteAll();
+//		teamRepository.deleteAll();
 	}
 
 }

@@ -94,7 +94,7 @@ public class AssignmentDescriptorValidator {
 			if (sources.getTests() == null || sources.getTests().isEmpty()) {
 				result.addValidationMessage("No test files specified, should have at least one.");
 			} else {
-				sources.getTests().forEach(f -> validateFile(result, "Test source file %s not found.", sources.getBase(), f));
+				sources.getTests().forEach(f -> validateFile(result, "TestCase source file %s not found.", sources.getBase(), f));
 			}
 			if (sources.getHiddenTests() != null && !sources.getHiddenTests().isEmpty()) {
 				sources.getHiddenTests().forEach(f -> validateFile(result, "Hidden test source file %s not found.", sources.getBase(), f));
@@ -107,7 +107,7 @@ public class AssignmentDescriptorValidator {
 			result.addValidationMessage("No test sources specified.");
 		} else {
 			if (sources.getFiles() != null && !sources.getFiles().isEmpty()) {
-				sources.getFiles().forEach(f -> validateFile(result, "Test resource file %s not found.", sources.getBase(), f));
+				sources.getFiles().forEach(f -> validateFile(result, "TestCase resource file %s not found.", sources.getBase(), f));
 			}
 			if (sources.getHiddenFiles() != null && !sources.getHiddenFiles().isEmpty()) {
 				sources.getHiddenFiles().forEach(f -> validateFile(result, "Hidden test resource file %s not found.", sources.getBase(), f));
@@ -131,7 +131,7 @@ public class AssignmentDescriptorValidator {
 				result.addValidationMessage("Maximum resubmits must be >= 0.");
 			}
 			validatePercentageValue(result, "Resubmit penalty", scoringRules.getResubmitPenalty());
-			validatePercentageValue(result, "Test penalty", scoringRules.getTestPenalty());
+			validatePercentageValue(result, "TestCase penalty", scoringRules.getTestPenalty());
 		}
 	}
 
