@@ -6,6 +6,7 @@ import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.test.model.TestAttempt;
 
 import javax.persistence.*;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -40,6 +41,9 @@ public class SubmitAttempt {
 
     @Column(name="success", nullable = false)
     private boolean success;
+
+    @Column(name="assignment_time_elapsed")
+    private Duration assignmentTimeElapsed;
 
     @OneToOne
     @JoinColumn(name="compile_attempt_id")

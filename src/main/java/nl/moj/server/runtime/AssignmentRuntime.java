@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -157,6 +158,7 @@ public class AssignmentRuntime {
                 .competitionSession(competitionSession)
                 .assignment(assignment)
                 .timeRemaining(getTimeRemaining())
+                .timeElapsed(getTimeElapsed())
                 .assignmentDescriptor(assignmentDescriptor)
                 .assignmentFiles(originalAssignmentFiles)
                 .running(running)
@@ -189,7 +191,7 @@ public class AssignmentRuntime {
             cleanupTeamAssignmentData(t);
             initTeamScore(t);
             initTeamAssignmentData(t);
-            initAssignmentStatus(t, assignment);
+            initAssignmentStatus(t, assignment, assignmentDescriptor.getDuration());
         });
     }
 
@@ -210,11 +212,12 @@ public class AssignmentRuntime {
         }
     }
 
-    private void initAssignmentStatus(Team team, Assignment assignment) {
+    private void initAssignmentStatus(Team team, Assignment assignment, Duration assignmentDuration) {
         AssignmentStatus as = AssignmentStatus.builder()
                 .assignment(assignment)
                 .competitionSession(competitionSession)
                 .uuid(UUID.randomUUID())
+                .assignmentDuration(assignmentDuration)
                 .team(team)
                 .build();
 
@@ -266,6 +269,17 @@ public class AssignmentRuntime {
             }
         }
         return remaining;
+    }
+
+    private Duration getTimeElapsed() {
+        Duration elapsed = null;
+        if (assignmentDescriptor != null && timer != null) {
+            elapsed = Duration.ofSeconds(timer.getTime(TimeUnit.SECONDS));
+            if ( elapsed.compareTo(assignmentDescriptor.getDuration()) > 0 ) {
+                elapsed = assignmentDescriptor.getDuration();
+            }
+        }
+        return elapsed;
     }
 
     private void clearHandlers() {

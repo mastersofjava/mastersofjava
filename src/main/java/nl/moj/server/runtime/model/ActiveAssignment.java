@@ -8,6 +8,7 @@ import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.teams.model.Team;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ public class ActiveAssignment {
 	private Assignment assignment;
 	private AssignmentDescriptor assignmentDescriptor;
 
+	private Duration timeElapsed;
 	private Long timeRemaining;
 	private List<AssignmentFile> assignmentFiles;
 	private boolean running;

@@ -9,6 +9,7 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestAttempt;
 
 import javax.persistence.*;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -49,6 +50,9 @@ public class AssignmentStatus {
 
     @Column(name="date_time_end")
     private Instant dateTimeEnd;
+
+    @Column(name="assignment_duration")
+    private Duration assignmentDuration;
 
     @OneToMany(mappedBy = "assignmentStatus")
     private List<CompileAttempt> compileAttempts;

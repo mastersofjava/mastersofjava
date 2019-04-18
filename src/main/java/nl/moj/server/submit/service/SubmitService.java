@@ -11,10 +11,8 @@ import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.model.Score;
+import nl.moj.server.runtime.model.*;
+import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.submit.model.SourceMessage;
@@ -49,6 +47,7 @@ public class SubmitService {
     private final TestAttemptRepository testAttemptRepository;
     private final CompileAttemptRepository compileAttemptRepository;
     private final SubmitAttemptRepository submitAttemptRepository;
+    private final AssignmentResultRepository assignmentResultRepository;
 
     public CompletableFuture<SubmitResult> compile(Team team, SourceMessage message) {
         competition.registerCompileRun(team);
@@ -89,6 +88,7 @@ public class SubmitService {
             SubmitAttempt sa = SubmitAttempt.builder()
                     .assignmentStatus(as)
                     .dateTimeStart(Instant.now())
+                    .assignmentTimeElapsed(state.getTimeElapsed())
                     .uuid(UUID.randomUUID())
                     .build();
 
@@ -118,6 +118,14 @@ public class SubmitService {
                                 scoreService.registerScore(team, state.getAssignment(), competition.getCompetitionSession(), score);
                                 competition.registerAssignmentCompleted(team, score.getInitialScore(), score.getTotalScore());
                                 result = result.toBuilder().score(score.getTotalScore()).build();
+
+                                AssignmentResult ar = AssignmentResult.builder()
+                                        .assignmentStatus(as)
+                                        .initialScore(score.getInitialScore())
+                                        .bonus(score.getSubmitBonus())
+                                        .penalty(score.getTotalPenalty())
+                                        .build();
+                                assignmentResultRepository.save(ar);
                             }
                             messageService.sendSubmitFeedback(team, result);
                             return result;

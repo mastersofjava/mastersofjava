@@ -33,7 +33,6 @@ public class AssignmentServiceTest {
 	}
 
 	@Test
-	@Ignore
 	public void shouldDiscoverAssignments() {
 		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 
@@ -45,7 +44,6 @@ public class AssignmentServiceTest {
 	}
 
 	@Test
-	@Ignore
 	public void shouldUpdateAssignments() {
 		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 
@@ -68,7 +66,6 @@ public class AssignmentServiceTest {
 	}
 
 	@Test
-	@Ignore
 	public void shouldGetAssignmentDescriptor() {
 		List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 

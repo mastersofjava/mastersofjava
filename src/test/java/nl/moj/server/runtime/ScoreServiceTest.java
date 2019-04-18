@@ -16,10 +16,8 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestAttempt;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -28,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isA;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ScoreServiceTest {
@@ -64,10 +63,13 @@ public class ScoreServiceTest {
                 .submitAttempts(createSubmitAttempts(submits))
                 .build();
 
-        Mockito.when(assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(any(Assignment.class),any(CompetitionSession.class), any(Team.class))).thenReturn(as);
+        Mockito.when(assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(isA(Assignment.class),isA(CompetitionSession.class), isA(Team.class)))
+                .thenReturn(as);
         setupGlobalSuccessBonus(500);
 
         return ActiveAssignment.builder()
+                .assignment(new Assignment())
+                .competitionSession(new CompetitionSession())
                 .assignmentDescriptor(ad)
                 .timeRemaining(initialScore)
                 .build();
@@ -105,7 +107,6 @@ public class ScoreServiceTest {
     }
 
     @Test
-    @Ignore
     public void scoreShouldNotGoBelowZero() {
         ScoringRules scoringRules = prepareScoringRules(null, null, 0, "1000");
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 1, scoringRules);
@@ -120,7 +121,6 @@ public class ScoreServiceTest {
     }
 
     @Test
-    @Ignore
     public void shouldUseGlobalSuccessBonus() {
         ScoringRules scoringRules = prepareScoringRules(null, null, null, null);
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 0, 1, scoringRules);
@@ -135,7 +135,6 @@ public class ScoreServiceTest {
     }
 
     @Test
-    @Ignore
     public void failedSubmitHasZeroScore() {
         ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 0, 1, scoringRules);
@@ -152,7 +151,6 @@ public class ScoreServiceTest {
     // Submit Penalties
 
     @Test
-    @Ignore
     public void shouldHaveFixedResubmitPenalties() {
         ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 0, 3, scoringRules);
@@ -167,7 +165,6 @@ public class ScoreServiceTest {
     }
 
     @Test
-    @Ignore
     public void shouldHaveNoFixedResubmitPenaltyOnFirstSubmit() {
         ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 0, 1, scoringRules);
@@ -182,7 +179,6 @@ public class ScoreServiceTest {
     }
 
     @Test
-    @Ignore
     public void shouldHavePercentageResubmitPenalties() {
         ScoringRules scoringRules = prepareScoringRules(2, "25%", 0, null);
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 0, 3, scoringRules);
@@ -197,7 +193,6 @@ public class ScoreServiceTest {
     }
 
     @Test
-    @Ignore
     public void shouldHaveNoPercentageResubmitPenaltyOnFirstSubmit() {
         ScoringRules scoringRules = prepareScoringRules(2, "25%", 0, null);
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 0, 1, scoringRules);
@@ -213,7 +208,6 @@ public class ScoreServiceTest {
 
 
     @Test
-    @Ignore
     public void invalidResubmitPenaltiesUsesZeroValue() {
         ScoringRules scoringRules = prepareScoringRules(2, "foo", 0, null);
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 0, 3, scoringRules);
@@ -230,7 +224,6 @@ public class ScoreServiceTest {
     // TestCase Penalties
 
     @Test
-    @Ignore
     public void shouldHaveFixedTestPenalties() {
         ScoringRules scoringRules = prepareScoringRules(2, null, 0, "50");
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 2, 1, scoringRules);
@@ -245,7 +238,6 @@ public class ScoreServiceTest {
     }
 
     @Test
-    @Ignore
     public void shouldHavePercentageTestPenalties() {
         ScoringRules scoringRules = prepareScoringRules(2, null, 0, "5%");
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 1, scoringRules);
@@ -260,7 +252,6 @@ public class ScoreServiceTest {
     }
 
     @Test
-    @Ignore
     public void invalidTestPenaltiesUsesZeroValue() {
         ScoringRules scoringRules = prepareScoringRules(2, null, 0, "foo");
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 1, scoringRules);

@@ -28,10 +28,13 @@ public class AssignmentResult {
     @JoinColumn(name="assignment_status_id", nullable = false)
     private AssignmentStatus assignmentStatus;
 
-    @Column(name="submit_time")
-    private Integer submitTime;
+    @Column(name="initial_score")
+    private Long initialScore;
 
-    @Column(name="score")
-    private Integer score;
+    @Column(name="penaly")
+    private Long penalty;
+
+    @Column(name="bonus")
+    private Long bonus;
 
 }
