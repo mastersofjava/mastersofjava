@@ -15,14 +15,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "assignment_statuses")
-@SequenceGenerator(name="assignment_status_id_seq", sequenceName = "assignment_statuses_seq")
+@Table(name = "assignment_statuses", uniqueConstraints = @UniqueConstraint(name = "competition_assignment_team_unique", columnNames = {"competition_session_id", "assignment_id", "team_id"}))
+@SequenceGenerator(name = "assignment_status_id_seq", sequenceName = "assignment_statuses_seq")
 
 @Builder
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of={"uuid"})
+@EqualsAndHashCode(of = {"uuid"})
 public class AssignmentStatus {
 
     @Id
@@ -30,40 +30,40 @@ public class AssignmentStatus {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name="uuid", nullable = false, updatable = false)
+    @Column(name = "uuid", nullable = false, updatable = false)
     private UUID uuid;
 
     @ManyToOne
-    @JoinColumn(name="competition_session_id", nullable=false)
+    @JoinColumn(name = "competition_session_id", nullable = false)
     private CompetitionSession competitionSession;
 
     @ManyToOne
-    @JoinColumn(name="team_id", nullable=false)
+    @JoinColumn(name = "team_id", nullable = false)
     private Team team;
 
     @ManyToOne
-    @JoinColumn(name="assignment_id",nullable=false)
+    @JoinColumn(name = "assignment_id", nullable = false)
     private Assignment assignment;
 
-    @Column(name="date_time_start")
+    @Column(name = "date_time_start")
     private Instant dateTimeStart;
 
-    @Column(name="date_time_end")
+    @Column(name = "date_time_end")
     private Instant dateTimeEnd;
 
-    @Column(name="assignment_duration")
+    @Column(name = "assignment_duration")
     private Duration assignmentDuration;
 
-    @OneToMany(mappedBy = "assignmentStatus")
+    @OneToMany(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
     private List<CompileAttempt> compileAttempts;
 
-    @OneToMany(mappedBy = "assignmentStatus")
+    @OneToMany(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
     private List<TestAttempt> testAttempts;
 
-    @OneToMany(mappedBy = "assignmentStatus")
+    @OneToMany(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
     private List<SubmitAttempt> submitAttempts;
 
-    @OneToOne(mappedBy="assignmentStatus")
+    @OneToOne(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
     private AssignmentResult assignmentResult;
 
 }

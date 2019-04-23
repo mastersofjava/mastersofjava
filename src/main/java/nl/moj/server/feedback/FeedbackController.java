@@ -1,10 +1,9 @@
 package nl.moj.server.feedback;
 
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.CollectionUtil;
@@ -31,25 +30,23 @@ public class FeedbackController {
 
     private final TeamRepository teamRepository;
 
-    private final ResultRepository resultRepository;
+    private final CompetitionRuntime competition;
 
-	private final CompetitionRuntime competition;
+    @GetMapping("/feedback")
+    public ModelAndView feedback(HttpServletRequest request) {
+        ModelAndView model = new ModelAndView("testfeedback");
+        List<Team> allTeams = teamRepository.findAllByRole(ROLE_USER);
+        orderTeamsByName(allTeams);
 
-	@GetMapping("/feedback")
-	public ModelAndView feedback(HttpServletRequest request) {
-		ModelAndView model = new ModelAndView("testfeedback");
-		List<Team> allTeams = teamRepository.findAllByRole(ROLE_USER);
-		orderTeamsByHighestTotalScore(allTeams);
-
-		List<List<Team>> partitionedTeams = CollectionUtil.partition(allTeams, 3);
-		model.addObject("teams1", partitionedTeams.get(0));
+        List<List<Team>> partitionedTeams = CollectionUtil.partition(allTeams, 3);
+        model.addObject("teams1", partitionedTeams.get(0));
         model.addObject("teams2", partitionedTeams.get(1));
         model.addObject("teams3", partitionedTeams.get(2));
 
         List<String> testNames = new ArrayList<>();
 
         if (competition.getCurrentAssignment() != null) {
-        	ActiveAssignment state = competition.getActiveAssignment();
+            ActiveAssignment state = competition.getActiveAssignment();
 
             testNames = state.getTestNames();
 
@@ -63,27 +60,31 @@ public class FeedbackController {
             model.addObject("time", 0);
             model.addObject("running", false);
         }
-		model.addObject("submitLinks", request.isUserInRole("ROLE_CONTROL"));
+        model.addObject("submitLinks", request.isUserInRole("ROLE_CONTROL"));
         model.addObject("tests", testNames);
 
         return model;
-	}
+    }
 
-	@GetMapping(value = "/feedback/submission/{team}",produces = MediaType.APPLICATION_JSON_VALUE)
-	@RolesAllowed("ROLE_CONTROL")
-	public @ResponseBody Submission getSubmission(@PathVariable("team") UUID uuid) {
-		  return Submission.builder()
-				  .team(uuid)
-				  .files(competition.getTeamAssignmentFiles(teamRepository.findByUuid(uuid)).stream()
-						  .filter( f -> f.getFileType() == AssignmentFileType.EDIT )
-						  .map( f -> FileSubmission.builder().filename(f.getShortName()).content(f.getContentAsString()).build())
-						  .collect(Collectors.toList()))
-				  .build();
-	}
+    @GetMapping(value = "/feedback/submission/{team}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RolesAllowed("ROLE_CONTROL")
+    public @ResponseBody
+    Submission getSubmission(@PathVariable("team") UUID uuid) {
+        return Submission.builder()
+                .team(uuid)
+                .files(competition.getTeamAssignmentFiles(teamRepository.findByUuid(uuid)).stream()
+                        .filter(f -> f.getFileType() == AssignmentFileType.EDIT)
+                        .map(f -> FileSubmission.builder()
+                                .filename(f.getShortName())
+                                .content(f.getContentAsString())
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+    }
 
-    private void orderTeamsByHighestTotalScore(List<Team> allTeams) {
-		if( competition.getCompetitionSession() != null ) {
-			allTeams.sort(Comparator.comparingInt(t -> resultRepository.getTotalScore(t, competition.getCompetitionSession())));
-		}
-	}
+    private void orderTeamsByName(List<Team> allTeams) {
+        if (competition.getCompetitionSession() != null) {
+            allTeams.sort(Comparator.comparing(Team::getName));
+        }
+    }
 }

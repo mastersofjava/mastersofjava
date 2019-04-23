@@ -5,7 +5,6 @@ import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
-import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
@@ -20,7 +19,6 @@ public class DbUtil {
 
 	private CompetitionRepository competitionRepository;
 	private AssignmentRepository assignmentRepository;
-	private ResultRepository resultRepository;
 	private TeamRepository teamRepository;
 	private CompetitionSessionRepository competitionSessionRepository;
 	private AssignmentStatusRepository assignmentStatusRepository;
@@ -32,7 +30,6 @@ public class DbUtil {
 
 
 	public void cleanup() {
-		resultRepository.deleteAll();
 		assignmentResultRepository.deleteAll();
 		testCaseRepository.deleteAll();
 		testAttemptRepository.deleteAll();

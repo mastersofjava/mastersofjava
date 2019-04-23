@@ -34,7 +34,7 @@ public class MessageService {
                 .test(tr.getTestName())
                 .message(tr.getTestOutput())
                 .build();
-        log.info("Sending test results: {}", msg);
+        log.info("Sending test assignmentScores: {}", msg);
         template.convertAndSendToUser(team.getName(), DEST_COMPETITION, msg);
         template.convertAndSend(DEST_TESTRESULTS, msg);
     }
@@ -49,7 +49,7 @@ public class MessageService {
                 .message("TODO")
                 .build();
 
-        log.info("Sending submit results: {}", msg);
+        log.info("Sending submit assignmentScores: {}", msg);
         template.convertAndSendToUser(msg.getTeam(), DEST_COMPETITION, msg);
         template.convertAndSend(DEST_TESTRESULTS, msg);
         template.convertAndSend(DEST_RANKINGS, "refresh");
@@ -61,7 +61,7 @@ public class MessageService {
                 .team(team.getName())
                 .message(result.getCompileOutput())
                 .build();
-        log.info("Sending compile results: {}", msg);
+        log.info("Sending compile assignmentScores: {}", msg);
         template.convertAndSendToUser(msg.getTeam(), DEST_COMPETITION, msg);
     }
 

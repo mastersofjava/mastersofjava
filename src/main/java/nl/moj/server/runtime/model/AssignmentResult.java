@@ -7,13 +7,13 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "assignment_results")
-@SequenceGenerator(name="assignment_result_id_seq", sequenceName = "assignment_results_seq")
+@SequenceGenerator(name = "assignment_result_id_seq", sequenceName = "assignment_results_seq")
 
 @Builder
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of={"uuid"})
+@EqualsAndHashCode(of = {"uuid"})
 public class AssignmentResult {
 
     @Id
@@ -21,20 +21,22 @@ public class AssignmentResult {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name="uuid", nullable = false, updatable = false)
+    @Column(name = "uuid", nullable = false, updatable = false)
     private UUID uuid;
 
     @OneToOne
-    @JoinColumn(name="assignment_status_id", nullable = false)
+    @JoinColumn(name = "assignment_status_id", nullable = false)
     private AssignmentStatus assignmentStatus;
 
-    @Column(name="initial_score")
+    @Column(name = "initial_score", nullable = false)
     private Long initialScore;
 
-    @Column(name="penaly")
+    @Column(name = "penaly", nullable = false)
     private Long penalty;
 
-    @Column(name="bonus")
+    @Column(name = "bonus", nullable = false)
     private Long bonus;
 
+    @Column(name = "final_score", nullable = false)
+    private Long finalScore;
 }

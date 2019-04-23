@@ -45,11 +45,11 @@ public class SubmitAttempt {
     @Column(name="assignment_time_elapsed")
     private Duration assignmentTimeElapsed;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name="compile_attempt_id")
     private CompileAttempt compileAttempt;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name="test_attempt_id")
     private TestAttempt testAttempt;
 

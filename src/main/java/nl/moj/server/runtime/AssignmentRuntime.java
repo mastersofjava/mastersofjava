@@ -185,13 +185,12 @@ public class AssignmentRuntime {
     }
 
     private void initTeamsForAssignment() {
-
-        cleanupTeamScores();
+        cleanupAssignmentStatuses();
         teamService.getTeams().forEach(t -> {
             cleanupTeamAssignmentData(t);
+            initAssignmentStatus(t, assignment, assignmentDescriptor.getDuration());
             initTeamScore(t);
             initTeamAssignmentData(t);
-            initAssignmentStatus(t, assignment, assignmentDescriptor.getDuration());
         });
     }
 
@@ -220,7 +219,6 @@ public class AssignmentRuntime {
                 .assignmentDuration(assignmentDuration)
                 .team(team)
                 .build();
-
         assignmentStatusRepository.save(as);
     }
 
@@ -244,8 +242,9 @@ public class AssignmentRuntime {
         }
     }
 
-    private void cleanupTeamScores() {
-        scoreService.removeScoresForAssignment(assignment, competitionSession);
+    private void cleanupAssignmentStatuses() {
+        assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competitionSession)
+                .forEach(assignmentStatusRepository::delete);
     }
 
     private Future<?> startTimers() {
@@ -275,7 +274,7 @@ public class AssignmentRuntime {
         Duration elapsed = null;
         if (assignmentDescriptor != null && timer != null) {
             elapsed = Duration.ofSeconds(timer.getTime(TimeUnit.SECONDS));
-            if ( elapsed.compareTo(assignmentDescriptor.getDuration()) > 0 ) {
+            if (elapsed.compareTo(assignmentDescriptor.getDuration()) > 0) {
                 elapsed = assignmentDescriptor.getDuration();
             }
         }

@@ -6,10 +6,10 @@ import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.config.properties.Competition;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.repository.ResultRepository;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.model.Score;
+import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.teams.model.Team;
@@ -25,20 +25,19 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ScoreServiceTest {
 
     @Mock
-    private ResultRepository resultRepository;
-
-    @Mock
     private MojServerProperties mojServerProperties;
 
     @Mock
     private AssignmentStatusRepository assignmentStatusRepository;
+
+    @Mock
+    private AssignmentResultRepository assignmentResultRepository;
 
     private ScoreService scoreService;
     private Team team;
@@ -50,7 +49,7 @@ public class ScoreServiceTest {
         team.setId(1L);
         team.setName("Team 1");
 
-        scoreService = new ScoreService(resultRepository, mojServerProperties, assignmentStatusRepository);
+        scoreService = new ScoreService(mojServerProperties, assignmentStatusRepository, assignmentResultRepository);
     }
 
     private ActiveAssignment prepareAssignmentStatus(Team team, Long initialScore, Integer testRuns, Integer submits, ScoringRules scoringRules) {
@@ -63,7 +62,7 @@ public class ScoreServiceTest {
                 .submitAttempts(createSubmitAttempts(submits))
                 .build();
 
-        Mockito.when(assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(isA(Assignment.class),isA(CompetitionSession.class), isA(Team.class)))
+        Mockito.when(assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(isA(Assignment.class), isA(CompetitionSession.class), isA(Team.class)))
                 .thenReturn(as);
         setupGlobalSuccessBonus(500);
 
@@ -77,16 +76,16 @@ public class ScoreServiceTest {
 
     private List<SubmitAttempt> createSubmitAttempts(int count) {
         List<SubmitAttempt> sa = new ArrayList<>();
-        for( int i=0; i < count; i++ ) {
-            sa.add( new SubmitAttempt());
+        for (int i = 0; i < count; i++) {
+            sa.add(new SubmitAttempt());
         }
         return sa;
     }
 
     private List<TestAttempt> createTestAttempts(int count) {
         List<TestAttempt> sa = new ArrayList<>();
-        for( int i=0; i < count; i++ ) {
-            sa.add( new TestAttempt());
+        for (int i = 0; i < count; i++) {
+            sa.add(new TestAttempt());
         }
         return sa;
     }

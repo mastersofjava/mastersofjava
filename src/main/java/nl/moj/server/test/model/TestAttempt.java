@@ -37,6 +37,6 @@ public class TestAttempt {
     @JoinColumn(name="assignment_status_id", nullable=false)
     private AssignmentStatus assignmentStatus;
 
-    @OneToMany(mappedBy = "testAttempt")
+    @OneToMany(mappedBy = "testAttempt", cascade = CascadeType.REMOVE)
     private List<TestCase> testCases;
 }
