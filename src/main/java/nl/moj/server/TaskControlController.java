@@ -1,5 +1,10 @@
 package nl.moj.server;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
@@ -128,16 +133,12 @@ public class TaskControlController {
         return "control";
     }
 
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class TaskMessage {
+
         private String taskName;
-
-        public TaskMessage(String taskName) {
-            this.taskName = taskName;
-        }
-
-        public String getTaskName() {
-            return taskName;
-        }
 
     }
 }
