@@ -59,7 +59,7 @@ public class TestSubmitTest extends BaseRuntimeTest {
 			src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
 
 
-			SubmitResult submitResult = submitService.test(getTeam(), src)
+			SubmitResult submitResult = submitService.testAsync(getTeam(), src)
 					.get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
 
 			Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isFalse();
