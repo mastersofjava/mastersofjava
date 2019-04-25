@@ -16,6 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(of={"uuid"})
+@ToString(exclude = {"assignmentStatus"})
 public class CompileAttempt {
 
     @Id

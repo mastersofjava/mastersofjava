@@ -14,6 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(of = {"uuid"})
+@ToString(exclude = {"assignmentStatus"})
 public class AssignmentResult {
 
     @Id
@@ -31,7 +32,7 @@ public class AssignmentResult {
     @Column(name = "initial_score", nullable = false)
     private Long initialScore;
 
-    @Column(name = "penaly", nullable = false)
+    @Column(name = "penalty", nullable = false)
     private Long penalty;
 
     @Column(name = "bonus", nullable = false)

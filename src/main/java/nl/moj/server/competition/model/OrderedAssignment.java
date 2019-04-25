@@ -3,6 +3,7 @@ package nl.moj.server.competition.model;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import nl.moj.server.assignment.model.Assignment;
 
 import javax.persistence.*;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name="ordered_assignments_seq", sequenceName = "ordered_assignments_seq")
 @EqualsAndHashCode(of={"uuid"})
+@ToString(exclude = {"competition"})
 public class OrderedAssignment {
 
 	@Id
