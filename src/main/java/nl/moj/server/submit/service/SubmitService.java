@@ -141,19 +141,11 @@ public class SubmitService {
 
                 if( trs.isSuccess() ) {
                     try {
-                        Score score = scoreService.calculateScore(team, activeAssignment, trs.isSuccess());
                         if (trs.isSuccess() || getRemainingSubmits(as) <= 0) {
-                            scoreService.registerScore(team, activeAssignment.getAssignment(), competition.getCompetitionSession(), score);
+                            Score score = scoreService.calculateScore(team, activeAssignment, trs.isSuccess());
                             competition.registerAssignmentCompleted(team, score.getInitialScore(), score.getTotalScore());
                             sr = sr.toBuilder().score(score.getTotalScore()).build();
-
-                            AssignmentResult ar = AssignmentResult.builder()
-                                    .assignmentStatus(as)
-                                    .initialScore(score.getInitialScore())
-                                    .bonus(score.getSubmitBonus())
-                                    .penalty(score.getTotalPenalty())
-                                    .build();
-                            assignmentResultRepository.save(ar);
+                            scoreService.registerScore(team,activeAssignment.getAssignment(),activeAssignment.getCompetitionSession(),score);
                         }
                     } catch (Exception e) {
                         log.error("Submit failed unexpectedly.", e);

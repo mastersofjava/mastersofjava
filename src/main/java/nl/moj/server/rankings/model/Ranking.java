@@ -42,7 +42,7 @@ public class Ranking {
     }
 
     public AssignmentScore getAssignmentResult(OrderedAssignment oa) {
-        return assignmentScores.stream().filter(r -> r.getAssignment().equals(oa.getAssignment())).findFirst().orElse(
+        return assignmentScores.stream().filter(r -> r.getAssignmentUuid().equals(oa.getAssignment().getUuid())).findFirst().orElse(
                 emptyResult(oa.getAssignment()));
     }
 

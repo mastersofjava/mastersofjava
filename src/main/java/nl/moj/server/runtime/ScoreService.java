@@ -84,25 +84,6 @@ public class ScoreService {
                 .build());
     }
 
-    /**
-     * Scores can only be registered once per assignment per team.
-     *
-     * @param team
-     * @param assignment
-     * @param session
-     * @param score
-     */
-    public void registerScore(Team team, Assignment assignment, CompetitionSession session, Score score) {
-        AssignmentResult result = assignmentResultRepository.findByTeamAndAssignmentAndCompetitionSession(team, assignment, session);
-        result.setInitialScore(score.getInitialScore());
-        result.setBonus(score.getSubmitBonus());
-        result.setPenalty(score.getTotalPenalty());
-        result.setFinalScore(score.getTotalScore());
-        assignmentResultRepository.save(result);
-        log.info("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, team
-                .getName(), assignment.getName());
-    }
-
     public Score calculateScore(Team team, ActiveAssignment state, boolean success) {
         if (success) {
             AssignmentDescriptor ad = state.getAssignmentDescriptor();
@@ -170,5 +151,24 @@ public class ScoreService {
             submitBonus = mojServerProperties.getCompetition().getSuccessBonus();
         }
         return submitBonus;
+    }
+
+    public void registerScore(Team team, Assignment assignment, CompetitionSession competitionSession, Score score) {
+        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment, competitionSession, team);
+        AssignmentResult ar = as.getAssignmentResult();
+        if (as.getAssignmentResult() == null) {
+            ar = AssignmentResult.builder()
+                    .assignmentStatus(as)
+                    .uuid(UUID.randomUUID())
+                    .build();
+        }
+
+        ar.setInitialScore(score.getInitialScore());
+        ar.setBonus(score.getSubmitBonus());
+        ar.setPenalty(score.getTotalPenalty());
+        ar.setFinalScore(score.getTotalScore());
+        assignmentResultRepository.save(ar);
+        log.info("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, team
+                .getName(), assignment.getName());
     }
 }
