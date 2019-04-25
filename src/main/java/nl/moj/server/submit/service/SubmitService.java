@@ -22,9 +22,12 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.repository.TestAttemptRepository;
 import nl.moj.server.test.service.TestResult;
+import nl.moj.server.test.service.TestResults;
 import nl.moj.server.test.service.TestService;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,189 +52,133 @@ public class SubmitService {
     private final SubmitAttemptRepository submitAttemptRepository;
     private final AssignmentResultRepository assignmentResultRepository;
 
-    public CompletableFuture<SubmitResult> compile(Team team, SourceMessage message) {
+    @Async("compiling")
+    @Transactional
+    public CompletableFuture<SubmitResult> compileAsync(Team team, SourceMessage message) {
         competition.registerCompileRun(team);
-        return compileService.compile(team, message)
-                .whenComplete((compileResult, error) -> {
-                    messageService.sendCompileFeedback(team, compileResult);
-                    if (error != null) {
-                        log.error("Compiling failed: {}", error.getMessage(), error);
-                    }
-                }).thenApply(cr -> SubmitResult.builder()
-                        .success(cr.isSuccess())
-                        .compileResult(cr)
-                        .build());
+        CompileResult cr = compileInternal(team, message);
+        return CompletableFuture.completedFuture(SubmitResult.builder()
+                .success(cr.isSuccess())
+                .compileResult(cr)
+                .build());
     }
 
-    public CompletableFuture<SubmitResult> test(Team team, SourceMessage message) {
-        ActiveAssignment state = competition.getActiveAssignment();
+    private CompileResult compileInternal(Team team, SourceMessage message) {
+        CompileResult cr = compileService.compileSync(team, message);
+        messageService.sendCompileFeedback(team, cr);
+        return cr;
+    }
+
+    @Async("testing")
+    @Transactional
+    public CompletableFuture<SubmitResult> testAsync(Team team, SourceMessage message) {
+        ActiveAssignment activeAssignment = competition.getActiveAssignment();
         competition.registerTestRun(team);
-        return compileAndTest(team, message, state.getTestFiles())
-                .whenComplete((submitResult, error) -> {
-                    if (error != null) {
-                        log.error("Testing failed: {}", error.getMessage(), error);
-                    }
-                }).thenApply(r -> SubmitResult.builder()
-                        .success(r.isSuccess())
-                        .compileResult(r.getCompileResult())
-                        .testResults(r.getTestResults())
-                        .build());
+
+        SubmitResult sr = SubmitResult.builder()
+                .success(false)
+                .build();
+
+        //compile
+        CompileResult cr = compileInternal(team, message);
+        sr = sr.toBuilder().compileResult(cr).build();
+
+        if (cr.isSuccess()) {
+            TestResults trs = testInternal(team, activeAssignment.getTestFiles().stream()
+                    .filter(t -> message.getTests().contains(t.getUuid().toString()))
+                    .collect(Collectors.toList()));
+            sr = sr.toBuilder()
+                    .success(trs.isSuccess())
+                    .testResults(trs.getResults())
+                    .build();
+        }
+
+        return CompletableFuture.completedFuture(sr);
+    }
+
+    private TestResults testInternal(Team team, List<AssignmentFile> tests) {
+        TestResults trs = testService.runTestsSync(team, tests);
+        trs.getResults().forEach(tr -> messageService.sendTestFeedback(team, tr));
+        return trs;
     }
 
 
-    public CompletableFuture<SubmitResult> submit(Team team, SourceMessage message) {
-        if (isSubmitAllowedForTeam(team)) {
-            competition.registerSubmit(team);
-            ActiveAssignment state = competition.getActiveAssignment();
-            AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),state.getCompetitionSession(), team);
+    @Async("submitting")
+    @Transactional
+    public CompletableFuture<SubmitResult> submitAsync(Team team, SourceMessage message) {
+        ActiveAssignment activeAssignment = competition.getActiveAssignment();
+        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment
+                .getAssignment(), activeAssignment.getCompetitionSession(), team);
 
+        if (isSubmitAllowedForTeam(as)) {
+            competition.registerSubmit(team);
             SubmitAttempt sa = SubmitAttempt.builder()
                     .assignmentStatus(as)
                     .dateTimeStart(Instant.now())
-                    .assignmentTimeElapsed(state.getTimeElapsed())
+                    .assignmentTimeElapsed(activeAssignment.getTimeElapsed())
                     .uuid(UUID.randomUUID())
                     .build();
+            as.getSubmitAttempts().add(sa);
 
-            message.setTests(state.getSubmitTestFiles()
-                    .stream()
-                    .map(t -> t.getUuid().toString())
-                    .collect(Collectors.toList()));
-            return compileAndTest(team, message, state.getSubmitTestFiles())
-                    .thenApply(ctr -> {
+            SubmitResult sr = SubmitResult.builder()
+                    .success(false)
+                    .build();
 
-                        sa.setCompileAttempt(compileAttemptRepository.findByUuid(ctr.getCompileResult().getCompileAttemptUuid()));
-                        sa.setTestAttempt(testAttemptRepository.findByUuid(ctr.getTestAttemptUuid()));
-                        sa.setDateTimeEnd(Instant.now());
-                        sa.setSuccess(ctr.isSuccess());
-                        submitAttemptRepository.save(sa);
+            //compile
+            CompileResult cr = compileInternal(team, message);
+            sr = sr.toBuilder().compileResult(cr).build();
+            sa.setCompileAttempt(compileAttemptRepository.findByUuid(cr.getCompileAttemptUuid()));
 
-                        SubmitResult result = SubmitResult.builder()
-                                .compileResult(ctr.getCompileResult())
-                                .testResults(ctr.getTestResults())
-                                .remainingSubmits(getRemainingSubmits(team))
-                                .success(ctr.isSuccess())
-                                .build();
+            if (cr.isSuccess()) {
+                TestResults trs = testInternal(team, activeAssignment.getSubmitTestFiles());
+                sa.setTestAttempt(testAttemptRepository.findByUuid(trs.getTestAttemptUuid()));
+                sa.setSuccess(trs.isSuccess());
 
-                        try {
-                            Score score = scoreService.calculateScore(team, state, ctr.isSuccess());
-                            if (ctr.isSuccess() || getRemainingSubmits(team) <= 0) {
-                                scoreService.registerScore(team, state.getAssignment(), competition.getCompetitionSession(), score);
-                                competition.registerAssignmentCompleted(team, score.getInitialScore(), score.getTotalScore());
-                                result = result.toBuilder().score(score.getTotalScore()).build();
+                sr = sr.toBuilder()
+                        .success(trs.isSuccess())
+                        .testResults(trs.getResults())
+                        .build();
 
-                                AssignmentResult ar = AssignmentResult.builder()
-                                        .assignmentStatus(as)
-                                        .initialScore(score.getInitialScore())
-                                        .bonus(score.getSubmitBonus())
-                                        .penalty(score.getTotalPenalty())
-                                        .build();
-                                assignmentResultRepository.save(ar);
-                            }
-                            messageService.sendSubmitFeedback(team, result);
-                            return result;
-                        } catch (Exception e) {
-                            log.error("Submit failed unexpectedly.", e);
+                if( trs.isSuccess() ) {
+                    try {
+                        Score score = scoreService.calculateScore(team, activeAssignment, trs.isSuccess());
+                        if (trs.isSuccess() || getRemainingSubmits(as) <= 0) {
+                            scoreService.registerScore(team, activeAssignment.getAssignment(), competition.getCompetitionSession(), score);
+                            competition.registerAssignmentCompleted(team, score.getInitialScore(), score.getTotalScore());
+                            sr = sr.toBuilder().score(score.getTotalScore()).build();
+
+                            AssignmentResult ar = AssignmentResult.builder()
+                                    .assignmentStatus(as)
+                                    .initialScore(score.getInitialScore())
+                                    .bonus(score.getSubmitBonus())
+                                    .penalty(score.getTotalPenalty())
+                                    .build();
+                            assignmentResultRepository.save(ar);
                         }
-                        return result;
-                    }).whenComplete((ctr, error) -> {
-                        if (error != null) {
-                            log.error("Submit failed: {}", error.getMessage(), error);
-                        }
-                    });
+                    } catch (Exception e) {
+                        log.error("Submit failed unexpectedly.", e);
+                    }
+                }
+            }
+            sa.setDateTimeEnd(Instant.now());
+            submitAttemptRepository.save(sa);
+            sr = sr.toBuilder().remainingSubmits(getRemainingSubmits(as)).build();
+            messageService.sendSubmitFeedback(team, sr);
+
+            return CompletableFuture.completedFuture(sr);
         }
+
         return CompletableFuture.completedFuture(SubmitResult.builder().build());
     }
 
-    private boolean isSubmitAllowedForTeam(Team team) {
-        return getRemainingSubmits(team) > 0;
+
+    private boolean isSubmitAllowedForTeam(AssignmentStatus as) {
+        return getRemainingSubmits(as) > 0;
     }
 
-    private int getRemainingSubmits(Team team) {
+    private int getRemainingSubmits(AssignmentStatus as) {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
-        CompetitionSession session = competition.getCompetitionSession();
-        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
-                session, team);
         int maxSubmits = activeAssignment.getAssignmentDescriptor().getScoringRules().getMaximumResubmits() + 1;
         return maxSubmits - as.getSubmitAttempts().size();
-    }
-
-    private CompletableFuture<CompileAndTestResult> compileAndTest(Team team, SourceMessage message, List<AssignmentFile> tests) {
-        ActiveAssignment activeAssignment = competition.getActiveAssignment();
-        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
-                activeAssignment.getCompetitionSession(), team);
-
-        return compileService.compile(team, message)
-                .thenCompose(compileResult -> {
-                    messageService.sendCompileFeedback(team, compileResult);
-                    if (compileResult.isSuccess()) {
-                        TestAttempt ta = testAttemptRepository.save(TestAttempt.builder()
-                                .assignmentStatus(as)
-                                .dateTimeStart(Instant.now())
-                                .uuid(UUID.randomUUID())
-                                .build());
-
-                        return allTests(team, ta, tests.stream()
-                                .filter(t -> message.getTests().contains(t.getUuid().toString()))
-                                .collect(Collectors.toList()))
-                                .thenApply(
-                                        testResults -> CompileAndTestResult.builder()
-                                                .compileResult(compileResult)
-                                                .testAttemptUuid(ta.getUuid())
-                                                .testResults(testResults)
-                                                .build()
-                                ).thenApply(crtr -> {
-                                    updateAttemptEnd(ta.getId());
-                                    return crtr;
-                                });
-                    } else {
-                        return CompletableFuture.completedFuture(CompileAndTestResult.builder()
-                                .compileResult(compileResult)
-                                .build());
-                    }
-                });
-    }
-
-    // TODO maybe move this to test service.
-    @SuppressWarnings("unchecked")
-    private CompletableFuture<List<TestResult>> allTests(Team team, TestAttempt ta, List<AssignmentFile> tests) {
-        messageService.sendTeamStartedTesting(team);
-        List<CompletableFuture<TestResult>> cfs = new ArrayList<>();
-        tests.forEach(t -> {
-            cfs.add(testService.runTest(team, ta, t)
-                    .thenApply(tr -> {
-                        messageService.sendTestFeedback(team, tr);
-                        return tr;
-                    }));
-        });
-        return combine(cfs.toArray(new CompletableFuture[]{}));
-    }
-
-    private void updateAttemptEnd(Long id) {
-        testAttemptRepository.findById(id).ifPresent(t -> {
-            t.setDateTimeEnd(Instant.now());
-            testAttemptRepository.save(t);
-        });
-    }
-
-    private <T> CompletableFuture<List<T>> combine(CompletableFuture<T>... futures) {
-        return CompletableFuture.allOf(futures)
-                .thenApply(ignores -> Arrays.stream(futures)
-                        .map(CompletableFuture::join)
-                        .collect(Collectors.toList()));
-
-
-    }
-
-    @Builder
-    @Getter
-    private static class CompileAndTestResult {
-        private CompileResult compileResult;
-        private UUID testAttemptUuid;
-        private List<TestResult> testResults;
-
-        public boolean isSuccess() {
-            return compileResult != null && compileResult.isSuccess() &&
-                    testResults.stream().allMatch(TestResult::isSuccess);
-        }
     }
 }

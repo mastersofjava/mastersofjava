@@ -16,6 +16,7 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 
@@ -57,6 +58,10 @@ public class CompileService {
 
 	public CompletableFuture<CompileResult> compile(Team team, SourceMessage message) {
 		return CompletableFuture.supplyAsync(compileTask(mojServerProperties.getLanguages().getJavaVersion(competition.getActiveAssignment().getAssignmentDescriptor().getJavaVersion()), team, message), executor);
+	}
+
+	public CompileResult compileSync(Team team, SourceMessage message) {
+		return compileTask(mojServerProperties.getLanguages().getJavaVersion(competition.getActiveAssignment().getAssignmentDescriptor().getJavaVersion()), team, message).get();
 	}
 
 	private Supplier<CompileResult> compileTask(Languages.JavaVersion javaVersion, Team team, SourceMessage message) {

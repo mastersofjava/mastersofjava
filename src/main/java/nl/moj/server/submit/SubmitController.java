@@ -55,14 +55,14 @@ public class SubmitController {
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		Team team = teamRepository.findByName(user.getName());
-		submitService.compile(team,message);
+		submitService.compileAsync(team,message);
 	}
 
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		Team team = teamRepository.findByName(user.getName());
-		submitService.test(team,message);
+		submitService.testAsync(team,message);
 
 	}
 
@@ -80,6 +80,6 @@ public class SubmitController {
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		Team team = teamRepository.findByName(user.getName());
-		submitService.submit(team,message);
+		submitService.submitAsync(team,message);
 	}
 }
