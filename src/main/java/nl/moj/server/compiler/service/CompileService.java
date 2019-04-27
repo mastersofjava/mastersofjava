@@ -92,10 +92,15 @@ public class CompileService {
 				log.error("error while cleaning teamdir", e);
 			}
 
-			// TODO fix compile result so team knows something is very wrong.
+			// copy resources
 			resources.forEach(r -> {
 				try {
-					FileUtils.copyFileToDirectory(r.getAbsoluteFile().toFile(), classesDir);
+					File target = classesDir.toPath().resolve(r.getFile()).toFile();
+					if( target.getParentFile() != null ) {
+						target.getParentFile().mkdirs();
+					}
+					FileUtils.copyFile(r.getAbsoluteFile().toFile(),target);
+					//FileUtils.copyFileToDirectory(r.getAbsoluteFile().toFile(), classesDir);
 				} catch (IOException e) {
 					log.error("error while writing resources to classes dir", e);
 				}

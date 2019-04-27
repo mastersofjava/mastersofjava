@@ -74,14 +74,16 @@ public class JavaAssignmentFileResolver {
 
 	private AssignmentFile convertToAssignmentFile(String assignment, Path assignmentBase, Path prefix, Path file, AssignmentFileType type, boolean readOnly) {
 		Path ap = assignmentBase;
+		Path bp = assignmentBase;
 		if (prefix != null) {
-			ap = ap.resolve(prefix);
+			bp = ap.resolve(prefix);
 		}
-		ap = ap.resolve(file);
+		ap = bp.resolve(file);
 		return AssignmentFile.builder()
 				.assignment(assignment)
 				.content(readPathContent(ap))
 				.absoluteFile(ap)
+				.base(bp)
 				.file(file)
 				.name(getName(file))
 				.shortName(getShortName(file))

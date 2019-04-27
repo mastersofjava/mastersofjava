@@ -32,5 +32,6 @@ grant {
 
     // Allow reading resources ... can we thighten this?
     permission java.io.FilePermission "<<ALL FILES>>", "read";
+    permission java.util.PropertyPermission "user.dir", "read";
 };
 

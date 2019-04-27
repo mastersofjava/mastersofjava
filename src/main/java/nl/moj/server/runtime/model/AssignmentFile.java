@@ -28,6 +28,8 @@ public class AssignmentFile {
 
 	private final Path file;
 
+	private final Path base;
+
 	private final MediaType mediaType;
 
 	private final boolean readOnly;
