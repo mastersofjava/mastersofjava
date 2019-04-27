@@ -221,7 +221,8 @@ public class CompileService {
 				.stream()
 				.filter(f -> f.getFileType() == AssignmentFileType.READONLY ||
 						f.getFileType() == AssignmentFileType.TEST ||
-						f.getFileType() == AssignmentFileType.HIDDEN_TEST)
+						f.getFileType() == AssignmentFileType.HIDDEN_TEST ||
+						f.getFileType() == AssignmentFileType.HIDDEN )
 				.collect(Collectors.toList());
 	}
 

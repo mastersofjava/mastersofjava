@@ -34,6 +34,9 @@ public class JavaAssignmentFileResolver {
 		sources.getReadonly().forEach(p -> {
 			originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), sources.getBase(), p, AssignmentFileType.READONLY, true));
 		});
+		sources.getHidden().forEach(p -> {
+			originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), sources.getBase(), p, AssignmentFileType.HIDDEN, true));
+		});
 
 		// get all resources
 		Resources resources = ad.getAssignmentFiles().getResources();

@@ -43,7 +43,7 @@ public class LoginController {
     }
 
     @PostMapping("/register")
-    public String registerSubmit(Model model, @ModelAttribute SignupForm form) {
+    public String registerSubmit(Model model, @ModelAttribute("form") SignupForm form) {
     	if (form.getName() == ""|| form.getPassword() == ""|| form.getPasswordCheck() == "") {
     		model.addAttribute("errors", "Not all fields are filled in");
     		return "register";

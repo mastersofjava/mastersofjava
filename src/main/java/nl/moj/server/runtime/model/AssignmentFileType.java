@@ -5,6 +5,7 @@ public enum AssignmentFileType {
 	HIDDEN_TEST(false),
 	EDIT(true),
 	READONLY(true),
+	HIDDEN(false),
 	TASK(true),
 	SOLUTION(false),
 	RESOURCE(true),
