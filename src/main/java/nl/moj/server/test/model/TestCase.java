@@ -16,6 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(of = {"uuid"})
+@ToString(exclude = {"testAttempt"})
 public class TestCase {
 
     @Id

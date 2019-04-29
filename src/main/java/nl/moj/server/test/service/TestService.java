@@ -108,6 +108,8 @@ public class TestService {
                         .getBaseDirectory()
                         .toFile(), mojServerProperties.getDirectories().getTeamDirectory(),
                 team.getName());
+        File teamAssignmentDir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(),
+                mojServerProperties.getDirectories().getTeamDirectory(), team.getName(), file.getAssignment());
         File policy = FileUtils.getFile(mojServerProperties.getDirectories()
                         .getBaseDirectory()
                         .toFile(), mojServerProperties.getDirectories().getLibDirectory(),
@@ -138,7 +140,7 @@ public class TestService {
                         "org.junit.runner.JUnitCore",
                         file.getName());
                 log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
-                exitvalue = jUnitCommand.directory(teamdir)
+                exitvalue = jUnitCommand.directory(teamAssignmentDir)
                         .timeout(timeout.toSeconds(), TimeUnit.SECONDS).redirectOutput(jUnitOutput)
                         .redirectError(jUnitError).execute().getExitValue();
             } catch (TimeoutException e) {
@@ -178,6 +180,8 @@ public class TestService {
                     .testOutput(result)
                     .dateTimeEnd(Instant.now())
                     .build());
+
+            testAttempt.getTestCases().add(testCase);
 
             return TestResult.builder()
                     .testCaseUuid(testCase.getUuid())

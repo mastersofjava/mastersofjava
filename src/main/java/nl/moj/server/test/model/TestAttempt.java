@@ -5,6 +5,7 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,5 +40,6 @@ public class TestAttempt {
     private AssignmentStatus assignmentStatus;
 
     @OneToMany(mappedBy = "testAttempt", cascade = CascadeType.REMOVE)
-    private List<TestCase> testCases;
+    @Builder.Default
+    private List<TestCase> testCases = new ArrayList<>();
 }

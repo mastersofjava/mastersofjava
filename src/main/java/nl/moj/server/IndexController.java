@@ -85,7 +85,7 @@ public class IndexController {
 		}
 
 		public long getSubmitTime() {
-			return  0L;
+			return assignmentStatus.getAssignmentResult().getInitialScore();
 		}
 
 		public int getMaximumSubmits() {
@@ -96,8 +96,9 @@ public class IndexController {
 			return getMaximumSubmits() - assignmentStatus.getSubmitAttempts().size();
 		}
 
-		public int getScore() {
-			return 0;
+		public long getScore() {
+			return assignmentStatus.getAssignmentResult().getFinalScore();
 		}
+
 	}
 }

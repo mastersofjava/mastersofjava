@@ -1,17 +1,17 @@
 package nl.moj.server.submit.service;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.compiler.service.CompileResult;
 import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
-import nl.moj.server.runtime.model.*;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.model.Score;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.SubmitResult;
@@ -19,9 +19,7 @@ import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.repository.TestAttemptRepository;
-import nl.moj.server.test.service.TestResult;
 import nl.moj.server.test.service.TestResults;
 import nl.moj.server.test.service.TestService;
 import org.springframework.scheduling.annotation.Async;
@@ -29,8 +27,6 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -139,17 +135,15 @@ public class SubmitService {
                         .testResults(trs.getResults())
                         .build();
 
-                if( trs.isSuccess() ) {
-                    try {
-                        if (trs.isSuccess() || getRemainingSubmits(as) <= 0) {
-                            Score score = scoreService.calculateScore(team, activeAssignment, trs.isSuccess());
-                            competition.registerAssignmentCompleted(team, score.getInitialScore(), score.getTotalScore());
-                            sr = sr.toBuilder().score(score.getTotalScore()).build();
-                            scoreService.registerScore(team,activeAssignment.getAssignment(),activeAssignment.getCompetitionSession(),score);
-                        }
-                    } catch (Exception e) {
-                        log.error("Submit failed unexpectedly.", e);
+                try {
+                    if (trs.isSuccess() || getRemainingSubmits(as) <= 0) {
+                        Score score = scoreService.calculateScore(activeAssignment, as);
+                        competition.registerAssignmentCompleted(team, score.getInitialScore(), score.getTotalScore());
+                        sr = sr.toBuilder().score(score.getTotalScore()).build();
+                        scoreService.registerScore(team, activeAssignment.getAssignment(), activeAssignment.getCompetitionSession(), score);
                     }
+                } catch (Exception e) {
+                    log.error("Submit failed unexpectedly.", e);
                 }
             }
             sa.setDateTimeEnd(Instant.now());
