@@ -11,7 +11,11 @@ $(document).ready(function () {
 });
 
 function connectCompetition() {
-    var socket = new SockJS("/ws/competition");
+	var socket = new WebSocket(
+    		((window.location.protocol === "https:") ? "wss://" : "ws://") 
+    		+ window.location.hostname 
+    		+ ':' + window.location.port 
+    		+ "/ws/competition/websocket");
     stomp = Stomp.over(socket);
     stomp.debug = null;
     stomp.connect({}, function (frame) {

@@ -11,7 +11,11 @@ $(document).ready(function(){
 
 function connect() {
 
-	var socket = new SockJS('/rankings');
+	var socket = new WebSocket(
+    		((window.location.protocol === "https:") ? "wss://" : "ws://") 
+    		+ window.location.hostname 
+    		+ ':' + window.location.port 
+    		+ '/rankings/websocket');
 	stompClient = Stomp.over(socket);
 	stompClient.debug = null;
 	stompClient.connect({}, function(frame) {
@@ -24,7 +28,11 @@ function connect() {
 }
 
 function connectControl() {
-	var socket = new SockJS('/control');
+	var socket = new WebSocket(
+    		((window.location.protocol === "https:") ? "wss://" : "ws://") 
+    		+ window.location.hostname 
+    		+ ':' + window.location.port 
+    		+ '/control/websocket');
 	stompControlClient = Stomp.over(socket);
 	stompControlClient.debug = null;
 	stompControlClient.connect({}, function(frame) {
