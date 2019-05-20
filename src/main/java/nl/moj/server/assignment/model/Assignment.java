@@ -1,8 +1,6 @@
 package nl.moj.server.assignment.model;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.UUID;
@@ -11,16 +9,19 @@ import java.util.UUID;
  * @author Ejnar Kaekebeke
  * @author Bas Passon
  */
-@Data
 @Entity
 @Table(name = "assignments")
+@SequenceGenerator(name="assignment_id_seq", sequenceName = "assignments_seq")
+
+@Builder
 @NoArgsConstructor(force = true)
-@SequenceGenerator(name="id_seq", sequenceName = "assignments_seq")
+@AllArgsConstructor
+@Data
 @EqualsAndHashCode(of={"uuid"})
 public class Assignment {
 
 	@Id
-	@GeneratedValue(generator = "id_seq", strategy = GenerationType.SEQUENCE)
+	@GeneratedValue(generator = "assignment_id_seq", strategy = GenerationType.SEQUENCE)
 	@Column(name = "id", nullable = false)
 	private Long id;
 

@@ -1,49 +1,64 @@
 package nl.moj.server.rankings.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.OrderedAssignment;
-import nl.moj.server.runtime.model.Result;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 public class Ranking {
 
     private Integer rank;
-
     private String team;
 
-    private List<Result> results;
+    @Builder.Default
+    private Long totalScore = 0L;
 
-    private Integer totalScore;
+    @Builder.Default
+    private List<AssignmentScore> assignmentScores = new ArrayList<>();
 
     public String getResultJson() {
         StringBuffer b = new StringBuffer();
         b.append("{\"scores\":[");
-        results.forEach( r -> {
-            b.append("{\"name\":\"").append(r.getAssignment()).append("\",\"score\":").append(r.getScore()).append("},");
+        assignmentScores.forEach(r -> {
+            b.append("{\"name\":\"")
+                    .append(r.getAssignment())
+                    .append("\",\"score\":")
+                    .append(r.getScore())
+                    .append("},");
         });
-        if( b.length() > 1) {
+        if (b.length() > 1) {
             b.deleteCharAt(b.length() - 1);
         }
         b.append("]}");
         return b.toString();
     }
 
-    public Result getAssignmentResult(OrderedAssignment oa) {
-        return results.stream().filter( r -> r.getAssignment().equals(oa.getAssignment())).findFirst().orElse(
-        emptyResult(oa.getAssignment()));
+    public AssignmentScore getAssignmentResult(OrderedAssignment oa) {
+        return assignmentScores.stream().filter(r -> r.getAssignmentUuid().equals(oa.getAssignment().getUuid())).findFirst().orElse(
+                emptyResult(oa.getAssignment()));
     }
 
-    private Result emptyResult(Assignment a) {
-        Result r = new Result();
-        r.setAssignment(a);
-        r.setScore(0);
-        r.setPenalty(0);
-        r.setCredit(0);
-        return r;
+    private AssignmentScore emptyResult(Assignment a) {
+        return new AssignmentScore(a.getUuid(), a.getName(), 0L);
+    }
+
+    public void addAssignmentScore(Assignment assignment, Long finalScore) {
+        assignmentScores.add(new AssignmentScore(assignment.getUuid(), assignment.getName(), finalScore));
+    }
+
+    @Getter
+    @AllArgsConstructor
+    private class AssignmentScore {
+        private UUID assignmentUuid;
+        private String assignment;
+        private Long score;
     }
 }

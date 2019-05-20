@@ -1,13 +1,14 @@
 package nl.moj.server.submit;
 
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.compiler.CompileService;
+import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.submit.model.SourceMessage;
+import nl.moj.server.submit.service.SubmitService;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
-import nl.moj.server.test.TestService;
+import nl.moj.server.test.service.TestService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -54,14 +55,14 @@ public class SubmitController {
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		Team team = teamRepository.findByName(user.getName());
-		submitService.compile(team,message);
+		submitService.compileAsync(team,message);
 	}
 
 	@MessageMapping("/test")
 	public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		Team team = teamRepository.findByName(user.getName());
-		submitService.test(team,message);
+		submitService.testAsync(team,message);
 
 	}
 
@@ -79,6 +80,6 @@ public class SubmitController {
 	public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
 			throws Exception {
 		Team team = teamRepository.findByName(user.getName());
-		submitService.submit(team,message);
+		submitService.submitAsync(team,message);
 	}
 }

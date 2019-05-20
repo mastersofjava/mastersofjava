@@ -36,6 +36,10 @@ public class AsyncConfiguration implements AsyncConfigurer {
 		return Executors.newFixedThreadPool(mojServerProperties.getRuntimes().getTest().getThreads(), new NamedThreadFactory("testing"));
 	}
 
+	@Bean(name = "submitting")
+	public Executor submittingExecutor() {
+		return Executors.newFixedThreadPool(10, new NamedThreadFactory("submitting"));
+	}
 	@Override
 	public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
 		return (ex, method, params) -> log.error("Uncaught async error", ex);

@@ -10,7 +10,7 @@ import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
@@ -29,8 +29,6 @@ public class CompetitionRuntime {
 	private final AssignmentRuntime assignmentRuntime;
 
 	private final AssignmentService assignmentService;
-
-	private final TeamRepository teamRepository;
 
 	private final CompetitionSessionRepository competitionSessionRepository;
 
@@ -65,7 +63,7 @@ public class CompetitionRuntime {
 		return CompetitionState.builder().build();
 	}
 
-	public AssignmentState getAssignmentState() {
+	public ActiveAssignment getActiveAssignment() {
 		return assignmentRuntime.getState();
 	}
 
@@ -111,34 +109,11 @@ public class CompetitionRuntime {
 				}).sorted().collect(Collectors.toList());
 	}
 
-	public void registerAssignmentCompleted(Team team, Long timeScore, Long finalScore) {
-		if (assignmentRuntime.getOrderedAssignment() != null) {
-			assignmentRuntime.registerAssignmentCompleted(team, timeScore, finalScore);
-		}
-	}
-
-	public void registerSubmit(Team team) {
-		if (assignmentRuntime.getOrderedAssignment() != null) {
-			assignmentRuntime.registerSubmit(team);
-		}
-	}
 
 	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
 		if (assignmentRuntime.getOrderedAssignment() != null) {
 			return assignmentRuntime.getTeamAssignmentFiles(team);
 		}
 		return Collections.emptyList();
-	}
-
-	public void registerTestRun(Team team) {
-		if (assignmentRuntime.getOrderedAssignment() != null) {
-			assignmentRuntime.registerTestRun(team);
-		}
-	}
-
-	public void registerCompileRun(Team team) {
-		if (assignmentRuntime.getOrderedAssignment() != null) {
-			assignmentRuntime.registerCompileRun(team);
-		}
 	}
 }

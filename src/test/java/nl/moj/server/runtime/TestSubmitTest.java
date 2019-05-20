@@ -4,9 +4,9 @@ import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.runtime.model.AssignmentState;
+import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.submit.SubmitResult;
-import nl.moj.server.submit.SubmitService;
+import nl.moj.server.submit.service.SubmitService;
 import nl.moj.server.submit.model.SourceMessage;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class TestSubmitTest extends BaseRuntimeTest {
 
 		competitionRuntime.startAssignment(oa.getAssignment().getName());
 
-		AssignmentState state = competitionRuntime.getAssignmentState();
+		ActiveAssignment state = competitionRuntime.getActiveAssignment();
 		Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
 		timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
 		
@@ -59,10 +59,10 @@ public class TestSubmitTest extends BaseRuntimeTest {
 			src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
 
 
-			SubmitResult submitResult = submitService.test(getTeam(), src)
+			SubmitResult submitResult = submitService.testAsync(getTeam(), src)
 					.get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
 
-			Assertions.assertThat(submitResult.getTestResults().get(0).isSuccessful()).isFalse();
+			Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isFalse();
 			Assertions.assertThat(submitResult.getTestResults().get(0).isTimeout()).isTrue();
 
 		} catch (Exception e) {

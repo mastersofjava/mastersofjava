@@ -2,6 +2,7 @@ package nl.moj.server.teams.service;
 
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,7 @@ public class TeamService {
 	}
 
 	public List<Team> getTeams() {
-		return teamRepository.findAll();
+		return teamRepository.findAllByRole(Role.ROLE_USER);
 	}
 
 }

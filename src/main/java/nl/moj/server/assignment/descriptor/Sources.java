@@ -21,6 +21,9 @@ public class Sources {
 	@JsonProperty("readonly")
 	private List<Path> readonly;
 
+	@JsonProperty("hidden")
+	private List<Path> hidden;
+
 	public List<Path> getEditable() {
 		if( editable == null ) {
 			return Collections.emptyList();
@@ -33,5 +36,12 @@ public class Sources {
 			return Collections.emptyList();
 		}
 		return readonly;
+	}
+
+	public List<Path> getHidden() {
+		if( hidden == null ) {
+			return Collections.emptyList();
+		}
+		return hidden;
 	}
 }

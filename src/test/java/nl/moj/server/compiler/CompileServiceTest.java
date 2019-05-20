@@ -3,6 +3,7 @@ package nl.moj.server.compiler;
 import java.util.HashMap;
 import java.util.Map;
 
+import nl.moj.server.compiler.service.CompileService;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;

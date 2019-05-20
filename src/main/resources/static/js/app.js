@@ -163,23 +163,23 @@ function updateAlertContainerWithScore(message) {
         $('#alert-container')
             .empty()
             .append(
-                '<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Tests Successful</h4><h1>:-)</h1>'
-                + '<p>your score is</p><strong>'
+                '<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Completed</h4>'
+                + '<p>your final score is</p><strong>'
                 + message.score + '</strong></div>');
     } else {
         if (parseInt(message.remainingSubmits) <= 0) {
             $('#alert-container')
                 .empty()
                 .append(
-                    '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
-                    + '<p>You have no more submits left. Your final score is 0</p></div>');
+                    '<div class="alert alert-warning p-4" role="alert"><h4 class="alert-heading">Assignment Partialy Completed</h4>'
+                    + '<p>You have no more submits attempts left. Your final score is '+ message.score +'</p></div>');
         } else {
             if (parseInt(message.remainingSubmits) > 0) {
                 $('#alert-container')
                     .empty()
                     .append(
-                        '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
-                        + '<p>But you still have ' + message.remainingSubmits + ' submits left :-)</p></div>');
+                        '<div class="alert alert-warning p-4" role="alert"><h4 class="alert-heading">Assignment Partially Completed</h4>'
+                        + '<p>No worries, you still have ' + message.remainingSubmits + ' submits attempts left.</p></div>');
             }
         }
     }

@@ -17,14 +17,18 @@ public class Score {
  	private final Long resubmitPenalty = 0L;
 	@Builder.Default
 	private final Long testPenalty = 0L;
+	@Builder.Default
+	private final Long testBonus = 0L;
 
  	public Long getTotalScore() {
- 		Long score = initialScore + submitBonus - resubmitPenalty - testPenalty;
+ 		Long score = initialScore + submitBonus + testBonus - resubmitPenalty - testPenalty;
  		if( score < 0 ) {
  			return 0L;
 		}
 		return score;
 	}
+
+	public Long getTotalBonus() { return submitBonus + testBonus; }
 
 	public Long getTotalPenalty() {
  		return resubmitPenalty + testPenalty;
