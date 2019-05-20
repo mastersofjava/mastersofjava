@@ -8,10 +8,7 @@ import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.model.Score;
+import nl.moj.server.runtime.model.*;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.SubmitResult;
@@ -51,7 +48,6 @@ public class SubmitService {
     @Async("compiling")
     @Transactional
     public CompletableFuture<SubmitResult> compileAsync(Team team, SourceMessage message) {
-        competition.registerCompileRun(team);
         CompileResult cr = compileInternal(team, message);
         return CompletableFuture.completedFuture(SubmitResult.builder()
                 .success(cr.isSuccess())
@@ -69,8 +65,6 @@ public class SubmitService {
     @Transactional
     public CompletableFuture<SubmitResult> testAsync(Team team, SourceMessage message) {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
-        competition.registerTestRun(team);
-
         SubmitResult sr = SubmitResult.builder()
                 .success(false)
                 .build();
@@ -107,7 +101,6 @@ public class SubmitService {
                 .getAssignment(), activeAssignment.getCompetitionSession(), team);
 
         if (isSubmitAllowedForTeam(as)) {
-            competition.registerSubmit(team);
             SubmitAttempt sa = SubmitAttempt.builder()
                     .assignmentStatus(as)
                     .dateTimeStart(Instant.now())
@@ -129,6 +122,8 @@ public class SubmitService {
                 TestResults trs = testInternal(team, activeAssignment.getSubmitTestFiles());
                 sa.setTestAttempt(testAttemptRepository.findByUuid(trs.getTestAttemptUuid()));
                 sa.setSuccess(trs.isSuccess());
+                sa.setDateTimeEnd(Instant.now());
+                submitAttemptRepository.save(sa);
 
                 sr = sr.toBuilder()
                         .success(trs.isSuccess())
@@ -137,17 +132,14 @@ public class SubmitService {
 
                 try {
                     if (trs.isSuccess() || getRemainingSubmits(as) <= 0) {
-                        Score score = scoreService.calculateScore(activeAssignment, as);
-                        competition.registerAssignmentCompleted(team, score.getInitialScore(), score.getTotalScore());
-                        sr = sr.toBuilder().score(score.getTotalScore()).build();
-                        scoreService.registerScore(team, activeAssignment.getAssignment(), activeAssignment.getCompetitionSession(), score);
+                        as = scoreService.finalizeScore(as,activeAssignment);
+                        sr = sr.toBuilder().score(as.getAssignmentResult().getFinalScore()).build();
                     }
                 } catch (Exception e) {
                     log.error("Submit failed unexpectedly.", e);
                 }
             }
-            sa.setDateTimeEnd(Instant.now());
-            submitAttemptRepository.save(sa);
+
             sr = sr.toBuilder().remainingSubmits(getRemainingSubmits(as)).build();
             messageService.sendSubmitFeedback(team, sr);
 

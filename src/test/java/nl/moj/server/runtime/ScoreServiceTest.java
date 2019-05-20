@@ -7,6 +7,7 @@ import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.config.properties.Competition;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentResult;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.model.Score;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
@@ -27,6 +28,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -75,6 +77,8 @@ public class ScoreServiceTest {
                 .submitAttempts(submitAttempts)
                 .build();
         setupGlobalSuccessBonus(500);
+
+        Mockito.when(assignmentStatusRepository.save(any(AssignmentStatus.class))).thenAnswer( i -> i.getArgument(0));
 
         return ActiveAssignment.builder()
                 .assignment(new Assignment())
@@ -145,13 +149,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 0,1, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(0L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(3000L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(3000L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(0L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(3000L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
     }
 
     @Test
@@ -161,13 +166,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 0,1, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(2500L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(2500L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(500L);
     }
 
     @Test
@@ -177,16 +183,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 2,2, false, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(0L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(200L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTotalBonus()).isEqualTo(200L);
-        Assertions.assertThat(score.getSubmitBonus()).isEqualTo(0L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTestBonus()).isEqualTo(200L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(0L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(200L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(200L);
     }
 
     @Test
@@ -196,16 +200,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 2,2, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getSubmitBonus()).isEqualTo(500L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(500L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(300L);
-        Assertions.assertThat(score.getTestBonus()).isEqualTo(200L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(800L);
-        Assertions.assertThat(score.getTotalBonus()).isEqualTo(700L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(1900L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(1900L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(800L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(700L);
     }
 
     // Submit Penalties
@@ -216,13 +218,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 0,3, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(1000L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(1000L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(1000L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(1000L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(1000L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
     }
 
     @Test
@@ -231,13 +234,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 0,1, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
     }
 
     @Test
@@ -246,13 +250,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 0,3, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(1125L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(875L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(875L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(1125L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(875L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
     }
 
     @Test
@@ -261,13 +266,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 0,1, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
     }
 
 
@@ -278,13 +284,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 0,2, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
     }
 
     // TestCase Penalties
@@ -295,12 +302,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 2, 2,
                 0,2, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(1900L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(100L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(100L);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
+
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(1900L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(100L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
     }
 
     @Test
@@ -309,13 +318,14 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 0,1, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(1715L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(285L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(285L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(1715L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(285L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
     }
 
     @Test
@@ -324,12 +334,13 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
                 0,2, true, scoringRules);
 
-        Score score = scoreService.calculateScore(state, assignmentStatus);
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
 
-        Assertions.assertThat(score.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalScore()).isEqualTo(2000L);
-        Assertions.assertThat(score.getTotalPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getResubmitPenalty()).isEqualTo(0L);
-        Assertions.assertThat(score.getTestPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
     }
 }

@@ -15,6 +15,9 @@ mojserver.log*
 *.iws
 .idea/
 
+# OSX crap
+.DS_Store
+
 # moj data
 moj-data/
 application-local.yaml

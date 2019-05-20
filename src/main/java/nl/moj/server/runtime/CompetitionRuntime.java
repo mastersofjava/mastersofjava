@@ -109,34 +109,11 @@ public class CompetitionRuntime {
 				}).sorted().collect(Collectors.toList());
 	}
 
-	public void registerAssignmentCompleted(Team team, Long timeScore, Long finalScore) {
-		if (assignmentRuntime.getOrderedAssignment() != null) {
-			assignmentRuntime.registerAssignmentCompleted(team, timeScore, finalScore);
-		}
-	}
-
-	public void registerSubmit(Team team) {
-		if (assignmentRuntime.getOrderedAssignment() != null) {
-			assignmentRuntime.registerSubmit(team);
-		}
-	}
 
 	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
 		if (assignmentRuntime.getOrderedAssignment() != null) {
 			return assignmentRuntime.getTeamAssignmentFiles(team);
 		}
 		return Collections.emptyList();
-	}
-
-	public void registerTestRun(Team team) {
-		if (assignmentRuntime.getOrderedAssignment() != null) {
-			assignmentRuntime.registerTestRun(team);
-		}
-	}
-
-	public void registerCompileRun(Team team) {
-		if (assignmentRuntime.getOrderedAssignment() != null) {
-			assignmentRuntime.registerCompileRun(team);
-		}
 	}
 }

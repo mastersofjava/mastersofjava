@@ -2,6 +2,7 @@ package nl.moj.server.runtime;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.dynamic.TypeResolutionStrategy;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
@@ -17,6 +18,7 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestCase;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.UUID;
@@ -93,7 +95,7 @@ public class ScoreService {
                 .build());
     }
 
-    public Score calculateScore(ActiveAssignment state, AssignmentStatus as) {
+    private Score calculateScore(ActiveAssignment state, AssignmentStatus as) {
         AssignmentDescriptor ad = state.getAssignmentDescriptor();
         return Score.builder()
                 .initialScore(calculateInitialScore(state.getTimeRemaining(),as))
@@ -195,8 +197,7 @@ public class ScoreService {
         return getLastSubmitAttempt(as).map(SubmitAttempt::isSuccess).orElse(false);
     }
 
-    public void registerScore(Team team, Assignment assignment, CompetitionSession competitionSession, Score score) {
-        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment, competitionSession, team);
+    private void registerScore(AssignmentStatus as, Score score) {
         AssignmentResult ar = as.getAssignmentResult();
         if (as.getAssignmentResult() == null) {
             ar = AssignmentResult.builder()
@@ -209,8 +210,29 @@ public class ScoreService {
         ar.setBonus(score.getTotalBonus());
         ar.setPenalty(score.getTotalPenalty());
         ar.setFinalScore(score.getTotalScore());
+        as.setAssignmentResult(ar);
         assignmentResultRepository.save(ar);
-        log.info("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, team
-                .getName(), assignment.getName());
+
+    }
+
+    public AssignmentStatus finalizeScore(AssignmentStatus as, ActiveAssignment activeAssignment) {
+        if( needsFinalize(as) ) {
+            Score score = calculateScore(activeAssignment, as);
+            registerScore(as,score);
+
+            // make sure cannot finalize twice.
+            as.setDateTimeEnd(Instant.now());
+            as = assignmentStatusRepository.save(as);
+
+            log.info("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, as.getTeam()
+                    .getName(), activeAssignment.getAssignment().getName());
+        } else {
+            return as;
+        }
+        return as;
+    }
+
+    private boolean needsFinalize(AssignmentStatus as) {
+        return as.getDateTimeEnd() == null;
     }
 }

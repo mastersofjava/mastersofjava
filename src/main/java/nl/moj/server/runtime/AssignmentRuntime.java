@@ -11,10 +11,12 @@ import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentResult;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.sound.Sound;
 import nl.moj.server.sound.SoundService;
+import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.PathUtil;
@@ -83,7 +85,6 @@ public class AssignmentRuntime {
      * @param orderedAssignment the assignment to start.
      * @return the {@link Future}
      */
-//	@Async
     public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) {
         clearHandlers();
         this.competitionSession = competitionSession;
@@ -121,6 +122,23 @@ public class AssignmentRuntime {
      */
     public void stop() {
         messageService.sendStopToTeams(assignment.getName());
+        // TODO calculate final scores for all not finished teams.
+        teamService.getTeams().forEach(t -> {
+            ActiveAssignment state = getState();
+            AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),
+                    state.getCompetitionSession(),t);
+            if( as.getDateTimeEnd() == null ) {
+                as.setDateTimeEnd(Instant.now());
+                AssignmentResult ar = as.getAssignmentResult();
+                messageService.sendSubmitFeedback(t, SubmitResult.builder()
+                        .success(false)
+                        .remainingSubmits(0)
+                        .score(ar.getFinalScore())
+                        .build());
+            }
+        });
+
+
         if (getTimeRemaining() > 0) {
             clearHandlers();
         } else {
@@ -313,46 +331,5 @@ public class AssignmentRuntime {
 
     private Date inSeconds(long sec) {
         return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
-    }
-
-    void registerAssignmentCompleted(Team team, Long timeScore, Long finalScore) {
-//		update(teamStatuses.get(team).toBuilder()
-//				.submitTime(timeScore)
-//				.score(finalScore)
-//				.completed(true)
-//				.build());
-    }
-
-    void registerSubmit(Team team) {
-//		TeamStatus s = teamStatuses.get(team);
-//		s = update(s.toBuilder()
-//				.submits(s.getSubmits() + 1)
-//				.build()
-//		);
-//		log.info("Team {} submitted assignment {} {} time(s).", team.getName(), assignment.getName(), s.getSubmits());
-    }
-
-//	private TeamStatus update(TeamStatus status) {
-//		teamStatuses.put(status.getTeam(), status);
-//		return status;
-//	}
-
-
-    public void registerTestRun(Team team) {
-//		TeamStatus s = teamStatuses.get(team);
-//		s = update(s.toBuilder()
-//				.testRuns(s.getTestRuns() + 1)
-//				.build()
-//		);
-//		log.info("Team {} tested assignment {} {} time(s).", team.getName(), assignment.getName(), s.getTestRuns());
-    }
-
-    public void registerCompileRun(Team team) {
-//		TeamStatus s = teamStatuses.get(team);
-//		s = update(s.toBuilder()
-//				.compileRuns(s.getCompileRuns() + 1)
-//				.build()
-//		);
-//		log.info("Team {} compiled assignment {} {} time(s).", team.getName(), assignment.getName(), s.getCompileRuns());
     }
 }
