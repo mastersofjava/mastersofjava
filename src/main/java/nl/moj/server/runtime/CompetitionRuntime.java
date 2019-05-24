@@ -1,5 +1,15 @@
 package nl.moj.server.runtime;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.springframework.stereotype.Service;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,22 +19,15 @@ import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class CompetitionRuntime {
-
 
 	private final AssignmentRuntime assignmentRuntime;
 
@@ -91,10 +94,10 @@ public class CompetitionRuntime {
 	}
 
 	private CompetitionSession createNewCompetitionSession(Competition competition) {
-		CompetitionSession competitionSession = new CompetitionSession();
-		competitionSession.setUuid(UUID.randomUUID());
-		competitionSession.setCompetition(competition);
-		return competitionSession;
+		var newCompetitionSession = new CompetitionSession();
+		newCompetitionSession.setUuid(UUID.randomUUID());
+		newCompetitionSession.setCompetition(competition);
+		return newCompetitionSession;
 	}
 
 	public List<ImmutablePair<String, Long>> getAssignmentInfo() {
@@ -109,11 +112,14 @@ public class CompetitionRuntime {
 				}).sorted().collect(Collectors.toList());
 	}
 
-
 	public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
 		if (assignmentRuntime.getOrderedAssignment() != null) {
 			return assignmentRuntime.getTeamAssignmentFiles(team);
 		}
 		return Collections.emptyList();
 	}
+	
+	public void handleLateSignup(Team team) {
+		assignmentRuntime.initAssignmentForLateTeam(team);
+	}	
 }
