@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFileType;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.CollectionUtil;
@@ -22,8 +23,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static nl.moj.server.teams.model.Role.ROLE_USER;
-
 @Controller
 @RequiredArgsConstructor
 public class FeedbackController {
@@ -35,7 +34,7 @@ public class FeedbackController {
     @GetMapping("/feedback")
     public ModelAndView feedback(HttpServletRequest request) {
         ModelAndView model = new ModelAndView("testfeedback");
-        List<Team> allTeams = teamRepository.findAllByRole(ROLE_USER);
+        List<Team> allTeams = teamRepository.findAllByRole(Role.USER);
         orderTeamsByName(allTeams);
 
         List<List<Team>> partitionedTeams = CollectionUtil.partition(allTeams, 3);
@@ -61,7 +60,7 @@ public class FeedbackController {
             model.addObject("time", 0);
             model.addObject("running", false);
         }
-        model.addObject("submitLinks", request.isUserInRole("ROLE_CONTROL"));
+        model.addObject("submitLinks", request.isUserInRole("GAME_MASTER"));
         model.addObject("tests", testNames);
 
         return model;
