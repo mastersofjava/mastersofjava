@@ -1,7 +1,7 @@
 package nl.moj.server.runtime;
 
 import lombok.Getter;
-import nl.moj.server.BootstrapService;
+import nl.moj.server.bootstrap.service.BootstrapService;
 import nl.moj.server.DbUtil;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
@@ -56,7 +56,7 @@ public abstract class BaseRuntimeTest {
 
 	@Before
 	public void init() throws IOException {
-		bootstrapService.bootstrap();
+		bootstrapService.bootstrap("admin", "admin");
 		dbUtil.cleanup();
 		competition = createCompetition();
 		competitionRuntime.startCompetition(competition);
@@ -72,7 +72,7 @@ public abstract class BaseRuntimeTest {
 		Team team = new Team();
 		team.setUuid(UUID.randomUUID());
 		team.setName(team.getUuid().toString());
-		team.setRole(Role.ROLE_USER);
+		team.setRole(Role.USER);
 		return teamRepository.save(team);
 	}
 

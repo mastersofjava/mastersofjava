@@ -23,7 +23,7 @@ public class TeamService {
 	}
 
 	public List<Team> getTeams() {
-		return teamRepository.findAllByRole(Role.ROLE_USER);
+		return teamRepository.findAllByRole(Role.USER);
 	}
 
 }
