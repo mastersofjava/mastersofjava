@@ -36,7 +36,11 @@ function createTabs(data) {
 
 function connectFeedback() {
 
-    var socket = new SockJS('/feedback');
+    var socket = new WebSocket(
+    		((window.location.protocol === "https:") ? "wss://" : "ws://") 
+    		+ window.location.hostname 
+    		+ ':' + window.location.port 
+    		+ '/feedback/websocket');
     var stompClient = Stomp.over(socket);
     stompClient.debug = null;
     stompClient.connect({}, function (frame) {
@@ -63,7 +67,11 @@ function connectFeedback() {
 }
 
 function connectControl() {
-    var socket = new SockJS('/control');
+    var socket = new WebSocket(
+    		((window.location.protocol === "https:") ? "wss://" : "ws://") 
+    		+ window.location.hostname 
+    		+ ':' + window.location.port 
+    		+ '/control/websocket');
     var stompClientControl = Stomp.over(socket);
     stompClientControl.debug = null;
     stompClientControl.connect({}, function (frame) {

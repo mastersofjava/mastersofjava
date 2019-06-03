@@ -24,11 +24,11 @@ public class WebSocketConfiguration {
 
 		@Override
 		public void registerStompEndpoints(StompEndpointRegistry registry) {
-			registry.addEndpoint("/ws/competition").withSockJS();
-			registry.addEndpoint("/submit").withSockJS();
-			registry.addEndpoint("/control").withSockJS();
-			registry.addEndpoint("/rankings").withSockJS();
-			registry.addEndpoint("/feedback").withSockJS();
+			registry.addEndpoint("/ws/competition/websocket");
+			registry.addEndpoint("/submit/websocket");
+			registry.addEndpoint("/control/websocket");
+			registry.addEndpoint("/rankings/websocket");
+			registry.addEndpoint("/feedback/websocket");
 		}
 	}
 

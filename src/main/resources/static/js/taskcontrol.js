@@ -8,7 +8,11 @@ $(document).ready(function () {
 
 
 function connect() {
-    var socket = new SockJS('/control');
+    var socket = new WebSocket(
+    		((window.location.protocol === "https:") ? "wss://" : "ws://") 
+    		+ window.location.hostname 
+    		+ ':' + window.location.port 
+    		+ '/control/websocket');
     stompClient = Stomp.over(socket);
     stompClient.debug = null;
     stompClient.connect({}, function (frame) {
