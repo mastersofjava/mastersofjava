@@ -155,7 +155,7 @@ public class TaskControlController {
 			errorMessage = "No team selected";
 		} else {
 			Team team = teamRepository.findByUuid(UUID.fromString(passwordChangeRequest.teamUuid));
-			if (passwordChangeRequest.newPassword.isBlank()) {
+			if (passwordChangeRequest.newPassword == null || passwordChangeRequest.newPassword.isBlank()) {
 				errorMessage = "New password can't be empty";
 			} else if (!passwordChangeRequest.newPassword.equals(passwordChangeRequest.newPasswordCheck)) {
 				errorMessage = "Password and confirmaton did not match";
