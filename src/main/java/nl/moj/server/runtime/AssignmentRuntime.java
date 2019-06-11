@@ -149,6 +149,7 @@ public class AssignmentRuntime {
             }
         }
         running = false;
+        orderedAssignment = null;
         log.info("Stopped assignment {}", assignment.getName());
     }
 
