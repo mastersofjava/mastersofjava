@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -110,10 +111,16 @@ public class TestService {
                 team.getName());
         File teamAssignmentDir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(),
                 mojServerProperties.getDirectories().getTeamDirectory(), team.getName(), file.getAssignment());
-        File policy = FileUtils.getFile(mojServerProperties.getDirectories()
+        File policy = ad.getAssignmentFiles().getSecurityPolicy()//
+                // Use the assignments security policy file, if the assignment has one
+                .map(policyPath -> FileUtils.getFile(//
+                        ad.getDirectory().toFile(), //
+                        policyPath.toString()))//
+                // Use default (strict) security policy
+                .orElse(FileUtils.getFile(mojServerProperties.getDirectories()
                         .getBaseDirectory()
                         .toFile(), mojServerProperties.getDirectories().getLibDirectory(),
-                SECURITY_POLICY_FOR_UNIT_TESTS);
+                SECURITY_POLICY_FOR_UNIT_TESTS));
         Duration timeout = ad.getTestTimeout() != null ? ad.getTestTimeout() :
                 mojServerProperties.getLimits().getTestTimeout();
 
