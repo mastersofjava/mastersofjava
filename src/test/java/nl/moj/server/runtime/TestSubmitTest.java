@@ -69,4 +69,9 @@ public class TestSubmitTest extends BaseRuntimeTest {
 			Assertions.fail("Caught unexpected exception.", e);
 		}
 	}
+
+	@After
+	public void cleanupCompetitionRuntime() {
+		competitionRuntime.stopCurrentAssignment();
+	}
 }
