@@ -15,7 +15,7 @@ labels:
 
 difficulty: 3
 java-version: 8
-duration: PT30M
+duration: PT15S
 submit-timeout: PT60S
 test-timeout: PT60S
 
