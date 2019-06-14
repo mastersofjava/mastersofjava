@@ -98,7 +98,7 @@ public class TestSubmitTest extends BaseRuntimeTest {
 		SubmitResult submitResult = submitService.testAsync(getTeam(), src)
 				.get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
 
-		Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isFalse();
+		Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isTrue();
 		Assertions.assertThat(submitResult.getTestResults().get(0).isTimeout()).isFalse();
 	}
 }

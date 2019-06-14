@@ -1,8 +1,10 @@
 grant {
     // DO NOT ALLOW permission java.net.SocketPermission "localhost:0", "listen";
+    
+    // Allow writing to the java.version, to see check that the policy has taken effect
+    permission java.util.PropertyPermission "java.version", "read, write";
 
     // "standard" properies that can be read by anyone
-    permission java.util.PropertyPermission "java.version", "read";
     permission java.util.PropertyPermission "java.vendor", "read";
     permission java.util.PropertyPermission "java.vendor.url", "read";
     permission java.util.PropertyPermission "java.class.version", "read";
