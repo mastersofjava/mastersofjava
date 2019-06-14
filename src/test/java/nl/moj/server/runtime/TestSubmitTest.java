@@ -36,7 +36,7 @@ public class TestSubmitTest extends BaseRuntimeTest {
 	private MojServerProperties mojServerProperties;
 
 	@Test
-	public void shouldUseSpecifiedAssignmentTestTimeout() {
+	public void shouldUseSpecifiedAssignmentTestTimeout() throws Exception {
 
 		OrderedAssignment oa = getCompetition().getAssignments()
 				.stream()
@@ -50,25 +50,20 @@ public class TestSubmitTest extends BaseRuntimeTest {
 		Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
 		timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
 		
-		try {
-			Map<String,String> files = state.getAssignmentFiles().stream()
-					.filter( f -> f.getFileType() == AssignmentFileType.EDIT )
-					.collect(Collectors.toMap( f -> f.getUuid().toString(), AssignmentFile::getContentAsString));
+		Map<String,String> files = state.getAssignmentFiles().stream()
+				.filter( f -> f.getFileType() == AssignmentFileType.EDIT )
+				.collect(Collectors.toMap( f -> f.getUuid().toString(), AssignmentFile::getContentAsString));
 
-			SourceMessage src = new SourceMessage();
-			src.setSources(files);
-			src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
+		SourceMessage src = new SourceMessage();
+		src.setSources(files);
+		src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
 
 
-			SubmitResult submitResult = submitService.testAsync(getTeam(), src)
-					.get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
+		SubmitResult submitResult = submitService.testAsync(getTeam(), src)
+				.get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
 
-			Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isFalse();
-			Assertions.assertThat(submitResult.getTestResults().get(0).isTimeout()).isTrue();
-
-		} catch (Exception e) {
-			Assertions.fail("Caught unexpected exception.", e);
-		}
+		Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isFalse();
+		Assertions.assertThat(submitResult.getTestResults().get(0).isTimeout()).isTrue();
 	}
 
 	@After
@@ -77,11 +72,10 @@ public class TestSubmitTest extends BaseRuntimeTest {
 	}
 
 	@Test
-	public void shouldUseSpecifiedAssignmentTestTimeoutUseAssignmentSecurityPolicy() {
+	public void shouldUseSpecifiedAssignmentTestTimeoutUseAssignmentSecurityPolicy() throws Exception {
 
 		OrderedAssignment oa = getCompetition().getAssignments()
 				.stream()
-				.peek(System.out::println)
 				.filter( a -> a.getAssignment().getName().equals("assignment-2"))
 				.findFirst()
 				.orElseThrow();
@@ -92,24 +86,19 @@ public class TestSubmitTest extends BaseRuntimeTest {
 		Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
 		timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
 
-		try {
-			Map<String,String> files = state.getAssignmentFiles().stream()
-					.filter( f -> f.getFileType() == AssignmentFileType.EDIT )
-					.collect(Collectors.toMap( f -> f.getUuid().toString(), AssignmentFile::getContentAsString));
+		Map<String,String> files = state.getAssignmentFiles().stream()
+				.filter( f -> f.getFileType() == AssignmentFileType.EDIT )
+				.collect(Collectors.toMap( f -> f.getUuid().toString(), AssignmentFile::getContentAsString));
 
-			SourceMessage src = new SourceMessage();
-			src.setSources(files);
-			src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
+		SourceMessage src = new SourceMessage();
+		src.setSources(files);
+		src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
 
 
-			SubmitResult submitResult = submitService.testAsync(getTeam(), src)
-					.get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
+		SubmitResult submitResult = submitService.testAsync(getTeam(), src)
+				.get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
 
-			Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isFalse();
-			Assertions.assertThat(submitResult.getTestResults().get(0).isTimeout()).isFalse();
-
-		} catch (Exception e) {
-			Assertions.fail("Caught unexpected exception.", e);
-		}
+		Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isFalse();
+		Assertions.assertThat(submitResult.getTestResults().get(0).isTimeout()).isFalse();
 	}
 }
