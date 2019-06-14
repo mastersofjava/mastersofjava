@@ -34,8 +34,3 @@ grant {
     permission java.io.FilePermission "<<ALL FILES>>", "read";
     permission java.util.PropertyPermission "user.dir", "read";
 };
-
-//grant codeBase "file:${catalina.base}/webapps/mywebapp/-" {
-//    permission java.io.FilePermission "path/to/folder", "read"; // Anything else will be disallowed
-//    // Other required permissions
-//}
