@@ -18,6 +18,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -56,7 +57,7 @@ public class TestSubmitTest extends BaseRuntimeTest {
 
 		SourceMessage src = new SourceMessage();
 		src.setSources(files);
-		src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
+		src.setTests(List.of(state.getTestFiles().get(0).getUuid().toString()));
 
 
 		SubmitResult submitResult = submitService.testAsync(getTeam(), src)
@@ -92,7 +93,7 @@ public class TestSubmitTest extends BaseRuntimeTest {
 
 		SourceMessage src = new SourceMessage();
 		src.setSources(files);
-		src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
+		src.setTests(List.of(state.getTestFiles().get(0).getUuid().toString()));
 
 
 		SubmitResult submitResult = submitService.testAsync(getTeam(), src)

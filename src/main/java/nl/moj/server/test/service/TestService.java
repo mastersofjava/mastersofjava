@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -105,21 +104,14 @@ public class TestService {
                 .dateTimeStart(Instant.now())
                 .build();
 
-        File teamdir = FileUtils.getFile(mojServerProperties.getDirectories()
-                        .getBaseDirectory()
-                        .toFile(), mojServerProperties.getDirectories().getTeamDirectory(),
-                team.getName());
-        File teamAssignmentDir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(),
-                mojServerProperties.getDirectories().getTeamDirectory(), team.getName(), file.getAssignment());
-        File policy = ad.getAssignmentFiles().getSecurityPolicy()//
+        final var directories = mojServerProperties.getDirectories();
+        final File teamAssignmentDir = FileUtils.getFile(directories.getBaseDirectory().toFile(),
+                directories.getTeamDirectory(), team.getName(), file.getAssignment());
+        final File policy = ad.getAssignmentFiles().getSecurityPolicy()
                 // Use the assignments security policy file, if the assignment has one
-                .map(policyPath -> FileUtils.getFile(//
-                        ad.getDirectory().toFile(), //
-                        policyPath.toString()))//
+                .map(policyPath -> FileUtils.getFile(ad.getDirectory().toFile(), policyPath.toString()))
                 // Use default (strict) security policy
-                .orElse(FileUtils.getFile(mojServerProperties.getDirectories()
-                        .getBaseDirectory()
-                        .toFile(), mojServerProperties.getDirectories().getLibDirectory(),
+                .orElse(FileUtils.getFile(directories.getBaseDirectory().toFile(), directories.getLibDirectory(),
                 SECURITY_POLICY_FOR_UNIT_TESTS));
         Duration timeout = ad.getTestTimeout() != null ? ad.getTestTimeout() :
                 mojServerProperties.getLimits().getTestTimeout();
