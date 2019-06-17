@@ -1,8 +1,27 @@
 package nl.moj.server;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.annotation.SendToUser;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -14,26 +33,10 @@ import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.annotation.SendToUser;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -51,6 +54,10 @@ public class TaskControlController {
 
     private final CompetitionRepository competitionRepository;
 
+    private final TeamRepository teamRepository;
+    
+    private final PasswordEncoder encoder;
+    
     @ModelAttribute(name = "assignments")
     public List<ImmutablePair<String, Long>> assignments() {
         return competition.getAssignmentInfo();
@@ -130,15 +137,59 @@ public class TaskControlController {
             model.addAttribute("running", false);
             model.addAttribute("currentAssignment", "-");
         }
+        
+        model.addAttribute("teams", teamRepository.findAll());
+		if (!model.containsAttribute("newPasswordRequest")) {
+			model.addAttribute("newPasswordRequest", new NewPasswordRequest());
+		} 
         return "control";
     }
 
-    @Getter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class TaskMessage {
+	@PostMapping("/control/resetPassword")
+	public String resetPassword(RedirectAttributes redirectAttributes,
+			@ModelAttribute("newPasswordRequest") NewPasswordRequest passwordChangeRequest) {
 
-        private String taskName;
+		String errorMessage = null;
+		
+		if (passwordChangeRequest.teamUuid.equals("0")) {
+			errorMessage = "No team selected";
+		} else {
+			Team team = teamRepository.findByUuid(UUID.fromString(passwordChangeRequest.teamUuid));
+			if (passwordChangeRequest.newPassword == null || passwordChangeRequest.newPassword.isBlank()) {
+				errorMessage = "New password can't be empty";
+			} else if (!passwordChangeRequest.newPassword.equals(passwordChangeRequest.newPasswordCheck)) {
+				errorMessage = "Password and confirmaton did not match";
+			} else {
+				team.setPassword(encoder.encode(passwordChangeRequest.newPassword));
+				teamRepository.save(team);
+				redirectAttributes.addFlashAttribute("success", "Successfully changed password");
+				return "redirect:/control";
+			}
+		}
+	
+		passwordChangeRequest.clearPasswords();
+		redirectAttributes.addFlashAttribute("newPasswordRequest", passwordChangeRequest);
+		redirectAttributes.addFlashAttribute("error", errorMessage);
 
+		return "redirect:/control";
+	}
+
+	@Getter
+	@AllArgsConstructor
+	@NoArgsConstructor
+	public static class TaskMessage {
+		private String taskName;
+    }
+
+    @Data
+    public static class NewPasswordRequest{
+    	private String teamUuid;
+        private String newPassword;
+        private String newPasswordCheck;
+        
+        public void clearPasswords() {
+        	newPassword=null;
+        	newPasswordCheck = null;
+        }
     }
 }
