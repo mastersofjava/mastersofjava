@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import nl.moj.server.runtime.model.AssignmentStatus;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
 
@@ -119,7 +120,7 @@ public class CompetitionRuntime {
 		return Collections.emptyList();
 	}
 	
-	public void handleLateSignup(Team team) {
-		assignmentRuntime.initAssignmentForLateTeam(team);
+	public AssignmentStatus handleLateSignup(Team team) {
+		return assignmentRuntime.initAssignmentForLateTeam(team);
 	}	
 }

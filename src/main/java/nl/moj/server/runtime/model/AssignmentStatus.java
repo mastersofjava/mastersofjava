@@ -2,8 +2,10 @@ package nl.moj.server.runtime.model;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -71,14 +73,17 @@ public class AssignmentStatus {
     @Column(name = "assignment_duration")
     private Duration assignmentDuration;
 
+    @Builder.Default
     @OneToMany(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
-    private List<CompileAttempt> compileAttempts;
+    private List<CompileAttempt> compileAttempts = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
-    private List<TestAttempt> testAttempts;
+    private List<TestAttempt> testAttempts = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
-    private List<SubmitAttempt> submitAttempts;
+    private List<SubmitAttempt> submitAttempts = new ArrayList<>();
 
     @OneToOne(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
     private AssignmentResult assignmentResult;

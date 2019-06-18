@@ -45,11 +45,8 @@ public class IndexController {
 		
 		//late signup
 		if (as == null) {
-			competition.handleLateSignup(team);
-			assignmentStatusRepository.flush();
-			as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),
-					state.getCompetitionSession(), team);
-		}	
+			as = competition.handleLateSignup(team);
+		}
 		
 		AssignmentStatusHelper ash = new AssignmentStatusHelper(as,state.getAssignmentDescriptor());
 

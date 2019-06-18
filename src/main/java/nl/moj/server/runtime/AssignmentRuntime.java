@@ -44,6 +44,8 @@ import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.PathUtil;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -209,20 +211,19 @@ public class AssignmentRuntime {
         cleanupAssignmentStatuses();
         teamService.getTeams().forEach(this::initAssignmentForTeam);
     }
-	
-	public void initAssignmentForLateTeam(Team t) {
-		initAssignmentForTeam(t);
-		var assignmentStatus = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment,
-				competitionSession, t);
-		assignmentStatus.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
-		assignmentStatusRepository.save(assignmentStatus);
+
+	public AssignmentStatus initAssignmentForLateTeam(Team t) {
+		AssignmentStatus as = initAssignmentForTeam(t);
+		as.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
+		return assignmentStatusRepository.save(as);
 	}    
     
-	private void initAssignmentForTeam(Team t) {
+	private AssignmentStatus initAssignmentForTeam(Team t) {
 		cleanupTeamAssignmentData(t);
-		initAssignmentStatus(t);
-		initTeamScore(t);
+		AssignmentStatus as = initAssignmentStatus(t);
+		initTeamScore(as);
 		initTeamAssignmentData(t);
+		return as;
 	}
 
     private void updateTeamAssignmentStatuses() {
@@ -242,7 +243,7 @@ public class AssignmentRuntime {
         }
     }
 
-    private void initAssignmentStatus(Team team) {
+    private AssignmentStatus initAssignmentStatus(Team team) {
     	Duration assignmentDuration = assignmentDescriptor.getDuration();
         AssignmentStatus as = AssignmentStatus.builder()
                 .assignment(assignment)
@@ -251,15 +252,15 @@ public class AssignmentRuntime {
                 .assignmentDuration(assignmentDuration)
                 .team(team)
                 .build();
-        assignmentStatusRepository.save(as);
+        return assignmentStatusRepository.save(as);
     }
 
     private Path resolveTeamAssignmentBaseDirectory(Team team) {
         return teamService.getTeamDirectory(team).resolve(assignment.getName());
     }
 
-    private void initTeamScore(Team team) {
-        scoreService.initializeScoreAtStart(team, assignment, competitionSession);
+    private void initTeamScore(AssignmentStatus as) {
+        scoreService.initializeScoreAtStart(as);
     }
 
     private void cleanupTeamAssignmentData(Team team) {
