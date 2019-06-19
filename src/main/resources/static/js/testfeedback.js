@@ -11,9 +11,12 @@ function initSubmissions() {
     $('tr[data-team]').click(function (e) {
         e.preventDefault()
         var uuid = $(this).attr('data-team');
+        var teamName = $(this).find("td:first").text();
+        var assignmentName = $("#assignment-name").text();
         $.getJSON('/feedback/submission/' + uuid, function (data) {
             console.log(data);
             $tabs = createTabs(data);
+            $("h5.modal-title").text("Submission of team " + teamName + " for assignment " + assignmentName);
             $('#show-submission-modal .modal-body')
                 .empty().append($tabs);
             $('#show-submission-modal textarea').each(function (idx) {
