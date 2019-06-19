@@ -75,6 +75,7 @@ public class FeedbackController {
                 .files(competition.getTeamAssignmentFiles(teamRepository.findByUuid(uuid)).stream()
                         .filter(f -> f.getFileType() == AssignmentFileType.EDIT)
                         .map(f -> FileSubmission.builder()
+                                .uuid(f.getUuid())
                                 .filename(f.getShortName())
                                 .content(f.getContentAsString())
                                 .build())
