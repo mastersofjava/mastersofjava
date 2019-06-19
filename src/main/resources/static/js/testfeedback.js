@@ -11,25 +11,60 @@ function initSubmissions() {
     $('tr[data-team]').click(function (e) {
         e.preventDefault()
         var uuid = $(this).attr('data-team');
+        var teamName = $(this).find("td:first").text();
+        var assignmentName = $("#assignment-name").text();
         $.getJSON('/feedback/submission/' + uuid, function (data) {
             console.log(data);
             $tabs = createTabs(data);
+            $("h5.modal-title").text("Submission of team " + teamName + " for assignment " + assignmentName);
             $('#show-submission-modal .modal-body')
                 .empty().append($tabs);
+            $('#show-submission-modal textarea').each(function (idx) {
+                var cm = CodeMirror.fromTextArea(this, {
+                    lineNumbers: true,
+                    mode: "text/x-java",
+                    matchBrackets: true,
+                    readOnly: true,
+                    autofocus: true,
+                });
+
+                $tabs.find('a[id="' + data.files[idx].uuid + '"]').on('shown.bs.tab',
+                    function (e) {
+                        console.log('shown.bs.tab', e);
+                        cm.refresh();
+                    });
+                
+                $('#show-submission-modal').on('shown.bs.modal', function (e) {
+                    console.log('shown.bs.modal', e);
+                    cm.refresh();
+                });
+
+                var $wrapper = $(cm.getWrapperElement());
+                $wrapper.resizable({
+                    resize: function () {
+                        cm.setSize($(this).width(), $(this).height());
+                        cm.refresh();
+                    }
+                });
+
+                var pos = $('#show-submission-modal .modal-body').position();
+                var height = window.innerHeight - pos.top - 280;
+                $wrapper.css('height', height + 'px');
+                cm.refresh();
+            });
             $('#show-submission-modal').modal('show');
         });
     });
 }
 
 function createTabs(data) {
-
     var $div = $('<div>');
     var $ul = $('<ul class="nav nav-pills" role="tablist">');
     var $panes = $('<div class="tab-content">');
     $div.append($ul).append($panes);
     data.files.forEach(function (f, idx) {
-        $ul.append('<li class="nav-item"><a class="nav-link" href="#tab-' + idx + '" data-toggle="tab" role="tab"><span>' + f.filename + '</span></a></li>');
-        $panes.append('<div class="tab-pane fade' + (idx === 0 ? ' show active' : '' + '') + '" role="tabpanel" id="tab-'+idx+'"><div class="tab-pane-content"><pre>' + f.content + '</pre></div></div>');
+        $ul.append('<li class="nav-item"><a class="nav-link' + (idx == 0 ? " active" : "") + '" id="' + f.uuid + '" href="#tab-' + idx + '" data-toggle="tab" role="tab"><span>' + f.filename + '</span></a></li>');
+        $panes.append('<div class="tab-pane fade' + (idx === 0 ? ' show active' : '' + '') + '" role="tabpanel" id="tab-'+idx+'"><div class="tab-pane-content"><textarea>' + f.content + '</textarea></div></div>');
     });
     return $div;
 }
