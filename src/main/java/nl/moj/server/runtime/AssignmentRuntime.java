@@ -1,5 +1,29 @@
 package nl.moj.server.runtime;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,25 +44,8 @@ import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.PathUtil;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.time.StopWatch;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -95,7 +102,6 @@ public class AssignmentRuntime {
         // init assignment sources;
         initOriginalAssignmentFiles();
 
-        // cleanup historical assignment data
         initTeamsForAssignment();
 
         // play the gong
@@ -137,7 +143,6 @@ public class AssignmentRuntime {
                         .build());
             }
         });
-
 
         if (getTimeRemaining() > 0) {
             clearHandlers();
@@ -205,13 +210,22 @@ public class AssignmentRuntime {
 
     private void initTeamsForAssignment() {
         cleanupAssignmentStatuses();
-        teamService.getTeams().forEach(t -> {
-            cleanupTeamAssignmentData(t);
-            initAssignmentStatus(t, assignment, assignmentDescriptor.getDuration());
-            initTeamScore(t);
-            initTeamAssignmentData(t);
-        });
+        teamService.getTeams().forEach(this::initAssignmentForTeam);
     }
+
+	public AssignmentStatus initAssignmentForLateTeam(Team t) {
+		AssignmentStatus as = initAssignmentForTeam(t);
+		as.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
+		return assignmentStatusRepository.save(as);
+	}    
+    
+	private AssignmentStatus initAssignmentForTeam(Team t) {
+		cleanupTeamAssignmentData(t);
+		AssignmentStatus as = initAssignmentStatus(t);
+		initTeamScore(as);
+		initTeamAssignmentData(t);
+		return as;
+	}
 
     private void updateTeamAssignmentStatuses() {
         assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competitionSession).forEach(as -> {
@@ -230,7 +244,8 @@ public class AssignmentRuntime {
         }
     }
 
-    private void initAssignmentStatus(Team team, Assignment assignment, Duration assignmentDuration) {
+    private AssignmentStatus initAssignmentStatus(Team team) {
+    	Duration assignmentDuration = assignmentDescriptor.getDuration();
         AssignmentStatus as = AssignmentStatus.builder()
                 .assignment(assignment)
                 .competitionSession(competitionSession)
@@ -238,15 +253,15 @@ public class AssignmentRuntime {
                 .assignmentDuration(assignmentDuration)
                 .team(team)
                 .build();
-        assignmentStatusRepository.save(as);
+        return assignmentStatusRepository.save(as);
     }
 
     private Path resolveTeamAssignmentBaseDirectory(Team team) {
         return teamService.getTeamDirectory(team).resolve(assignment.getName());
     }
 
-    private void initTeamScore(Team team) {
-        scoreService.initializeScoreAtStart(team, assignment, competitionSession);
+    private void initTeamScore(AssignmentStatus as) {
+        scoreService.initializeScoreAtStart(as);
     }
 
     private void cleanupTeamAssignmentData(Team team) {
@@ -301,12 +316,10 @@ public class AssignmentRuntime {
     }
 
     private void clearHandlers() {
-        if (this.handlers != null) {
-            this.handlers.forEach((k, v) -> {
-                v.cancel(true);
-            });
-        }
-        this.handlers = new HashMap<>();
+		if (this.handlers != null) {
+			this.handlers.forEach((k, v) -> v.cancel(true));
+		}
+		this.handlers = new HashMap<>();
     }
 
     @Async
@@ -321,14 +334,9 @@ public class AssignmentRuntime {
 
     @Async
     public Future<?> scheduleTimeSync() {
-        return taskScheduler.scheduleAtFixedRate(
-                () -> {
-                    messageService.sendRemainingTime(getTimeRemaining(), assignmentDescriptor.getDuration()
-                            .getSeconds());
-                },
-                TIMESYNC_FREQUENCY
-        );
-    }
+		return taskScheduler.scheduleAtFixedRate(() -> messageService.sendRemainingTime(getTimeRemaining(),
+				assignmentDescriptor.getDuration().getSeconds()), TIMESYNC_FREQUENCY);
+	}
 
     private Date inSeconds(long sec) {
         return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());

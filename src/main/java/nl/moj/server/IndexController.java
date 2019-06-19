@@ -1,23 +1,24 @@
 package nl.moj.server;
 
-import lombok.AllArgsConstructor;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.submit.model.SubmitAttempt;
-import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
+import java.security.Principal;
+import java.util.List;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.security.Principal;
-import java.util.List;
+import lombok.AllArgsConstructor;
+import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentFileType;
+import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.submit.model.SubmitAttempt;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 
 @Controller
 @AllArgsConstructor
@@ -41,13 +42,19 @@ public class IndexController {
 		ActiveAssignment state = competition.getActiveAssignment();
 		Team team = teamRepository.findByName(user.getName());
 		AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),state.getCompetitionSession(),team);
+		
+		//late signup
+		if (as == null) {
+			as = competition.handleLateSignup(team);
+		}
+		
 		AssignmentStatusHelper ash = new AssignmentStatusHelper(as,state.getAssignmentDescriptor());
 
 		List<AssignmentFile> files = competition.getTeamAssignmentFiles(team);
 		
 		// TODO ugly
 		files.sort((arg0, arg1) -> {
-			if (arg0.getFileType().equals(AssignmentFileType.TASK.TASK)) {
+			if (arg0.getFileType().equals(AssignmentFileType.TASK)) {
 				return -10;
 			}
 			return 10;
@@ -65,11 +72,9 @@ public class IndexController {
 		model.addAttribute("finalscore", ash.getScore());
 		model.addAttribute("maxSubmits", ash.getMaximumSubmits() );
 		model.addAttribute("submits", ash.getRemainingSubmits());
-
 	}
 
-
-	class AssignmentStatusHelper {
+	private class AssignmentStatusHelper {
 
 		private AssignmentStatus assignmentStatus;
 		private AssignmentDescriptor assignmentDescriptor;
@@ -80,7 +85,9 @@ public class IndexController {
 		}
 
 		public boolean isCompleted() {
-			return assignmentStatus.getSubmitAttempts().stream().anyMatch(SubmitAttempt::isSuccess) ||
+			return assignmentStatus.getSubmitAttempts()
+					.stream()
+					.anyMatch(SubmitAttempt::isSuccess) ||
 					assignmentStatus.getSubmitAttempts().size() >= (assignmentDescriptor.getScoringRules().getMaximumResubmits() + 1);
 		}
 
@@ -99,6 +106,5 @@ public class IndexController {
 		public long getScore() {
 			return assignmentStatus.getAssignmentResult().getFinalScore();
 		}
-
 	}
 }
