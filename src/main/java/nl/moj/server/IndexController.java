@@ -60,7 +60,7 @@ public class IndexController {
 			return 10;
 		});
 
-		model.addAttribute("assignment", state.getAssignmentDescriptor().getName());
+		model.addAttribute("assignment", state.getAssignmentDescriptor().getDisplayName());
 		model.addAttribute("team", user.getName());
 		model.addAttribute("timeLeft", state.getTimeRemaining());
 		model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());

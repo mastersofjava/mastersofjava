@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,7 @@ public class TaskControlController {
     private final PasswordEncoder encoder;
     
     @ModelAttribute(name = "assignments")
-    public List<ImmutablePair<String, Long>> assignments() {
+    public List<AssignmentDescriptor> assignments() {
         return competition.getAssignmentInfo();
     }
 

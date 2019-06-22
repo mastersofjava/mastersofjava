@@ -57,8 +57,8 @@
                         <div class="form-check input-group radio">
                             <label class="form-check-label">
                                 <input class="form-check-input" type="radio" name="assignment"
-                                       th:text="' ' + ${assignment.left}" th:value="${assignment.left}"
-                                       th:id="${assignment.left}" th:attr="time=${assignment.right}"/>
+                                       th:text="' ' + ${assignment.displayName}" th:value="${assignment.name}"
+                                       th:id="${assignment.name}" th:attr="time=${assignment.duration.toSeconds()}"/>
                             </label>
                         </div>
                     </th:block>

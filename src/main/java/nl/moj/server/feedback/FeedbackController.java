@@ -50,7 +50,7 @@ public class FeedbackController {
 
             testNames = state.getTestNames();
 
-            model.addObject("assignment", state.getAssignmentDescriptor().getName());
+            model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addObject("timeLeft", state.getTimeRemaining());
             model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addObject("running", state.isRunning());
