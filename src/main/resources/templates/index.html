@@ -52,7 +52,7 @@
                     </div>
                 </div>
                 <div th:unless="${finished}" id="tabs">
-                    <ul class="nav nav-pills" role="tablist">
+                    <ul class="nav nav-tabs" role="tablist">
                         <!--/*@thymesVar id="files" type="java.util.List<nl.moj.server.files.AssignmentFile>"*/-->
                         <li class="nav-item" th:each="file,status : ${files}">
                             <a class="nav-link"
