@@ -116,6 +116,16 @@
                     </svg>
                 </div>
             </div>
+            <div th:if="${running}" class="p-2 text-center">
+                <a class="btn w-50 btn-info text-white"
+                   th:href="@{/feedback}"
+                   target="_blank"><span class="fa fa-gamepad pr-1"></span>Live Feedback</a>
+            </div>
+            <div th:if="${running}" class="p-2 text-center">
+                <a class="btn w-50 btn-info text-white"
+                   th:href="@{/rankings}"
+                   target="_blank"><span class="fa fa-trophy pr-1"></span>Rankings</a>
+            </div>
             <div th:if="${running}" class="mt-5 p-2 text-center">
                 <a class="btn w-50 btn-warning text-white"
                    th:href="@{/javadoc/api/index.html(overview-tree.html)}"
