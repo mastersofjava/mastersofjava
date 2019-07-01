@@ -50,6 +50,7 @@ public class FeedbackController {
 
             testNames = state.getTestNames();
 
+            model.addObject("uuid", state.getAssignment().getUuid().toString());
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addObject("timeLeft", state.getTimeRemaining());
             model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());
@@ -64,6 +65,20 @@ public class FeedbackController {
         model.addObject("tests", testNames);
 
         return model;
+    }
+
+    @GetMapping(value="/feedback/assignment/{assignment}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RolesAllowed("ROLE_CONTROL")
+    public @ResponseBody Submission getAssignmentSolution(@PathVariable("assignment") UUID assignment) {
+        return Submission.builder()
+                .files(competition.getSolutionFiles(assignment).stream()
+                        .map(f -> FileSubmission.builder()
+                                .uuid(f.getUuid())
+                                .filename(f.getShortName())
+                                .content(f.getContentAsString())
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
     }
 
     @GetMapping(value = "/feedback/submission/{team}", produces = MediaType.APPLICATION_JSON_VALUE)

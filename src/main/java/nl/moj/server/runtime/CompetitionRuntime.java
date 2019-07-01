@@ -12,11 +12,9 @@ import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.model.CompetitionState;
+import nl.moj.server.runtime.model.*;
 import nl.moj.server.teams.model.Team;
+import org.hibernate.criterion.Order;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -114,5 +112,15 @@ public class CompetitionRuntime {
 
     public AssignmentStatus handleLateSignup(Team team) {
         return assignmentRuntime.initAssignmentForLateTeam(team);
+    }
+
+    public List<AssignmentFile> getSolutionFiles(UUID assignment) {
+        Optional<OrderedAssignment> ooa = completedAssignments.stream().filter(o -> o.getAssignment().getUuid().equals(assignment)).findFirst();
+        if( ooa.isPresent() ) {
+            AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(ooa.get().getAssignment());
+            return new JavaAssignmentFileResolver().resolve(ad).stream()
+                    .filter( af -> af.getFileType() == AssignmentFileType.SOLUTION).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
     }
 }

@@ -5,7 +5,57 @@ $(document).ready(function () {
     connectControl();
     initializeAssignmentClock();
     initSubmissions();
+    initSolutions();
 });
+
+function initSolutions() {
+    $('span[data-assignment]').click(function(e) {
+        e.preventDefault()
+        var uuid = $(this).attr('data-assignment');
+        var assignmentName = $("#assignment-name").text();
+        $.getJSON('/feedback/assignment/' + uuid, function (data) {
+            console.log(data);
+            $tabs = createTabs(data);
+            $("h5.modal-title").text("Solution for assignment " + assignmentName);
+            $('#show-submission-modal .modal-body')
+                .empty().append($tabs);
+            $('#show-submission-modal textarea').each(function (idx) {
+                var cm = CodeMirror.fromTextArea(this, {
+                    lineNumbers: true,
+                    mode: "text/x-java",
+                    matchBrackets: true,
+                    readOnly: true,
+                    autofocus: true,
+                });
+
+                $tabs.find('a[id="' + data.files[idx].uuid + '"]').on('shown.bs.tab',
+                    function (e) {
+                        console.log('shown.bs.tab', e);
+                        cm.refresh();
+                    });
+
+                $('#show-submission-modal').on('shown.bs.modal', function (e) {
+                    console.log('shown.bs.modal', e);
+                    cm.refresh();
+                });
+
+                var $wrapper = $(cm.getWrapperElement());
+                $wrapper.resizable({
+                    resize: function () {
+                        cm.setSize($(this).width(), $(this).height());
+                        cm.refresh();
+                    }
+                });
+
+                var pos = $('#show-submission-modal .modal-body').position();
+                var height = window.innerHeight - pos.top - 280;
+                $wrapper.css('height', height + 'px');
+                cm.refresh();
+            });
+            $('#show-submission-modal').modal('show');
+        });
+    })
+}
 
 function initSubmissions() {
     $('tr[data-team]').click(function (e) {
