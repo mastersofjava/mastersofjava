@@ -59,7 +59,7 @@ function initSubmissions() {
 
 function createTabs(data) {
     var $div = $('<div>');
-    var $ul = $('<ul class="nav nav-pills" role="tablist">');
+    var $ul = $('<ul class="nav nav-tabs" role="tablist">');
     var $panes = $('<div class="tab-content">');
     $div.append($ul).append($panes);
     data.files.forEach(function (f, idx) {
