@@ -67,7 +67,7 @@ public class FeedbackController {
         return model;
     }
 
-    @GetMapping(value="/feedback/assignment/{assignment}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value="/feedback/solution/{assignment}", produces = MediaType.APPLICATION_JSON_VALUE)
     @RolesAllowed("ROLE_CONTROL")
     public @ResponseBody Submission getAssignmentSolution(@PathVariable("assignment") UUID assignment) {
         return Submission.builder()
@@ -81,13 +81,13 @@ public class FeedbackController {
                 .build();
     }
 
-    @GetMapping(value = "/feedback/submission/{team}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/feedback/solution/{assignment}/team/{team}", produces = MediaType.APPLICATION_JSON_VALUE)
     @RolesAllowed("ROLE_CONTROL")
     public @ResponseBody
-    Submission getSubmission(@PathVariable("team") UUID uuid) {
+    Submission getSubmission(@PathVariable("assignment") UUID assignment, @PathVariable("team") UUID uuid) {
         return Submission.builder()
                 .team(uuid)
-                .files(competition.getTeamAssignmentFiles(teamRepository.findByUuid(uuid)).stream()
+                .files(competition.getTeamSolutionFiles(assignment, teamRepository.findByUuid(uuid)).stream()
                         .filter(f -> f.getFileType() == AssignmentFileType.EDIT)
                         .map(f -> FileSubmission.builder()
                                 .uuid(f.getUuid())

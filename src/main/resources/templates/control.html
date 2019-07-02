@@ -95,6 +95,19 @@
         <button id="clone" class="btn btn-primary" onclick="scanAssignments();">Scan Assignments</button>
         <p id="response"></p>
     </div>
+    <div class="p-2 col-6">
+        <form class="form" method="post" th:action="@{/control/select-session}" th:object="${selectSessionForm}">
+            <div class="form-group">
+                <label for="sessions">Available Sessions</label>
+                <select class="form-control" id="sessions" th:field="*{session}">
+                    <option th:each="s : ${sessions}" th:value="${s.uuid}" th:text="${s.id + '-' + s.uuid}">
+                    </option>
+                </select>
+            </div>
+            <button type="submit" name="create" class="btn btn-secondary">Create New</button>
+            <button type="submit" name="load" class="btn btn-primary">Load</button>
+        </form>
+    </div>
 </div>
 
 	

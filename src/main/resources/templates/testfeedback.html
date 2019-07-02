@@ -69,7 +69,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="team : ${teams1}" th:attr="data-team=${team.uuid}">
+                <tr th:each="team : ${teams1}" th:attr="data-team=${team.uuid},data-assignment=${uuid}">
                     <td th:text="${team.shortName}">Team name</td>
                     <td th:each="test : ${tests}"><span th:attr="data-test=${team.uuid + '-' + test}"></span></td>
                 </tr>
@@ -87,7 +87,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="team : ${teams2}" th:attr="data-team=${team.uuid}">
+                <tr th:each="team : ${teams2}" th:attr="data-team=${team.uuid},data-assignment=${uuid}">
                     <td th:text="${team.shortName}">Team name</td>
                     <td th:each="test : ${tests}"><span th:attr="data-test=${team.uuid + '-' + test}"></span></td>
                 </tr>
@@ -105,7 +105,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="team : ${teams3}" th:attr="data-team=${team.uuid}">
+                <tr th:each="team : ${teams3}" th:attr="data-team=${team.uuid},data-assignment=${uuid}">
                     <td th:text="${team.shortName}">Team name</td>
                     <td th:each="test : ${tests}"><span th:attr="data-test=${team.uuid + '-' + test}"></span></td>
                 </tr>

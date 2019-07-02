@@ -13,6 +13,7 @@ public class Directories {
 
 	@NotNull
 	private Path baseDirectory;
+	private String sessionDirectory = "sessions";
 	private String teamDirectory = "teams";
 	private String libDirectory = "lib";
 	private String soundDirectory = "sounds";

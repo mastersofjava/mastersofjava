@@ -3,9 +3,12 @@ package nl.moj.server.assignment.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.descriptor.AssignmentFiles;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.model.AssignmentDescriptorValidationResult;
 import nl.moj.server.assignment.repository.AssignmentRepository;
+import nl.moj.server.runtime.JavaAssignmentFileResolver;
+import nl.moj.server.runtime.model.AssignmentFile;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -14,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -117,5 +121,10 @@ public class AssignmentService {
 			throw new AssignmentServiceException("Failed to read assignments from " + base, e);
 		}
 		return result;
+	}
+
+	public List<AssignmentFile> getAssignmentFiles(Assignment assignment) {
+		// TODO cache? This is a lot of disk IO
+		return new JavaAssignmentFileResolver().resolve(getAssignmentDescriptor(assignment));
 	}
 }
