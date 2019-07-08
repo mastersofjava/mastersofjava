@@ -13,8 +13,9 @@ import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.runtime.model.*;
+import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.teams.model.Team;
-import org.hibernate.criterion.Order;
+import nl.moj.server.teams.service.TeamService;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,7 +27,11 @@ public class CompetitionRuntime {
 
     private final AssignmentService assignmentService;
 
+    private final TeamService teamService;
+
     private final CompetitionSessionRepository competitionSessionRepository;
+
+    private final AssignmentResultRepository assignmentResultRepository;
 
     @Getter
     private Competition competition;
@@ -36,11 +41,35 @@ public class CompetitionRuntime {
 
     private List<OrderedAssignment> completedAssignments;
 
-    public void startCompetition(Competition competition) {
-        log.info("Starting competition {}", competition.getName());
+    public void startSession(Competition competition) {
+        log.info("Starting new session for competition {}", competition.getName());
         this.competition = competition;
         this.competitionSession = competitionSessionRepository.save(createNewCompetitionSession(competition));
+        restoreSession();
+    }
+
+    public void loadSession(Competition competition, UUID session) {
+        log.info("Loading session {} for competition {}", session, competition.getName());
+        this.competition = competition;
+        this.competitionSession = competitionSessionRepository.findByUuid(session);
+        restoreSession();
+    }
+
+    private void restoreSession() {
+        stopCurrentAssignment();
         this.completedAssignments = new ArrayList<>();
+
+        // get the completed assignment uuids
+        List<UUID> assignments = assignmentResultRepository.findByCompetitionSession(competitionSession).stream()
+                .filter( ar -> ar.getAssignmentStatus().getDateTimeEnd() != null )
+                .map( ar -> ar.getAssignmentStatus().getAssignment().getUuid())
+                .distinct().collect(Collectors.toList());
+
+        this.competition.getAssignments().forEach( oa -> {
+            if( assignments.contains( oa.getAssignment().getUuid())) {
+                this.completedAssignments.add(oa);
+            }
+        });
     }
 
     public OrderedAssignment getCurrentAssignment() {
@@ -103,11 +132,15 @@ public class CompetitionRuntime {
                 ).sorted(Comparator.comparing(AssignmentDescriptor::getDisplayName)).collect(Collectors.toList());
     }
 
-    public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
-        if (assignmentRuntime.getOrderedAssignment() != null) {
-            return assignmentRuntime.getTeamAssignmentFiles(team);
-        }
-        return Collections.emptyList();
+    public List<AssignmentFile> getTeamSolutionFiles(UUID assignment, Team team) {
+        return getTeamAssignmentFiles(assignment, team).stream()
+                .filter( f -> f.getFileType() == AssignmentFileType.SOLUTION ).collect(Collectors.toList());
+    }
+
+    private List<AssignmentFile> getTeamAssignmentFiles(UUID assignment, Team team) {
+        return completedAssignments.stream().filter(o -> o.getAssignment().getUuid().equals(assignment)).findFirst()
+                .map(orderedAssignment -> teamService.getTeamAssignmentFiles(competitionSession, orderedAssignment.getAssignment(), team))
+                .orElse(Collections.emptyList());
     }
 
     public AssignmentStatus handleLateSignup(Team team) {
@@ -115,12 +148,32 @@ public class CompetitionRuntime {
     }
 
     public List<AssignmentFile> getSolutionFiles(UUID assignment) {
-        Optional<OrderedAssignment> ooa = completedAssignments.stream().filter(o -> o.getAssignment().getUuid().equals(assignment)).findFirst();
-        if( ooa.isPresent() ) {
-            AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(ooa.get().getAssignment());
-            return new JavaAssignmentFileResolver().resolve(ad).stream()
-                    .filter( af -> af.getFileType() == AssignmentFileType.SOLUTION).collect(Collectors.toList());
+        return getAssignmentFiles(assignment).stream()
+                .filter( f -> f.getFileType() == AssignmentFileType.SOLUTION ).collect(Collectors.toList());
+    }
+
+    private List<AssignmentFile> getAssignmentFiles(UUID assignment) {
+        return completedAssignments.stream()
+                .filter(o -> o.getAssignment().getUuid().equals(assignment))
+                .findFirst()
+                .map(orderedAssignment -> assignmentService.getAssignmentFiles(orderedAssignment.getAssignment()))
+                .orElse(Collections.emptyList());
+    }
+
+    public List<CompetitionSession> getSessions() {
+        return competitionSessionRepository.findByCompetition(competition);
+    }
+
+    public void loadMostRecentSession(Competition competition) {
+        CompetitionSession session = competitionSessionRepository.findByCompetition(competition)
+                .stream()
+                .max(Comparator.comparing(CompetitionSession::getId))
+                .orElse(null);
+
+        if( session == null ) {
+            startSession(competition);
+        } else {
+            loadSession(competition, session.getUuid());
         }
-        return Collections.emptyList();
     }
 }

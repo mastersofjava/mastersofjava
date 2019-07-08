@@ -9,11 +9,11 @@ $(document).ready(function () {
 });
 
 function initSolutions() {
-    $('span[data-assignment]').click(function(e) {
+    $('span[data-solution]').click(function(e) {
         e.preventDefault()
         var uuid = $(this).attr('data-assignment');
         var assignmentName = $("#assignment-name").text();
-        $.getJSON('/feedback/assignment/' + uuid, function (data) {
+        $.getJSON('/feedback/solution/' + uuid, function (data) {
             console.log(data);
             $tabs = createTabs(data);
             $("h5.modal-title").text("Solution for assignment " + assignmentName);
@@ -61,9 +61,10 @@ function initSubmissions() {
     $('tr[data-team]').click(function (e) {
         e.preventDefault()
         var uuid = $(this).attr('data-team');
+        var assignment = $(this).attr('data-assignment');
         var teamName = $(this).find("td:first").text();
         var assignmentName = $("#assignment-name").text();
-        $.getJSON('/feedback/submission/' + uuid, function (data) {
+        $.getJSON('/feedback/solution/'+ assignment +'/team/' + uuid, function (data) {
             console.log(data);
             $tabs = createTabs(data);
             $("h5.modal-title").text("Submission of team " + teamName + " for assignment " + assignmentName);

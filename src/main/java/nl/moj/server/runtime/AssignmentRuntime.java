@@ -128,13 +128,12 @@ public class AssignmentRuntime {
      */
     public void stop() {
         messageService.sendStopToTeams(assignment.getName());
-        // TODO calculate final scores for all not finished teams.
         teamService.getTeams().forEach(t -> {
             ActiveAssignment state = getState();
             AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),
                     state.getCompetitionSession(),t);
             if( as.getDateTimeEnd() == null ) {
-                as.setDateTimeEnd(Instant.now());
+                as = scoreService.finalizeScore(as,state);
                 AssignmentResult ar = as.getAssignmentResult();
                 messageService.sendSubmitFeedback(t, SubmitResult.builder()
                         .success(false)
@@ -156,25 +155,6 @@ public class AssignmentRuntime {
         running = false;
         orderedAssignment = null;
         log.info("Stopped assignment {}", assignment.getName());
-    }
-
-    // TODO this should probably not be here SubmitService is a better place for it.
-    public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
-        List<AssignmentFile> teamFiles = new ArrayList<>();
-        Path teamAssignmentBase = resolveTeamAssignmentBaseDirectory(team).resolve("sources");
-        originalAssignmentFiles.stream()
-                .filter(f -> f.getFileType().isVisible())
-                .forEach(f -> {
-                    Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
-                    if (resolvedFile.toFile().exists() && Files.isReadable(resolvedFile)) {
-                        teamFiles.add(f.toBuilder()
-                                .content(readPathContent(resolvedFile))
-                                .build());
-                    } else {
-                        teamFiles.add(f.toBuilder().build());
-                    }
-                });
-        return teamFiles;
     }
 
     public ActiveAssignment getState() {
@@ -199,7 +179,7 @@ public class AssignmentRuntime {
 
     private void initOriginalAssignmentFiles() {
         try {
-            originalAssignmentFiles = new JavaAssignmentFileResolver().resolve(assignmentDescriptor);
+            originalAssignmentFiles = assignmentService.getAssignmentFiles(assignment);
         } catch (Exception e) {
             // log exception here since it may get swallowed by async calls
             log.error("Unable to parse assignment files for assignment {}: {}", assignmentDescriptor.getDisplayName(), e
@@ -235,7 +215,7 @@ public class AssignmentRuntime {
     }
 
     private void initTeamAssignmentData(Team team) {
-        Path assignmentDirectory = resolveTeamAssignmentBaseDirectory(team);
+        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession,team,assignment);
         try {
             // create empty assignment directory
             Files.createDirectories(assignmentDirectory);
@@ -256,9 +236,6 @@ public class AssignmentRuntime {
         return assignmentStatusRepository.save(as);
     }
 
-    private Path resolveTeamAssignmentBaseDirectory(Team team) {
-        return teamService.getTeamDirectory(team).resolve(assignment.getName());
-    }
 
     private void initTeamScore(AssignmentStatus as) {
         scoreService.initializeScoreAtStart(as);
@@ -266,7 +243,7 @@ public class AssignmentRuntime {
 
     private void cleanupTeamAssignmentData(Team team) {
         // delete historical submitted data.
-        Path assignmentDirectory = resolveTeamAssignmentBaseDirectory(team);
+        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession,team,assignment);
         try {
             if (Files.exists(assignmentDirectory)) {
                 PathUtil.delete(assignmentDirectory);

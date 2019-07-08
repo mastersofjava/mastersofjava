@@ -59,7 +59,7 @@ public abstract class BaseRuntimeTest {
 		bootstrapService.bootstrap();
 		dbUtil.cleanup();
 		competition = createCompetition();
-		competitionRuntime.startCompetition(competition);
+		competitionRuntime.startSession(competition);
 	}
 
 	@After

@@ -3,6 +3,7 @@ package nl.moj.server;
 import java.security.Principal;
 import java.util.List;
 
+import nl.moj.server.teams.service.TeamService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,6 +27,7 @@ public class IndexController {
 
 	private CompetitionRuntime competition;
 	private TeamRepository teamRepository;
+	private TeamService teamService;
 	private AssignmentStatusRepository assignmentStatusRepository;
 
 	@GetMapping("/")
@@ -49,8 +51,7 @@ public class IndexController {
 		}
 		
 		AssignmentStatusHelper ash = new AssignmentStatusHelper(as,state.getAssignmentDescriptor());
-
-		List<AssignmentFile> files = competition.getTeamAssignmentFiles(team);
+		List<AssignmentFile> files = teamService.getTeamAssignmentFiles(competition.getCompetitionSession(),state.getAssignment(),team);
 		
 		// TODO ugly
 		files.sort((arg0, arg1) -> {
