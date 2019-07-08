@@ -1,6 +1,7 @@
 package nl.moj.server.runtime;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.bootstrap.service.BootstrapService;
 import nl.moj.server.DbUtil;
 import nl.moj.server.assignment.model.Assignment;
@@ -16,6 +17,7 @@ import nl.moj.server.util.PathUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.TaskScheduler;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 
 import static nl.moj.server.TestUtil.classpathResourceToPath;
 
+@Slf4j
 public abstract class BaseRuntimeTest {
 
 	@Autowired
@@ -56,16 +59,21 @@ public abstract class BaseRuntimeTest {
 
 	@Before
 	public void init() throws IOException {
-		bootstrapService.bootstrap("admin", "admin");
-		dbUtil.cleanup();
-		competition = createCompetition();
-		competitionRuntime.startSession(competition);
+		try {
+			bootstrapService.bootstrap("admin", "admin");
+			dbUtil.cleanup();
+			competition = createCompetition();
+			competitionRuntime.startSession(competition);
+		} catch( NullPointerException npe ) {
+			log.error("Nullpointer: {}", npe.getMessage(), npe);
+			throw npe;
+		}
 	}
 
 	@After
 	public void cleanup() throws IOException {
-		PathUtil.delete( mojServerProperties.getDirectories().getBaseDirectory(), true);
 		dbUtil.cleanup();
+		PathUtil.delete( mojServerProperties.getDirectories().getBaseDirectory(), true);
 	}
 
 	protected Team addTeam() {

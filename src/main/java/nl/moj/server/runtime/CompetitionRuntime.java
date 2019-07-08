@@ -111,6 +111,8 @@ public class CompetitionRuntime {
 
     public void stopCurrentAssignment() {
         if (assignmentRuntime.getOrderedAssignment() != null) {
+            log.info("Stopping current assignment {} uuid {}.", assignmentRuntime.getOrderedAssignment().getAssignment().getName(),
+                    assignmentRuntime.getOrderedAssignment().getAssignment().getUuid());
             assignmentRuntime.stop();
         }
     }

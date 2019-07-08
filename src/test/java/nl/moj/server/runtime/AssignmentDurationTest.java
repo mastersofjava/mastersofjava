@@ -37,6 +37,7 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 		try {
 			stopHandle.get(ad.getDuration().toSeconds() + 1, TimeUnit.SECONDS);
 		} catch (Exception e) {
+			stopHandle.cancel(true);
 			Assertions.fail("Caught unexpected exception.", e);
 		}
 	}

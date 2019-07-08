@@ -1,5 +1,6 @@
 package nl.moj.server.runtime;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -68,6 +71,10 @@ public class AssignmentRuntime {
     private final TaskScheduler taskScheduler;
     private final AssignmentStatusRepository assignmentStatusRepository;
 
+    // TODO refactor so we do not need to use ApplicationContext to find a self reference
+    @Autowired
+    private ApplicationContext ctx;
+
     private StopWatch timer;
 
     @Getter
@@ -92,6 +99,7 @@ public class AssignmentRuntime {
      * @param orderedAssignment the assignment to start.
      * @return the {@link Future}
      */
+    @Transactional
     public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) {
         clearHandlers();
         this.competitionSession = competitionSession;
@@ -126,20 +134,25 @@ public class AssignmentRuntime {
     /**
      * Stop the current assignment
      */
+    @Transactional
     public void stop() {
         messageService.sendStopToTeams(assignment.getName());
         teamService.getTeams().forEach(t -> {
             ActiveAssignment state = getState();
             AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),
                     state.getCompetitionSession(),t);
-            if( as.getDateTimeEnd() == null ) {
-                as = scoreService.finalizeScore(as,state);
-                AssignmentResult ar = as.getAssignmentResult();
-                messageService.sendSubmitFeedback(t, SubmitResult.builder()
-                        .success(false)
-                        .remainingSubmits(0)
-                        .score(ar.getFinalScore())
-                        .build());
+            if( as != null) {
+                if (as.getDateTimeEnd() == null) {
+                    as = scoreService.finalizeScore(as, state);
+                    AssignmentResult ar = as.getAssignmentResult();
+                    messageService.sendSubmitFeedback(t, SubmitResult.builder()
+                            .success(false)
+                            .remainingSubmits(0)
+                            .score(ar.getFinalScore())
+                            .build());
+                }
+            } else {
+                log.warn("Could not finalize score for team {}@{}, no assignment status found.", t.getName(), t.getUuid());
             }
         });
 
@@ -220,7 +233,7 @@ public class AssignmentRuntime {
             // create empty assignment directory
             Files.createDirectories(assignmentDirectory);
         } catch (IOException e) {
-            throw new RuntimeException("Unable to delete team assignment directory " + assignmentDirectory, e);
+            throw new RuntimeException("Unable to create team assignment directory " + assignmentDirectory, e);
         }
     }
 
@@ -301,7 +314,8 @@ public class AssignmentRuntime {
 
     @Async
     public Future<?> scheduleStop() {
-        return taskScheduler.schedule(this::stop, inSeconds(assignmentDescriptor.getDuration().getSeconds()));
+        AssignmentRuntime ar = getSelfReference();
+        return taskScheduler.schedule(ar::stop, inSeconds(assignmentDescriptor.getDuration().getSeconds()));
     }
 
     @Async
@@ -317,5 +331,9 @@ public class AssignmentRuntime {
 
     private Date inSeconds(long sec) {
         return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    private AssignmentRuntime getSelfReference() {
+        return ctx.getBean(AssignmentRuntime.class);
     }
 }
