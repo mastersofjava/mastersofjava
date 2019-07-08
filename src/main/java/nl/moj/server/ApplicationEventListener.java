@@ -34,7 +34,7 @@ public class ApplicationEventListener implements ApplicationListener<ContextRefr
                 c = new Competition();
                 c.setUuid(competitionUuid);
                 c.setName("Masters of Java");
-                competitionRepository.save(c);
+                c = competitionRepository.save(c);
             }
             competitionRuntime.loadMostRecentSession(c);
         }
