@@ -113,18 +113,22 @@ public class CompileService {
 			});
 
 			// TODO fix compile result so team knows something is very wrong.
-			message.getSources().forEach((uuid, v) -> {
-				AssignmentFile orig = getOriginalAssignmentFile(uuid);
-				File f = sourcesDir.resolve(orig.getFile()).toFile();
-				try {
-					FileUtils.writeStringToFile(f, v, StandardCharsets.UTF_8);
-				} catch (IOException e) {
-					log.error("error while writing sourcefiles to sources dir", e);
-				}
-				assignmentFiles.add(orig.toBuilder()
-						.absoluteFile(f.toPath())
-						.build());
-			});
+			try {
+				message.getSources().forEach((uuid, v) -> {
+					AssignmentFile orig = getOriginalAssignmentFile(uuid);
+					File f = sourcesDir.resolve(orig.getFile()).toFile();
+					try {
+						FileUtils.writeStringToFile(f, v, StandardCharsets.UTF_8);
+					} catch (IOException e) {
+						log.error("error while writing sourcefiles to sources dir", e);
+					}
+					assignmentFiles.add(orig.toBuilder()
+							.absoluteFile(f.toPath())
+							.build());
+				});
+			} catch( Exception e ) {
+				log.error("error while preparing sources.", e);
+			}
 
 			// C) Java compiler options
 			try {

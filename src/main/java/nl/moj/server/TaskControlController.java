@@ -146,16 +146,18 @@ public class TaskControlController {
         }
 
         ssf.setSession(competition.getCompetitionSession().getUuid());
-
-//		if (!model.containsAttribute("newPasswordRequest")) {
-//			model.addAttribute("newPasswordRequest", new NewPasswordRequest());
-//		}
         return "control";
     }
 
     @PostMapping("/control/select-session")
     public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
         competition.loadSession(competition.getCompetition(),ssf.getSession());
+        return "redirect:/control";
+    }
+
+    @PostMapping("/control/new-session")
+    public String newSession() {
+        competition.startSession(competition.getCompetition());
         return "redirect:/control";
     }
 

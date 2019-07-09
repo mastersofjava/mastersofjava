@@ -104,8 +104,10 @@
                     </option>
                 </select>
             </div>
-            <button type="submit" name="create" class="btn btn-secondary">Create New</button>
             <button type="submit" name="load" class="btn btn-primary">Load</button>
+        </form>
+        <form class="form" method="post" th:action="@{/control/new-session}">
+            <button type="submit" name="create" class="btn btn-secondary">Create New</button>
         </form>
     </div>
 </div>
