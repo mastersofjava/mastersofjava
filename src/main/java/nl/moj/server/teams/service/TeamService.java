@@ -42,7 +42,7 @@ public class TeamService {
 	}
 
 	public List<Team> getTeams() {
-		return teamRepository.findAllByRole(Role.ROLE_USER);
+		return teamRepository.findAllByRole(Role.USER);
 	}
 
 	public List<AssignmentFile> getTeamAssignmentFiles(CompetitionSession session, Assignment assignment, Team team) {

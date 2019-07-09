@@ -3,10 +3,12 @@ package nl.moj.server;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -25,6 +27,7 @@ import java.util.List;
 @Slf4j
 public class TeamDetailsService implements UserDetailsService {
 
+	private static final String ROLE_PREFIX = "ROLE_";
 	private final MojServerProperties mojServerProperties;
     private final TeamRepository teamRepository;
 
@@ -38,9 +41,20 @@ public class TeamDetailsService implements UserDetailsService {
 
 	private Collection<? extends GrantedAuthority> getAuthorities(Team team) {
 		List<GrantedAuthority> authList = new ArrayList<>();
-		SimpleGrantedAuthority sGA = new SimpleGrantedAuthority(team.getRole().toString());
+		SimpleGrantedAuthority sGA = new SimpleGrantedAuthority(extractRole(team));
 		authList.add(sGA);
 		return authList;
+	}
+
+	private String extractRole(Team team) {
+		if( team.getRole() != null ) {
+			String role = team.getRole().name();
+			if( !role.startsWith(ROLE_PREFIX)) {
+				role = ROLE_PREFIX + role;
+			}
+			return role;
+		}
+		return ROLE_PREFIX + Role.ANONYMOUS;
 	}
 
 	public void initTeam(String name) {

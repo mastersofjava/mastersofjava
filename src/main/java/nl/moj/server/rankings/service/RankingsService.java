@@ -32,7 +32,7 @@ public class RankingsService {
         List<Ranking> rankings = new ArrayList<>();
         if (session != null) {
             List<AssignmentResult> assignmentResults = assignmentResultRepository.findByCompetitionSession(session);
-            teamRepository.findAllByRole(Role.ROLE_USER).forEach(t -> {
+            teamRepository.findAllByRole(Role.USER).forEach(t -> {
                 Ranking rank = Ranking.builder()
                         .team(t.getName())
                         .totalScore(calculateTotalScore(assignmentResults, t))
