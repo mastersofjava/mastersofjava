@@ -100,8 +100,6 @@ public class BootstrapService {
                 .build();
 
         teamRepository.save(admin);
-        // printing the password for just in case the admin user forgets it.
-        log.info("Created a new admin user with username '{}' and password '{}'", username, password);
     }
 
     private boolean dataValid() {

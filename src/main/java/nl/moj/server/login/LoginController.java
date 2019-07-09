@@ -59,7 +59,7 @@ public class LoginController {
 
         SecurityContext context = SecurityContextHolder.getContext();
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(form.getName(), form
-                .getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.USER.name())));
+                .getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.USER)));
 
         Team team = Team.builder()
                 .company(form.getCompany())

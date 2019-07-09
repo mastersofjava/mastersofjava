@@ -85,8 +85,8 @@ public class WebConfiguration {
         protected void configure(HttpSecurity http) throws Exception {
             http.authorizeRequests()
                     .antMatchers("/login", "/register", "/feedback", "/bootstrap").permitAll()//
-                    .antMatchers("/").hasRole(Role.USER.name()) //
-                    .antMatchers("/control").hasAnyRole(Role.GAME_MASTER.name(), Role.ADMIN.name()) //
+                    .antMatchers("/").hasAuthority(Role.USER) //
+                    .antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) //
 
                     .and().formLogin().successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login")
                     .and().logout().and().headers().frameOptions().disable().and().csrf().disable();
@@ -101,9 +101,9 @@ public class WebConfiguration {
                 List<String> roles = authentication.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
-                if( roles.contains(Role.ADMIN.authority()) || roles.contains(Role.GAME_MASTER.authority())) {
+                if( roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER)) {
                     response.sendRedirect("/control");
-                } else if( roles.contains(Role.USER.authority())){
+                } else if( roles.contains(Role.USER)){
                     teamDetailsService.initTeam(authentication.getName());
                     response.sendRedirect("/");
                 } else {

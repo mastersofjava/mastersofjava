@@ -30,9 +30,8 @@ public class Team {
 	@Column(name = "password")
 	private String password;
 
-	@Enumerated(EnumType.STRING)
 	@Column(name = "role")
-	private Role role;
+	private String role;
 
 	@Column(name = "country")
 	private String country;

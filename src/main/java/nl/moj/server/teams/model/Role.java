@@ -1,22 +1,8 @@
 package nl.moj.server.teams.model;
 
-public enum Role {
-    ADMIN("ROLE_ADMIN"),
-    GAME_MASTER("ROLE_GAME_MASTER"),
-    USER("ROLE_USER"),
-    ANONYMOUS("ROLE_ANONYMOUS");
-
-    private String authority;
-
-    private Role(String authority) {
-        this.authority = authority;
-    }
-
-    public String authority() {
-        return this.authority;
-    }
-
-    public String role() {
-        return name();
-    }
+public final class Role {
+    public static final String ADMIN = "ROLE_ADMIN";
+    public static final String GAME_MASTER = "ROLE_GAME_MASTER";
+    public static final String USER = "ROLE_USER";
+    public static final String ANONYMOUS = "ROLE_ANONYMOUS";
 }

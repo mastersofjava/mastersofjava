@@ -48,7 +48,7 @@ public class TeamDetailsService implements UserDetailsService {
 
 	private String extractRole(Team team) {
 		if( team.getRole() != null ) {
-			String role = team.getRole().name();
+			String role = team.getRole();
 			if( !role.startsWith(ROLE_PREFIX)) {
 				role = ROLE_PREFIX + role;
 			}
