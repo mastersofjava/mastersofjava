@@ -9,7 +9,7 @@ $(document).ready(function () {
 });
 
 function initSolutions() {
-    $('span[data-solution]').click(function(e) {
+    $('#assignment-name').click(function(e) {
         e.preventDefault()
         var uuid = $(this).attr('data-assignment');
         var assignmentName = $("#assignment-name").text();

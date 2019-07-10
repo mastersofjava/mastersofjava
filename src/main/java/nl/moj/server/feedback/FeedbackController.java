@@ -67,7 +67,7 @@ public class FeedbackController {
     }
 
     @GetMapping(value="/feedback/solution/{assignment}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @RolesAllowed("ROLE_CONTROL")
+    @RolesAllowed({Role.GAME_MASTER,Role.ADMIN})
     public @ResponseBody Submission getAssignmentSolution(@PathVariable("assignment") UUID assignment) {
         return Submission.builder()
                 .files(competition.getSolutionFiles(assignment).stream()
@@ -81,7 +81,7 @@ public class FeedbackController {
     }
 
     @GetMapping(value = "/feedback/solution/{assignment}/team/{team}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @RolesAllowed("ROLE_CONTROL")
+    @RolesAllowed({Role.GAME_MASTER,Role.ADMIN})
     public @ResponseBody
     Submission getSubmission(@PathVariable("assignment") UUID assignment, @PathVariable("team") UUID uuid) {
         return Submission.builder()
