@@ -218,7 +218,8 @@ public class CompileService {
 	}
 
 	private void stripTeamPathInfo(StringBuilder result, File prefix) {
-		final Matcher matcher = Pattern.compile("^(" + prefix.getAbsolutePath() + ")/?", Pattern.MULTILINE).matcher(result);
+		//Replacing a single backslash in file path with double to avoid initiating escape sequence.
+		final Matcher matcher = Pattern.compile("^(" + prefix.getAbsolutePath().replace("\\", "\\\\") + ")/?", Pattern.MULTILINE).matcher(result);
 		if (matcher.find()) {
 			for (int i = 0; i < matcher.groupCount(); i++) {
 				log.debug("group {} = {}", i, matcher.group(i));
