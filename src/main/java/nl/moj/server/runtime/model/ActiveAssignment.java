@@ -4,14 +4,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.descriptor.ExecutionModel;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
-import nl.moj.server.teams.model.Team;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Getter
@@ -51,5 +49,12 @@ public class ActiveAssignment {
 		return assignmentFiles
 				.stream().filter( f -> f.getFileType().isVisible())
 				.collect(Collectors.toList());
+	}
+
+	public ExecutionModel getExecutionModel() {
+		if( assignmentDescriptor.getExecutionModel() == null ) {
+			return ExecutionModel.PARALLEL;
+		}
+		return assignmentDescriptor.getExecutionModel();
 	}
 }

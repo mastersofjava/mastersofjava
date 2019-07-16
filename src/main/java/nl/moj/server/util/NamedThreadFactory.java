@@ -16,7 +16,7 @@ public class NamedThreadFactory implements ThreadFactory {
 				Thread.currentThread().getThreadGroup();
 		namePrefix = name + "-" +
 				poolNumber.getAndIncrement() +
-				"-thread-";
+				"T";
 	}
 
 	public Thread newThread(Runnable r) {

@@ -1,6 +1,7 @@
 package nl.moj.server.test.service;
 
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.descriptor.ExecutionModel;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
@@ -13,6 +14,7 @@ import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.test.repository.TestAttemptRepository;
 import nl.moj.server.test.repository.TestCaseRepository;
+import nl.moj.server.util.CompletableFutures;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -42,6 +44,8 @@ public class TestService {
     private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
             Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
+    private final Executor singular;
+
     private Executor executor;
 
     private MojServerProperties mojServerProperties;
@@ -56,11 +60,12 @@ public class TestService {
 
     private TeamService teamService;
 
-    public TestService(MojServerProperties mojServerProperties, @Qualifier("testing") Executor executor, CompetitionRuntime competition,
+    public TestService(MojServerProperties mojServerProperties, @Qualifier("singular") Executor singular, @Qualifier("testing") Executor executor, CompetitionRuntime competition,
                        TestCaseRepository testCaseRepository, TestAttemptRepository testAttemptRepository,
                        AssignmentStatusRepository assignmentStatusRepository, TeamService teamService) {
         this.mojServerProperties = mojServerProperties;
         this.executor = executor;
+        this.singular = singular;
         this.competition = competition;
         this.testCaseRepository = testCaseRepository;
         this.testAttemptRepository = testAttemptRepository;
@@ -69,14 +74,10 @@ public class TestService {
     }
 
     public CompletableFuture<TestResult> runTest(Team team, TestAttempt testAttempt, AssignmentFile test) {
-        return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, competition.getActiveAssignment()), executor);
+        return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, competition.getActiveAssignment()), getTestExecutor());
     }
 
-    private TestResult runTestSync(Team team, TestAttempt testAttempt, AssignmentFile test) {
-        return executeTest(team, testAttempt, test, competition.getActiveAssignment());
-    }
-
-    public TestResults runTestsSync(Team team, List<AssignmentFile> tests) {
+    public CompletableFuture<TestResults> runTests(Team team, List<AssignmentFile> tests) {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
                 activeAssignment.getCompetitionSession(), team);
@@ -86,16 +87,28 @@ public class TestService {
                 .uuid(UUID.randomUUID())
                 .build());
 
-        List<TestResult> trs = new ArrayList<>();
-        tests.forEach(t -> trs.add(runTestSync(team, ta, t)));
+        List<CompletableFuture<TestResult>> testFutures = new ArrayList<>();
+        tests.forEach(t -> testFutures.add(runTest(team, ta, t)));
 
-        ta.setDateTimeEnd(Instant.now());
-        testAttemptRepository.save(ta);
+        return CompletableFutures.allOf(testFutures).thenApply( r -> {
+            ta.setDateTimeEnd(Instant.now());
+            testAttemptRepository.save(ta);
+            return TestResults.builder()
+                    .testAttemptUuid(ta.getUuid())
+                    .results(r)
+                    .build();
+        });
+    }
 
-        return TestResults.builder()
-                .testAttemptUuid(ta.getUuid())
-                .results(trs)
-                .build();
+    private Executor getTestExecutor() {
+        ActiveAssignment activeAssignment = competition.getActiveAssignment();
+        if( activeAssignment == null ) {
+            return executor;
+        }
+        if( activeAssignment.getExecutionModel() == ExecutionModel.SEQUENTIAL) {
+            return singular;
+        }
+        return executor;
     }
 
     private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, ActiveAssignment activeAssignment) {
@@ -185,6 +198,8 @@ public class TestService {
 
             return TestResult.builder()
                     .testCaseUuid(testCase.getUuid())
+                    .dateTimeStart(testCase.getDateTimeStart())
+                    .dateTimeEnd(testCase.getDateTimeEnd())
                     .success(testCase.isSuccess())
                     .timeout(testCase.isTimeout())
                     .testName(testCase.getName())

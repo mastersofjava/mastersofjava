@@ -38,11 +38,7 @@ public class TestSubmitTest extends BaseRuntimeTest {
 	@Test
 	public void shouldUseSpecifiedAssignmentTestTimeout() {
 
-		OrderedAssignment oa = getCompetition().getAssignments()
-				.stream()
-				.filter( a -> a.getAssignment().getName().equals("assignment-1"))
-				.findFirst()
-				.orElseThrow();
+		OrderedAssignment oa = getAssignment("assignment-1");
 
 		competitionRuntime.startAssignment(oa.getAssignment().getName());
 
@@ -60,14 +56,84 @@ public class TestSubmitTest extends BaseRuntimeTest {
 			src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
 
 
-			SubmitResult submitResult = submitService.testAsync(getTeam(), src)
+			SubmitResult submitResult = submitService.test(getTeam(), src)
 					.get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
 
-			Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isFalse();
-			Assertions.assertThat(submitResult.getTestResults().get(0).isTimeout()).isTrue();
+			Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isSuccess()).isFalse();
+			Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isTimeout()).isTrue();
 
 		} catch (Exception e) {
 			Assertions.fail("Caught unexpected exception.", e);
 		}
+	}
+
+	@Test
+	public void shouldUseSpecifiedAssignmentTestTimeoutWithSequentialExecutionModel() {
+
+		OrderedAssignment oa = getAssignment("assignment-2");
+
+		competitionRuntime.startAssignment(oa.getAssignment().getName());
+
+		ActiveAssignment state = competitionRuntime.getActiveAssignment();
+		Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
+		timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
+
+		try {
+			Map<String,String> files = state.getAssignmentFiles().stream()
+					.filter( f -> f.getFileType() == AssignmentFileType.EDIT )
+					.collect(Collectors.toMap( f -> f.getUuid().toString(), AssignmentFile::getContentAsString));
+
+			SourceMessage src = new SourceMessage();
+			src.setSources(files);
+			src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
+
+
+			SubmitResult submitResult = submitService.test(getTeam(), src)
+					.get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
+
+			Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isSuccess()).isFalse();
+			Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isTimeout()).isTrue();
+
+		} catch (Exception e) {
+			Assertions.fail("Caught unexpected exception.", e);
+		}
+	}
+
+	@Test
+	public void shouldGetPointsForSuccessOnFirstAttempt() {
+		OrderedAssignment oa = getAssignment("assignment-3");
+
+		competitionRuntime.startAssignment(oa.getAssignment().getName());
+
+		ActiveAssignment state = competitionRuntime.getActiveAssignment();
+		Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
+		timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
+
+		try {
+			Map<String,String> files = state.getAssignmentFiles().stream()
+					.filter( f -> f.getFileType() == AssignmentFileType.EDIT )
+					.collect(Collectors.toMap( f -> f.getUuid().toString(), AssignmentFile::getContentAsString));
+
+			SourceMessage src = new SourceMessage();
+			src.setSources(files);
+			src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
+
+			SubmitResult submitResult = submitService.submit(getTeam(), src)
+					.get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
+
+			Assertions.assertThat(submitResult.isSuccess()).isTrue();
+			Assertions.assertThat(submitResult.getScore()).isGreaterThan(0);
+
+		} catch (Exception e) {
+			Assertions.fail("Caught unexpected exception.", e);
+		}
+	}
+
+	private OrderedAssignment getAssignment(String name) {
+		return getCompetition().getAssignments()
+				.stream()
+				.filter( a -> a.getAssignment().getName().equals(name))
+				.findFirst()
+				.orElseThrow();
 	}
 }

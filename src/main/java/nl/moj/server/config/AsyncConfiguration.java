@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Configuration
@@ -45,4 +46,8 @@ public class AsyncConfiguration implements AsyncConfigurer {
 		return (ex, method, params) -> log.error("Uncaught async error", ex);
 	}
 
+	@Bean(name = "singular")
+	public Executor singluarExecutor() {
+		return Executors.newFixedThreadPool(1, new NamedThreadFactory("singular"));
+	}
 }

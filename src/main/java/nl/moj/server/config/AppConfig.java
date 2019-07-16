@@ -1,5 +1,6 @@
 package nl.moj.server.config;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -17,42 +18,16 @@ public class AppConfig {
 	@Bean(name = "objectMapper")
 	public ObjectMapper jsonObjectMapper() {
 		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
 		return objectMapper;
 	}
 
 	@Bean(name = "yamlObjectMapper")
 	public ObjectMapper yamlObjectMapper() {
 		ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
+		yamlObjectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
 		yamlObjectMapper.registerModule(new JavaTimeModule());
 
 		return yamlObjectMapper;
 	}
-
-	//TODO this should be removed an use the language configuration.
-	@Configuration
-	public class CompilerConfig {
-		@Bean
-		public JavaCompiler systemJavaCompiler() {
-			return ToolProvider.getSystemJavaCompiler();
-		}
-
-		@Bean
-		public DiagnosticCollector<JavaFileObject> diagnosticCollector() {
-			return new DiagnosticCollector<>();
-		}
-
-		@Bean
-		public StandardJavaFileManager standardJavaFileManager(JavaCompiler javaCompiler,
-															   DiagnosticCollector<JavaFileObject> diagnosticCollector) {
-			return javaCompiler.getStandardFileManager(diagnosticCollector, null, StandardCharsets.UTF_8);
-		}
-	}
-
-//	public class SecurityWebApplicationInitializer extends AbstractSecurityWebApplicationInitializer {
-//
-//		public SecurityWebApplicationInitializer() {
-//			super(AppConfig.SecurityConfig.class);
-//		}
-//	}
-
 }

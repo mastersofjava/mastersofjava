@@ -5,6 +5,7 @@ import lombok.Getter;
 import nl.moj.server.compiler.service.CompileResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.service.TestResult;
+import nl.moj.server.test.service.TestResults;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +22,7 @@ public class SubmitResult {
 
     private CompileResult compileResult;
 
-    @Builder.Default
-    private List<TestResult> testResults = new ArrayList<>();
+    private TestResults testResults;
 
     @Builder.Default
     private boolean success = false;

@@ -1,6 +1,7 @@
 package nl.moj.server.compiler.service;
 
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.assignment.descriptor.ExecutionModel;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.config.properties.Languages;
@@ -17,14 +18,12 @@ import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -46,14 +45,16 @@ public class CompileService {
 
 	private CompileAttemptRepository compileAttemptRepository;
 	private AssignmentStatusRepository assignmentStatusRepository;
+	private Executor singular;
 	private Executor executor;
 	private CompetitionRuntime competition;
 	private MojServerProperties mojServerProperties;
 	private TeamService teamService;
 
-	public CompileService(@Qualifier("compiling") Executor executor, CompetitionRuntime competition, MojServerProperties mojServerProperties,
+	public CompileService(@Qualifier("singular") Executor singular, @Qualifier("compiling") Executor executor, CompetitionRuntime competition, MojServerProperties mojServerProperties,
 						  CompileAttemptRepository compileAttemptRepository, AssignmentStatusRepository assignmentStatusRepository,
 						  TeamService teamService) {
+		this.singular = singular;
 		this.executor = executor;
 		this.competition = competition;
 		this.mojServerProperties = mojServerProperties;
@@ -63,11 +64,23 @@ public class CompileService {
 	}
 
 	public CompletableFuture<CompileResult> compile(Team team, SourceMessage message) {
-		return CompletableFuture.supplyAsync(compileTask(mojServerProperties.getLanguages().getJavaVersion(competition.getActiveAssignment().getAssignmentDescriptor().getJavaVersion()), team, message), executor);
+		return CompletableFuture.supplyAsync(compileTask(mojServerProperties.getLanguages().getJavaVersion(competition.getActiveAssignment().getAssignmentDescriptor().getJavaVersion()), team, message),
+				getCompileExecutor());
 	}
 
 	public CompileResult compileSync(Team team, SourceMessage message) {
 		return compileTask(mojServerProperties.getLanguages().getJavaVersion(competition.getActiveAssignment().getAssignmentDescriptor().getJavaVersion()), team, message).get();
+	}
+
+	private Executor getCompileExecutor() {
+		ActiveAssignment activeAssignment = competition.getActiveAssignment();
+		if( activeAssignment == null ) {
+			return executor;
+		}
+		if( activeAssignment.getExecutionModel() == ExecutionModel.SEQUENTIAL) {
+			return singular;
+		}
+		return executor;
 	}
 
 	private Supplier<CompileResult> compileTask(Languages.JavaVersion javaVersion, Team team, SourceMessage message) {
@@ -206,6 +219,8 @@ public class CompileService {
 
 			return CompileResult.builder()
 					.compileAttemptUuid(compileAttempt.getUuid())
+					.dateTimeStart(compileAttempt.getDateTimeStart())
+					.dateTimeEnd(compileAttempt.getDateTimeEnd())
 					.compileOutput(compileAttempt.getCompilerOutput())
 					.success(compileAttempt.isSuccess())
 					.build();

@@ -1,5 +1,8 @@
 package nl.moj.server.runtime;
 
+import javax.persistence.EntityManager;
+import javax.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.dynamic.TypeResolutionStrategy;
@@ -215,8 +218,13 @@ public class ScoreService {
 
     }
 
+    @Transactional
     public AssignmentStatus finalizeScore(AssignmentStatus as, ActiveAssignment activeAssignment) {
+        // attach entity?
+        as = assignmentStatusRepository.save(as);
+
         if( needsFinalize(as) ) {
+
             Score score = calculateScore(activeAssignment, as);
             registerScore(as,score);
 
