@@ -83,9 +83,8 @@ public class ScoreService {
     private final AssignmentStatusRepository assignmentStatusRepository;
     private final AssignmentResultRepository assignmentResultRepository;
 
-    public void initializeScoreAtStart(Team team, Assignment assignment, CompetitionSession competitionSession) {
-        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment, competitionSession, team);
-        assignmentResultRepository.save(AssignmentResult.builder()
+    public void initializeScoreAtStart(AssignmentStatus as) {
+        AssignmentResult ar = assignmentResultRepository.save(AssignmentResult.builder()
                 .assignmentStatus(as)
                 .bonus(0L)
                 .penalty(0L)
@@ -93,6 +92,7 @@ public class ScoreService {
                 .finalScore(0L)
                 .uuid(UUID.randomUUID())
                 .build());
+        as.setAssignmentResult(ar);
     }
 
     private Score calculateScore(ActiveAssignment state, AssignmentStatus as) {

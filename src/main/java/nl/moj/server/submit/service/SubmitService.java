@@ -2,6 +2,7 @@ package nl.moj.server.submit.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.compiler.service.CompileResult;
 import nl.moj.server.compiler.service.CompileService;
@@ -23,7 +24,10 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -148,7 +152,6 @@ public class SubmitService {
 
         return CompletableFuture.completedFuture(SubmitResult.builder().build());
     }
-
 
     private boolean isSubmitAllowedForTeam(AssignmentStatus as) {
         return getRemainingSubmits(as) > 0;

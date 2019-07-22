@@ -32,7 +32,7 @@ public class MessageService {
                 .success(tr.isSuccess())
                 .uuid(team.getUuid())
                 .test(tr.getTestName())
-                .message(tr.getTestOutput())
+                .message(tr.getTestOutput() == null ? "" : tr.getTestOutput())
                 .build();
         log.info("Sending test assignmentScores: {}", msg);
         template.convertAndSendToUser(team.getName(), DEST_COMPETITION, msg);
@@ -59,7 +59,7 @@ public class MessageService {
         TeamCompileFeedbackMessage msg = TeamCompileFeedbackMessage.builder()
                 .success(result.isSuccess())
                 .team(team.getName())
-                .message(result.getCompileOutput())
+                .message(result.getCompileOutput() == null ? "" : result.getCompileOutput())
                 .build();
         log.info("Sending compile assignmentScores: {}", msg);
         template.convertAndSendToUser(msg.getTeam(), DEST_COMPETITION, msg);

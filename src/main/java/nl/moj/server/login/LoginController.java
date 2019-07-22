@@ -2,6 +2,7 @@ package nl.moj.server.login;
 
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.lang3.StringUtils;
@@ -23,8 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.UUID;
-
-import static nl.moj.server.teams.model.Role.ROLE_USER;
 
 @Controller
 @RequiredArgsConstructor
@@ -60,14 +59,14 @@ public class LoginController {
 
         SecurityContext context = SecurityContextHolder.getContext();
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(form.getName(), form
-                .getPassword(), Arrays.asList(new SimpleGrantedAuthority(ROLE_USER.toString())));
+                .getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.USER)));
 
         Team team = Team.builder()
                 .company(form.getCompany())
                 .country(form.getCountry())
                 .name(form.getName())
                 .password(encoder.encode(form.getPassword()))
-                .role(ROLE_USER)
+                .role(Role.USER)
                 .uuid(UUID.randomUUID())
                 .build();
 

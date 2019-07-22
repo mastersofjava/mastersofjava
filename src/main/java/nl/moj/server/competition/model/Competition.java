@@ -25,7 +25,7 @@ public class Competition {
 	private String name;
 
 	@OneToMany(mappedBy = "competition", orphanRemoval = true, cascade = CascadeType.ALL)
-	private List<OrderedAssignment> assignments;
+	private List<OrderedAssignment> assignments = new ArrayList<>();
 	
 	public List<OrderedAssignment> getAssignmentsInOrder() {
 		List<OrderedAssignment> copy = new ArrayList<>(assignments);

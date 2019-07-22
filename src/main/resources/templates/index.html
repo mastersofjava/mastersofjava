@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
 
-    <title>Masters of Java 2018</title>
+    <title>Masters of Java</title>
 
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/solid.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/fontawesome.min.css}"/>
@@ -52,7 +52,7 @@
                     </div>
                 </div>
                 <div th:unless="${finished}" id="tabs">
-                    <ul class="nav nav-pills" role="tablist">
+                    <ul class="nav nav-tabs" role="tablist">
                         <!--/*@thymesVar id="files" type="java.util.List<nl.moj.server.files.AssignmentFile>"*/-->
                         <li class="nav-item" th:each="file,status : ${files}">
                             <a class="nav-link"
@@ -115,6 +115,16 @@
                         </g>
                     </svg>
                 </div>
+            </div>
+            <div th:if="${running}" class="p-2 text-center">
+                <a class="btn w-50 btn-info text-white"
+                   th:href="@{/feedback}"
+                   target="_blank"><span class="fa fa-gamepad pr-1"></span>Live Feedback</a>
+            </div>
+            <div th:if="${running}" class="p-2 text-center">
+                <a class="btn w-50 btn-info text-white"
+                   th:href="@{/rankings}"
+                   target="_blank"><span class="fa fa-trophy pr-1"></span>Rankings</a>
             </div>
             <div th:if="${running}" class="mt-5 p-2 text-center">
                 <a class="btn w-50 btn-warning text-white"

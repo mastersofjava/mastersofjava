@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
 
-    <title>Masters of Java 2018 Ranking</title>
+    <title>Masters of Java - Ranking</title>
 
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/solid.min.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/fontawesome.min.css}"/>
@@ -70,7 +70,7 @@
                                 #[[${iterStat.count}]] <span class="fas fa-question-circle grey" data-container="body"
                                                              data-trigger="hover" data-toggle="popover"
                                                              data-placement="top"
-                                                             th:attrappend="data-content=${a.getAssignment().getName()}"></span></th>
+                                                             th:attrappend="data-content=${a.displayName}"></span></th>
                             <th class="text-center">Total Score</th>
                         </tr>
                         </thead>
@@ -79,7 +79,7 @@
                             <td class="text-center" th:text="${ranking.rank}"></td>
                             <td th:text="${ranking.team}">teamname</td>
                             <th:block th:each="assignment : ${oas}">
-                                <td class="text-center" th:text="${ranking.getAssignmentResult(assignment).getScore()}">
+                                <td class="text-center" th:text="${ranking.getAssignmentResult(assignment.orderedAssignment).getScore()}">
                                     0
                                 </td>
                             </th:block>

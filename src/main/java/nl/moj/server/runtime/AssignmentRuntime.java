@@ -1,5 +1,32 @@
 package nl.moj.server.runtime;
 
+import javax.annotation.Resource;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,25 +47,8 @@ import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.PathUtil;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.time.StopWatch;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -60,6 +70,10 @@ public class AssignmentRuntime {
     private final SoundService soundService;
     private final TaskScheduler taskScheduler;
     private final AssignmentStatusRepository assignmentStatusRepository;
+
+    // TODO refactor so we do not need to use ApplicationContext to find a self reference
+    @Autowired
+    private ApplicationContext ctx;
 
     private StopWatch timer;
 
@@ -85,6 +99,7 @@ public class AssignmentRuntime {
      * @param orderedAssignment the assignment to start.
      * @return the {@link Future}
      */
+    @Transactional
     public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) {
         clearHandlers();
         this.competitionSession = competitionSession;
@@ -95,7 +110,6 @@ public class AssignmentRuntime {
         // init assignment sources;
         initOriginalAssignmentFiles();
 
-        // cleanup historical assignment data
         initTeamsForAssignment();
 
         // play the gong
@@ -120,24 +134,27 @@ public class AssignmentRuntime {
     /**
      * Stop the current assignment
      */
+    @Transactional
     public void stop() {
         messageService.sendStopToTeams(assignment.getName());
-        // TODO calculate final scores for all not finished teams.
         teamService.getTeams().forEach(t -> {
             ActiveAssignment state = getState();
             AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),
                     state.getCompetitionSession(),t);
-            if( as.getDateTimeEnd() == null ) {
-                as.setDateTimeEnd(Instant.now());
-                AssignmentResult ar = as.getAssignmentResult();
-                messageService.sendSubmitFeedback(t, SubmitResult.builder()
-                        .success(false)
-                        .remainingSubmits(0)
-                        .score(ar.getFinalScore())
-                        .build());
+            if( as != null) {
+                if (as.getDateTimeEnd() == null) {
+                    as = scoreService.finalizeScore(as, state);
+                    AssignmentResult ar = as.getAssignmentResult();
+                    messageService.sendSubmitFeedback(t, SubmitResult.builder()
+                            .success(false)
+                            .remainingSubmits(0)
+                            .score(ar.getFinalScore())
+                            .build());
+                }
+            } else {
+                log.warn("Could not finalize score for team {}@{}, no assignment status found.", t.getName(), t.getUuid());
             }
         });
-
 
         if (getTimeRemaining() > 0) {
             clearHandlers();
@@ -151,25 +168,6 @@ public class AssignmentRuntime {
         running = false;
         orderedAssignment = null;
         log.info("Stopped assignment {}", assignment.getName());
-    }
-
-    // TODO this should probably not be here SubmitService is a better place for it.
-    public List<AssignmentFile> getTeamAssignmentFiles(Team team) {
-        List<AssignmentFile> teamFiles = new ArrayList<>();
-        Path teamAssignmentBase = resolveTeamAssignmentBaseDirectory(team).resolve("sources");
-        originalAssignmentFiles.stream()
-                .filter(f -> f.getFileType().isVisible())
-                .forEach(f -> {
-                    Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
-                    if (resolvedFile.toFile().exists() && Files.isReadable(resolvedFile)) {
-                        teamFiles.add(f.toBuilder()
-                                .content(readPathContent(resolvedFile))
-                                .build());
-                    } else {
-                        teamFiles.add(f.toBuilder().build());
-                    }
-                });
-        return teamFiles;
     }
 
     public ActiveAssignment getState() {
@@ -194,7 +192,7 @@ public class AssignmentRuntime {
 
     private void initOriginalAssignmentFiles() {
         try {
-            originalAssignmentFiles = new JavaAssignmentFileResolver().resolve(assignmentDescriptor);
+            originalAssignmentFiles = assignmentService.getAssignmentFiles(assignment);
         } catch (Exception e) {
             // log exception here since it may get swallowed by async calls
             log.error("Unable to parse assignment files for assignment {}: {}", assignmentDescriptor.getDisplayName(), e
@@ -205,13 +203,22 @@ public class AssignmentRuntime {
 
     private void initTeamsForAssignment() {
         cleanupAssignmentStatuses();
-        teamService.getTeams().forEach(t -> {
-            cleanupTeamAssignmentData(t);
-            initAssignmentStatus(t, assignment, assignmentDescriptor.getDuration());
-            initTeamScore(t);
-            initTeamAssignmentData(t);
-        });
+        teamService.getTeams().forEach(this::initAssignmentForTeam);
     }
+
+	public AssignmentStatus initAssignmentForLateTeam(Team t) {
+		AssignmentStatus as = initAssignmentForTeam(t);
+		as.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
+		return assignmentStatusRepository.save(as);
+	}    
+    
+	private AssignmentStatus initAssignmentForTeam(Team t) {
+		cleanupTeamAssignmentData(t);
+		AssignmentStatus as = initAssignmentStatus(t);
+		initTeamScore(as);
+		initTeamAssignmentData(t);
+		return as;
+	}
 
     private void updateTeamAssignmentStatuses() {
         assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competitionSession).forEach(as -> {
@@ -221,16 +228,17 @@ public class AssignmentRuntime {
     }
 
     private void initTeamAssignmentData(Team team) {
-        Path assignmentDirectory = resolveTeamAssignmentBaseDirectory(team);
+        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession,team,assignment);
         try {
             // create empty assignment directory
             Files.createDirectories(assignmentDirectory);
         } catch (IOException e) {
-            throw new RuntimeException("Unable to delete team assignment directory " + assignmentDirectory, e);
+            throw new RuntimeException("Unable to create team assignment directory " + assignmentDirectory, e);
         }
     }
 
-    private void initAssignmentStatus(Team team, Assignment assignment, Duration assignmentDuration) {
+    private AssignmentStatus initAssignmentStatus(Team team) {
+    	Duration assignmentDuration = assignmentDescriptor.getDuration();
         AssignmentStatus as = AssignmentStatus.builder()
                 .assignment(assignment)
                 .competitionSession(competitionSession)
@@ -238,20 +246,17 @@ public class AssignmentRuntime {
                 .assignmentDuration(assignmentDuration)
                 .team(team)
                 .build();
-        assignmentStatusRepository.save(as);
+        return assignmentStatusRepository.save(as);
     }
 
-    private Path resolveTeamAssignmentBaseDirectory(Team team) {
-        return teamService.getTeamDirectory(team).resolve(assignment.getName());
-    }
 
-    private void initTeamScore(Team team) {
-        scoreService.initializeScoreAtStart(team, assignment, competitionSession);
+    private void initTeamScore(AssignmentStatus as) {
+        scoreService.initializeScoreAtStart(as);
     }
 
     private void cleanupTeamAssignmentData(Team team) {
         // delete historical submitted data.
-        Path assignmentDirectory = resolveTeamAssignmentBaseDirectory(team);
+        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession,team,assignment);
         try {
             if (Files.exists(assignmentDirectory)) {
                 PathUtil.delete(assignmentDirectory);
@@ -301,17 +306,16 @@ public class AssignmentRuntime {
     }
 
     private void clearHandlers() {
-        if (this.handlers != null) {
-            this.handlers.forEach((k, v) -> {
-                v.cancel(true);
-            });
-        }
-        this.handlers = new HashMap<>();
+		if (this.handlers != null) {
+			this.handlers.forEach((k, v) -> v.cancel(true));
+		}
+		this.handlers = new HashMap<>();
     }
 
     @Async
     public Future<?> scheduleStop() {
-        return taskScheduler.schedule(this::stop, inSeconds(assignmentDescriptor.getDuration().getSeconds()));
+        AssignmentRuntime ar = getSelfReference();
+        return taskScheduler.schedule(ar::stop, inSeconds(assignmentDescriptor.getDuration().getSeconds()));
     }
 
     @Async
@@ -321,16 +325,15 @@ public class AssignmentRuntime {
 
     @Async
     public Future<?> scheduleTimeSync() {
-        return taskScheduler.scheduleAtFixedRate(
-                () -> {
-                    messageService.sendRemainingTime(getTimeRemaining(), assignmentDescriptor.getDuration()
-                            .getSeconds());
-                },
-                TIMESYNC_FREQUENCY
-        );
-    }
+		return taskScheduler.scheduleAtFixedRate(() -> messageService.sendRemainingTime(getTimeRemaining(),
+				assignmentDescriptor.getDuration().getSeconds()), TIMESYNC_FREQUENCY);
+	}
 
     private Date inSeconds(long sec) {
         return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    private AssignmentRuntime getSelfReference() {
+        return ctx.getBean(AssignmentRuntime.class);
     }
 }

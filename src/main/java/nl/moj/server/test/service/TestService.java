@@ -8,6 +8,7 @@ import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.test.repository.TestAttemptRepository;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -52,24 +54,26 @@ public class TestService {
 
     private AssignmentStatusRepository assignmentStatusRepository;
 
+    private TeamService teamService;
+
     public TestService(MojServerProperties mojServerProperties, @Qualifier("testing") Executor executor, CompetitionRuntime competition,
                        TestCaseRepository testCaseRepository, TestAttemptRepository testAttemptRepository,
-                       AssignmentStatusRepository assignmentStatusRepository) {
+                       AssignmentStatusRepository assignmentStatusRepository, TeamService teamService) {
         this.mojServerProperties = mojServerProperties;
         this.executor = executor;
         this.competition = competition;
         this.testCaseRepository = testCaseRepository;
         this.testAttemptRepository = testAttemptRepository;
         this.assignmentStatusRepository = assignmentStatusRepository;
+        this.teamService = teamService;
     }
 
     public CompletableFuture<TestResult> runTest(Team team, TestAttempt testAttempt, AssignmentFile test) {
-        return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, competition.getActiveAssignment()
-                .getAssignmentDescriptor()), executor);
+        return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, competition.getActiveAssignment()), executor);
     }
 
     private TestResult runTestSync(Team team, TestAttempt testAttempt, AssignmentFile test) {
-        return executeTest(team, testAttempt, test, competition.getActiveAssignment().getAssignmentDescriptor());
+        return executeTest(team, testAttempt, test, competition.getActiveAssignment());
     }
 
     public TestResults runTestsSync(Team team, List<AssignmentFile> tests) {
@@ -94,7 +98,7 @@ public class TestService {
                 .build();
     }
 
-    private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, AssignmentDescriptor ad) {
+    private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, ActiveAssignment activeAssignment) {
         log.info("Running unit test: {}", file.getName());
 
         TestCase testCase = TestCase.builder()
@@ -104,15 +108,18 @@ public class TestService {
                 .dateTimeStart(Instant.now())
                 .build();
 
-        final var directories = mojServerProperties.getDirectories();
-        final File teamAssignmentDir = FileUtils.getFile(directories.getBaseDirectory().toFile(),
-                directories.getTeamDirectory(), team.getName(), file.getAssignment());
-        final File policy = ad.getAssignmentFiles().getSecurityPolicy()
+
+        AssignmentDescriptor ad = activeAssignment.getAssignmentDescriptor();
+        Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(),team,activeAssignment.getAssignment());
+
+        File policy = ad.getAssignmentFiles().getSecurityPolicy()
                 // Use the assignments security policy file, if the assignment has one
                 .map(policyPath -> FileUtils.getFile(ad.getDirectory().toFile(), policyPath.toString()))
                 // Use default (strict) security policy
-                .orElse(FileUtils.getFile(directories.getBaseDirectory().toFile(), directories.getLibDirectory(),
-                SECURITY_POLICY_FOR_UNIT_TESTS));
+                .orElse(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(), mojServerProperties.getDirectories()
+                                .getLibDirectory(),
+                        SECURITY_POLICY_FOR_UNIT_TESTS));
+
         Duration timeout = ad.getTestTimeout() != null ? ad.getTestTimeout() :
                 mojServerProperties.getLimits().getTestTimeout();
 
@@ -133,13 +140,13 @@ public class TestService {
                                 .getJavaVersion(ad.getJavaVersion())
                                 .getRuntime()
                                 .toString(), "-cp",
-                        makeClasspath(team, file.getAssignment()),
+                        makeClasspath(teamAssignmentDir),
                         "-Djava.security.manager",
                         "-Djava.security.policy=" + policy.getAbsolutePath(),
                         "org.junit.runner.JUnitCore",
                         file.getName());
                 log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
-                exitvalue = jUnitCommand.directory(teamAssignmentDir)
+                exitvalue = jUnitCommand.directory(teamAssignmentDir.toFile())
                         .timeout(timeout.toSeconds(), TimeUnit.SECONDS).redirectOutput(jUnitOutput)
                         .redirectError(jUnitError).execute().getExitValue();
             } catch (TimeoutException e) {
@@ -210,10 +217,8 @@ public class TestService {
         }
     }
 
-    private String makeClasspath(Team team, String assignment) {
-        File teamAssignmentDir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(),
-                mojServerProperties.getDirectories().getTeamDirectory(), team.getName(), assignment);
-        File classesDir = FileUtils.getFile(teamAssignmentDir, "classes");
+    private String makeClasspath(Path teamAssignmentDir) {
+        File classesDir = FileUtils.getFile(teamAssignmentDir.toFile(), "classes");
         final List<File> classPath = new ArrayList<>();
         classPath.add(classesDir);
         classPath.add(

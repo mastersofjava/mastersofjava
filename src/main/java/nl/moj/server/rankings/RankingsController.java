@@ -31,7 +31,7 @@ public class RankingsController {
 		if( competitionState.getCompletedAssignments().isEmpty() ) {
 			model.addObject("oas", Collections.emptyList());
 		} else {
-			model.addObject("oas", competitionState.getCompletedAssignments());
+			model.addObject("oas", rankingsMapper.getRankingHeaders(competitionState));
 		}
 		model.addObject("top", rankings.subList(0, Math.min(5, rankings.size())));
 
@@ -42,7 +42,7 @@ public class RankingsController {
 		model.addObject("bottom4", parts.get(3));
 		if (competition.getCurrentAssignment() != null) {
 			ActiveAssignment state = competition.getActiveAssignment();
-			model.addObject("assignment", state.getAssignmentDescriptor().getName());
+			model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
 			model.addObject("timeLeft", state.getTimeRemaining());
 			model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());
 			model.addObject("running", state.isRunning());

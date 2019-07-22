@@ -13,6 +13,7 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,6 +24,8 @@ import org.zeroturnaround.exec.ProcessExecutor;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -46,14 +49,17 @@ public class CompileService {
 	private Executor executor;
 	private CompetitionRuntime competition;
 	private MojServerProperties mojServerProperties;
+	private TeamService teamService;
 
 	public CompileService(@Qualifier("compiling") Executor executor, CompetitionRuntime competition, MojServerProperties mojServerProperties,
-						  CompileAttemptRepository compileAttemptRepository, AssignmentStatusRepository assignmentStatusRepository) {
+						  CompileAttemptRepository compileAttemptRepository, AssignmentStatusRepository assignmentStatusRepository,
+						  TeamService teamService) {
 		this.executor = executor;
 		this.competition = competition;
 		this.mojServerProperties = mojServerProperties;
 		this.compileAttemptRepository = compileAttemptRepository;
 		this.assignmentStatusRepository = assignmentStatusRepository;
+		this.teamService = teamService;
 	}
 
 	public CompletableFuture<CompileResult> compile(Team team, SourceMessage message) {
@@ -79,15 +85,15 @@ public class CompileService {
 			List<AssignmentFile> resources = getResourcesToCopy(state);
 			List<AssignmentFile> assignmentFiles = getReadonlyAssignmentFilesToCompile(state);
 			String assignment = competition.getCurrentAssignment().getAssignment().getName();
+
 			// TODO this should be somewhere else
-			File teamAssignmentDir = FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(),
-					mojServerProperties.getDirectories().getTeamDirectory(), team.getName(), assignment);
-			File sourcesDir = FileUtils.getFile(teamAssignmentDir, "sources");
-			File classesDir = FileUtils.getFile(teamAssignmentDir, "classes");
+			Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(), team, state.getAssignment());
+			Path sourcesDir = teamAssignmentDir.resolve("sources");
+			Path classesDir = teamAssignmentDir.resolve("classes");
 			try {
-				FileUtils.cleanDirectory(teamAssignmentDir);
-				System.out.println( "sources created? -> " + sourcesDir.mkdirs() + " as " + sourcesDir.toString());
-				System.out.println( "classes created? -> " + classesDir.mkdirs() + " as " + classesDir.toString());
+				FileUtils.cleanDirectory(teamAssignmentDir.toFile());
+				System.out.println( "sources created? -> " + sourcesDir.toFile().mkdirs() + " as " + sourcesDir.toString());
+				System.out.println( "classes created? -> " + classesDir.toFile().mkdirs() + " as " + classesDir.toString());
 			} catch (IOException e) {
 				log.error("error while cleaning teamdir", e);
 			}
@@ -95,7 +101,7 @@ public class CompileService {
 			// copy resources
 			resources.forEach(r -> {
 				try {
-					File target = classesDir.toPath().resolve(r.getFile()).toFile();
+					File target = classesDir.resolve(r.getFile()).toFile();
 					if( target.getParentFile() != null ) {
 						target.getParentFile().mkdirs();
 					}
@@ -107,18 +113,22 @@ public class CompileService {
 			});
 
 			// TODO fix compile result so team knows something is very wrong.
-			message.getSources().forEach((uuid, v) -> {
-				AssignmentFile orig = getOriginalAssignmentFile(uuid);
-				File f = sourcesDir.toPath().resolve(orig.getFile()).toFile();
-				try {
-					FileUtils.writeStringToFile(f, v, StandardCharsets.UTF_8);
-				} catch (IOException e) {
-					log.error("error while writing sourcefiles to sources dir", e);
-				}
-				assignmentFiles.add(orig.toBuilder()
-						.absoluteFile(f.toPath())
-						.build());
-			});
+			try {
+				message.getSources().forEach((uuid, v) -> {
+					AssignmentFile orig = getOriginalAssignmentFile(uuid);
+					File f = sourcesDir.resolve(orig.getFile()).toFile();
+					try {
+						FileUtils.writeStringToFile(f, v, StandardCharsets.UTF_8);
+					} catch (IOException e) {
+						log.error("error while writing sourcefiles to sources dir", e);
+					}
+					assignmentFiles.add(orig.toBuilder()
+							.absoluteFile(f.toPath())
+							.build());
+				});
+			} catch( Exception e ) {
+				log.error("error while preparing sources.", e);
+			}
 
 			// C) Java compiler options
 			try {
@@ -135,14 +145,14 @@ public class CompileService {
 					cmd.add("-Xlint:all");
 					cmd.add("-g:source,lines,vars");
 					cmd.add("-d");
-					cmd.add(classesDir.getAbsoluteFile().toString());
+					cmd.add(classesDir.toAbsolutePath().toString());
 					assignmentFiles.forEach(a -> {
 						cmd.add(a.getAbsoluteFile().toString());
 					});
 
 					final ProcessExecutor jUnitCommand = new ProcessExecutor().command(cmd);
 					log.debug("Executing command {}", String.join(" \\\n", cmd));
-					exitvalue = jUnitCommand.directory(teamAssignmentDir)
+					exitvalue = jUnitCommand.directory(teamAssignmentDir.toFile())
 							.timeout(timeout.toSeconds(), TimeUnit.SECONDS).redirectOutput(compileOutput)
 							.redirectError(compileErrorOutput).execute().getExitValue();
 				} catch (TimeoutException e) {
@@ -167,7 +177,7 @@ public class CompileService {
 								.success(true)
 								.build());
 					} else {
-						stripTeamPathInfo(compileOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir, "sources", assignment));
+						stripTeamPathInfo(compileOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir.toFile(), "sources", assignment));
 						compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
 								.dateTimeEnd(Instant.now())
 								.success(false)
@@ -176,7 +186,7 @@ public class CompileService {
 					}
 				} else {
 					log.debug(compileOutput.toString());
-					stripTeamPathInfo(compileErrorOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir, "sources", assignment));
+					stripTeamPathInfo(compileErrorOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir.toFile(), "sources", assignment));
 					if ((exitvalue == 0) && !timedOut) {
 						compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
 								.dateTimeEnd(Instant.now())
@@ -208,7 +218,8 @@ public class CompileService {
 	}
 
 	private void stripTeamPathInfo(StringBuilder result, File prefix) {
-		final Matcher matcher = Pattern.compile("^(" + prefix.getAbsolutePath() + ")/?", Pattern.MULTILINE).matcher(result);
+		//Replacing a single backslash in file path with double to avoid initiating escape sequence.
+		final Matcher matcher = Pattern.compile("^(" + prefix.getAbsolutePath().replace("\\", "\\\\") + ")/?", Pattern.MULTILINE).matcher(result);
 		if (matcher.find()) {
 			for (int i = 0; i < matcher.groupCount(); i++) {
 				log.debug("group {} = {}", i, matcher.group(i));
@@ -240,9 +251,9 @@ public class CompileService {
 				.collect(Collectors.toList());
 	}
 
-	private List<File> makeClasspath(File classesDir) {
+	private List<File> makeClasspath(Path classesDir) {
 		final List<File> classPath = new ArrayList<>();
-		classPath.add(classesDir);
+		classPath.add(classesDir.toFile());
 		classPath.add(
 				FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
 		classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(), mojServerProperties.getDirectories().getLibDirectory(),

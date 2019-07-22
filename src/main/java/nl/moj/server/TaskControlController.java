@@ -1,5 +1,6 @@
 package nl.moj.server;
 
+import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -7,7 +8,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import lombok.*;
+import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.competition.model.CompetitionSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -20,11 +23,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
@@ -57,10 +55,20 @@ public class TaskControlController {
     private final TeamRepository teamRepository;
     
     private final PasswordEncoder encoder;
-    
+
+    @ModelAttribute(name="sessions")
+    public List<CompetitionSession> sessions() {
+        return competition.getSessions();
+    }
+
     @ModelAttribute(name = "assignments")
-    public List<ImmutablePair<String, Long>> assignments() {
+    public List<AssignmentDescriptor> assignments() {
         return competition.getAssignmentInfo();
+    }
+
+    @ModelAttribute(name = "teams")
+    public List<Team> team() {
+        return teamRepository.findAll();
     }
 
     @MessageMapping("/control/starttask")
@@ -83,13 +91,8 @@ public class TaskControlController {
     public String cloneAssignmentsRepo() {
         try {
             assignmentService.updateAssignments(mojServerProperties.getAssignmentRepo());
-            UUID competitionUuid = mojServerProperties.getCompetition().getUuid();
-            Competition c = competitionRepository.findByUuid(competitionUuid);
-            if (c == null) {
-                c = new Competition();
-                c.setUuid(competitionUuid);
-            }
-            c.setName("Masters of Java 2018");
+
+            Competition c = competition.getCompetition();
 
             // wipe assignments
             c.setAssignments(new ArrayList<>());
@@ -102,7 +105,7 @@ public class TaskControlController {
                     .collect(Collectors.toList()));
             c = competitionRepository.save(c);
 
-            competition.startCompetition(c);
+            competition.loadSession(c,competition.getCompetitionSession().getUuid());
 
             return "Assignments scanned, reload to show them.";
         } catch (AssignmentServiceException ase) {
@@ -123,8 +126,12 @@ public class TaskControlController {
         };
     }
 
+
+
     @GetMapping("/control")
-    public String taskControl(Model model) {
+    public String taskControl(Model model, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
+                              @ModelAttribute("newPasswordRequest") NewPasswordRequest npr) {
+
         if (competition.getCurrentAssignment() != null) {
             ActiveAssignment state = competition.getActiveAssignment();
             model.addAttribute("timeLeft", state.getTimeRemaining());
@@ -137,12 +144,21 @@ public class TaskControlController {
             model.addAttribute("running", false);
             model.addAttribute("currentAssignment", "-");
         }
-        
-        model.addAttribute("teams", teamRepository.findAll());
-		if (!model.containsAttribute("newPasswordRequest")) {
-			model.addAttribute("newPasswordRequest", new NewPasswordRequest());
-		} 
+
+        ssf.setSession(competition.getCompetitionSession().getUuid());
         return "control";
+    }
+
+    @PostMapping("/control/select-session")
+    public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
+        competition.loadSession(competition.getCompetition(),ssf.getSession());
+        return "redirect:/control";
+    }
+
+    @PostMapping("/control/new-session")
+    public String newSession() {
+        competition.startSession(competition.getCompetition());
+        return "redirect:/control";
     }
 
 	@PostMapping("/control/resetPassword")
@@ -191,5 +207,10 @@ public class TaskControlController {
         	newPassword=null;
         	newPasswordCheck = null;
         }
+    }
+
+    @Data
+    public static class SelectSessionForm {
+        private UUID session;
     }
 }

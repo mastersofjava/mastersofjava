@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>Masters of Java</title>
+    <title>Masters of Java 2018</title>
 
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
     <link rel="stylesheet" th:href="@{/css/login.css}" href="/static/css/login.css"/>
@@ -39,25 +39,36 @@
     </div>
     <div class="row mt-5">
         <div class="col text-center">
-            <p th:if="${param.logout}" class="alert">You have been logged out</p>
-            <p th:if="${param.error}" class="alert alert-error">Login failed, please try again.</p>
+            <p>Initialization is needed before the Masters of Java competition software can be used. Please
+            configure a administrator username and password.
+            </p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col text-center">
+            <p th:if="${error}" class="alert alert-danger">[[${msg}]]</p>
         </div>
     </div>
     <div class="row justify-content-center">
         <div class="login-container">
-            <form method="post" th:action="@{/login}">
+            <form method="post" th:action="@{/bootstrap}" th:object="${form}">
                 <div class="form-group">
-                    <label for="username">Team</label>
+                    <label for="username">Username</label>
                     <input type="text" class="form-control" id="username" name="username" placeholder="">
-                    <small id="usernameHelp" class="form-text text-muted">This will show up everywhere.</small>
+                    <small id="usernameHelp" class="form-text text-muted">The username for the administrator.</small>
                 </div>
                 <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" class="form-control" id="password" name="password" placeholder="">
+                    <label for="password1">Password</label>
+                    <input type="password" class="form-control" id="password1" name="password1" placeholder="">
+                    <small id="password1Help" class="form-text text-muted">The password for the administrator.</small>
+                </div>
+                <div class="form-group">
+                    <label for="password2">Repeat Password</label>
+                    <input type="password" class="form-control" id="password2" name="password2" placeholder="">
+                    <small id="password2Help" class="form-text text-muted">The password repeated.</small>
                 </div>
                 <div class="d-flex flex-row-reverse">
-                    <button type="submit" id="login" class="btn btn-primary ml-2">Login</button>
-                    <a class="btn btn-outline-primary ml-2" th:href="@{/register}">Register</a>
+                    <button type="submit" id="bootstrap" class="btn btn-primary ml-2">Bootstrap</button>
                 </div>
             </form>
         </div>
