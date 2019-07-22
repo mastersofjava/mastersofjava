@@ -39,7 +39,7 @@ public class SequentialAssignmentSubmitTest extends BaseRuntimeTest {
 	private MojServerProperties mojServerProperties;
 
 	@Test
-	public void sequentialTeam1ShouldFinishBeforeTeam2() {
+	public void sequentialExecutionShouldHaveNoOverlappingExecutionWindows() {
 
 		Team team1 = getTeam();
 		Team team2 = addTeam();
