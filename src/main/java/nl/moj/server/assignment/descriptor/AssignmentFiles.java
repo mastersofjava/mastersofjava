@@ -32,5 +32,5 @@ public class AssignmentFiles {
 	private TestResources testResources = new TestResources();
 
 	@JsonProperty("security-policy")
-	private Optional<Path> securityPolicy = Optional.empty();
+	private Path securityPolicy;
 }
