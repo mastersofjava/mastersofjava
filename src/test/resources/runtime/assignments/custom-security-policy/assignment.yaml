@@ -1,6 +1,6 @@
 # file paths are taken relative to this file.
-name: virtual-cpu
-display-name: Virtual CPU
+name: custom-security-policy
+display-name: Custom Security Policy
 author:
   name: Mark
   company: First8
@@ -10,12 +10,12 @@ image: assets/images/icon.png
 sponsor-image: assets/images/sponsor.png
 
 labels:
-  - assembly
-  - fun
+- label1
+- label2
 
 difficulty: 3
 java-version: 8
-duration: PT30M
+duration: PT15S
 submit-timeout: PT60S
 test-timeout: PT60S
 
@@ -25,18 +25,18 @@ scoring-rules:
   success-bonus: 200
   test-penalty: 20%
 
-
 assignment-files:
-  assignment: src/main/resources/VirtualCPUCase.txt
+  assignment: assets/assignment.txt
   sources:
     base: src/main/java
     editable:
-    - VirtualCPU.java
+    - Assignment.java
     readonly:
-    - CPUState.java
+    - Model.java
   test-sources:
     base: src/test/java
     tests:
-    - TestVirtualCPU.java
+    - TestSecurityPolicy.java
   solution:
-  - src/main/resources/VirtualCPUCase.solution
+  - assets/solution/Assignment.java
+  security-policy: assets/security.policy

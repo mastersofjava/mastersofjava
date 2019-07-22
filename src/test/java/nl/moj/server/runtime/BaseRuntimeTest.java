@@ -79,11 +79,12 @@ public abstract class BaseRuntimeTest {
         }
     }
 
-    @After
-    public void cleanup() throws IOException {
-        dbUtil.cleanup();
-        PathUtil.delete(mojServerProperties.getDirectories().getBaseDirectory(), true);
-    }
+	@After
+	public void cleanup() throws IOException {
+		competitionRuntime.stopCurrentAssignment();
+		dbUtil.cleanup();
+		PathUtil.delete( mojServerProperties.getDirectories().getBaseDirectory(), true);
+	}
 
     protected Team addTeam() {
         Team team = new Team();
