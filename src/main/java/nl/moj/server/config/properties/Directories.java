@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Data
-@ConfigurationProperties(prefix="moj.server.directories")
 public class Directories {
 
 	@NotNull

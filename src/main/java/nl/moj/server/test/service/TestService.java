@@ -30,10 +30,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,10 +40,6 @@ public class TestService {
     private static final Logger log = LoggerFactory.getLogger(TestService.class);
     private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
             Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    private final Executor singular;
-
-    private Executor executor;
 
     private MojServerProperties mojServerProperties;
 
@@ -60,12 +53,10 @@ public class TestService {
 
     private TeamService teamService;
 
-    public TestService(MojServerProperties mojServerProperties, @Qualifier("singular") Executor singular, @Qualifier("testing") Executor executor, CompetitionRuntime competition,
+    public TestService(MojServerProperties mojServerProperties, CompetitionRuntime competition,
                        TestCaseRepository testCaseRepository, TestAttemptRepository testAttemptRepository,
                        AssignmentStatusRepository assignmentStatusRepository, TeamService teamService) {
         this.mojServerProperties = mojServerProperties;
-        this.executor = executor;
-        this.singular = singular;
         this.competition = competition;
         this.testCaseRepository = testCaseRepository;
         this.testAttemptRepository = testAttemptRepository;
@@ -73,11 +64,11 @@ public class TestService {
         this.teamService = teamService;
     }
 
-    public CompletableFuture<TestResult> runTest(Team team, TestAttempt testAttempt, AssignmentFile test) {
-        return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, competition.getActiveAssignment()), getTestExecutor());
+    private CompletableFuture<TestResult> scheduleTest(Team team, TestAttempt testAttempt, AssignmentFile test, Executor executor) {
+        return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, competition.getActiveAssignment()), executor);
     }
 
-    public CompletableFuture<TestResults> runTests(Team team, List<AssignmentFile> tests) {
+    public CompletableFuture<TestResults> scheduleTests(Team team, List<AssignmentFile> tests, Executor executor) {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
                 activeAssignment.getCompetitionSession(), team);
@@ -88,27 +79,18 @@ public class TestService {
                 .build());
 
         List<CompletableFuture<TestResult>> testFutures = new ArrayList<>();
-        tests.forEach(t -> testFutures.add(runTest(team, ta, t)));
+        tests.forEach(t -> testFutures.add(scheduleTest(team, ta, t, executor)));
 
         return CompletableFutures.allOf(testFutures).thenApply( r -> {
             ta.setDateTimeEnd(Instant.now());
             testAttemptRepository.save(ta);
             return TestResults.builder()
+                    .dateTimeStart(ta.getDateTimeStart())
+                    .dateTimeEnd(ta.getDateTimeEnd())
                     .testAttemptUuid(ta.getUuid())
                     .results(r)
                     .build();
         });
-    }
-
-    private Executor getTestExecutor() {
-        ActiveAssignment activeAssignment = competition.getActiveAssignment();
-        if( activeAssignment == null ) {
-            return executor;
-        }
-        if( activeAssignment.getExecutionModel() == ExecutionModel.SEQUENTIAL) {
-            return singular;
-        }
-        return executor;
     }
 
     private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, ActiveAssignment activeAssignment) {

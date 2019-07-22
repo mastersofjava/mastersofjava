@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
@@ -38,26 +39,26 @@ import org.springframework.stereotype.Service;
 public class SubmitService {
 
     private final CompetitionRuntime competition;
-    private final CompileService compileService;
-    private final TestService testService;
+    private final ExecutionService executionService;
     private final ScoreService scoreService;
     private final MessageService messageService;
     private final AssignmentStatusRepository assignmentStatusRepository;
     private final TestAttemptRepository testAttemptRepository;
     private final CompileAttemptRepository compileAttemptRepository;
     private final SubmitAttemptRepository submitAttemptRepository;
-    private final AssignmentResultRepository assignmentResultRepository;
 
     public CompletableFuture<SubmitResult> compile(Team team, SourceMessage message) {
         return compileInternal(team, message).thenApply(r ->
                 SubmitResult.builder()
+                        .team(team.getUuid())
+                        .dateTimeStart(r.getDateTimeStart())
                         .success(r.isSuccess())
                         .compileResult(r)
                         .build());
     }
 
     private CompletableFuture<CompileResult> compileInternal(Team team, SourceMessage message) {
-        return compileService.compile(team, message)
+        return executionService.compile(team, message)
                 .thenApply(r -> {
                     messageService.sendCompileFeedback(team, r);
                     return r;
@@ -67,17 +68,14 @@ public class SubmitService {
     public CompletableFuture<SubmitResult> test(Team team, SourceMessage message) {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
         //compile
-        return compileInternal(team, message)
-                .thenApply(cr -> SubmitResult.builder()
-                        .compileResult(cr)
-                        .success(cr.isSuccess())
-                        .build())
+        return compile(team, message)
                 .thenCompose(sr -> {
                     if (sr.isSuccess()) {
                         // test
                         return testInternal(team, activeAssignment.getTestFiles().stream()
                                 .filter(t -> message.getTests().contains(t.getUuid().toString()))
                                 .collect(Collectors.toList())).thenApply(tr -> sr.toBuilder()
+                                .dateTimeEnd(tr.getDateTimeEnd())
                                 .success(tr.isSuccess())
                                 .testResults(tr)
                                 .build());
@@ -88,7 +86,7 @@ public class SubmitService {
     }
 
     private CompletableFuture<TestResults> testInternal(Team team, List<AssignmentFile> tests) {
-        return testService.runTests(team, tests).thenApply(r -> {
+        return executionService.test(team, tests).thenApply(r -> {
             r.getResults().forEach(tr -> messageService.sendTestFeedback(team, tr));
             return r;
         });

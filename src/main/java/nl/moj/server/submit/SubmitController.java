@@ -1,5 +1,6 @@
 package nl.moj.server.submit;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -21,35 +22,12 @@ import java.util.concurrent.Executor;
 @Controller
 @MessageMapping("/submit")
 @Slf4j
+@AllArgsConstructor
 public class SubmitController {
-
-	private CompileService compileService;
-
-	private TestService testService;
 
 	private SubmitService submitService;
 
-	private Executor compiling;
-
-	private MojServerProperties mojServerProperties;
-
-	private CompetitionRuntime competition;
-
 	private TeamRepository teamRepository;
-
-	public SubmitController(CompileService compileService, TestService testService,
-							@Qualifier("compiling") Executor compiling,
-							MojServerProperties mojServerProperties, CompetitionRuntime competition,
-							TeamRepository teamRepository, SubmitService submitService) {
-		super();
-		this.compileService = compileService;
-		this.testService = testService;
-		this.compiling = compiling;
-		this.mojServerProperties = mojServerProperties;
-		this.competition = competition;
-		this.teamRepository = teamRepository;
-		this.submitService = submitService;
-	}
 
 	@MessageMapping("/compile")
 	public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)

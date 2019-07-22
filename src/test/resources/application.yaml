@@ -30,13 +30,8 @@ moj:
         line-truncated-message: "...{truncated}"
         output-trunc-message: "...{output truncated}"
         timeout-message: "...{terminated: test time expired}"
-    runtimes:
-      test:
-        threads: 3
-      compile:
-        threads: 3
-      server:
-        threads: 5
+    runtime:
+      game-threads: 10
     competition:
       uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
       success-bonus: 400

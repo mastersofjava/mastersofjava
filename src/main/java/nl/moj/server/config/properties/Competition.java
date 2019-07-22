@@ -7,7 +7,6 @@ import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Data
-@ConfigurationProperties(prefix = "moj.server.competition")
 public class Competition {
 
 	private int successBonus = 400;
