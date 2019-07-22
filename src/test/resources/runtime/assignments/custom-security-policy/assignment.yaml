@@ -1,6 +1,6 @@
 # file paths are taken relative to this file.
-name: assignment-2
-display-name: Assignment 2
+name: custom-security-policy
+display-name: Custom Security Policy
 author:
   name: Mark
   company: First8
@@ -26,17 +26,17 @@ scoring-rules:
   test-penalty: 20%
 
 assignment-files:
-  assignment: assets/assignment-2.txt
+  assignment: assets/assignment.txt
   sources:
     base: src/main/java
     editable:
-    - Assignment2.java
+    - Assignment.java
     readonly:
     - Model.java
   test-sources:
     base: src/test/java
     tests:
-    - Test1.java
+    - TestSecurityPolicy.java
   solution:
-  - assets/solution/Assignment2.java
+  - assets/solution/Assignment.java
   security-policy: assets/security.policy

@@ -24,7 +24,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class TestSubmitTest extends BaseRuntimeTest {
+public class CustomSecurityPolicyTest extends BaseRuntimeTest {
 
     @Autowired
     private CompetitionRuntime competitionRuntime;
@@ -36,11 +36,11 @@ public class TestSubmitTest extends BaseRuntimeTest {
     private MojServerProperties mojServerProperties;
 
     @Test
-    public void shouldUseSpecifiedAssignmentTestTimeout() throws Exception {
+    public void shouldUseAssignmentSecurityPolicy() throws Exception {
 
         OrderedAssignment oa = getCompetition().getAssignments()
                 .stream()
-                .filter(a -> a.getAssignment().getName().equals("assignment-1"))
+                .filter(a -> a.getAssignment().getName().equals("custom-security-policy"))
                 .findFirst()
                 .orElseThrow();
 
@@ -62,7 +62,8 @@ public class TestSubmitTest extends BaseRuntimeTest {
         SubmitResult submitResult = submitService.testAsync(getTeam(), src)
                 .get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
 
-        Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isFalse();
-        Assertions.assertThat(submitResult.getTestResults().get(0).isTimeout()).isTrue();
+        Assertions.assertThat(submitResult.isSuccess()).isTrue();
+        Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isTrue();
+        Assertions.assertThat(submitResult.getTestResults().get(0).isTimeout()).isFalse();
     }
 }

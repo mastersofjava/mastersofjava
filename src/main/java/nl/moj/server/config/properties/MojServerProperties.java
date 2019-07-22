@@ -12,10 +12,10 @@ public class MojServerProperties {
 
 	@NotNull
 	private Path assignmentRepo;
-	private Limits limits;
-	private Directories directories;
-	private Languages languages;
-	private Runtimes runtimes;
+	private Limits limits = new Limits();
+	private Directories directories = new Directories();
+	private Languages languages = new Languages();
+	private Runtimes runtimes = new Runtimes();
 	private Competition competition;
 
 }

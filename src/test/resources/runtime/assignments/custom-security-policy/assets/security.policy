@@ -31,8 +31,4 @@ grant {
     // Access declared members required by JUnit to function
     permission java.lang.RuntimePermission "accessDeclaredMembers";
     permission java.lang.RuntimePermission "getStackTrace";
-
-    // Allow reading resources ... can we thighten this?
-    permission java.io.FilePermission "<<ALL FILES>>", "read";
-    permission java.util.PropertyPermission "user.dir", "read";
 };
