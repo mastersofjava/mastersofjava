@@ -8,5 +8,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class Runtime {
 
     private int gameThreads = 10;
+    private boolean playSounds = true;
 
 }

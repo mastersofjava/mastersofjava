@@ -9,7 +9,14 @@ import java.time.Duration;
 @Data
 public class Limits {
 
+	/**
+	 * The default compile task timeout.
+	 */
 	private Duration compileTimeout = Duration.ofSeconds(4);
+
+	/**
+	 * The default test task timeout.
+	 */
 	private Duration testTimeout = Duration.ofSeconds(4);
 
 	@NestedConfigurationProperty

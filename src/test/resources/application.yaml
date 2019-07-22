@@ -8,30 +8,10 @@ moj:
         compiler: /tmp/bin/javac
         runtime: /tmp/bin/java
     directories:
-      team-directory: teams
-      lib-directory: lib
-      sound-directory: sounds
-      javadoc-directory: javadoc
       base-directory: /tmp/moj-data
-    limits:
-      compile-timeout: PT4S
-      compile-output-limits:
-        max-feedback-lines: 1000
-        max-chars: 100000
-        max-line-len: 1000
-        line-truncated-message: "...{truncated}"
-        output-trunc-message: "...{output truncated}"
-        timeout-message: "...{terminated: compile time expired}"
-      test-timeout: PT4S
-      test-output-limits:
-        max-feedback-lines: 1000
-        max-chars: 100000
-        max-line-len: 1000
-        line-truncated-message: "...{truncated}"
-        output-trunc-message: "...{output truncated}"
-        timeout-message: "...{terminated: test time expired}"
     runtime:
       game-threads: 10
+      play-sounds: false
     competition:
       uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
       success-bonus: 400

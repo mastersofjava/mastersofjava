@@ -22,10 +22,6 @@ public class SoundService {
 		play(Sound.GONG, 0);
 	}
 
-	public void playTicTac(long seconds) {
-		play(Sound.TIC_TAC, seconds);
-	}
-
 	/**
 	 * Play the sound for specified seconds
 	 * @param sound
@@ -33,8 +29,10 @@ public class SoundService {
 	 */
 	public void play(Sound sound, long seconds) {
 		try {
-			SoundPlayer player = new SoundPlayer(sound);
-			player.play(seconds);
+			if( mojServerProperties.getRuntime().isPlaySounds()) {
+				SoundPlayer player = new SoundPlayer(sound);
+				player.play(seconds);
+			}
 		} catch (Exception e) {
 			log.error("Unable to play sound: {}", sound, e);
 		}
