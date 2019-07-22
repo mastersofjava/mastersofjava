@@ -108,17 +108,24 @@ public class TestService {
                 .dateTimeStart(Instant.now())
                 .build();
 
+
         AssignmentDescriptor ad = activeAssignment.getAssignmentDescriptor();
         Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(),team,activeAssignment.getAssignment());
-        File policy = FileUtils.getFile(mojServerProperties.getDirectories()
-                        .getBaseDirectory()
-                        .toFile(), mojServerProperties.getDirectories().getLibDirectory(),
-                SECURITY_POLICY_FOR_UNIT_TESTS);
+
+        Path policy = ad.getAssignmentFiles().getSecurityPolicy();
+        if( policy != null ) {
+            policy = ad.getDirectory().resolve(policy);
+        } else {
+            policy = mojServerProperties.getDirectories().getBaseDirectory()
+                    .resolve(mojServerProperties.getDirectories().getLibDirectory())
+                    .resolve(SECURITY_POLICY_FOR_UNIT_TESTS);
+        }
+
         Duration timeout = ad.getTestTimeout() != null ? ad.getTestTimeout() :
                 mojServerProperties.getLimits().getTestTimeout();
 
-        if (!policy.exists()) {
-            log.error("security policy file not found"); // Exception is swallowed somewhere
+        if (!policy.toFile().exists()) {
+            log.error("No security policy other than default JVM version installed, refusing to execute tests. Please configure a default security policy.");
             throw new RuntimeException("security policy file not found");
         }
 
@@ -136,7 +143,7 @@ public class TestService {
                                 .toString(), "-cp",
                         makeClasspath(teamAssignmentDir),
                         "-Djava.security.manager",
-                        "-Djava.security.policy=" + policy.getAbsolutePath(),
+                        "-Djava.security.policy=" + policy.toAbsolutePath(),
                         "org.junit.runner.JUnitCore",
                         file.getName());
                 log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));

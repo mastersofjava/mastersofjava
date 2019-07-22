@@ -72,6 +72,7 @@ public abstract class BaseRuntimeTest {
 
 	@After
 	public void cleanup() throws IOException {
+		competitionRuntime.stopCurrentAssignment();
 		dbUtil.cleanup();
 		PathUtil.delete( mojServerProperties.getDirectories().getBaseDirectory(), true);
 	}

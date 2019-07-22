@@ -7,6 +7,7 @@ import lombok.Data;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -29,4 +30,7 @@ public class AssignmentFiles {
 
 	@JsonProperty("test-resources")
 	private TestResources testResources = new TestResources();
+
+	@JsonProperty("security-policy")
+	private Path securityPolicy;
 }
