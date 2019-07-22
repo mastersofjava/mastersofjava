@@ -59,11 +59,11 @@ public class CustomSecurityPolicyTest extends BaseRuntimeTest {
         src.setTests(List.of(state.getTestFiles().get(0).getUuid().toString()));
 
 
-        SubmitResult submitResult = submitService.testAsync(getTeam(), src)
+        SubmitResult submitResult = submitService.test(getTeam(), src)
                 .get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
 
         Assertions.assertThat(submitResult.isSuccess()).isTrue();
-        Assertions.assertThat(submitResult.getTestResults().get(0).isSuccess()).isTrue();
-        Assertions.assertThat(submitResult.getTestResults().get(0).isTimeout()).isFalse();
+        Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isSuccess()).isTrue();
+        Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isTimeout()).isFalse();
     }
 }
