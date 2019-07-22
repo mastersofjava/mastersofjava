@@ -57,10 +57,14 @@ public class CompileService {
     }
 
     public CompletableFuture<CompileResult> scheduleCompile(Team team, SourceMessage message, Executor executor) {
-        return CompletableFuture.supplyAsync(() -> javaCompile(mojServerProperties.getLanguages()
+        // determine compiler version to use.
+        var javaVersion = mojServerProperties.getLanguages()
                 .getJavaVersion(competition.getActiveAssignment()
                         .getAssignmentDescriptor()
-                        .getJavaVersion()), team, message), executor);
+                        .getJavaVersion());
+
+        // compile code.
+        return CompletableFuture.supplyAsync(() -> javaCompile(javaVersion, team, message), executor);
     }
 
 

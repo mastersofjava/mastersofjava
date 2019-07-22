@@ -5,22 +5,18 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.compiler.service.CompileResult;
-import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.submit.model.SourceMessage;
@@ -29,8 +25,6 @@ import nl.moj.server.submit.repository.SubmitAttemptRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.repository.TestAttemptRepository;
 import nl.moj.server.test.service.TestResults;
-import nl.moj.server.test.service.TestService;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -71,14 +65,19 @@ public class SubmitService {
         return compile(team, message)
                 .thenCompose(sr -> {
                     if (sr.isSuccess()) {
-                        // test
-                        return testInternal(team, activeAssignment.getTestFiles().stream()
+
+                        // filter selected test cases
+                        var testCases = activeAssignment.getTestFiles().stream()
                                 .filter(t -> message.getTests().contains(t.getUuid().toString()))
-                                .collect(Collectors.toList())).thenApply(tr -> sr.toBuilder()
-                                .dateTimeEnd(tr.getDateTimeEnd())
-                                .success(tr.isSuccess())
-                                .testResults(tr)
-                                .build());
+                                .collect(Collectors.toList());
+
+                        // run selected testcases
+                        return testInternal(team, testCases)
+                                .thenApply(tr -> sr.toBuilder()
+                                        .dateTimeEnd(tr.getDateTimeEnd())
+                                        .success(tr.isSuccess())
+                                        .testResults(tr)
+                                        .build());
                     } else {
                         return CompletableFuture.completedFuture(sr);
                     }
@@ -108,8 +107,9 @@ public class SubmitService {
                     .build();
             as.getSubmitAttempts().add(sa);
 
-            return test(team, message).thenApply( sr -> {
-                sa.setCompileAttempt(compileAttemptRepository.findByUuid(sr.getCompileResult().getCompileAttemptUuid()));
+            return test(team, message).thenApply(sr -> {
+                sa.setCompileAttempt(compileAttemptRepository.findByUuid(sr.getCompileResult()
+                        .getCompileAttemptUuid()));
                 sa.setTestAttempt(testAttemptRepository.findByUuid(sr.getTestResults().getTestAttemptUuid()));
                 sa.setSuccess(sr.isSuccess());
                 sa.setDateTimeEnd(Instant.now());
@@ -127,7 +127,7 @@ public class SubmitService {
                 }
 
                 return sr.toBuilder().remainingSubmits(remainingSubmits).build();
-            }).thenApply( sr -> {
+            }).thenApply(sr -> {
                 messageService.sendSubmitFeedback(team, sr);
                 return sr;
             });

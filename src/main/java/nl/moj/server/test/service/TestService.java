@@ -83,11 +83,11 @@ public class TestService {
 
         return CompletableFutures.allOf(testFutures).thenApply( r -> {
             ta.setDateTimeEnd(Instant.now());
-            testAttemptRepository.save(ta);
+            TestAttempt updatedTa = testAttemptRepository.save(ta);
             return TestResults.builder()
-                    .dateTimeStart(ta.getDateTimeStart())
-                    .dateTimeEnd(ta.getDateTimeEnd())
-                    .testAttemptUuid(ta.getUuid())
+                    .dateTimeStart(updatedTa.getDateTimeStart())
+                    .dateTimeEnd(updatedTa.getDateTimeEnd())
+                    .testAttemptUuid(updatedTa.getUuid())
                     .results(r)
                     .build();
         });
