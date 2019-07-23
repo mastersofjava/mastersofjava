@@ -105,7 +105,6 @@ public class CompileService {
                     target.getParentFile().mkdirs();
                 }
                 FileUtils.copyFile(r.getAbsoluteFile().toFile(), target);
-                //FileUtils.copyFileToDirectory(r.getAbsoluteFile().toFile(), classesDir);
             } catch (IOException e) {
                 log.error("error while writing resources to classes dir", e);
             }
