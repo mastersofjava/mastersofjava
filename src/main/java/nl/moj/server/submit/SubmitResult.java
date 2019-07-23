@@ -1,16 +1,12 @@
 package nl.moj.server.submit;
 
+import java.time.Instant;
+import java.util.UUID;
+
 import lombok.Builder;
 import lombok.Getter;
 import nl.moj.server.compiler.service.CompileResult;
-import nl.moj.server.teams.model.Team;
-import nl.moj.server.test.service.TestResult;
 import nl.moj.server.test.service.TestResults;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 @Builder(toBuilder = true)
 @Getter

@@ -1,5 +1,8 @@
 package nl.moj.server.config;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -11,10 +14,6 @@ import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 @Configuration
 @EnableAsync
 @EnableScheduling
@@ -22,19 +21,21 @@ import java.util.concurrent.Executors;
 @AllArgsConstructor
 public class AsyncConfiguration implements AsyncConfigurer {
 
-	private MojServerProperties mojServerProperties;
+    private MojServerProperties mojServerProperties;
 
-	@Bean(name = "parallel")
-	public ExecutorService parallelExecutor() {
-		return Executors.newFixedThreadPool(mojServerProperties.getRuntime().getGameThreads(), new NamedThreadFactory("parallel"));
-	}
-	@Override
-	public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
-		return (ex, method, params) -> log.error("Uncaught async error", ex);
-	}
+    @Bean(name = "parallel")
+    public ExecutorService parallelExecutor() {
+        return Executors.newFixedThreadPool(mojServerProperties.getRuntime()
+                .getGameThreads(), new NamedThreadFactory("parallel"));
+    }
 
-	@Bean(name = "sequential")
-	public ExecutorService sequentialExecutor() {
-		return Executors.newFixedThreadPool(1, new NamedThreadFactory("sequential"));
-	}
+    @Override
+    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+        return (ex, method, params) -> log.error("Uncaught async error", ex);
+    }
+
+    @Bean(name = "sequential")
+    public ExecutorService sequentialExecutor() {
+        return Executors.newFixedThreadPool(1, new NamedThreadFactory("sequential"));
+    }
 }

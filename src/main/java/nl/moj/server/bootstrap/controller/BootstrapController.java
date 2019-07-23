@@ -1,5 +1,8 @@
 package nl.moj.server.bootstrap.controller;
 
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.bootstrap.service.BootstrapService;
@@ -10,9 +13,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 
 @Controller
 @AllArgsConstructor

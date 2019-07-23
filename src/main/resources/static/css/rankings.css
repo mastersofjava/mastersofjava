@@ -1,38 +1,38 @@
 body {
-	margin-bottom: 50px;
+    margin-bottom: 50px;
 }
 
 .btn:hover {
-	cursor: pointer;
+    cursor: pointer;
 }
 
 .footer {
-	border-top: 1px solid #aaaaaa;
-	background-color: white;
+    border-top: 1px solid #aaaaaa;
+    background-color: white;
 }
 
 #assignment-clock .clock {
-	position: relative;
-	float: left;
+    position: relative;
+    float: left;
 }
 
 #assignment-clock .time {
-	position: absolute;
+    position: absolute;
 }
 
 #assignment-clock .time h2 {
-	font-size: 4rem;
+    font-size: 4rem;
 }
 
 svg {
-	-webkit-transform: rotate(-90deg);
-	transform: rotate(-90deg);
+    -webkit-transform: rotate(-90deg);
+    transform: rotate(-90deg);
 }
 
 .circle_animation {
-	stroke-dasharray: 943; /* this value is the pixel circumference of the circle */
-	stroke-dashoffset: 943;
-	transition: all 1s linear;
+    stroke-dasharray: 943; /* this value is the pixel circumference of the circle */
+    stroke-dashoffset: 943;
+    transition: all 1s linear;
 }
 
 tr.rank-0 {
@@ -46,6 +46,7 @@ tr.rank-1 {
 tr.rank-2 {
     font-size: 1.5rem;
 }
+
 .grey {
-	color: #cdcdcd;
+    color: #cdcdcd;
 }

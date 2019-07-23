@@ -9,8 +9,8 @@ $(document).ready(function () {
 });
 
 function initSolutions() {
-    $('#assignment-name').click(function(e) {
-        e.preventDefault()
+    $('#assignment-name').click(function (e) {
+        e.preventDefault();
         var uuid = $(this).attr('data-assignment');
         var assignmentName = $("#assignment-name").text();
         $.getJSON('/feedback/solution/' + uuid, function (data) {
@@ -59,12 +59,12 @@ function initSolutions() {
 
 function initSubmissions() {
     $('tr[data-team]').click(function (e) {
-        e.preventDefault()
+        e.preventDefault();
         var uuid = $(this).attr('data-team');
         var assignment = $(this).attr('data-assignment');
         var teamName = $(this).find("td:first").text();
         var assignmentName = $("#assignment-name").text();
-        $.getJSON('/feedback/solution/'+ assignment +'/team/' + uuid, function (data) {
+        $.getJSON('/feedback/solution/' + assignment + '/team/' + uuid, function (data) {
             console.log(data);
             $tabs = createTabs(data);
             $("h5.modal-title").text("Submission of team " + teamName + " for assignment " + assignmentName);
@@ -84,7 +84,7 @@ function initSubmissions() {
                         console.log('shown.bs.tab', e);
                         cm.refresh();
                     });
-                
+
                 $('#show-submission-modal').on('shown.bs.modal', function (e) {
                     console.log('shown.bs.modal', e);
                     cm.refresh();
@@ -115,7 +115,7 @@ function createTabs(data) {
     $div.append($ul).append($panes);
     data.files.forEach(function (f, idx) {
         $ul.append('<li class="nav-item"><a class="nav-link' + (idx == 0 ? " active" : "") + '" id="' + f.uuid + '" href="#tab-' + idx + '" data-toggle="tab" role="tab"><span>' + f.filename + '</span></a></li>');
-        $panes.append('<div class="tab-pane fade' + (idx === 0 ? ' show active' : '' + '') + '" role="tabpanel" id="tab-'+idx+'"><div class="tab-pane-content"><textarea>' + f.content + '</textarea></div></div>');
+        $panes.append('<div class="tab-pane fade' + (idx === 0 ? ' show active' : '' + '') + '" role="tabpanel" id="tab-' + idx + '"><div class="tab-pane-content"><textarea>' + f.content + '</textarea></div></div>');
     });
     return $div;
 }
@@ -123,10 +123,10 @@ function createTabs(data) {
 function connectFeedback() {
 
     var socket = new WebSocket(
-    		((window.location.protocol === "https:") ? "wss://" : "ws://") 
-    		+ window.location.hostname 
-    		+ ':' + window.location.port 
-    		+ '/feedback/websocket');
+        ((window.location.protocol === "https:") ? "wss://" : "ws://")
+        + window.location.hostname
+        + ':' + window.location.port
+        + '/feedback/websocket');
     var stompClient = Stomp.over(socket);
     stompClient.debug = null;
     stompClient.connect({}, function (frame) {
@@ -154,21 +154,21 @@ function connectFeedback() {
 
 function connectControl() {
     var socket = new WebSocket(
-    		((window.location.protocol === "https:") ? "wss://" : "ws://") 
-    		+ window.location.hostname 
-    		+ ':' + window.location.port 
-    		+ '/control/websocket');
+        ((window.location.protocol === "https:") ? "wss://" : "ws://")
+        + window.location.hostname
+        + ':' + window.location.port
+        + '/control/websocket');
     var stompClientControl = Stomp.over(socket);
     stompClientControl.debug = null;
     stompClientControl.connect({}, function (frame) {
         console.log('Connected to /control');
         console.log('Subscribe to /queue/start');
         stompClientControl.subscribe('/queue/start', function (messageOutput) {
-            console.log("/queue/start")
+            console.log("/queue/start");
             window.location.reload();
         });
         stompClientControl.subscribe('/queue/stop', function (messageOutput) {
-            console.log("/queue/stop")
+            console.log("/queue/stop");
             if (clock) {
                 clock.stop();
             }
@@ -189,7 +189,7 @@ function startTesting(msg) {
     var $team = $('tr[data-team=' + uuid + ']');
 
     $team.removeClass('table-danger table-success');
-    $team.addClass('table-info')
+    $team.addClass('table-info');
     setTimeout(function () {
         $team.removeClass('table-info')
     }, 500);
@@ -208,7 +208,7 @@ function process(message) {
     console.log($team, $test);
     if (message.success) {
         if (submit) {
-            $team.removeClass('table-danger')
+            $team.removeClass('table-danger');
             $team.addClass('table-success')
         }
         $test.removeClass('fas fa-times');
@@ -216,7 +216,7 @@ function process(message) {
         $test.css('color', 'green');
     } else {
         if (submit) {
-            $team.removeClass('table-success')
+            $team.removeClass('table-success');
             $team.addClass('table-danger')
         }
         $test.removeClass('fas fa-check');

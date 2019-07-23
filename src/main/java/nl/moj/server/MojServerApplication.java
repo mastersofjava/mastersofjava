@@ -2,15 +2,11 @@ package nl.moj.server;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.bootstrap.service.BootstrapService;
 import nl.moj.server.config.properties.MojServerProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.ServletComponentScan;
-
-import javax.annotation.PostConstruct;
-import java.io.IOException;
 
 @SpringBootApplication
 @EnableConfigurationProperties(MojServerProperties.class)
@@ -20,7 +16,7 @@ import java.io.IOException;
 public class MojServerApplication {
 
     public static void main(String[] args) {
-		SpringApplication.run(MojServerApplication.class, args);
-	}
+        SpringApplication.run(MojServerApplication.class, args);
+    }
 
 }

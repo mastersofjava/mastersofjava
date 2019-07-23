@@ -5,14 +5,14 @@ import lombok.Data;
 @Data
 public class SignupForm {
 
-	private String name;
+    private String name;
 
-	private String password;
+    private String password;
 
-	private String passwordCheck;
+    private String passwordCheck;
 
-	private String country;
+    private String country;
 
-	private String company;
+    private String company;
 
 }

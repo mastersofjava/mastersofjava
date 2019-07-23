@@ -3,10 +3,10 @@ moj:
     assignment-repo: /tmp/assignments
     languages:
       java-versions:
-      - version: 8
-        name: Java 8
-        compiler: /tmp/bin/javac
-        runtime: /tmp/bin/java
+        - version: 8
+          name: Java 8
+          compiler: /tmp/bin/javac
+          runtime: /tmp/bin/java
     directories:
       base-directory: /tmp/moj-data
     runtime:

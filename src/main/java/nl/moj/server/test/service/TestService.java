@@ -1,7 +1,20 @@
 package nl.moj.server.test.service;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.descriptor.ExecutionModel;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
@@ -19,20 +32,8 @@ import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
-
-import java.io.File;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 public class TestService {
@@ -81,7 +82,7 @@ public class TestService {
         List<CompletableFuture<TestResult>> testFutures = new ArrayList<>();
         tests.forEach(t -> testFutures.add(scheduleTest(team, ta, t, executor)));
 
-        return CompletableFutures.allOf(testFutures).thenApply( r -> {
+        return CompletableFutures.allOf(testFutures).thenApply(r -> {
             ta.setDateTimeEnd(Instant.now());
             TestAttempt updatedTa = testAttemptRepository.save(ta);
             return TestResults.builder()
@@ -105,10 +106,11 @@ public class TestService {
 
 
         AssignmentDescriptor ad = activeAssignment.getAssignmentDescriptor();
-        Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(),team,activeAssignment.getAssignment());
+        Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(), team, activeAssignment
+                .getAssignment());
 
         Path policy = ad.getAssignmentFiles().getSecurityPolicy();
-        if( policy != null ) {
+        if (policy != null) {
             policy = ad.getDirectory().resolve(policy);
         } else {
             policy = mojServerProperties.getDirectories().getBaseDirectory()
@@ -163,11 +165,7 @@ public class TestService {
             if (jUnitOutput.length() > 0) {
                 stripJUnitPrefix(jUnitOutput.getBuffer());
                 // if we still have some output left and exitvalue = 0
-                if (jUnitOutput.length() > 0 && exitvalue == 0 && !isTimeout) {
-                    success = true;
-                } else {
-                    success = false;
-                }
+                success = jUnitOutput.length() > 0 && exitvalue == 0 && !isTimeout;
                 result = jUnitOutput.toString();
             } else {
                 log.trace(jUnitOutput.toString());

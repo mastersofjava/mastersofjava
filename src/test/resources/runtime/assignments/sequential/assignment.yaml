@@ -10,7 +10,7 @@ image: assets/images/icon.png
 sponsor-image: assets/images/sponsor.png
 
 labels:
-- algorithm
+  - algorithm
 
 difficulty: 3
 java-version: 8
@@ -30,16 +30,16 @@ assignment-files:
   sources:
     base: src/main/java
     editable:
-    - Assignment.java
+      - Assignment.java
   test-sources:
     base: src/test/java
     tests:
-    - VisibleTest.java
+      - VisibleTest.java
     hidden-tests:
-    - HiddenTest.java
+      - HiddenTest.java
   test-resources:
     base: src/test/resources
     files:
-    - test-data.txt
+      - test-data.txt
   solution:
-  - assets/solution/Assignment.java
+    - assets/solution/Assignment.java

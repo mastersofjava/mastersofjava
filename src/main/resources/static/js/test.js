@@ -938,7 +938,7 @@
                 for (var t in this._activeTrigger) if (this._activeTrigger[t]) return !0;
                 return !1
             }, t._getConfig = function (t) {
-                return "number" == typeof(t = l({}, this.constructor.Default, pe(this.element).data(), "object" == typeof t && t ? t : {})).delay && (t.delay = {
+                return "number" == typeof (t = l({}, this.constructor.Default, pe(this.element).data(), "object" == typeof t && t ? t : {})).delay && (t.delay = {
                     show: t.delay,
                     hide: t.delay
                 }), "number" == typeof t.title && (t.title = t.title.toString()), "number" == typeof t.content && (t.content = t.content.toString()), Fn.typeCheckConfig(ve, t, this.constructor.DefaultType), t
@@ -1112,7 +1112,7 @@
             }, t.dispose = function () {
                 tn.removeData(this._element, nn), tn(this._scrollElement).off(rn), this._element = null, this._scrollElement = null, this._config = null, this._selector = null, this._offsets = null, this._targets = null, this._activeTarget = null, this._scrollHeight = null
             }, t._getConfig = function (t) {
-                if ("string" != typeof(t = l({}, sn, "object" == typeof t && t ? t : {})).target) {
+                if ("string" != typeof (t = l({}, sn, "object" == typeof t && t ? t : {})).target) {
                     var e = tn(t.target).attr("id");
                     e || (e = Fn.getUID(en), tn(t.target).attr("id", e)), t.target = "#" + e
                 }

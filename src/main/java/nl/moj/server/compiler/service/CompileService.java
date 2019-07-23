@@ -174,7 +174,6 @@ public class CompileService {
                         .append(mojServerProperties.getLimits().getCompileOutputLimits().getTimeoutMessage());
             }
 
-            final String result;
             // TODO can this be done nicer?
             if (compileOutput.length() > 0) {
                 // if we still have some output left and exitvalue = 0

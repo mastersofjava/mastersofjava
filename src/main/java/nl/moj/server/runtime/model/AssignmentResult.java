@@ -1,9 +1,9 @@
 package nl.moj.server.runtime.model;
 
-import lombok.*;
-
 import javax.persistence.*;
 import java.util.UUID;
+
+import lombok.*;
 
 @Entity
 @Table(name = "assignment_results")

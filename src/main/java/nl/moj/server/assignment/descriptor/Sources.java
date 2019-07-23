@@ -1,47 +1,47 @@
 package nl.moj.server.assignment.descriptor;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Sources {
 
-	@JsonProperty("base")
-	private Path base;
+    @JsonProperty("base")
+    private Path base;
 
-	@JsonProperty("editable")
-	private List<Path> editable;
+    @JsonProperty("editable")
+    private List<Path> editable;
 
-	@JsonProperty("readonly")
-	private List<Path> readonly;
+    @JsonProperty("readonly")
+    private List<Path> readonly;
 
-	@JsonProperty("hidden")
-	private List<Path> hidden;
+    @JsonProperty("hidden")
+    private List<Path> hidden;
 
-	public List<Path> getEditable() {
-		if( editable == null ) {
-			return Collections.emptyList();
-		}
-		return editable;
-	}
+    public List<Path> getEditable() {
+        if (editable == null) {
+            return Collections.emptyList();
+        }
+        return editable;
+    }
 
-	public List<Path> getReadonly() {
-		if( readonly == null ) {
-			return Collections.emptyList();
-		}
-		return readonly;
-	}
+    public List<Path> getReadonly() {
+        if (readonly == null) {
+            return Collections.emptyList();
+        }
+        return readonly;
+    }
 
-	public List<Path> getHidden() {
-		if( hidden == null ) {
-			return Collections.emptyList();
-		}
-		return hidden;
-	}
+    public List<Path> getHidden() {
+        if (hidden == null) {
+            return Collections.emptyList();
+        }
+        return hidden;
+    }
 }

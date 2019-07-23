@@ -79,12 +79,12 @@ public abstract class BaseRuntimeTest {
         }
     }
 
-	@After
-	public void cleanup() throws IOException {
-		competitionRuntime.stopCurrentAssignment();
-		dbUtil.cleanup();
-		PathUtil.delete( mojServerProperties.getDirectories().getBaseDirectory(), true);
-	}
+    @After
+    public void cleanup() throws IOException {
+        competitionRuntime.stopCurrentAssignment();
+        dbUtil.cleanup();
+        PathUtil.delete(mojServerProperties.getDirectories().getBaseDirectory(), true);
+    }
 
     protected Team addTeam() {
         Team team = new Team();
@@ -153,12 +153,12 @@ public abstract class BaseRuntimeTest {
                                         .build())));
     }
 
-    protected void assertNoOverlappingExecutionWindows(SubmitResult ... results) {
+    protected void assertNoOverlappingExecutionWindows(SubmitResult... results) {
         List<ExecutionWindow> windows = getExecutionWindows(results).sorted(Comparator.comparing(ExecutionWindow::getStart))
                 .collect(Collectors.toList());
         ExecutionWindow previous = null;
-        for( ExecutionWindow w : windows ) {
-            if( previous != null) {
+        for (ExecutionWindow w : windows) {
+            if (previous != null) {
                 assertThat(w.getStart()).isAfter(previous.getEnd());
             }
             previous = w;

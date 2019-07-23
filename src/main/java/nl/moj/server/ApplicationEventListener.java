@@ -26,7 +26,7 @@ public class ApplicationEventListener implements ApplicationListener<ContextRefr
     }
 
     private void initCompetition() {
-        if( competitionRuntime.getCompetition() == null ) {
+        if (competitionRuntime.getCompetition() == null) {
             UUID competitionUuid = mojServerProperties.getCompetition().getUuid();
             Competition c = competitionRepository.findByUuid(competitionUuid);
 

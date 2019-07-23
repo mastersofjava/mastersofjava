@@ -1,5 +1,11 @@
 package nl.moj.server.login;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.teams.model.Role;
@@ -18,12 +24,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor

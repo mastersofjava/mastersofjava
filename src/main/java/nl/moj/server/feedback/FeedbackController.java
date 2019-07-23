@@ -1,5 +1,13 @@
 package nl.moj.server.feedback;
 
+import javax.annotation.security.RolesAllowed;
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
@@ -14,14 +22,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
-
-import javax.annotation.security.RolesAllowed;
-import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -66,9 +66,10 @@ public class FeedbackController {
         return model;
     }
 
-    @GetMapping(value="/feedback/solution/{assignment}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @RolesAllowed({Role.GAME_MASTER,Role.ADMIN})
-    public @ResponseBody Submission getAssignmentSolution(@PathVariable("assignment") UUID assignment) {
+    @GetMapping(value = "/feedback/solution/{assignment}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    public @ResponseBody
+    Submission getAssignmentSolution(@PathVariable("assignment") UUID assignment) {
         return Submission.builder()
                 .files(competition.getSolutionFiles(assignment).stream()
                         .map(f -> FileSubmission.builder()
@@ -81,7 +82,7 @@ public class FeedbackController {
     }
 
     @GetMapping(value = "/feedback/solution/{assignment}/team/{team}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @RolesAllowed({Role.GAME_MASTER,Role.ADMIN})
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     public @ResponseBody
     Submission getSubmission(@PathVariable("assignment") UUID assignment, @PathVariable("team") UUID uuid) {
         return Submission.builder()

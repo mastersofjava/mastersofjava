@@ -3,21 +3,15 @@ package nl.moj.server.runtime;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.service.SubmitService;
-import nl.moj.server.teams.model.Team;
-import nl.moj.server.util.CompletableFutures;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -81,7 +75,7 @@ public class ParallelAssignmentSubmitTest extends BaseRuntimeTest {
         timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
 
         try {
-            Map<String,String> files = getAssignmentFiles(state, new HashMap<>());
+            Map<String, String> files = getAssignmentFiles(state, new HashMap<>());
 
             SourceMessage src = new SourceMessage();
             src.setSources(files);

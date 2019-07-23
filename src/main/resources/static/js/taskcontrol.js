@@ -9,10 +9,10 @@ $(document).ready(function () {
 
 function connect() {
     var socket = new WebSocket(
-    		((window.location.protocol === "https:") ? "wss://" : "ws://") 
-    		+ window.location.hostname 
-    		+ ':' + window.location.port 
-    		+ '/control/websocket');
+        ((window.location.protocol === "https:") ? "wss://" : "ws://")
+        + window.location.hostname
+        + ':' + window.location.port
+        + '/control/websocket');
     stompClient = Stomp.over(socket);
     stompClient.debug = null;
     stompClient.connect({}, function (frame) {
@@ -30,7 +30,9 @@ function connect() {
         });
         console.log('subscribe to /control/queue/start');
         stompClient.subscribe('/queue/start', function (msg) {
-            window.setTimeout(function(){window.location.reload();},1000);
+            window.setTimeout(function () {
+                window.location.reload();
+            }, 1000);
         });
         console.log('subscribe to /control/queue/stop');
         stompClient.subscribe('/queue/stop', function (msg) {

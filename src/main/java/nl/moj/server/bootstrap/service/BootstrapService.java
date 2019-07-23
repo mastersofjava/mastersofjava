@@ -1,5 +1,12 @@
 package nl.moj.server.bootstrap.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.config.properties.Directories;
@@ -11,13 +18,6 @@ import org.springframework.data.domain.Example;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.UUID;
-
 @Service
 @Slf4j
 @AllArgsConstructor
@@ -28,19 +28,19 @@ public class BootstrapService {
     private PasswordEncoder passwordEncoder;
 
     private static String[] LIBS = {
-        "asciiart-core-1.1.0.jar",
-        "hamcrest-all-1.3.jar",
-        "junit-4.12.jar",
-        "securityPolicyForUnitTests.policy"
+            "asciiart-core-1.1.0.jar",
+            "hamcrest-all-1.3.jar",
+            "junit-4.12.jar",
+            "securityPolicyForUnitTests.policy"
     };
 
     private static String[] SOUNDS = {
-        "gong.wav",
-        "slowtictac.wav",
-        "slowtictaclong.wav",
-        "tictac1.wav",
-        "tictac2.wav",
-        "tikking.wav"
+            "gong.wav",
+            "slowtictac.wav",
+            "slowtictaclong.wav",
+            "tictac1.wav",
+            "tictac2.wav",
+            "tikking.wav"
     };
 
 
@@ -72,23 +72,23 @@ public class BootstrapService {
         // populate sounds and lib
         log.info("Populating needed libs.");
         Path libs = directories.getBaseDirectory().resolve(directories.getLibDirectory());
-        for ( String lib : LIBS ) {
+        for (String lib : LIBS) {
             Files.copy(getClass().getResourceAsStream("/bootstrap/libs/" + lib), libs.resolve(lib), StandardCopyOption.REPLACE_EXISTING);
         }
 
         log.info("Populating sounds.");
         Path sounds = directories.getBaseDirectory().resolve(directories.getSoundDirectory());
-        for( String sound : SOUNDS ) {
-            Files.copy(getClass().getResourceAsStream("/bootstrap/sounds/"+sound), sounds.resolve(sound), StandardCopyOption.REPLACE_EXISTING);
+        for (String sound : SOUNDS) {
+            Files.copy(getClass().getResourceAsStream("/bootstrap/sounds/" + sound), sounds.resolve(sound), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
-    private void createAdminUser(String username, String password ) {
+    private void createAdminUser(String username, String password) {
         log.info("Creating administrator.");
         // create a new admin user
         List<Team> admins = teamRepository.findAllByRole(Role.ADMIN);
         if (!admins.isEmpty()) {
-            admins.forEach( a -> teamRepository.delete(a));
+            admins.forEach(a -> teamRepository.delete(a));
         }
         Team admin = Team.builder()
                 .company("Masters of Java")
@@ -106,12 +106,12 @@ public class BootstrapService {
         Directories directories = mojServerProperties.getDirectories();
         Path libs = directories.getBaseDirectory().resolve(directories.getLibDirectory());
         boolean valid = true;
-        for ( String lib : LIBS ) {
+        for (String lib : LIBS) {
             valid = valid && libs.resolve(lib).toFile().exists();
         }
 
         Path sounds = directories.getBaseDirectory().resolve(directories.getSoundDirectory());
-        for( String sound : SOUNDS ) {
+        for (String sound : SOUNDS) {
             valid = valid && sounds.resolve(sound).toFile().exists();
         }
         return valid;

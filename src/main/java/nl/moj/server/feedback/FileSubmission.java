@@ -9,7 +9,7 @@ import lombok.Value;
 @Builder
 public class FileSubmission {
 
-	private UUID uuid;
-	private String filename;
-	private String content;
+    private UUID uuid;
+    private String filename;
+    private String content;
 }

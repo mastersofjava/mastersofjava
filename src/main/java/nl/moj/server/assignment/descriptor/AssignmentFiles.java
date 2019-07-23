@@ -1,36 +1,35 @@
 package nl.moj.server.assignment.descriptor;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AssignmentFiles {
 
-	@JsonProperty("assignment")
-	private Path assignment;
-	
-	@JsonProperty("solution")
-	private List<Path> solution = new ArrayList<>();
+    @JsonProperty("assignment")
+    private Path assignment;
 
-	@JsonProperty("sources")
-	private Sources sources = new Sources();
+    @JsonProperty("solution")
+    private List<Path> solution = new ArrayList<>();
 
-	@JsonProperty("resources")
-	private Resources resources = new Resources();
+    @JsonProperty("sources")
+    private Sources sources = new Sources();
 
-	@JsonProperty("test-sources")
-	private TestSources testSources = new TestSources();
+    @JsonProperty("resources")
+    private Resources resources = new Resources();
 
-	@JsonProperty("test-resources")
-	private TestResources testResources = new TestResources();
+    @JsonProperty("test-sources")
+    private TestSources testSources = new TestSources();
 
-	@JsonProperty("security-policy")
-	private Path securityPolicy;
+    @JsonProperty("test-resources")
+    private TestResources testResources = new TestResources();
+
+    @JsonProperty("security-policy")
+    private Path securityPolicy;
 }
