@@ -9,8 +9,8 @@ import lombok.ToString;
 @Builder
 public class StartAssignmentMessage {
 
-	private final MessageType messageType = MessageType.START_ASSIGNMENT;
+    private final MessageType messageType = MessageType.START_ASSIGNMENT;
 
-	private final String assignment;
+    private final String assignment;
 
 }

@@ -1,5 +1,13 @@
 package nl.moj.server.config;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import lombok.AllArgsConstructor;
 import nl.moj.server.TeamDetailsService;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -14,21 +22,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
-import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Configuration
 @AllArgsConstructor
@@ -101,9 +99,9 @@ public class WebConfiguration {
                 List<String> roles = authentication.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
-                if( roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER)) {
+                if (roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER)) {
                     response.sendRedirect("/control");
-                } else if( roles.contains(Role.USER)){
+                } else if (roles.contains(Role.USER)) {
                     teamDetailsService.initTeam(authentication.getName());
                     response.sendRedirect("/");
                 } else {

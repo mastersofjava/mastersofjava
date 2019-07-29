@@ -9,8 +9,8 @@ import lombok.ToString;
 @Builder
 public class StopAssignmentMessage {
 
-	private final MessageType messageType = MessageType.STOP_ASSIGNMENT;
+    private final MessageType messageType = MessageType.STOP_ASSIGNMENT;
 
-	private final String assignment;
+    private final String assignment;
 
 }

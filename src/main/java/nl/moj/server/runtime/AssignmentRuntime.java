@@ -1,6 +1,5 @@
 package nl.moj.server.runtime;
 
-import javax.annotation.Resource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,22 +9,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.time.StopWatch;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +33,13 @@ import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.PathUtil;
-import org.springframework.transaction.annotation.Propagation;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
@@ -140,8 +132,8 @@ public class AssignmentRuntime {
         teamService.getTeams().forEach(t -> {
             ActiveAssignment state = getState();
             AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),
-                    state.getCompetitionSession(),t);
-            if( as != null) {
+                    state.getCompetitionSession(), t);
+            if (as != null) {
                 if (as.getDateTimeEnd() == null) {
                     as = scoreService.finalizeScore(as, state);
                     AssignmentResult ar = as.getAssignmentResult();
@@ -206,19 +198,19 @@ public class AssignmentRuntime {
         teamService.getTeams().forEach(this::initAssignmentForTeam);
     }
 
-	public AssignmentStatus initAssignmentForLateTeam(Team t) {
-		AssignmentStatus as = initAssignmentForTeam(t);
-		as.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
-		return assignmentStatusRepository.save(as);
-	}    
-    
-	private AssignmentStatus initAssignmentForTeam(Team t) {
-		cleanupTeamAssignmentData(t);
-		AssignmentStatus as = initAssignmentStatus(t);
-		initTeamScore(as);
-		initTeamAssignmentData(t);
-		return as;
-	}
+    public AssignmentStatus initAssignmentForLateTeam(Team t) {
+        AssignmentStatus as = initAssignmentForTeam(t);
+        as.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
+        return assignmentStatusRepository.save(as);
+    }
+
+    private AssignmentStatus initAssignmentForTeam(Team t) {
+        cleanupTeamAssignmentData(t);
+        AssignmentStatus as = initAssignmentStatus(t);
+        initTeamScore(as);
+        initTeamAssignmentData(t);
+        return as;
+    }
 
     private void updateTeamAssignmentStatuses() {
         assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competitionSession).forEach(as -> {
@@ -228,7 +220,7 @@ public class AssignmentRuntime {
     }
 
     private void initTeamAssignmentData(Team team) {
-        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession,team,assignment);
+        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession, team, assignment);
         try {
             // create empty assignment directory
             Files.createDirectories(assignmentDirectory);
@@ -238,7 +230,7 @@ public class AssignmentRuntime {
     }
 
     private AssignmentStatus initAssignmentStatus(Team team) {
-    	Duration assignmentDuration = assignmentDescriptor.getDuration();
+        Duration assignmentDuration = assignmentDescriptor.getDuration();
         AssignmentStatus as = AssignmentStatus.builder()
                 .assignment(assignment)
                 .competitionSession(competitionSession)
@@ -256,7 +248,7 @@ public class AssignmentRuntime {
 
     private void cleanupTeamAssignmentData(Team team) {
         // delete historical submitted data.
-        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession,team,assignment);
+        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession, team, assignment);
         try {
             if (Files.exists(assignmentDirectory)) {
                 PathUtil.delete(assignmentDirectory);
@@ -306,10 +298,10 @@ public class AssignmentRuntime {
     }
 
     private void clearHandlers() {
-		if (this.handlers != null) {
-			this.handlers.forEach((k, v) -> v.cancel(true));
-		}
-		this.handlers = new HashMap<>();
+        if (this.handlers != null) {
+            this.handlers.forEach((k, v) -> v.cancel(true));
+        }
+        this.handlers = new HashMap<>();
     }
 
     @Async
@@ -325,9 +317,9 @@ public class AssignmentRuntime {
 
     @Async
     public Future<?> scheduleTimeSync() {
-		return taskScheduler.scheduleAtFixedRate(() -> messageService.sendRemainingTime(getTimeRemaining(),
-				assignmentDescriptor.getDuration().getSeconds()), TIMESYNC_FREQUENCY);
-	}
+        return taskScheduler.scheduleAtFixedRate(() -> messageService.sendRemainingTime(getTimeRemaining(),
+                assignmentDescriptor.getDuration().getSeconds()), TIMESYNC_FREQUENCY);
+    }
 
     private Date inSeconds(long sec) {
         return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());

@@ -23,10 +23,14 @@
 </head>
 <body class="p-2">
 
-<div th:if="${error}" th:text="${error}" class="alert alert-danger" role="alert" onClick="$(this).hide('slow', function(){ $(this).remove(); })">error</div>
-<div th:if="${success}" th:text="${success}" class="alert alert-success" role="alert" onClick="$(this).hide('slow', function(){ $(this).remove(); })">success</div>
+<div th:if="${error}" th:text="${error}" class="alert alert-danger" role="alert"
+     onClick="$(this).hide('slow', function(){ $(this).remove(); })">error
+</div>
+<div th:if="${success}" th:text="${success}" class="alert alert-success" role="alert"
+     onClick="$(this).hide('slow', function(){ $(this).remove(); })">success
+</div>
 
-<div class="container-fluid">			
+<div class="container-fluid">
     <div class="row">
         <div class="col-3 d-flex flex-column">
             <div class="p-2 align-self-center">
@@ -112,7 +116,6 @@
     </div>
 </div>
 
-	
 
 <div class="row p-2">
     <div class="p-2 col-6">
@@ -130,30 +133,31 @@
     </div>
 </div>
 
-	<div class="row p-2 container">
-		<div class="p-2 col-6">
-			<form class="mt-5" method="POST" action="/control/resetPassword"
-				enctype="multipart/form-data" th:object="${newPasswordRequest}">
-				<select class="p-2" th:field="*{teamUuid}">
-					<option th:value="0">Please select...</option>
-					<option th:each="team : ${teams}" th:value="${team.uuid}"
-						th:text="${team.name}"></option>
-				</select>
-				<div class="form-group p-2">
-					<label for="password"> New Password</label> <input type="password"
-						class="form-control" id="password" th:field="*{newPassword}"
-						placeholder="">
-				</div>
-				<div class="form-group p-2">
-					<label for="passwordCheck">Confirm Password</label> <input
-						type="password" class="form-control" id="passwordCheck"
-						th:field="*{newPasswordCheck}" placeholder="">
-				</div>
-				<input class="btn btn-primary form-control col-3" type="submit"
-					value="submit" onclick="return confirm('Are you sure to change password?')"/>
-			</form>
-		</div>
-	</div>
+<div class="row p-2 container">
+    <div class="p-2 col-6">
+        <form class="mt-5" method="POST" action="/control/resetPassword"
+              enctype="multipart/form-data" th:object="${newPasswordRequest}">
+            <select class="p-2" th:field="*{teamUuid}">
+                <option th:value="0">Please select...</option>
+                <option th:each="team : ${teams}" th:value="${team.uuid}"
+                        th:text="${team.name}"></option>
+            </select>
+            <div class="form-group p-2">
+                <label for="password"> New Password</label> <input type="password"
+                                                                   class="form-control" id="password"
+                                                                   th:field="*{newPassword}"
+                                                                   placeholder="">
+            </div>
+            <div class="form-group p-2">
+                <label for="passwordCheck">Confirm Password</label> <input
+                    type="password" class="form-control" id="passwordCheck"
+                    th:field="*{newPasswordCheck}" placeholder="">
+            </div>
+            <input class="btn btn-primary form-control col-3" type="submit"
+                   value="submit" onclick="return confirm('Are you sure to change password?')"/>
+        </form>
+    </div>
+</div>
 
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>

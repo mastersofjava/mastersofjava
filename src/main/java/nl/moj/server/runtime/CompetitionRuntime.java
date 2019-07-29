@@ -61,12 +61,12 @@ public class CompetitionRuntime {
 
         // get the completed assignment uuids
         List<UUID> assignments = assignmentResultRepository.findByCompetitionSession(competitionSession).stream()
-                .filter( ar -> ar.getAssignmentStatus().getDateTimeEnd() != null )
-                .map( ar -> ar.getAssignmentStatus().getAssignment().getUuid())
+                .filter(ar -> ar.getAssignmentStatus().getDateTimeEnd() != null)
+                .map(ar -> ar.getAssignmentStatus().getAssignment().getUuid())
                 .distinct().collect(Collectors.toList());
 
-        this.competition.getAssignments().forEach( oa -> {
-            if( assignments.contains( oa.getAssignment().getUuid())) {
+        this.competition.getAssignments().forEach(oa -> {
+            if (assignments.contains(oa.getAssignment().getUuid())) {
                 this.completedAssignments.add(oa);
             }
         });
@@ -111,7 +111,9 @@ public class CompetitionRuntime {
 
     public void stopCurrentAssignment() {
         if (assignmentRuntime.getOrderedAssignment() != null) {
-            log.info("Stopping current assignment {} uuid {}.", assignmentRuntime.getOrderedAssignment().getAssignment().getName(),
+            log.info("Stopping current assignment {} uuid {}.", assignmentRuntime.getOrderedAssignment()
+                            .getAssignment()
+                            .getName(),
                     assignmentRuntime.getOrderedAssignment().getAssignment().getUuid());
             assignmentRuntime.stop();
         }
@@ -136,7 +138,7 @@ public class CompetitionRuntime {
 
     public List<AssignmentFile> getTeamSolutionFiles(UUID assignment, Team team) {
         return getTeamAssignmentFiles(assignment, team).stream()
-                .filter( f -> f.getFileType() == AssignmentFileType.SOLUTION ).collect(Collectors.toList());
+                .filter(f -> f.getFileType() == AssignmentFileType.SOLUTION).collect(Collectors.toList());
     }
 
     private List<AssignmentFile> getTeamAssignmentFiles(UUID assignment, Team team) {
@@ -151,7 +153,7 @@ public class CompetitionRuntime {
 
     public List<AssignmentFile> getSolutionFiles(UUID assignment) {
         return getAssignmentFiles(assignment).stream()
-                .filter( f -> f.getFileType() == AssignmentFileType.SOLUTION ).collect(Collectors.toList());
+                .filter(f -> f.getFileType() == AssignmentFileType.SOLUTION).collect(Collectors.toList());
     }
 
     private List<AssignmentFile> getAssignmentFiles(UUID assignment) {
@@ -172,7 +174,7 @@ public class CompetitionRuntime {
                 .max(Comparator.comparing(CompetitionSession::getId))
                 .orElse(null);
 
-        if( session == null ) {
+        if (session == null) {
             startSession(competition);
         } else {
             loadSession(competition, session.getUuid());

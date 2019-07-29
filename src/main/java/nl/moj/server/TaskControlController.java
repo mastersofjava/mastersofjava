@@ -1,6 +1,5 @@
 package nl.moj.server;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -10,7 +9,19 @@ import java.util.stream.Collectors;
 
 import lombok.*;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.repository.AssignmentRepository;
+import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.assignment.service.AssignmentServiceException;
+import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.repository.CompetitionRepository;
+import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -22,19 +33,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.assignment.repository.AssignmentRepository;
-import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.assignment.service.AssignmentServiceException;
-import nl.moj.server.competition.model.Competition;
-import nl.moj.server.competition.model.OrderedAssignment;
-import nl.moj.server.competition.repository.CompetitionRepository;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
 
 @Controller
 @RequiredArgsConstructor
@@ -53,10 +51,10 @@ public class TaskControlController {
     private final CompetitionRepository competitionRepository;
 
     private final TeamRepository teamRepository;
-    
+
     private final PasswordEncoder encoder;
 
-    @ModelAttribute(name="sessions")
+    @ModelAttribute(name = "sessions")
     public List<CompetitionSession> sessions() {
         return competition.getSessions();
     }
@@ -105,7 +103,7 @@ public class TaskControlController {
                     .collect(Collectors.toList()));
             c = competitionRepository.save(c);
 
-            competition.loadSession(c,competition.getCompetitionSession().getUuid());
+            competition.loadSession(c, competition.getCompetitionSession().getUuid());
 
             return "Assignments scanned, reload to show them.";
         } catch (AssignmentServiceException ase) {
@@ -125,7 +123,6 @@ public class TaskControlController {
             return oa;
         };
     }
-
 
 
     @GetMapping("/control")
@@ -151,7 +148,7 @@ public class TaskControlController {
 
     @PostMapping("/control/select-session")
     public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
-        competition.loadSession(competition.getCompetition(),ssf.getSession());
+        competition.loadSession(competition.getCompetition(), ssf.getSession());
         return "redirect:/control";
     }
 
@@ -161,51 +158,51 @@ public class TaskControlController {
         return "redirect:/control";
     }
 
-	@PostMapping("/control/resetPassword")
-	public String resetPassword(RedirectAttributes redirectAttributes,
-			@ModelAttribute("newPasswordRequest") NewPasswordRequest passwordChangeRequest) {
+    @PostMapping("/control/resetPassword")
+    public String resetPassword(RedirectAttributes redirectAttributes,
+                                @ModelAttribute("newPasswordRequest") NewPasswordRequest passwordChangeRequest) {
 
-		String errorMessage = null;
-		
-		if (passwordChangeRequest.teamUuid.equals("0")) {
-			errorMessage = "No team selected";
-		} else {
-			Team team = teamRepository.findByUuid(UUID.fromString(passwordChangeRequest.teamUuid));
-			if (passwordChangeRequest.newPassword == null || passwordChangeRequest.newPassword.isBlank()) {
-				errorMessage = "New password can't be empty";
-			} else if (!passwordChangeRequest.newPassword.equals(passwordChangeRequest.newPasswordCheck)) {
-				errorMessage = "Password and confirmaton did not match";
-			} else {
-				team.setPassword(encoder.encode(passwordChangeRequest.newPassword));
-				teamRepository.save(team);
-				redirectAttributes.addFlashAttribute("success", "Successfully changed password");
-				return "redirect:/control";
-			}
-		}
-	
-		passwordChangeRequest.clearPasswords();
-		redirectAttributes.addFlashAttribute("newPasswordRequest", passwordChangeRequest);
-		redirectAttributes.addFlashAttribute("error", errorMessage);
+        String errorMessage = null;
 
-		return "redirect:/control";
-	}
+        if (passwordChangeRequest.teamUuid.equals("0")) {
+            errorMessage = "No team selected";
+        } else {
+            Team team = teamRepository.findByUuid(UUID.fromString(passwordChangeRequest.teamUuid));
+            if (passwordChangeRequest.newPassword == null || passwordChangeRequest.newPassword.isBlank()) {
+                errorMessage = "New password can't be empty";
+            } else if (!passwordChangeRequest.newPassword.equals(passwordChangeRequest.newPasswordCheck)) {
+                errorMessage = "Password and confirmaton did not match";
+            } else {
+                team.setPassword(encoder.encode(passwordChangeRequest.newPassword));
+                teamRepository.save(team);
+                redirectAttributes.addFlashAttribute("success", "Successfully changed password");
+                return "redirect:/control";
+            }
+        }
 
-	@Getter
-	@AllArgsConstructor
-	@NoArgsConstructor
-	public static class TaskMessage {
-		private String taskName;
+        passwordChangeRequest.clearPasswords();
+        redirectAttributes.addFlashAttribute("newPasswordRequest", passwordChangeRequest);
+        redirectAttributes.addFlashAttribute("error", errorMessage);
+
+        return "redirect:/control";
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TaskMessage {
+        private String taskName;
     }
 
     @Data
-    public static class NewPasswordRequest{
-    	private String teamUuid;
+    public static class NewPasswordRequest {
+        private String teamUuid;
         private String newPassword;
         private String newPasswordCheck;
-        
+
         public void clearPasswords() {
-        	newPassword=null;
-        	newPasswordCheck = null;
+            newPassword = null;
+            newPasswordCheck = null;
         }
     }
 

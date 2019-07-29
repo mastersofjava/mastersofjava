@@ -1,4 +1,4 @@
-function Clock( initialOffset ) {
+function Clock(initialOffset) {
 
     this.offset = initialOffset || '440';
     this.current = 0;
@@ -40,7 +40,7 @@ function Clock( initialOffset ) {
         var interval = setInterval(function () {
             if (clock.finished || clock.current - clock.time >= 0) {
                 clearInterval(interval);
-              return;
+                return;
             } else {
                 renderTime();
             }
@@ -48,16 +48,16 @@ function Clock( initialOffset ) {
         }, 1000);
     };
 
-    this.sync = function( remaining, total ) {
-      if (remaining > 1) {
-        this.current = total - remaining;
-      }
+    this.sync = function (remaining, total) {
+        if (remaining > 1) {
+            this.current = total - remaining;
+        }
     };
 
-    this.stop = function() {
-      var $assignmentClock = $('#assignment-clock');
-      this.finished = true;
-      this.current = this.time;
-      $('h2', $assignmentClock).text("0:00");
+    this.stop = function () {
+        var $assignmentClock = $('#assignment-clock');
+        this.finished = true;
+        this.current = this.time;
+        $('h2', $assignmentClock).text("0:00");
     };
 }

@@ -1,11 +1,14 @@
 package nl.moj.server.runtime;
 
+import javax.transaction.Transactional;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.dynamic.TypeResolutionStrategy;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentResult;
@@ -14,14 +17,8 @@ import nl.moj.server.runtime.model.Score;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
-import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestCase;
 import org.springframework.stereotype.Service;
-
-import java.time.Instant;
-import java.util.Comparator;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * The ScoreService calculates the score.
@@ -98,8 +95,8 @@ public class ScoreService {
     private Score calculateScore(ActiveAssignment state, AssignmentStatus as) {
         AssignmentDescriptor ad = state.getAssignmentDescriptor();
         return Score.builder()
-                .initialScore(calculateInitialScore(state.getTimeRemaining(),as))
-                .submitBonus(calculateSubmitBonus(ad,as))
+                .initialScore(calculateInitialScore(state.getTimeRemaining(), as))
+                .submitBonus(calculateSubmitBonus(ad, as))
                 .testBonus(calculateTestBonus(state.getTimeRemaining(), as))
                 .resubmitPenalty(calculateSubmitPenalty(ad, state.getTimeRemaining(), as))
                 .testPenalty(calculateTestPenalty(ad, state.getTimeRemaining(), as))
@@ -107,14 +104,14 @@ public class ScoreService {
     }
 
     private Long calculateInitialScore(Long timeRemaining, AssignmentStatus as) {
-        if( isSuccessSubmit(as)) {
+        if (isSuccessSubmit(as)) {
             return timeRemaining;
         }
         return 0L;
     }
 
     private Long calculateSubmitPenalty(AssignmentDescriptor ad, Long initialScore, AssignmentStatus as) {
-        if( isSuccessSubmit(as)) {
+        if (isSuccessSubmit(as)) {
             int submits = as.getSubmitAttempts().size();
             if (submits > 1 && ad.getScoringRules().getResubmitPenalty() != null) {
                 String penalty = ad.getScoringRules().getResubmitPenalty().trim();
@@ -131,7 +128,7 @@ public class ScoreService {
     }
 
     private Long calculateTestPenalty(AssignmentDescriptor ad, Long initialScore, AssignmentStatus as) {
-        if( isSuccessSubmit(as)) {
+        if (isSuccessSubmit(as)) {
             // get the test run count, the submit test is free, hence test runs - submit attempts
             int testRuns = as.getTestAttempts().size() - as.getSubmitAttempts().size();
             if (testRuns > 0 && ad.getScoringRules().getTestPenalty() != null) {
@@ -164,7 +161,7 @@ public class ScoreService {
     }
 
     private long calculateSubmitBonus(AssignmentDescriptor ad, AssignmentStatus as) {
-        if( isSuccessSubmit(as)) {
+        if (isSuccessSubmit(as)) {
             long submitBonus;
             if (ad.getScoringRules().getSuccessBonus() != null) {
                 submitBonus = ad.getScoringRules().getSuccessBonus();
@@ -179,8 +176,13 @@ public class ScoreService {
     // Test bonus is given even if submit attempt failed.
     private long calculateTestBonus(Long initialScore, AssignmentStatus as) {
         Optional<SubmitAttempt> sa = getLastSubmitAttempt(as);
-        if( sa.isPresent()) {
-            long successTestCount = sa.get().getTestAttempt().getTestCases().stream().filter(TestCase::isSuccess).count();
+        if (sa.isPresent()) {
+            long successTestCount = sa.get()
+                    .getTestAttempt()
+                    .getTestCases()
+                    .stream()
+                    .filter(TestCase::isSuccess)
+                    .count();
             return Math.max(Math.round(initialScore * 0.05), 10) * successTestCount;
         }
 
@@ -189,8 +191,8 @@ public class ScoreService {
 
     private Optional<SubmitAttempt> getLastSubmitAttempt(AssignmentStatus as) {
         return as.getSubmitAttempts()
-                    .stream()
-                    .max(Comparator.comparing(SubmitAttempt::getDateTimeStart));
+                .stream()
+                .max(Comparator.comparing(SubmitAttempt::getDateTimeStart));
     }
 
     private boolean isSuccessSubmit(AssignmentStatus as) {
@@ -215,16 +217,22 @@ public class ScoreService {
 
     }
 
+    @Transactional
     public AssignmentStatus finalizeScore(AssignmentStatus as, ActiveAssignment activeAssignment) {
-        if( needsFinalize(as) ) {
+        // attach entity?
+        as = assignmentStatusRepository.save(as);
+
+        if (needsFinalize(as)) {
+
             Score score = calculateScore(activeAssignment, as);
-            registerScore(as,score);
+            registerScore(as, score);
 
             // make sure cannot finalize twice.
             as.setDateTimeEnd(Instant.now());
             as = assignmentStatusRepository.save(as);
 
-            log.info("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, as.getTeam()
+            log.info("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, as
+                    .getTeam()
                     .getName(), activeAssignment.getAssignment().getName());
         } else {
             return as;

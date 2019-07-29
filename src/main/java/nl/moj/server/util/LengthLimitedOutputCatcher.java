@@ -13,52 +13,52 @@ import static java.lang.Math.min;
  * @author hartmut
  */
 public class LengthLimitedOutputCatcher extends LogOutputStream {
-	private final StringBuilder buffer = new StringBuilder();
-	private final int maxSize;
-	private final int maxLines;
-	private final int maxLineLenght;
-	private final String lineTruncatedMessage;
-	private final String outputTruncMessage;
-	private int lineCount = 0;
+    private final StringBuilder buffer = new StringBuilder();
+    private final int maxSize;
+    private final int maxLines;
+    private final int maxLineLenght;
+    private final String lineTruncatedMessage;
+    private final String outputTruncMessage;
+    private int lineCount = 0;
 
-	public LengthLimitedOutputCatcher(Limits.OutputLimits limits) {
-		this.maxSize = limits.getMaxChars();
-		this.maxLines = limits.getMaxFeedbackLines();
-		this.maxLineLenght = limits.getMaxLineLen();
-		this.lineTruncatedMessage = limits.getLineTruncatedMessage();
-		this.outputTruncMessage = limits.getOutputTruncMessage();
-	}
+    public LengthLimitedOutputCatcher(Limits.OutputLimits limits) {
+        this.maxSize = limits.getMaxChars();
+        this.maxLines = limits.getMaxFeedbackLines();
+        this.maxLineLenght = limits.getMaxLineLen();
+        this.lineTruncatedMessage = limits.getLineTruncatedMessage();
+        this.outputTruncMessage = limits.getOutputTruncMessage();
+    }
 
-	@Override
-	protected void processLine(String line) {
-		if (lineCount < maxLines) {
-			final int maxAppendFromBufferSize = min(line.length(), maxSize - buffer.length() + 1);
-			final int maxAppendFromLineLimit = min(maxAppendFromBufferSize, maxLineLenght);
-			if (maxAppendFromLineLimit > 0) {
-				final boolean isLineTruncated = maxAppendFromLineLimit < line.length();
-				if (isLineTruncated) {
-					buffer.append(line.substring(0, maxAppendFromLineLimit)).append(lineTruncatedMessage);
-				} else {
-					buffer.append(line);
-				}
-				buffer.append('\n');
-			}
-		} else if (lineCount == maxLines) {
-			buffer.append(outputTruncMessage);
-		}
-		lineCount++;
-	}
+    @Override
+    protected void processLine(String line) {
+        if (lineCount < maxLines) {
+            final int maxAppendFromBufferSize = min(line.length(), maxSize - buffer.length() + 1);
+            final int maxAppendFromLineLimit = min(maxAppendFromBufferSize, maxLineLenght);
+            if (maxAppendFromLineLimit > 0) {
+                final boolean isLineTruncated = maxAppendFromLineLimit < line.length();
+                if (isLineTruncated) {
+                    buffer.append(line, 0, maxAppendFromLineLimit).append(lineTruncatedMessage);
+                } else {
+                    buffer.append(line);
+                }
+                buffer.append('\n');
+            }
+        } else if (lineCount == maxLines) {
+            buffer.append(outputTruncMessage);
+        }
+        lineCount++;
+    }
 
-	public StringBuilder getBuffer() {
-		return buffer;
-	}
+    public StringBuilder getBuffer() {
+        return buffer;
+    }
 
-	@Override
-	public String toString() {
-		return buffer.toString();
-	}
+    @Override
+    public String toString() {
+        return buffer.toString();
+    }
 
-	public int length() {
-		return buffer.length();
-	}
+    public int length() {
+        return buffer.length();
+    }
 }

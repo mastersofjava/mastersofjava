@@ -1,11 +1,5 @@
 package nl.moj.server.bootstrap.filter;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.bootstrap.service.BootstrapService;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.filter.OncePerRequestFilter;
-
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebFilter;
@@ -14,6 +8,12 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.bootstrap.service.BootstrapService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @WebFilter(urlPatterns = {"*"})
 @AllArgsConstructor

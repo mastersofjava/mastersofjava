@@ -11,38 +11,38 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 public class WebSocketConfiguration {
 
-	@Configuration
-	@EnableWebSocketMessageBroker
-	public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+    @Configuration
+    @EnableWebSocketMessageBroker
+    public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-		@Override
-		public void configureMessageBroker(MessageBrokerRegistry config) {
-			config.enableSimpleBroker("/topic", "/queue");
-			config.setApplicationDestinationPrefixes("/app");
-			config.setUserDestinationPrefix("/user");
-		}
+        @Override
+        public void configureMessageBroker(MessageBrokerRegistry config) {
+            config.enableSimpleBroker("/topic", "/queue");
+            config.setApplicationDestinationPrefixes("/app");
+            config.setUserDestinationPrefix("/user");
+        }
 
-		@Override
-		public void registerStompEndpoints(StompEndpointRegistry registry) {
-			registry.addEndpoint("/ws/competition/websocket");
-			registry.addEndpoint("/submit/websocket");
-			registry.addEndpoint("/control/websocket");
-			registry.addEndpoint("/rankings/websocket");
-			registry.addEndpoint("/feedback/websocket");
-		}
-	}
+        @Override
+        public void registerStompEndpoints(StompEndpointRegistry registry) {
+            registry.addEndpoint("/ws/competition/websocket");
+            registry.addEndpoint("/submit/websocket");
+            registry.addEndpoint("/control/websocket");
+            registry.addEndpoint("/rankings/websocket");
+            registry.addEndpoint("/feedback/websocket");
+        }
+    }
 
-	@Configuration
-	public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
+    @Configuration
+    public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
 
-		protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
-			messages.simpDestMatchers("/*").authenticated();
-		}
+        protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
+            messages.simpDestMatchers("/*").authenticated();
+        }
 
-		@Override
-		protected boolean sameOriginDisabled() {
-			// disable CSRF for websockets for now...
-			return true;
-		}
-	}
+        @Override
+        protected boolean sameOriginDisabled() {
+            // disable CSRF for websockets for now...
+            return true;
+        }
+    }
 }

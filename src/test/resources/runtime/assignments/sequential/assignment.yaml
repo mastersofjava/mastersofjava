@@ -1,0 +1,45 @@
+# file paths are taken relative to this file.
+name: sequential
+display-name: Sequential
+author:
+  name: Mr Crazy
+  company: First8
+  website: https://first8.nl
+
+image: assets/images/icon.png
+sponsor-image: assets/images/sponsor.png
+
+labels:
+  - algorithm
+
+difficulty: 3
+java-version: 8
+duration: PT15S
+submit-timeout: PT5S
+test-timeout: PT2S
+execution-model: sequential
+
+scoring-rules:
+  maximum-resubmits: 2
+  resubmit-penalty: 50%
+  success-bonus: 200
+  test-penalty: 20%
+
+assignment-files:
+  assignment: assets/assignment.txt
+  sources:
+    base: src/main/java
+    editable:
+      - Assignment.java
+  test-sources:
+    base: src/test/java
+    tests:
+      - VisibleTest.java
+    hidden-tests:
+      - HiddenTest.java
+  test-resources:
+    base: src/test/resources
+    files:
+      - test-data.txt
+  solution:
+    - assets/solution/Assignment.java

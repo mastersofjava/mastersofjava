@@ -1,23 +1,23 @@
 package nl.moj.server.test.model;
 
-import lombok.*;
-import nl.moj.server.runtime.model.AssignmentStatus;
-
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.*;
+import nl.moj.server.runtime.model.AssignmentStatus;
+
 @Entity
 @Table(name = "test_attempts")
-@SequenceGenerator(name="id_seq", sequenceName = "test_attempts_seq")
+@SequenceGenerator(name = "id_seq", sequenceName = "test_attempts_seq")
 
 @Builder(toBuilder = true)
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of={"uuid"})
+@EqualsAndHashCode(of = {"uuid"})
 @ToString(exclude = {"assignmentStatus"})
 public class TestAttempt {
 
@@ -26,17 +26,17 @@ public class TestAttempt {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name="uuid", nullable = false, updatable = false)
+    @Column(name = "uuid", nullable = false, updatable = false)
     private UUID uuid;
 
-    @Column(name="date_time_start", nullable = false)
+    @Column(name = "date_time_start", nullable = false)
     private Instant dateTimeStart;
 
-    @Column(name="date_time_end")
+    @Column(name = "date_time_end")
     private Instant dateTimeEnd;
 
     @ManyToOne
-    @JoinColumn(name="assignment_status_id", nullable=false)
+    @JoinColumn(name = "assignment_status_id", nullable = false)
     private AssignmentStatus assignmentStatus;
 
     @OneToMany(mappedBy = "testAttempt", cascade = CascadeType.REMOVE)

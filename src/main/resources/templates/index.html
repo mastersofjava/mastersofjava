@@ -44,11 +44,13 @@
                 <div id="alert-container">
                     <div th:if="${finished and (finalscore &gt; 0)}" class="alert alert-success p-4" role="alert">
                         <h4 class="alert-heading">Assignment Submitted</h4>
-                        <p>Well done!. You have submitted the assignment for final review. Chill out and wait until the next assignment starts.</p>
+                        <p>Well done!. You have submitted the assignment for final review. Chill out and wait until the
+                            next assignment starts.</p>
                     </div>
                     <div th:if="${finished and finalscore == 0}" class="alert alert-danger p-4" role="alert">
                         <h4 class="alert-heading">Assignment Tests Failed :-(</h4>
-                        <p>Your score is 0. Chill out and wait until the next assignment starts. Better luck next time!</p>
+                        <p>Your score is 0. Chill out and wait until the next assignment starts. Better luck next
+                            time!</p>
                     </div>
                 </div>
                 <div th:unless="${finished}" id="tabs">
@@ -60,25 +62,33 @@
                                th:id="${'cm-'+file.uuid}"
                                th:href="${'#tab-'+file.uuid}" data-toggle="tab"
                             >
-                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}" class="fas fa-tasks"></span>
-                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).EDIT}" class="fas fa-code"></span>
-                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).READONLY}" class="fas fa-code"></span>
-                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).RESOURCE}" class="fas fa-code"></span>
-                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TEST}" class="fas fa-vial"></span>
-                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TEST_RESOURCE}" class="fas fa-vial"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}"
+                                      class="fas fa-tasks"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).EDIT}"
+                                      class="fas fa-code"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).READONLY}"
+                                      class="fas fa-code"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).RESOURCE}"
+                                      class="fas fa-code"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TEST}"
+                                      class="fas fa-vial"></span>
+                                <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TEST_RESOURCE}"
+                                      class="fas fa-vial"></span>
                                 <span th:text="${file.shortName}"></span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="output" href="#output-tab" data-toggle="tab"><span class="fas fa-terminal"></span> Output</a>
+                            <a class="nav-link" id="output" href="#output-tab" data-toggle="tab"><span
+                                    class="fas fa-terminal"></span> Output</a>
                         </li>
                     </ul>
                     <div class="tab-content">
                         <div class="tab-pane" th:classappend="${status.index==0?'show active':''}" role="tabpanel"
                              th:each="file,status : ${files}" th:id="${'tab-'+file.uuid}">
                             <div class="tab-pane-content">
-                                <textarea th:attr="data-cm=${'cm-'+file.uuid},data-cm-id=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
-                                          th:utext="${file.getContentAsString()}"></textarea>
+                                <textarea
+                                        th:attr="data-cm=${'cm-'+file.uuid},data-cm-id=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
+                                        th:utext="${file.getContentAsString()}"></textarea>
                             </div>
                         </div>
                         <div class="tab-pane fade" role="tabpanel" id="output-tab">
@@ -102,7 +112,8 @@
                 <div class="text-center">
                     <h3>Time Left</h3>
                 </div>
-                <div id="assignment-clock" th:attrappend="data-time-left=${timeLeft},data-time=${time},running=${running}"
+                <div id="assignment-clock"
+                     th:attrappend="data-time-left=${timeLeft},data-time=${time},running=${running}"
                      class="align-self-center">
                     <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
                         <h2 class="align-self-center">--:--</h2>
@@ -135,11 +146,14 @@
                 <button id="compile" class="btn w-50 btn-success" th:disabled="${finished}">Compile</button>
             </div>
             <div th:if="${running}" class="p-2  text-center">
-                <button id="show-tests" class="btn w-50 btn-success" data-toggle="modal" data-target="#test-modal" onclick="resetTabColor();" th:disabled="${finished}">Test
+                <button id="show-tests" class="btn w-50 btn-success" data-toggle="modal" data-target="#test-modal"
+                        onclick="resetTabColor();" th:disabled="${finished}">Test
                 </button>
             </div>
             <div th:if="${running}" class="mt-5 p-2 text-center">
-                <button id="btn-open-submit" class="btn w-50 btn-danger" data-toggle="modal" data-target="#confirm-submit-modal" th:disabled="${finished}">SUBMIT</button>
+                <button id="btn-open-submit" class="btn w-50 btn-danger" data-toggle="modal"
+                        data-target="#confirm-submit-modal" th:disabled="${finished}">SUBMIT
+                </button>
             </div>
 
         </div>
@@ -172,7 +186,8 @@
                 <form>
                     <div class="form-check" th:each="test : ${tests}">
                         <label class="form-check-label">
-                            <input name="test" class="form-check-input" type="checkbox" th:value="${test.uuid}" checked="true">
+                            <input name="test" class="form-check-input" type="checkbox" th:value="${test.uuid}"
+                                   checked="true">
                             [[${test.shortName}]]
                         </label>
                     </div>
@@ -197,7 +212,8 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>This will submit your code. If you reach the maximum allowed submits of [[${maxSubmits}]] you will no longer be able
+                <p>This will submit your code. If you reach the maximum allowed submits of [[${maxSubmits}]] you will no
+                    longer be able
                     to change your code. You have <span id="submits" th:text="${submits}"></span> left.</p>
                 <p>Do you want to continue?</p>
             </div>

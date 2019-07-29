@@ -11,11 +11,11 @@ $(document).ready(function () {
 });
 
 function connectCompetition() {
-	var socket = new WebSocket(
-    		((window.location.protocol === "https:") ? "wss://" : "ws://") 
-    		+ window.location.hostname 
-    		+ ':' + window.location.port 
-    		+ "/ws/competition/websocket");
+    var socket = new WebSocket(
+        ((window.location.protocol === "https:") ? "wss://" : "ws://")
+        + window.location.hostname
+        + ':' + window.location.port
+        + "/ws/competition/websocket");
     stomp = Stomp.over(socket);
     stomp.debug = null;
     stomp.connect({}, function (frame) {
@@ -51,7 +51,7 @@ function connectCompetition() {
         }
     };
     userHandlers['SUBMIT'] = function (msg) {
-        if( !msg.success && msg.remainingSubmits > 0) {
+        if (!msg.success && msg.remainingSubmits > 0) {
             enable();
         } else {
             disable();
@@ -66,12 +66,12 @@ function connectCompetition() {
             clock.sync(msg.remainingTime, msg.totalTime);
         }
     };
-    handlers['START_ASSIGNMENT'] = function(msg) {
+    handlers['START_ASSIGNMENT'] = function (msg) {
         window.setTimeout(function () {
             window.location.reload()
         }, 1000);
     };
-    handlers['STOP_ASSIGNMENT'] = function(msg) {
+    handlers['STOP_ASSIGNMENT'] = function (msg) {
         disable();
         if (clock) {
             clock.stop();
@@ -176,7 +176,7 @@ function updateAlertContainerWithScore(message) {
                 .empty()
                 .append(
                     '<div class="alert alert-warning p-4" role="alert"><h4 class="alert-heading">Assignment Partialy Completed</h4>'
-                    + '<p>You have no more submits attempts left. Your final score is '+ message.score +'</p></div>');
+                    + '<p>You have no more submits attempts left. Your final score is ' + message.score + '</p></div>');
         } else {
             if (parseInt(message.remainingSubmits) > 0) {
                 $('#alert-container')

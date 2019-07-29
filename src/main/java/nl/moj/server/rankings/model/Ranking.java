@@ -1,15 +1,15 @@
 package nl.moj.server.rankings.model;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.OrderedAssignment;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -42,8 +42,11 @@ public class Ranking {
     }
 
     public AssignmentScore getAssignmentResult(OrderedAssignment oa) {
-        return assignmentScores.stream().filter(r -> r.getAssignmentUuid().equals(oa.getAssignment().getUuid())).findFirst().orElse(
-                emptyResult(oa.getAssignment()));
+        return assignmentScores.stream()
+                .filter(r -> r.getAssignmentUuid().equals(oa.getAssignment().getUuid()))
+                .findFirst()
+                .orElse(
+                        emptyResult(oa.getAssignment()));
     }
 
     private AssignmentScore emptyResult(Assignment a) {

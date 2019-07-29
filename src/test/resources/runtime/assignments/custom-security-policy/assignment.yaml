@@ -10,8 +10,8 @@ image: assets/images/icon.png
 sponsor-image: assets/images/sponsor.png
 
 labels:
-- label1
-- label2
+  - label1
+  - label2
 
 difficulty: 3
 java-version: 8
@@ -30,13 +30,13 @@ assignment-files:
   sources:
     base: src/main/java
     editable:
-    - Assignment.java
+      - Assignment.java
     readonly:
-    - Model.java
+      - Model.java
   test-sources:
     base: src/test/java
     tests:
-    - TestSecurityPolicy.java
+      - TestSecurityPolicy.java
   solution:
-  - assets/solution/Assignment.java
+    - assets/solution/Assignment.java
   security-policy: assets/security.policy

@@ -30,10 +30,10 @@ assignment-files:
   sources:
     base: src/main/java
     editable:
-    - Assignment1.java
+      - Assignment1.java
   test-sources:
     base: src/test/java
     tests:
-    - Test1.java
+      - Test1.java
   solution:
-  - assets/solution/Assignment1.java
+    - assets/solution/Assignment1.java

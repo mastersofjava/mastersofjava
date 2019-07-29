@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface SubmitAttemptRepository extends JpaRepository<SubmitAttempt,Long> {
+public interface SubmitAttemptRepository extends JpaRepository<SubmitAttempt, Long> {
 }

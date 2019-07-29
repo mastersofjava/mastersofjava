@@ -1,6 +1,6 @@
 # file paths are taken relative to this file.
-name: assignment-1
-display-name: Assignment 1
+name: parallel
+display-name: Parallel
 author:
   name: Mr Crazy
   company: First8
@@ -10,13 +10,14 @@ image: assets/images/icon.png
 sponsor-image: assets/images/sponsor.png
 
 labels:
-- algorithm
+  - algorithm
 
 difficulty: 3
 java-version: 8
 duration: PT15S
 submit-timeout: PT5S
 test-timeout: PT2S
+execution-model: parallel
 
 scoring-rules:
   maximum-resubmits: 2
@@ -25,18 +26,20 @@ scoring-rules:
   test-penalty: 20%
 
 assignment-files:
-  assignment: assets/assignment1.txt
+  assignment: assets/assignment.txt
   sources:
     base: src/main/java
     editable:
-    - Assignment1.java
+      - Assignment.java
   test-sources:
     base: src/test/java
     tests:
-    - TimesOutTest.java
+      - VisibleTest.java
+    hidden-tests:
+      - HiddenTest.java
   test-resources:
     base: src/test/resources
     files:
-    - test-data.txt
+      - test-data.txt
   solution:
-  - assets/solution/Assignment1.java
+    - assets/solution/Assignment.java

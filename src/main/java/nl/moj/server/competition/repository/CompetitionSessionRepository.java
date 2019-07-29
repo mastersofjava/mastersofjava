@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface CompetitionSessionRepository extends JpaRepository<CompetitionSession,Long> {
+public interface CompetitionSessionRepository extends JpaRepository<CompetitionSession, Long> {
 
     List<CompetitionSession> findByCompetition(Competition competition);
 

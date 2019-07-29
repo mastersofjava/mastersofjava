@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 public class TimerSyncMessage {
 
-	private final MessageType messageType = MessageType.TIMER_SYNC;
-	private final long remainingTime;
-	private final long totalTime;
+    private final MessageType messageType = MessageType.TIMER_SYNC;
+    private final long remainingTime;
+    private final long totalTime;
 }

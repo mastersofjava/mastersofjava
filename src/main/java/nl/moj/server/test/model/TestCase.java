@@ -1,10 +1,10 @@
 package nl.moj.server.test.model;
 
-import lombok.*;
-
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
+
+import lombok.*;
 
 
 @Entity
@@ -43,10 +43,10 @@ public class TestCase {
     @Column(name = "success", nullable = false)
     private boolean success;
 
-    @Column(name="timeout", nullable = false)
+    @Column(name = "timeout", nullable = false)
     private boolean timeout;
 
-    @Column(name="test_output", columnDefinition = "TEXT")
+    @Column(name = "test_output", columnDefinition = "TEXT")
     private String testOutput;
 
 }

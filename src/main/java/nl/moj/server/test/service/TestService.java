@@ -1,26 +1,5 @@
 package nl.moj.server.test.service;
 
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.service.TeamService;
-import nl.moj.server.test.model.TestAttempt;
-import nl.moj.server.test.model.TestCase;
-import nl.moj.server.test.repository.TestAttemptRepository;
-import nl.moj.server.test.repository.TestCaseRepository;
-import nl.moj.server.util.LengthLimitedOutputCatcher;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-import org.zeroturnaround.exec.ProcessExecutor;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -35,14 +14,33 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.service.TeamService;
+import nl.moj.server.test.model.TestAttempt;
+import nl.moj.server.test.model.TestCase;
+import nl.moj.server.test.repository.TestAttemptRepository;
+import nl.moj.server.test.repository.TestCaseRepository;
+import nl.moj.server.util.CompletableFutures;
+import nl.moj.server.util.LengthLimitedOutputCatcher;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.zeroturnaround.exec.ProcessExecutor;
+
 @Service
 public class TestService {
     public static final String SECURITY_POLICY_FOR_UNIT_TESTS = "securityPolicyForUnitTests.policy";
     private static final Logger log = LoggerFactory.getLogger(TestService.class);
     private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
             Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    private Executor executor;
 
     private MojServerProperties mojServerProperties;
 
@@ -56,11 +54,10 @@ public class TestService {
 
     private TeamService teamService;
 
-    public TestService(MojServerProperties mojServerProperties, @Qualifier("testing") Executor executor, CompetitionRuntime competition,
+    public TestService(MojServerProperties mojServerProperties, CompetitionRuntime competition,
                        TestCaseRepository testCaseRepository, TestAttemptRepository testAttemptRepository,
                        AssignmentStatusRepository assignmentStatusRepository, TeamService teamService) {
         this.mojServerProperties = mojServerProperties;
-        this.executor = executor;
         this.competition = competition;
         this.testCaseRepository = testCaseRepository;
         this.testAttemptRepository = testAttemptRepository;
@@ -68,15 +65,11 @@ public class TestService {
         this.teamService = teamService;
     }
 
-    public CompletableFuture<TestResult> runTest(Team team, TestAttempt testAttempt, AssignmentFile test) {
+    private CompletableFuture<TestResult> scheduleTest(Team team, TestAttempt testAttempt, AssignmentFile test, Executor executor) {
         return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, competition.getActiveAssignment()), executor);
     }
 
-    private TestResult runTestSync(Team team, TestAttempt testAttempt, AssignmentFile test) {
-        return executeTest(team, testAttempt, test, competition.getActiveAssignment());
-    }
-
-    public TestResults runTestsSync(Team team, List<AssignmentFile> tests) {
+    public CompletableFuture<TestResults> scheduleTests(Team team, List<AssignmentFile> tests, Executor executor) {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
                 activeAssignment.getCompetitionSession(), team);
@@ -86,16 +79,19 @@ public class TestService {
                 .uuid(UUID.randomUUID())
                 .build());
 
-        List<TestResult> trs = new ArrayList<>();
-        tests.forEach(t -> trs.add(runTestSync(team, ta, t)));
+        List<CompletableFuture<TestResult>> testFutures = new ArrayList<>();
+        tests.forEach(t -> testFutures.add(scheduleTest(team, ta, t, executor)));
 
-        ta.setDateTimeEnd(Instant.now());
-        testAttemptRepository.save(ta);
-
-        return TestResults.builder()
-                .testAttemptUuid(ta.getUuid())
-                .results(trs)
-                .build();
+        return CompletableFutures.allOf(testFutures).thenApply(r -> {
+            ta.setDateTimeEnd(Instant.now());
+            TestAttempt updatedTa = testAttemptRepository.save(ta);
+            return TestResults.builder()
+                    .dateTimeStart(updatedTa.getDateTimeStart())
+                    .dateTimeEnd(updatedTa.getDateTimeEnd())
+                    .testAttemptUuid(updatedTa.getUuid())
+                    .results(r)
+                    .build();
+        });
     }
 
     private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, ActiveAssignment activeAssignment) {
@@ -110,10 +106,11 @@ public class TestService {
 
 
         AssignmentDescriptor ad = activeAssignment.getAssignmentDescriptor();
-        Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(),team,activeAssignment.getAssignment());
+        Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(), team, activeAssignment
+                .getAssignment());
 
         Path policy = ad.getAssignmentFiles().getSecurityPolicy();
-        if( policy != null ) {
+        if (policy != null) {
             policy = ad.getDirectory().resolve(policy);
         } else {
             policy = mojServerProperties.getDirectories().getBaseDirectory()
@@ -168,11 +165,7 @@ public class TestService {
             if (jUnitOutput.length() > 0) {
                 stripJUnitPrefix(jUnitOutput.getBuffer());
                 // if we still have some output left and exitvalue = 0
-                if (jUnitOutput.length() > 0 && exitvalue == 0 && !isTimeout) {
-                    success = true;
-                } else {
-                    success = false;
-                }
+                success = jUnitOutput.length() > 0 && exitvalue == 0 && !isTimeout;
                 result = jUnitOutput.toString();
             } else {
                 log.trace(jUnitOutput.toString());
@@ -192,6 +185,8 @@ public class TestService {
 
             return TestResult.builder()
                     .testCaseUuid(testCase.getUuid())
+                    .dateTimeStart(testCase.getDateTimeStart())
+                    .dateTimeEnd(testCase.getDateTimeEnd())
                     .success(testCase.isSuccess())
                     .timeout(testCase.isTimeout())
                     .testName(testCase.getName())

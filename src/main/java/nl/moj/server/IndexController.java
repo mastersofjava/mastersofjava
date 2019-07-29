@@ -3,12 +3,6 @@ package nl.moj.server;
 import java.security.Principal;
 import java.util.List;
 
-import nl.moj.server.teams.service.TeamService;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-
 import lombok.AllArgsConstructor;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.runtime.CompetitionRuntime;
@@ -20,92 +14,99 @@ import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.teams.service.TeamService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 @AllArgsConstructor
 public class IndexController {
 
-	private CompetitionRuntime competition;
-	private TeamRepository teamRepository;
-	private TeamService teamService;
-	private AssignmentStatusRepository assignmentStatusRepository;
+    private CompetitionRuntime competition;
+    private TeamRepository teamRepository;
+    private TeamService teamService;
+    private AssignmentStatusRepository assignmentStatusRepository;
 
-	@GetMapping("/")
-	public String index(Model model, @AuthenticationPrincipal Principal user) {
-		if (competition.getCurrentAssignment() == null) {
-			model.addAttribute("team", user.getName());
-			return "index";
-		}
-		addModel(model, user);
-		return "index";
-	}
+    @GetMapping("/")
+    public String index(Model model, @AuthenticationPrincipal Principal user) {
+        if (competition.getCurrentAssignment() == null) {
+            model.addAttribute("team", user.getName());
+            return "index";
+        }
+        addModel(model, user);
+        return "index";
+    }
 
-	private void addModel(Model model, Principal user) {
-		ActiveAssignment state = competition.getActiveAssignment();
-		Team team = teamRepository.findByName(user.getName());
-		AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),state.getCompetitionSession(),team);
-		
-		//late signup
-		if (as == null) {
-			as = competition.handleLateSignup(team);
-		}
-		
-		AssignmentStatusHelper ash = new AssignmentStatusHelper(as,state.getAssignmentDescriptor());
-		List<AssignmentFile> files = teamService.getTeamAssignmentFiles(competition.getCompetitionSession(),state.getAssignment(),team);
-		
-		// TODO ugly
-		files.sort((arg0, arg1) -> {
-			if (arg0.getFileType().equals(AssignmentFileType.TASK)) {
-				return -10;
-			}
-			return 10;
-		});
+    private void addModel(Model model, Principal user) {
+        ActiveAssignment state = competition.getActiveAssignment();
+        Team team = teamRepository.findByName(user.getName());
+        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(), state
+                .getCompetitionSession(), team);
 
-		model.addAttribute("assignment", state.getAssignmentDescriptor().getDisplayName());
-		model.addAttribute("team", user.getName());
-		model.addAttribute("timeLeft", state.getTimeRemaining());
-		model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
-		model.addAttribute("tests", state.getTestFiles());
-		model.addAttribute("files", files);
-		model.addAttribute("running", state.isRunning());
-		model.addAttribute("finished", ash.isCompleted());
-		model.addAttribute("submittime", ash.getSubmitTime());
-		model.addAttribute("finalscore", ash.getScore());
-		model.addAttribute("maxSubmits", ash.getMaximumSubmits() );
-		model.addAttribute("submits", ash.getRemainingSubmits());
-	}
+        //late signup
+        if (as == null) {
+            as = competition.handleLateSignup(team);
+        }
 
-	private class AssignmentStatusHelper {
+        AssignmentStatusHelper ash = new AssignmentStatusHelper(as, state.getAssignmentDescriptor());
+        List<AssignmentFile> files = teamService.getTeamAssignmentFiles(competition.getCompetitionSession(), state.getAssignment(), team);
 
-		private AssignmentStatus assignmentStatus;
-		private AssignmentDescriptor assignmentDescriptor;
+        // TODO ugly
+        files.sort((arg0, arg1) -> {
+            if (arg0.getFileType().equals(AssignmentFileType.TASK)) {
+                return -10;
+            }
+            return 10;
+        });
 
-		public AssignmentStatusHelper(AssignmentStatus assignmentStatus, AssignmentDescriptor assignmentDescriptor) {
-			this.assignmentStatus = assignmentStatus;
-			this.assignmentDescriptor = assignmentDescriptor;
-		}
+        model.addAttribute("assignment", state.getAssignmentDescriptor().getDisplayName());
+        model.addAttribute("team", user.getName());
+        model.addAttribute("timeLeft", state.getTimeRemaining());
+        model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
+        model.addAttribute("tests", state.getTestFiles());
+        model.addAttribute("files", files);
+        model.addAttribute("running", state.isRunning());
+        model.addAttribute("finished", ash.isCompleted());
+        model.addAttribute("submittime", ash.getSubmitTime());
+        model.addAttribute("finalscore", ash.getScore());
+        model.addAttribute("maxSubmits", ash.getMaximumSubmits());
+        model.addAttribute("submits", ash.getRemainingSubmits());
+    }
 
-		public boolean isCompleted() {
-			return assignmentStatus.getSubmitAttempts()
-					.stream()
-					.anyMatch(SubmitAttempt::isSuccess) ||
-					assignmentStatus.getSubmitAttempts().size() >= (assignmentDescriptor.getScoringRules().getMaximumResubmits() + 1);
-		}
+    private class AssignmentStatusHelper {
 
-		public long getSubmitTime() {
-			return assignmentStatus.getAssignmentResult().getInitialScore();
-		}
+        private AssignmentStatus assignmentStatus;
+        private AssignmentDescriptor assignmentDescriptor;
 
-		public int getMaximumSubmits() {
-			return assignmentDescriptor.getScoringRules().getMaximumResubmits() + 1;
-		}
+        public AssignmentStatusHelper(AssignmentStatus assignmentStatus, AssignmentDescriptor assignmentDescriptor) {
+            this.assignmentStatus = assignmentStatus;
+            this.assignmentDescriptor = assignmentDescriptor;
+        }
 
-		public int getRemainingSubmits() {
-			return getMaximumSubmits() - assignmentStatus.getSubmitAttempts().size();
-		}
+        public boolean isCompleted() {
+            return assignmentStatus.getSubmitAttempts()
+                    .stream()
+                    .anyMatch(SubmitAttempt::isSuccess) ||
+                    assignmentStatus.getSubmitAttempts().size() >= (assignmentDescriptor.getScoringRules()
+                            .getMaximumResubmits() + 1);
+        }
 
-		public long getScore() {
-			return assignmentStatus.getAssignmentResult().getFinalScore();
-		}
-	}
+        public long getSubmitTime() {
+            return assignmentStatus.getAssignmentResult().getInitialScore();
+        }
+
+        public int getMaximumSubmits() {
+            return assignmentDescriptor.getScoringRules().getMaximumResubmits() + 1;
+        }
+
+        public int getRemainingSubmits() {
+            return getMaximumSubmits() - assignmentStatus.getSubmitAttempts().size();
+        }
+
+        public long getScore() {
+            return assignmentStatus.getAssignmentResult().getFinalScore();
+        }
+    }
 }
