@@ -1,5 +1,6 @@
 package nl.moj.server.assignment;
 
+import java.io.File;
 import java.util.List;
 
 import nl.moj.server.DbUtil;
@@ -72,7 +73,7 @@ public class AssignmentServiceTest {
         assignments.forEach(a -> {
             assertThat(a.getId()).isNotNull();
             assertThat(a.getName()).isNotBlank();
-            assertThat(a.getAssignmentDescriptor()).contains("/assignments/");
+            assertThat(a.getAssignmentDescriptor()).contains(File.separator + "assignments" + File.separator);
         });
 
 
