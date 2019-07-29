@@ -39,7 +39,7 @@ public class AssignmentServiceTest {
         assignments.forEach(a -> {
             assertThat(a.getId()).isNotNull();
             assertThat(a.getName()).isNotBlank();
-            assertThat(a.getAssignmentDescriptor()).contains("/assignments/");
+            assertThat(a.getAssignmentDescriptor()).contains(File.separator + "assignments" + File.separator);
         });
     }
 
@@ -51,7 +51,7 @@ public class AssignmentServiceTest {
         assignments.forEach(a -> {
             assertThat(a.getId()).isNotNull();
             assertThat(a.getName()).isNotBlank();
-            assertThat(a.getAssignmentDescriptor()).contains("/assignments/");
+            assertThat(a.getAssignmentDescriptor()).contains(File.separator + "assignments" + File.separator);
         });
 
         List<Assignment> updatedAssignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments-updated"));
@@ -60,7 +60,7 @@ public class AssignmentServiceTest {
         updatedAssignments.forEach(a -> {
             assertThat(a.getId()).isNotNull();
             assertThat(a.getName()).isNotBlank();
-            assertThat(a.getAssignmentDescriptor()).contains("/assignments-updated/");
+            assertThat(a.getAssignmentDescriptor()).contains(File.separator+ "assignments-updated" + File.separator);
 
         });
     }
