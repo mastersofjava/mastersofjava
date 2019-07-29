@@ -67,7 +67,7 @@ public abstract class BaseRuntimeTest {
     private Team team;
 
     @Before
-    public void init() throws IOException {
+    public void init() throws Exception {
         try {
             bootstrapService.bootstrap("admin", "admin");
             dbUtil.cleanup();
@@ -94,7 +94,7 @@ public abstract class BaseRuntimeTest {
         return teamRepository.save(team);
     }
 
-    private Competition createCompetition() {
+    private Competition createCompetition() throws Exception {
         team = addTeam();
 
         List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/runtime/assignments"));

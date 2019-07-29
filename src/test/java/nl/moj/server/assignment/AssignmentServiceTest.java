@@ -32,7 +32,7 @@ public class AssignmentServiceTest {
     }
 
     @Test
-    public void shouldDiscoverAssignments() {
+    public void shouldDiscoverAssignments() throws Exception {
         List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 
         assignments.forEach(a -> {
@@ -43,7 +43,7 @@ public class AssignmentServiceTest {
     }
 
     @Test
-    public void shouldUpdateAssignments() {
+    public void shouldUpdateAssignments() throws Exception {
         List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 
         assertThat(assignments.size()).isEqualTo(2);
@@ -65,7 +65,7 @@ public class AssignmentServiceTest {
     }
 
     @Test
-    public void shouldGetAssignmentDescriptor() {
+    public void shouldGetAssignmentDescriptor() throws Exception {
         List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
 
         assertThat(assignments.size()).isEqualTo(2);
