@@ -34,7 +34,7 @@ public class Languages {
                 .filter(this::isAvailable)
                 .filter(jv -> jv.getVersion() >= version)
                 .findFirst()
-                .orElseGet(() -> javaHomeFallback(version));
+                .orElseGet(() -> tryJavaHomeFallback(version));
     }
 
     private boolean isAvailable(JavaVersion javaVersion) {
@@ -43,7 +43,7 @@ public class Languages {
                 javaVersion.getVersion().equals(JavaVersionUtil.getRuntimeMajorVersion(javaVersion));
     }
 
-    private JavaVersion javaHomeFallback(Integer version) {
+    private JavaVersion tryJavaHomeFallback(Integer version) {
         // we should still check if the specified version is available
         // on the fallback as source and target version
         String javaHome = System.getenv("JAVA_HOME");
@@ -54,10 +54,10 @@ public class Languages {
             v.setName("fallback");
             v.setVersion(JavaVersionUtil.getRuntimeMajorVersion(v));
 
-            if (version != null && version <= v.getVersion()) {
-                log.debug("Using JAVA_HOME since it if an appriopriate version");
+            if (version != null && version >= 1 && version <= v.getVersion()) {
+                log.debug("Using JAVA_HOME since it is an appropriate version");
             } else {
-                log.warn("Unable to find runtime for Java version " + version + ", using the fallback version as found in JAVA_HOME which may be an incorrect version");
+                throw new IllegalArgumentException("No java runtime available for version " + version);
             }
             return v;
         } else {
