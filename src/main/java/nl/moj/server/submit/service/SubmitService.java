@@ -60,6 +60,10 @@ public class SubmitService {
     }
 
     public CompletableFuture<SubmitResult> test(Team team, SourceMessage message) {
+        return test(team,message,false);
+    }
+
+    private CompletableFuture<SubmitResult> test(Team team, SourceMessage message, boolean submit) {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
         //compile
         return compile(team, message)
@@ -70,6 +74,10 @@ public class SubmitService {
                         var testCases = activeAssignment.getTestFiles().stream()
                                 .filter(t -> message.getTests().contains(t.getUuid().toString()))
                                 .collect(Collectors.toList());
+
+                        if( submit ) {
+                            testCases = activeAssignment.getSubmitTestFiles();
+                        }
 
                         // run selected testcases
                         return testInternal(team, testCases)
@@ -107,7 +115,7 @@ public class SubmitService {
                     .build();
             as.getSubmitAttempts().add(sa);
 
-            return test(team, message).thenApply(sr -> {
+            return test(team, message, true).thenApply(sr -> {
                 sa.setCompileAttempt(compileAttemptRepository.findByUuid(sr.getCompileResult()
                         .getCompileAttemptUuid()));
                 sa.setTestAttempt(testAttemptRepository.findByUuid(sr.getTestResults().getTestAttemptUuid()));
