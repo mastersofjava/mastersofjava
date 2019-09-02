@@ -22,11 +22,11 @@ public class BootstrapController {
     private final BootstrapService bootstrapService;
 
     @GetMapping("/bootstrap")
-    public String bootstrap() {
+    public String bootstrap(HttpServletRequest request) {
         if (bootstrapService.isBootstrapNeeded()) {
             return "bootstrap";
         }
-        return "redirect:/";
+        return determineRedirect(request);
     }
 
     @PostMapping("/bootstrap")
@@ -43,12 +43,12 @@ public class BootstrapController {
                 return redirectFailure(redirectAttributes, "Passwords do not match.");
             }
         }
-        return determineRedirect(request);
+        return "redirect:/control";
     }
 
     private String determineRedirect(HttpServletRequest request) {
         String redirectUri = request.getHeader(HttpHeaders.REFERER);
-        if (StringUtils.isBlank(redirectUri)) {
+        if (StringUtils.isBlank(redirectUri) || redirectUri.endsWith("/bootstrap")) {
             redirectUri = "/";
         }
         return "redirect:" + redirectUri;
