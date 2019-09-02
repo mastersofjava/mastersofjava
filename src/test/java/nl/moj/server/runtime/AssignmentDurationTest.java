@@ -28,7 +28,11 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 
     @Test
     public void shouldRunForSpecifiedDuration() throws Exception {
-        OrderedAssignment oa = getCompetition().getAssignmentsInOrder().get(0);
+        OrderedAssignment oa = getCompetition().getAssignmentsInOrder().stream()
+                .filter( a -> a.getAssignment().getName().equals("parallel")).findFirst().orElse(null);
+
+        Assertions.assertThat(oa).isNotNull();
+
         AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(oa.getAssignment());
 
         Future<?> stopHandle = assignmentRuntime.start(oa, competitionRuntime.getCompetitionSession());
