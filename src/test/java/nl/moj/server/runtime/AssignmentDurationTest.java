@@ -27,7 +27,7 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
     private CompetitionRuntime competitionRuntime;
 
     @Test
-    public void shouldRunForSpecifiedDuration() {
+    public void shouldRunForSpecifiedDuration() throws Exception {
         OrderedAssignment oa = getCompetition().getAssignmentsInOrder().get(0);
         AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(oa.getAssignment());
 

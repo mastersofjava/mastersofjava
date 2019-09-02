@@ -3,7 +3,6 @@ package nl.moj.server.runtime;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -21,6 +20,7 @@ import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
@@ -33,7 +33,6 @@ import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.PathUtil;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -55,6 +54,7 @@ public class AssignmentRuntime {
     public static final String CRITICAL_SOUND = "CRITICAL_SOUND";
     public static final String TIMESYNC = "TIMESYNC";
 
+    private final MojServerProperties mojServerProperties;
     private final AssignmentService assignmentService;
     private final MessageService messageService;
     private final TeamService teamService;
@@ -92,12 +92,15 @@ public class AssignmentRuntime {
      * @return the {@link Future}
      */
     @Transactional
-    public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) {
+    public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) throws AssignmentStartException {
         clearHandlers();
         this.competitionSession = competitionSession;
         this.orderedAssignment = orderedAssignment;
         this.assignment = orderedAssignment.getAssignment();
         this.assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
+
+        // verify assignment
+        verifyAssignment(this.assignmentDescriptor);
 
         // init assignment sources;
         initOriginalAssignmentFiles();
@@ -174,11 +177,13 @@ public class AssignmentRuntime {
                 .build();
     }
 
-    private byte[] readPathContent(Path p) {
+    private void verifyAssignment(AssignmentDescriptor ad) throws AssignmentStartException {
+        // verify we have a correct runtime available.
         try {
-            return IOUtils.toByteArray(Files.newInputStream(p, StandardOpenOption.READ));
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to read assignment file " + p, e);
+            mojServerProperties.getLanguages().getJavaVersion(ad.getJavaVersion());
+        } catch (IllegalArgumentException iae) {
+            throw new AssignmentStartException("Cannot start assignment " + ad.getName() + ", requested Java runtime version " + ad
+                    .getJavaVersion() + " not available.", iae);
         }
     }
 

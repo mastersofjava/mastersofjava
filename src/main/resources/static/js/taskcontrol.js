@@ -18,8 +18,12 @@ function connect() {
     stompClient.connect({}, function (frame) {
         console.log('Connected to control');
         console.log('Subscribe to /user/queue/controlfeedback');
-        stompClient.subscribe('/user/queue/controlfeedback', function (messageOutput) {
-            showOutput(messageOutput.body);
+        stompClient.subscribe('/user/queue/controlfeedback', function (msg) {
+            showOutput(msg.body);
+        });
+        stompClient.subscribe('/queue/controlfeedback', function(msg){
+            let m = JSON.parse(msg.body);
+            showAlert('['+m.assignment +'] ' + m.cause);
         });
         console.log('Subscribe to /control/queue/time');
         stompClient.subscribe('/queue/time', function (taskTimeMessage) {
@@ -69,16 +73,25 @@ function clearAssignment() {
 }
 
 function scanAssignments() {
-    var repo = $("input[name='repo']:checked").val();
     stompClient.send("/app/control/scanAssignments", {}, {});
 }
 
 function showOutput(messageOutput) {
-    var response = document.getElementById('response');
-    var p = document.createElement('p');
+    let response = $('#response');
+    response.empty();
+    let p = document.createElement('p');
     p.style.wordWrap = 'break-word';
     p.appendChild(document.createTextNode(messageOutput));
-    response.appendChild(p);
+    response.append(p);
+}
+
+function showAlert(txt) {
+    let alert = $('#alert');
+    alert.empty();
+    alert.append('<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+        '<span>'+txt+'</span>' +
+        '<button type="button" class="close" data-dismiss="alert" aria-label="Close"> <span aria-hidden="true">&times;</span></button>' +
+        '</div>');
 }
 
 function initializeAssignmentClock() {

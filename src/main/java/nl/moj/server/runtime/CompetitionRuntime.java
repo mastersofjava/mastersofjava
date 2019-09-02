@@ -12,6 +12,7 @@ import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
+import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.*;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.teams.model.Team;
@@ -32,6 +33,8 @@ public class CompetitionRuntime {
     private final CompetitionSessionRepository competitionSessionRepository;
 
     private final AssignmentResultRepository assignmentResultRepository;
+
+    private final MessageService messageService;
 
     @Getter
     private Competition competition;
@@ -100,9 +103,14 @@ public class CompetitionRuntime {
                 .findFirst();
 
         if (assignment.isPresent()) {
-            assignmentRuntime.start(assignment.get(), competitionSession);
-            if (!completedAssignments.contains(assignment.get())) {
-                completedAssignments.add(assignment.get());
+            try {
+                assignmentRuntime.start(assignment.get(), competitionSession);
+                if (!completedAssignments.contains(assignment.get())) {
+                    completedAssignments.add(assignment.get());
+                }
+            } catch( AssignmentStartException ase ) {
+                messageService.sendStartFail(name, ase.getMessage());
+                log.error("Cannot start assignment '{}'.", name, ase);
             }
         } else {
             log.error("Cannot start assignment '{}' since there is no such assignment with that name", name);

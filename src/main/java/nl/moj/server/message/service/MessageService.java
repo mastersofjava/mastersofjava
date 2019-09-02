@@ -16,6 +16,7 @@ public class MessageService {
 
     private static final String DEST_COMPETITION = "/queue/competition";
     private static final String DEST_TESTRESULTS = "/queue/feedbackpage";
+    private static final String DEST_CONTROL_FEEDBACK = "/queue/controlfeedback";
     private static final String DEST_START = "/queue/start";
     private static final String DEST_STOP = "/queue/stop";
     private static final String DEST_RANKINGS = "/queue/rankings";
@@ -94,5 +95,11 @@ public class MessageService {
         template.convertAndSend(DEST_TESTRESULTS, TeamStartedTestingMessage.builder()
                 .uuid(team.getUuid())
                 .build());
+    }
+
+    public void sendStartFail(String name, String cause) {
+        log.info("Sending start assignment '{}' failed with cause '{}'", name, cause);
+        template.convertAndSend(DEST_CONTROL_FEEDBACK, StartAssignmentFailedMessage.builder()
+                .assignment(name).cause(cause).build());
     }
 }
