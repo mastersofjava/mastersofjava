@@ -49,6 +49,11 @@ svg {
     color: white;
 }
 
+#tabs .nav-link.partial-success {
+    background-color: #dca118;
+    color: white;
+}
+
 .output-content {
     overflow-y: scroll;
 }

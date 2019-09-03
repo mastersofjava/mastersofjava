@@ -1,5 +1,7 @@
 package nl.moj.server.message.service;
 
+import java.util.UUID;
+
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.TaskControlController.TaskMessage;
 import nl.moj.server.compiler.service.CompileResult;
@@ -101,5 +103,36 @@ public class MessageService {
         log.info("Sending start assignment '{}' failed with cause '{}'", name, cause);
         template.convertAndSend(DEST_CONTROL_FEEDBACK, StartAssignmentFailedMessage.builder()
                 .assignment(name).cause(cause).build());
+    }
+
+    public void sendComplilingStarted(Team team) {
+        log.info("Sending compiling started to team uuid '{}", team.getUuid() );
+        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, CompilingStarted.builder().team(team.getUuid()).build());
+    }
+
+    public void sendComplilingEnded(Team team, boolean success) {
+        log.info("Sending compiling ended to team uuid '{}", team.getUuid() );
+        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, CompilingEnded.builder().team(team.getUuid()).success(success).build());
+    }
+
+    public void sendTestingStarted(Team team) {
+        log.info("Sending testing started to team uuid '{}", team.getUuid() );
+        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, TestingStarted.builder().team(team.getUuid()).build());
+    }
+
+    public void sendTestingEnded(Team team, boolean success) {
+        log.info("Sending testing ended to team uuid '{}", team.getUuid() );
+        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, TestingEnded.builder().team(team.getUuid()).success(success).build());
+    }
+
+    public void sendSubmitStarted(Team team) {
+        log.info("Sending submit started to team uuid '{}", team.getUuid() );
+        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, SubmitStarted.builder().team(team.getUuid()).build());
+    }
+
+    public void sendSubmitEnded(Team team, boolean success, Long score) {
+        log.info("Sending submit ended to team uuid '{}", team.getUuid() );
+        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, SubmitEnded.builder().team(team.getUuid()).success(success)
+                .score(score).build());
     }
 }

@@ -1,6 +1,8 @@
 var stomp = null;
 var editors = [];
 var clock = null;
+var activeAction = null;
+var failed = false;
 
 $(document).ready(function () {
     connectCompetition();
@@ -23,6 +25,7 @@ function connectCompetition() {
         stomp.subscribe('/user/queue/competition',
             function (data) {
                 var msg = JSON.parse(data.body);
+                console.log('received', msg);
                 if (userHandlers.hasOwnProperty(msg.messageType)) {
                     userHandlers[msg.messageType](msg);
                 }
@@ -40,15 +43,22 @@ function connectCompetition() {
     userHandlers['COMPILE'] = function (msg) {
         enable();
         appendOutput(msg.message);
-        updateOutputHeaderColor(msg.success);
-
+    };
+    userHandlers['COMPILING_STARTED'] = function (msg) {
+        updateOutputHeaderColorActionStarted();
+    };
+    userHandlers['COMPILING_ENDED'] = function (msg) {
+        updateOutputHeaderColorActionEnded(msg.success);
     };
     userHandlers['TEST'] = function (msg) {
         enable();
         appendOutput(msg.test + ':\r\n' + msg.message);
-        if (!msg.success) {
-            updateOutputHeaderColor(msg.success);
-        }
+    };
+    userHandlers['TESTING_STARTED'] = function (msg) {
+        updateOutputHeaderColorActionStarted();
+    };
+    userHandlers['TESTING_ENDED'] = function (msg) {
+        updateOutputHeaderColorActionEnded(msg.success);
     };
     userHandlers['SUBMIT'] = function (msg) {
         if (!msg.success && msg.remainingSubmits > 0) {
@@ -143,21 +153,26 @@ function initializeAssignmentClock() {
 }
 
 function resetOutput() {
-    $('#output').removeClass('failure success');
+    $('#output').removeClass('failure success partial-success');
     $('#output-content').empty();
 }
 
 function resetTabColor() {
-    $('#output').removeClass('failure success');
+    $('#output').removeClass('failure success partial-success');
 }
 
-function updateOutputHeaderColor(success) {
+function updateOutputHeaderColorActionStarted() {
     var $output = $('#output');
-    if (success && !$output.hasClass('failure')) {
-        $output.removeClass('failure');
+    $output.removeClass('failure success');
+    $output.addClass('action-started');
+}
+
+function updateOutputHeaderColorActionEnded(success) {
+    var $output = $('#output');
+    $output.removeClass('failure success action-started');
+    if( success ) {
         $output.addClass('success');
-    } else if (!success && !$output.hasClass('failure')) {
-        $output.removeClass('success');
+    } else {
         $output.addClass('failure');
     }
 }
@@ -218,6 +233,7 @@ function compile() {
     resetOutput();
     appendOutput("Compiling ....");
     showOutput();
+    activeAction = "COMPILE";
     stomp.send("/app/submit/compile", {}, JSON.stringify({
         'sources': getContent()
     }));
@@ -231,6 +247,7 @@ function test() {
         return $(this).val();
     }).get();
     showOutput();
+    activeAction = "TEST";
     stomp.send("/app/submit/test", {}, JSON.stringify({
         'sources': getContent(),
         'tests': tests
@@ -279,6 +296,7 @@ function submit() {
     disable();
     resetOutput();
     showOutput();
+    activeAction = "SUBMIT";
     stomp.send("/app/submit/submit", {}, JSON.stringify({
         'sources': getContent()
     }));
