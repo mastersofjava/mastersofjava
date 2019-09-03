@@ -175,14 +175,14 @@ function updateAlertContainerWithScore(message) {
             $('#alert-container')
                 .empty()
                 .append(
-                    '<div class="alert alert-warning p-4" role="alert"><h4 class="alert-heading">Assignment Partialy Completed</h4>'
+                    '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Not OK!</h4>'
                     + '<p>You have no more submits attempts left. Your final score is ' + message.score + '</p></div>');
         } else {
             if (parseInt(message.remainingSubmits) > 0) {
                 $('#alert-container')
                     .empty()
                     .append(
-                        '<div class="alert alert-warning p-4" role="alert"><h4 class="alert-heading">Assignment Partially Completed</h4>'
+                        '<div class="alert alert-warning p-4" role="alert"><h4 class="alert-heading">Assignment Not OK!</h4>'
                         + '<p>No worries, you still have ' + message.remainingSubmits + ' submits attempts left.</p></div>');
             }
         }
