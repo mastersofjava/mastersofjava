@@ -42,20 +42,23 @@ public class SubmitService {
     private final SubmitAttemptRepository submitAttemptRepository;
 
     public CompletableFuture<SubmitResult> compile(Team team, SourceMessage message) {
-        return compileInternal(team, message).thenApply(r ->
-                SubmitResult.builder()
-                        .team(team.getUuid())
-                        .dateTimeStart(r.getDateTimeStart())
-                        .success(r.isSuccess())
-                        .compileResult(r)
-                        .build());
+        messageService.sendComplilingStarted(team);
+        return compileInternal(team, message).thenApply(r -> {
+                messageService.sendComplilingEnded(team, r.isSuccess());
+                return r;
+        });
     }
 
-    private CompletableFuture<CompileResult> compileInternal(Team team, SourceMessage message) {
+    private CompletableFuture<SubmitResult> compileInternal(Team team, SourceMessage message) {
         return executionService.compile(team, message)
                 .thenApply(r -> {
                     messageService.sendCompileFeedback(team, r);
-                    return r;
+                    return SubmitResult.builder()
+                            .team(team.getUuid())
+                            .dateTimeStart(r.getDateTimeStart())
+                            .success(r.isSuccess())
+                            .compileResult(r)
+                            .build();
                 });
     }
 
@@ -63,13 +66,20 @@ public class SubmitService {
         return test(team,message,false);
     }
 
-    private CompletableFuture<SubmitResult> test(Team team, SourceMessage message, boolean submit) {
+    public CompletableFuture<SubmitResult> test(Team team, SourceMessage message, boolean submit ) {
+        messageService.sendTestingStarted(team);
+        return testInternal(team,message,submit).thenApply( r -> {
+           messageService.sendTestingEnded(team, r.isSuccess());
+           return r;
+        });
+    }
+
+    private CompletableFuture<SubmitResult> testInternal(Team team, SourceMessage message, boolean submit) {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
         //compile
-        return compile(team, message)
+        return compileInternal(team, message)
                 .thenCompose(sr -> {
                     if (sr.isSuccess()) {
-
                         // filter selected test cases
                         var testCases = activeAssignment.getTestFiles().stream()
                                 .filter(t -> message.getTests().contains(t.getUuid().toString()))
@@ -80,25 +90,19 @@ public class SubmitService {
                         }
 
                         // run selected testcases
-                        return testInternal(team, testCases)
-                                .thenApply(tr -> sr.toBuilder()
-                                        .dateTimeEnd(tr.getDateTimeEnd())
-                                        .success(tr.isSuccess())
-                                        .testResults(tr)
-                                        .build());
+                        return executionService.test(team, testCases).thenApply(r -> {
+                            r.getResults().forEach(tr -> messageService.sendTestFeedback(team, tr));
+                            return sr.toBuilder()
+                                    .dateTimeEnd(r.getDateTimeEnd())
+                                    .success(r.isSuccess())
+                                    .testResults(r)
+                                    .build();
+                        });
                     } else {
                         return CompletableFuture.completedFuture(sr);
                     }
                 });
     }
-
-    private CompletableFuture<TestResults> testInternal(Team team, List<AssignmentFile> tests) {
-        return executionService.test(team, tests).thenApply(r -> {
-            r.getResults().forEach(tr -> messageService.sendTestFeedback(team, tr));
-            return r;
-        });
-    }
-
 
     @Transactional
     public CompletableFuture<SubmitResult> submit(Team team, SourceMessage message) {
@@ -107,6 +111,7 @@ public class SubmitService {
                 .getAssignment(), activeAssignment.getCompetitionSession(), team);
 
         if (isSubmitAllowedForTeam(as)) {
+            messageService.sendSubmitStarted(team);
             SubmitAttempt sa = SubmitAttempt.builder()
                     .assignmentStatus(as)
                     .dateTimeStart(Instant.now())
@@ -115,7 +120,7 @@ public class SubmitService {
                     .build();
             as.getSubmitAttempts().add(sa);
 
-            return test(team, message, true).thenApply(sr -> {
+            return testInternal(team, message, true).thenApply(sr -> {
                 sa.setCompileAttempt(compileAttemptRepository.findByUuid(sr.getCompileResult()
                         .getCompileAttemptUuid()));
                 sa.setTestAttempt(testAttemptRepository.findByUuid(sr.getTestResults().getTestAttemptUuid()));
@@ -137,6 +142,7 @@ public class SubmitService {
                 return sr.toBuilder().remainingSubmits(remainingSubmits).build();
             }).thenApply(sr -> {
                 messageService.sendSubmitFeedback(team, sr);
+                messageService.sendSubmitEnded(team, sr.isSuccess(), sr.getScore());
                 return sr;
             });
         }
