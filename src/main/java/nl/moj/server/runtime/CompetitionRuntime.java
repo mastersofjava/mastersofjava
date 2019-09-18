@@ -146,7 +146,7 @@ public class CompetitionRuntime {
 
     public List<AssignmentFile> getTeamSolutionFiles(UUID assignment, Team team) {
         return getTeamAssignmentFiles(assignment, team).stream()
-                .filter(f -> f.getFileType() == AssignmentFileType.SOLUTION).collect(Collectors.toList());
+                .filter(f -> f.getFileType() == AssignmentFileType.EDIT).collect(Collectors.toList());
     }
 
     private List<AssignmentFile> getTeamAssignmentFiles(UUID assignment, Team team) {
