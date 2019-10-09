@@ -39,7 +39,7 @@ public class LoginController {
 
     private final MojServerProperties mojServerProperties;
 
-    private Pattern pattern = Pattern.compile("^[A-Za-z0-9`!@#$%^&*()-]{1,50}$");
+    private Pattern pattern = Pattern.compile("^[A-Za-z0-9`!@#$%^&()-]{1,50}$");
 
     @GetMapping("/login")
     public String loginForm(Model model) {
