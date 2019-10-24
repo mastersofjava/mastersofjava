@@ -39,8 +39,6 @@ public class LoginController {
 
     private final MojServerProperties mojServerProperties;
 
-    private Pattern pattern = Pattern.compile("^[A-Za-z0-9`!@#$%^&()-]{1,50}$");
-
     @GetMapping("/login")
     public String loginForm(Model model) {
         return "login";
@@ -52,7 +50,7 @@ public class LoginController {
             model.addAttribute("errors", "Not all fields are filled in");
             return "register";
         }
-        if (!pattern.matcher(form.getName()).matches() || form.getName().length() > 50) {
+        if (form.getName().length() > 50) {
             model.addAttribute("errors", "To many characters (at least 1, max 50) or unknown character used in team name");
             return "register";
         }
