@@ -50,8 +50,8 @@ public class LoginController {
             model.addAttribute("errors", "Not all fields are filled in");
             return "register";
         }
-        if (form.getName().length() > 50) {
-            model.addAttribute("errors", "To many characters (at least 1, max 50) or unknown character used in team name");
+        if (form.getName().length() > 50 || form.getCompany().length() > 50) {
+            model.addAttribute("errors", "To many characters (at least 1, max 50) in team or company name");
             return "register";
         }
         if (teamRepository.findByName(form.getName()) != null) {
