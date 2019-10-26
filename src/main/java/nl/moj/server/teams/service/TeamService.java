@@ -32,7 +32,7 @@ public class TeamService {
                 .resolve(mojServerProperties.getDirectories().getSessionDirectory())
                 .resolve(session.getUuid().toString())
                 .resolve(mojServerProperties.getDirectories().getTeamDirectory())
-                .resolve(team.getName());
+                .resolve(team.getUuid().toString());
     }
 
     public Path getTeamAssignmentDirectory(CompetitionSession session, Team team, Assignment assignment) {
