@@ -182,16 +182,16 @@ public class CompileService {
                             .success(true)
                             .build());
                 } else {
-                    stripTeamPathInfo(compileOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir.toFile(), "sources", assignment));
+                    String output = stripTeamPathInfo(compileOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir.toFile(), "sources"));
                     compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
                             .dateTimeEnd(Instant.now())
                             .success(false)
-                            .compilerOutput(compileOutput.toString())
+                            .compilerOutput(output)
                             .build());
                 }
             } else {
                 log.debug(compileOutput.toString());
-                stripTeamPathInfo(compileErrorOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir.toFile(), "sources", assignment));
+                String output = stripTeamPathInfo(compileErrorOutput.getBuffer(), FileUtils.getFile(teamAssignmentDir.toFile(), "sources"));
                 if ((exitvalue == 0) && !timedOut) {
                     compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
                             .dateTimeEnd(Instant.now())
@@ -202,7 +202,7 @@ public class CompileService {
                     compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
                             .dateTimeEnd(Instant.now())
                             .success(false)
-                            .compilerOutput(compileErrorOutput.toString())
+                            .compilerOutput(output)
                             .build());
                 }
             }
@@ -228,20 +228,11 @@ public class CompileService {
                 .orElseThrow(() -> new RuntimeException("Could not find original assignment file for UUID " + uuid));
     }
 
-    private void stripTeamPathInfo(StringBuilder result, File prefix) {
-        //Replacing a single backslash in file path with double to avoid initiating escape sequence.
-        final Matcher matcher = Pattern.compile("^(" + prefix.getAbsolutePath()
-                .replace("\\", "\\\\") + ")/?", Pattern.MULTILINE).matcher(result);
-        if (matcher.find()) {
-            for (int i = 0; i < matcher.groupCount(); i++) {
-                log.debug("group {} = {}", i, matcher.group(i));
-            }
-            log.debug("stripped '{}', from {}", matcher.group(), result.toString());
-            result.delete(0, matcher.end());
-            if (result.length() > 0 && result.charAt(0) == '\n') {
-                result.deleteCharAt(0);
-            }
+    private String stripTeamPathInfo(StringBuilder result, File prefix) {
+        if( result != null ) {
+            return result.toString().replace(prefix.getAbsolutePath() + File.separator ,"");
         }
+        return "";
     }
 
     private List<AssignmentFile> getReadonlyAssignmentFilesToCompile(ActiveAssignment state) {
