@@ -161,7 +161,7 @@ public class CompileService {
                         .redirectError(compileErrorOutput).execute().getExitValue();
             } catch (TimeoutException e) {
                 // process is automatically destroyed
-                log.debug("Compile timed out and got killed", team.getName());
+                log.debug("Compile timed out and got killed for team {}.", team.getName());
                 timedOut = true;
             } catch (SecurityException se) {
                 log.error(se.getMessage(), se);
@@ -195,6 +195,7 @@ public class CompileService {
                 if ((exitvalue == 0) && !timedOut) {
                     compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
                             .dateTimeEnd(Instant.now())
+                            .compilerOutput("OK")
                             .success(true)
                             .build());
                 } else {
