@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -46,6 +48,10 @@ public class LoginController {
     public String registerSubmit(Model model, @ModelAttribute("form") SignupForm form) {
         if (StringUtils.isBlank(form.getName()) || StringUtils.isBlank(form.getPassword()) || StringUtils.isBlank(form.getPasswordCheck())) {
             model.addAttribute("errors", "Not all fields are filled in");
+            return "register";
+        }
+        if (form.getName().length() > 50 || form.getCompany().length() > 50) {
+            model.addAttribute("errors", "To many characters (at least 1, max 50) in team or company name");
             return "register";
         }
         if (teamRepository.findByName(form.getName()) != null) {
