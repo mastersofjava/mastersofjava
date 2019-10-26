@@ -31,7 +31,11 @@ public class JavaVersionUtil {
                 }
             }
         } catch (Exception e) {
-            log.warn("Unable to retrieve JVM version, assuming 'null'", e);
+            if( log.isTraceEnabled()) {
+                log.trace("Unable to retrieve JVM version, assuming 'null'",e);
+            } else {
+                log.warn("Unable to retrieve JVM version, assuming 'null'");
+            }
         }
         return null;
     }
@@ -46,7 +50,11 @@ public class JavaVersionUtil {
                 return e;
             }
         } catch (Exception e) {
-            log.warn("Unable to retrieve JVM version, could not run {}, assuming 'null'", javaVersion.getRuntime(), e);
+            if( log.isTraceEnabled()) {
+                log.trace("Unable to retrieve JVM version, could not run configured {}, assuming 'null'", javaVersion.getRuntime(), e);
+            } else {
+                log.warn("Unable to retrieve JVM version, could not run configured {}, assuming 'null'", javaVersion.getRuntime());
+            }
         }
         return null;
     }
