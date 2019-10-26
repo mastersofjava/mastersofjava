@@ -2,7 +2,6 @@ package nl.moj.server.submit.service;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -10,12 +9,10 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
-import nl.moj.server.compiler.service.CompileResult;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
 import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.SubmitResult;
@@ -24,7 +21,6 @@ import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.repository.TestAttemptRepository;
-import nl.moj.server.test.service.TestResults;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -44,8 +40,8 @@ public class SubmitService {
     public CompletableFuture<SubmitResult> compile(Team team, SourceMessage message) {
         messageService.sendComplilingStarted(team);
         return compileInternal(team, message).thenApply(r -> {
-                messageService.sendComplilingEnded(team, r.isSuccess());
-                return r;
+            messageService.sendComplilingEnded(team, r.isSuccess());
+            return r;
         });
     }
 
@@ -56,6 +52,7 @@ public class SubmitService {
                     return SubmitResult.builder()
                             .team(team.getUuid())
                             .dateTimeStart(r.getDateTimeStart())
+                            .dateTimeEnd(r.getDateTimeEnd())
                             .success(r.isSuccess())
                             .compileResult(r)
                             .build();
@@ -63,14 +60,14 @@ public class SubmitService {
     }
 
     public CompletableFuture<SubmitResult> test(Team team, SourceMessage message) {
-        return test(team,message,false);
+        return test(team, message, false);
     }
 
-    public CompletableFuture<SubmitResult> test(Team team, SourceMessage message, boolean submit ) {
+    public CompletableFuture<SubmitResult> test(Team team, SourceMessage message, boolean submit) {
         messageService.sendTestingStarted(team);
-        return testInternal(team,message,submit).thenApply( r -> {
-           messageService.sendTestingEnded(team, r.isSuccess());
-           return r;
+        return testInternal(team, message, submit).thenApply(r -> {
+            messageService.sendTestingEnded(team, r.isSuccess());
+            return r;
         });
     }
 
@@ -85,7 +82,7 @@ public class SubmitService {
                                 .filter(t -> message.getTests().contains(t.getUuid().toString()))
                                 .collect(Collectors.toList());
 
-                        if( submit ) {
+                        if (submit) {
                             testCases = activeAssignment.getSubmitTestFiles();
                         }
 
@@ -121,15 +118,21 @@ public class SubmitService {
             as.getSubmitAttempts().add(sa);
 
             return testInternal(team, message, true).thenApply(sr -> {
-                sa.setCompileAttempt(compileAttemptRepository.findByUuid(sr.getCompileResult()
-                        .getCompileAttemptUuid()));
-                sa.setTestAttempt(testAttemptRepository.findByUuid(sr.getTestResults().getTestAttemptUuid()));
-                sa.setSuccess(sr.isSuccess());
-                sa.setDateTimeEnd(Instant.now());
-                submitAttemptRepository.save(sa);
-
                 int remainingSubmits = getRemainingSubmits(as);
                 try {
+                    if( sr.getCompileResult() != null) {
+                        sa.setCompileAttempt(compileAttemptRepository.findByUuid(sr.getCompileResult()
+                                .getCompileAttemptUuid()));
+                    }
+                    if( sr.getTestResults() != null ) {
+                        sa.setTestAttempt(testAttemptRepository.findByUuid(sr.getTestResults().getTestAttemptUuid()));
+                    }
+                    sa.setSuccess(sr.isSuccess());
+                    sa.setDateTimeEnd(Instant.now());
+                    submitAttemptRepository.save(sa);
+
+                    remainingSubmits = getRemainingSubmits(as);
+
                     if (sr.isSuccess() || remainingSubmits <= 0) {
                         AssignmentStatus scored = scoreService.finalizeScore(as, activeAssignment);
                         return sr.toBuilder().score(scored.getAssignmentResult().getFinalScore())
