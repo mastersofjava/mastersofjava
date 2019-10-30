@@ -176,7 +176,8 @@ public class ScoreService {
     // Test bonus is given even if submit attempt failed.
     private long calculateTestBonus(Long initialScore, AssignmentStatus as) {
         Optional<SubmitAttempt> sa = getLastSubmitAttempt(as);
-        if (sa.isPresent()) {
+        if (sa.isPresent() && sa.get().getTestAttempt() != null
+                && !sa.get().getTestAttempt().getTestCases().isEmpty()) {
             long successTestCount = sa.get()
                     .getTestAttempt()
                     .getTestCases()
