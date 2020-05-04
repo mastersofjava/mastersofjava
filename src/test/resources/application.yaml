@@ -1,47 +1,37 @@
 moj:
   server:
-    basedir: /tmp/moj
-    teamDirectory: teams
-    assignmentDirectory: assignments
-    libDirectory: lib
-    javaExecutable: /Library/Java/JavaVirtualMachines/jdk-9.0.1.jdk/Contents/Home/bin/java
-    gitrepository: ssh://git@bitbucket.org/first8/practice-assignments.git
-    branch: origin/master
-    threads: 20
-    timeout: 1
-    compiler:
-      workDir: ./work
-      outputDir: ./classes
-      inheritClassPath: no
-      classPath:
-        - junit/junit/4.12/junit-4.12.jar
-    limits:
-      unitTestTimeoutSeconds: 4
-      unitTestOutput:
-        maxLines: 900
-        maxChars: 100000
-        maxLineLen: 1000
-        lineTruncatedMessage: "...<b>...</b>||"
-        outputTruncMessage: "...<b>{output truncated}</b>"
-        testTimoutTermination: "...{terminated: test time expired}"
+    assignment-repo: /tmp/assignments
+    languages:
+      java-versions:
+        - version: 8
+          name: Java 8
+          compiler: /tmp/bin/javac
+          runtime: /tmp/bin/java
+    directories:
+      base-directory: /tmp/moj-data
+    runtime:
+      game-threads: 10
+      play-sounds: false
     competition:
-       bonusForSuccessfulSubmission: 400
+      uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
+      success-bonus: 400
 
 spring:
+  h2:
+    console:
+      enabled: true
+      path: /h2
   datasource:
-    url: jdbc:h2:mem:db;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password: sa
-    driver-class-name: org.h2.Driver     
-    initialize: false         
-server.session.timeout: 36000
-security.basic.enabled: false
+    driver-class-name: org.h2.Driver
+  thymeleaf:
+    mode: HTML
+  flyway:
+    enabled: false
+  #    baseline-on-migrate: true
+  jpa:
+    generate-ddl: true
 
-
-mybatis.mapper-locations: persistence/*
-logging.file: mojserver.log
 logging.level.nl.moj.server: DEBUG
-logging.level.nl.moj.server.persistence: INFO
-logging.level.nl.moj.server.persistence.TeamMapper: INFO
-logging.level.nl.moj.server.persistence.ResultMapper: INFO
-logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL

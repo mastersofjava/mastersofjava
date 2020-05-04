@@ -1,61 +1,65 @@
 moj:
   server:
-    javaExecutable: /usr/lib/jvm/java-9-oracle/bin/java
+    assignment-repo: /tmp/assignments
+    languages:
+      java-versions:
+        - version: 8
+          name: Java 8
+          compiler: /usr/bin/javac
+          runtime: /usr/bin/java
+        - version: 10
+          name: Java 10
+          compiler: /usr/bin/javac
+          runtime: /usr/bin/java
     directories:
-      baseDirectory: /opt/mojserver
-      teamDirectory: teams
-      assignmentDirectory: assignments
-      libDirectory: lib
-      soundDirectory: sounds
-      javaDocDirectory: javadoc
-    assignments:
-      repos:
-        -
-          name: "practice-assignments"
-          url: "ssh://git@bitbucket.org/first8/practice-assignments.git"
-          branch: "origin/master"
-        -
-          name: "2017-assignments"
-          url: "ssh://git@bitbucket.org/first8/2017-assignments.git"
-          branch: "origin/new_layout"
-    threads: 20
-    timeout: 5
+      team-directory: teams
+      lib-directory: lib
+      sound-directory: sounds
+      javadoc-directory: javadoc
+      base-directory: moj-data
     limits:
-      unitTestTimeoutSeconds: 4
-      unitTestOutput:
-        maxFeedbackLines: 1000
-        maxChars: 100000
-        maxLineLen: 1000
-        lineTruncatedMessage: "...{truncated}"
-        outputTruncMessage: "...{output truncated}"
-        testTimoutTermination: "...{terminated: test time expired}"
-
+      compile-timeout: PT4S
+      compile-output-limits:
+        max-feedback-lines: 1000
+        max-chars: 100000
+        max-line-len: 1000
+        line-truncated-message: "...{truncated}"
+        output-trunc-message: "...{output truncated}"
+        timeout-message: "...{terminated: compile time expired}"
+      test-timeout: PT4S
+      test-output-limits:
+        max-feedback-lines: 1000
+        max-chars: 100000
+        max-line-len: 1000
+        line-truncated-message: "...{truncated}"
+        output-trunc-message: "...{output truncated}"
+        timeout-message: "...{terminated: test time expired}"
+    runtime:
+      game-threads: 10
     competition:
-       bonusForSuccessfulSubmission: 400    
-
+      uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
+      success-bonus: 400
 
 spring:
   h2:
     console:
-      enabled: false
+      enabled: true
       path: /h2
   datasource:
     url: jdbc:h2:file:/opt/mojserver/db/test
     username: sa
     password: sa
-    driver-class-name: org.h2.Driver     
-    initialize: false         
+    driver-class-name: org.h2.Driver
   thymeleaf:
     mode: HTML
-server.session.timeout: 36000
-security.basic.enabled: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+#  jpa:
+#    generate-ddl: true
 
-
-mybatis.mapper-locations: persistence/*
-logging.file: mojserver.log
-#logging.level.nl.moj.server: DEBUG
-#logging.level.nl.moj.server.persistence: INFO
-#logging.level.nl.moj.server.persistence.TeamMapper: INFO
-#logging.level.nl.moj.server.persistence.ResultMapper: INFO
-#logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL
-...
+logging.level.nl.moj.server: DEBUG
+logging.level.nl.moj.server.persistence: INFO
+logging.level.nl.moj.server.persistence.TeamMapper: INFO
+logging.level.nl.moj.server.persistence.ResultMapper: INFO
+logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL

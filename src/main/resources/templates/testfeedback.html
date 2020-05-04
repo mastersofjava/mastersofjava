@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Masters of Java 2017 Live Feedback</title>
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
-          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
-    <link rel="stylesheet" th:href="@{/webjars/font-awesome/4.7.0/css/font-awesome.min.css}"/>
+    <title>Masters of Java - Live Feedback</title>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/codemirror/addon/hint/show-hint.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/codemirror/lib/codemirror.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
     <link th:href="@{/css/testfeedback.css}" href="/static/css/testfeedback.css" rel="stylesheet"/>
 
     <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/apple-touch-icon.png}"
@@ -25,8 +27,8 @@
     <div class="row mt-3 mb-3">
         <div class="col-1 d-flex justify-content-center">
             <div class="align-self-center">
-                <img th:src="@{/images/moj_logo_128x97_2017.png}" class="img-fluid"
-                     src="/static/images/moj_logo_128x97_2017.png"/>
+                <img width="128" height="97" th:src="@{/images/moj_logo.png}" class="img-fluid"
+                     src="/static/images/moj_logo.png"/>
             </div>
         </div>
         <div class="col-4 d-flex justify-content-center">
@@ -36,7 +38,8 @@
         </div>
         <div class="col-5 d-flex justify-content-center">
             <div class="align-self-center">
-                <h1>Assignment: [[${assignment}]]</h1>
+                <h1>Assignment: <span id="assignment-name" th:attr="data-assignment=${uuid}">[[${assignment}]]</span>
+                </h1>
             </div>
         </div>
         <div class="col-2 d-flex justify-content-center">
@@ -67,9 +70,9 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="team : ${teams1}">
+                <tr th:each="team : ${teams1}" th:attr="data-team=${team.uuid},data-assignment=${uuid}">
                     <td th:text="${team.shortName}">Team name</td>
-                    <td th:each="test : ${tests}"><span th:id="${team.name} + '-' + ${test}"></span></td>
+                    <td th:each="test : ${tests}"><span th:attr="data-test=${team.uuid + '-' + test}"></span></td>
                 </tr>
                 </tbody>
             </table>
@@ -85,9 +88,9 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="team : ${teams2}">
+                <tr th:each="team : ${teams2}" th:attr="data-team=${team.uuid},data-assignment=${uuid}">
                     <td th:text="${team.shortName}">Team name</td>
-                    <td th:each="test : ${tests}"><span th:id="${team.name} + '-' + ${test}"></span></td>
+                    <td th:each="test : ${tests}"><span th:attr="data-test=${team.uuid + '-' + test}"></span></td>
                 </tr>
                 </tbody>
             </table>
@@ -103,9 +106,9 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="team : ${teams3}">
+                <tr th:each="team : ${teams3}" th:attr="data-team=${team.uuid},data-assignment=${uuid}">
                     <td th:text="${team.shortName}">Team name</td>
-                    <td th:each="test : ${tests}"><span th:id="${team.name} + '-' + ${test}"></span></td>
+                    <td th:each="test : ${tests}"><span th:attr="data-test=${team.uuid + '-' + test}"></span></td>
                 </tr>
                 </tbody>
             </table>
@@ -121,12 +124,36 @@
     </div>
 </div>
 
-<script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/popper.js/dist/umd/popper.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+<!-- Modal show submission -->
+<div class="modal fade" id="show-submission-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Submission</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+            </div>
+            <div class="modal-footer">
+                <button type="cancel-submit" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-<script type="text/javascript" th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/jquery-ui/jquery-ui.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/lib/codemirror.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/addon/edit/matchbrackets.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/addon/selection/active-line.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/addon/hint/show-hint.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/codemirror/mode/clike/clike.js}"></script>
+
 <script type="text/javascript" th:src="@{/js/clock.js}"></script>
 <script type="text/javascript" th:src="@{/js/testfeedback.js}"></script>
 </body>

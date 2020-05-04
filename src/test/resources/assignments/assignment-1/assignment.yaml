@@ -1,0 +1,39 @@
+# file paths are taken relative to this file.
+name: assignment-1
+display-name: Assignment 1
+author:
+  name: Mark
+  company: First8
+  website: https://first8.nl
+
+image: assets/images/icon.png
+sponsor-image: assets/images/sponsor.png
+
+labels:
+  - label1
+  - label2
+
+difficulty: 3
+java-version: 8
+duration: PT30M
+submit-timeout: PT60S
+test-timeout: PT60S
+
+scoring-rules:
+  maximum-resubmits: 2
+  resubmit-penalty: 50%
+  success-bonus: 200
+  test-penalty: 20%
+
+assignment-files:
+  assignment: assets/assignment-1.txt
+  sources:
+    base: src/main/java
+    editable:
+      - Assignment1.java
+  test-sources:
+    base: src/test/java
+    tests:
+      - Test1.java
+  solution:
+    - assets/solution/Assignment1.java

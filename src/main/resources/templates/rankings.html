@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8"/>
 
-    <title>Masters of Java 2017 Ranking</title>
+    <title>Masters of Java - Ranking</title>
 
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"
-          href="/webjars/bootstrap/4.0.0-beta-1/css/bootstrap.min.css"/>
-    <link rel="stylesheet" th:href="@{/webjars/font-awesome/4.7.0/css/font-awesome.min.css}"
-          href="/webjars/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
     <link rel="stylesheet" th:href="@{/css/rankings.css}" href="/static/css/rankings.css"/>
 
     <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/apple-touch-icon.png}"
@@ -53,8 +52,8 @@
         <div class="col-6">
             <div class="row justify-content-center">
                 <div>
-                    <img th:src="@{/images/moj_logo_128x97_2017.png}" class="img-fluid"
-                         src="/static/images/moj_logo_128x97_2017.png"/>
+                    <img width="128" height="97" th:src="@{/images/moj_logo.png}" class="img-fluid"
+                         src="/static/images/moj_logo.png"/>
                 </div>
                 <div class="pl-5 align-self-center">
                     <h1>Ranking</h1>
@@ -67,17 +66,23 @@
                         <tr>
                             <th></th>
                             <th class="text-center">Team</th>
-                            <th class="text-center" th:each="assignment,iterStat : ${assignments}">#[[${iterStat.count}]] <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" th:attrappend="data-content=${assignment}"></span></th>
+                            <th class="text-center" th:each="a,iterStat : ${oas}">
+                                #[[${iterStat.count}]] <span class="fas fa-question-circle grey" data-container="body"
+                                                             data-trigger="hover" data-toggle="popover"
+                                                             data-placement="top"
+                                                             th:attrappend="data-content=${a.displayName}"></span></th>
                             <th class="text-center">Total Score</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <!--/*@thymesVar id="top" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
                         <tr th:each="ranking,status : ${top}" th:class="${'rank-'+status.index}">
                             <td class="text-center" th:text="${ranking.rank}"></td>
                             <td th:text="${ranking.team}">teamname</td>
-                            <th:block th:each="result : ${ranking.results}">
-                                <td class="text-center" th:text="${result.score}">0</td>
+                            <th:block th:each="assignment : ${oas}">
+                                <td class="text-center"
+                                    th:text="${ranking.getAssignmentResult(assignment.orderedAssignment).getScore()}">
+                                    0
+                                </td>
                             </th:block>
                             <td class="text-center" th:text="${ranking.totalScore}">3</td>
                         </tr>
@@ -94,11 +99,14 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" data-content="You can hover over the scores to see the individual assignment breakdown."></span></th>
+                    <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
+                                                              data-trigger="hover" data-toggle="popover"
+                                                              data-placement="top"
+                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
-                <!--/*@thymesVar id="bottom1" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
                 <tr th:each="ranking : ${bottom1}">
                     <td class="text-center" th:text="${ranking.rank}"></td>
                     <td class="text-center" th:text="${ranking.team}">teamname</td>
@@ -115,11 +123,15 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" data-content="You can hover over the scores to see the individual assignment breakdown."></span></th>
+                    <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
+                                                              data-trigger="hover" data-toggle="popover"
+                                                              data-placement="top"
+                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
-                <!--/*@thymesVar id="bottom2" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <!--/*@thymesVar id="bottom2" type="java.util.List<nl.moj.server.rankings.model.Ranking>"*/-->
                 <tr th:each="ranking : ${bottom2}">
                     <td class="text-center" th:text="${ranking.rank}"></td>
                     <td class="text-center" th:text="${ranking.team}">teamname</td>
@@ -136,11 +148,15 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" data-content="You can hover over the scores to see the individual assignment breakdown."></span></th>
+                    <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
+                                                              data-trigger="hover" data-toggle="popover"
+                                                              data-placement="top"
+                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
-                <!--/*@thymesVar id="bottom3" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <!--/*@thymesVar id="bottom3" type="java.util.List<nl.moj.server.rankings.model.Ranking>"*/-->
                 <tr th:each="ranking : ${bottom3}">
                     <td class="text-center" th:text="${ranking.rank}"></td>
                     <td class="text-center" th:text="${ranking.team}">teamname</td>
@@ -157,11 +173,15 @@
                 <tr>
                     <th></th>
                     <th class="text-center">Team</th>
-                    <th class="text-center">Total Score <span class="fa fa-question-circle grey" data-container="body" data-trigger="hover" data-toggle="popover" data-placement="top" data-content="You can hover over the scores to see the individual assignment breakdown."></span></th>
+                    <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
+                                                              data-trigger="hover" data-toggle="popover"
+                                                              data-placement="top"
+                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                    </th>
                 </tr>
                 </thead>
                 <tbody>
-                <!--/*@thymesVar id="bottom4" type="java.util.List<nl.moj.server.model.Ranking>"*/-->
+                <!--/*@thymesVar id="bottom4" type="java.util.List<nl.moj.server.rankings.model.Ranking>"*/-->
                 <tr th:each="ranking : ${bottom4}">
                     <td class="text-center" th:text="${ranking.rank}"></td>
                     <td class="text-center" th:text="${ranking.team}">teamname</td>
@@ -183,10 +203,8 @@
 </div>
 
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/popper.js/dist/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
-
-<script type="text/javascript" th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
 
 <script type="text/javascript" th:src="@{/js/clock.js}"></script>

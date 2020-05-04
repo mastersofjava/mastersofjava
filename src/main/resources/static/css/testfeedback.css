@@ -30,3 +30,9 @@ svg {
     stroke-dashoffset: 440;
     transition: all 1s linear;
 }
+
+@media (min-width: 992px) {
+    .modal-xl {
+        max-width: 80%;
+    }
+}

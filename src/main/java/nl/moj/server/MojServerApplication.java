@@ -1,51 +1,38 @@
+/*
+   Copyright 2020 First Eight BV (The Netherlands)
+ 
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file / these files except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
 package nl.moj.server;
 
-import javax.annotation.PostConstruct;
-
-import org.apache.commons.io.FileUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.config.properties.MojServerProperties;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.ServletComponentScan;
 
-import javafx.stage.Stage;
-
-@Lazy
 @SpringBootApplication
-public class MojServerApplication extends AbstractJavaFxApplicationSupport {
+@EnableConfigurationProperties(MojServerProperties.class)
+@ServletComponentScan
+@RequiredArgsConstructor
+@Slf4j
+public class MojServerApplication {
 
-	@Autowired
-	private DirectoriesConfiguration directories;
-
-	public static void main(String[] args) {
-		launchApp(MojServerApplication.class, args);
-	}
-
-	public MojServerApplication() {
-		// TODO Auto-generated constructor stub
-	}
-
-	@PostConstruct
-	public void initialize() {
-		if (!FileUtils.getFile(directories.getBaseDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory()).mkdir();
-		}
-		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory(), directories.getTeamDirectory()).mkdir();
-		}
-		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory(), directories.getAssignmentDirectory()).mkdir();
-		}
-		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory(), directories.getLibDirectory()).mkdir();
-		}
-		if (!FileUtils.getFile(directories.getBaseDirectory(), directories.getSoundDirectory()).exists()) {
-			FileUtils.getFile(directories.getBaseDirectory(), directories.getSoundDirectory()).mkdir();
-		}
-	}
-
-	@Override
-	public void start(Stage arg0) throws Exception {
-		// Bootstrap Spring context here.
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(MojServerApplication.class, args);
+    }
 
 }

@@ -1,73 +1,93 @@
 var stomp = null;
 var editors = [];
 var clock = null;
+var activeAction = null;
+var failed = false;
 
 $(document).ready(function () {
-    connectFeedback();
-    connectControl();
+    connectCompetition();
     connectButtons();
+
     initializeAssignmentClock();
     initializeCodeMirrors();
 });
 
-function connectFeedback() {
-    var socket = new SockJS('/submit');
-    var stompTestFeedbackClient = Stomp.over(socket);
-    stompTestFeedbackClient.debug = null;
-    stompTestFeedbackClient.connect({}, function (frame) {
-        stompTestFeedbackClient.subscribe('/user/queue/feedback',
-            function (msg) {
-                var message = JSON.parse(msg.body);
-                if (!message.submit) {
-                    appendOutput(message.text);
-                    updateOutputHeaderColor(message.success);
-                } else {
-                    updateAlertContainerWithScore(message);
-                }
-            });
-        stompTestFeedbackClient.subscribe('/user/queue/compilefeedback',
-            function (msg) {
-                var message = JSON.parse(msg.body);
-                if (!message.forTest) {
-                    appendOutput(message.text);
-                    updateOutputHeaderColor(message.success);
-                } else {
-                    if (!message.success) {
-                        updateOutputHeaderColor(message.success);
-                    }
-                    appendOutput(message.text);
-                }
-            });
-    });
-}
-
-function connectControl() {
-    var socket = new SockJS('/control');
+function connectCompetition() {
+    var socket = new WebSocket(
+        ((window.location.protocol === "https:") ? "wss://" : "ws://")
+        + window.location.hostname
+        + ':' + window.location.port
+        + "/ws/competition/websocket");
     stomp = Stomp.over(socket);
     stomp.debug = null;
     stomp.connect({}, function (frame) {
         $('#status').append('<span>Connected</span>');
-        console.log('subscribe to /control/queue/start');
-        stomp.subscribe('/queue/start', function (msg) {
-            window.location.reload();
-        });
-        console.log('subscribe to /control/queue/stop');
-        stomp.subscribe("/queue/stop", function (msg) {
-            disable();
-            if( clock ) {
-                clock.stop();
-            }
-        });
-        console.log('Subscribe to /control/queue/time');
-        stomp.subscribe('/queue/time', function (taskTimeMessage) {
-            var message = JSON.parse(taskTimeMessage.body);
-            if (clock) {
-                clock.sync(message.remainingTime, message.totalTime);
-            }
-        });
+        stomp.subscribe('/user/queue/competition',
+            function (data) {
+                var msg = JSON.parse(data.body);
+                console.log('received', msg);
+                if (userHandlers.hasOwnProperty(msg.messageType)) {
+                    userHandlers[msg.messageType](msg);
+                }
+            });
+        stomp.subscribe("/queue/competition",
+            function (data) {
+                var msg = JSON.parse(data.body);
+                if (handlers.hasOwnProperty(msg.messageType)) {
+                    handlers[msg.messageType](msg);
+                }
+            });
     });
-}
 
+    var userHandlers = {};
+    userHandlers['COMPILE'] = function (msg) {
+        enable();
+        appendOutput(msg.message);
+    };
+    userHandlers['COMPILING_STARTED'] = function (msg) {
+        updateOutputHeaderColorActionStarted();
+    };
+    userHandlers['COMPILING_ENDED'] = function (msg) {
+        updateOutputHeaderColorActionEnded(msg.success);
+    };
+    userHandlers['TEST'] = function (msg) {
+        enable();
+        appendOutput(msg.test + ':\r\n' + msg.message);
+    };
+    userHandlers['TESTING_STARTED'] = function (msg) {
+        updateOutputHeaderColorActionStarted();
+    };
+    userHandlers['TESTING_ENDED'] = function (msg) {
+        updateOutputHeaderColorActionEnded(msg.success);
+    };
+    userHandlers['SUBMIT'] = function (msg) {
+        if (!msg.success && msg.remainingSubmits > 0) {
+            enable();
+        } else {
+            disable();
+        }
+        updateSubmits(msg.remainingSubmits);
+        updateAlertContainerWithScore(msg);
+    };
+
+    var handlers = {};
+    handlers['TIMER_SYNC'] = function (msg) {
+        if (clock) {
+            clock.sync(msg.remainingTime, msg.totalTime);
+        }
+    };
+    handlers['START_ASSIGNMENT'] = function (msg) {
+        window.setTimeout(function () {
+            window.location.reload()
+        }, 1000);
+    };
+    handlers['STOP_ASSIGNMENT'] = function (msg) {
+        disable();
+        if (clock) {
+            clock.stop();
+        }
+    }
+}
 
 function connectButtons() {
     $('#compile').click(function (e) {
@@ -81,7 +101,6 @@ function connectButtons() {
     });
     $('#submit').click(function (e) {
         resetTabColor();
-        $('#btn-open-submit').attr('disabled', 'disabled');
         $('#confirm-submit-modal').modal('hide');
         timerActive = false;
         submit();
@@ -102,12 +121,14 @@ function initializeCodeMirrors() {
             editors.push({
                 'cm': cm,
                 'readonly': cm.isReadOnly(),
-                'filename': $(this).attr('data-cm-filename'),
-                'textarea': this
+                'name': $(this).attr('data-cm-name'),
+                'textarea': this,
+                'uuid': $(this).attr('data-cm-id')
             });
 
             $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
                 function (e) {
+                    console.log('shown.bs.tab', e);
                     cm.refresh();
                 });
 
@@ -132,46 +153,60 @@ function initializeAssignmentClock() {
 }
 
 function resetOutput() {
-    $('#output').removeClass('failure success');
+    $('#output').removeClass('failure success partial-success');
     $('#output-content').empty();
 }
 
 function resetTabColor() {
-    $('#output').removeClass('failure success');
+    $('#output').removeClass('failure success partial-success');
 }
 
-function updateOutputHeaderColor(success) {
+function updateOutputHeaderColorActionStarted() {
     var $output = $('#output');
-    if (success && !$output.hasClass('failure')) {
-        $output.removeClass('failure');
+    $output.removeClass('failure success');
+    $output.addClass('action-started');
+}
+
+function updateOutputHeaderColorActionEnded(success) {
+    var $output = $('#output');
+    $output.removeClass('failure success action-started');
+    if( success ) {
         $output.addClass('success');
-    } else if (!success && !$output.hasClass('failure')) {
-        $output.removeClass('success');
+    } else {
         $output.addClass('failure');
     }
 }
 
 function updateAlertContainerWithScore(message) {
-    console.log(message);
     if (message.success === true) {
         $('#alert-container')
             .empty()
             .append(
-                '<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Tests Successful</h4><h1>:-)</h1>'
-                + '<p>your score is</p><strong>'
+                '<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Completed</h4>'
+                + '<p>your final score is</p><strong>'
                 + message.score + '</strong></div>');
     } else {
-        $('#alert-container')
-            .empty()
-            .append(
-                '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Tests Failed :-(</h4>'
-                + '<p>your score is 0</p></div>');
+        if (parseInt(message.remainingSubmits) <= 0) {
+            $('#alert-container')
+                .empty()
+                .append(
+                    '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Not OK!</h4>'
+                    + '<p>You have no more submits attempts left. Your final score is ' + message.score + '</p></div>');
+        } else {
+            if (parseInt(message.remainingSubmits) > 0) {
+                $('#alert-container')
+                    .empty()
+                    .append(
+                        '<div class="alert alert-warning p-4" role="alert"><h4 class="alert-heading">Assignment Not OK!</h4>'
+                        + '<p>No worries, you still have ' + message.remainingSubmits + ' submits attempts left.</p></div>');
+            }
+        }
     }
 }
 
 function appendOutput(txt) {
     $('#output-content').append('<pre>' + escape(txt) + '</pre>');
-    $('#output').tab('show');
+    showOutput();
 }
 
 function escape(txt) {
@@ -194,18 +229,25 @@ function escape(txt) {
 }
 
 function compile() {
+    disable();
     resetOutput();
+    appendOutput("Compiling ....");
+    showOutput();
+    activeAction = "COMPILE";
     stomp.send("/app/submit/compile", {}, JSON.stringify({
         'sources': getContent()
     }));
 }
 
 function test() {
+    disable();
     resetOutput();
+    appendOutput("Compiling and testing ....");
     var tests = $("#test-modal input:checkbox:checked").map(function () {
         return $(this).val();
     }).get();
-
+    showOutput();
+    activeAction = "TEST";
     stomp.send("/app/submit/test", {}, JSON.stringify({
         'sources': getContent(),
         'tests': tests
@@ -213,13 +255,25 @@ function test() {
 }
 
 function disable() {
-    $('#compile').attr('disabled', 'disabled');
-    $('#test').attr('disabled', 'disabled');
-    $('#show-tests').attr('disabled', 'disabled');
-    $('#btn-open-submit').attr('disabled', 'disabled');
+    $('#compile').prop('disabled', true);
+    $('#test').prop('disabled', true);
+    $('#show-tests').prop('disabled', true);
+    $('#btn-open-submit').prop('disabled', true);
     $.each(editors, function (idx, val) {
         if (!val.readonly) {
             val.cm.setOption("readOnly", true);
+        }
+    });
+}
+
+function enable() {
+    $('#compile').prop('disabled', false);
+    $('#test').prop('disabled', false);
+    $('#show-tests').prop('disabled', false);
+    $('#btn-open-submit').prop('disabled', false);
+    $.each(editors, function (idx, val) {
+        if (!val.readonly) {
+            val.cm.setOption("readOnly", false);
         }
     });
 }
@@ -229,7 +283,7 @@ function getContent() {
     $.each(editors, function (idx, val) {
         if (!val.readonly) {
             var file = {
-                filename: val.filename,
+                uuid: val.uuid,
                 content: val.cm.getValue()
             };
             editables.push(file);
@@ -241,10 +295,16 @@ function getContent() {
 function submit() {
     disable();
     resetOutput();
+    showOutput();
+    activeAction = "SUBMIT";
     stomp.send("/app/submit/submit", {}, JSON.stringify({
         'sources': getContent()
     }));
     showSubmitDetails();
+}
+
+function showOutput() {
+    $('#output').tab('show');
 }
 
 function showSubmitDetails() {
@@ -253,4 +313,8 @@ function showSubmitDetails() {
         .append(
             '<div class="alert alert-info p-4" role="alert"><h4 class="alert-heading">Assignment Submitted</h4><p>Well done! You have submitted the assignment for final review. '
             + 'Chill out and wait a few seconds until the results are displayed.</p></div>');
+}
+
+function updateSubmits(count) {
+    $('#submits').text(count);
 }
