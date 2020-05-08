@@ -4,6 +4,8 @@ var clock = null;
 $(document).ready(function () {
     connect();
     initializeAssignmentClock();
+
+    $('[data-toggle="popover"]').popover();
 });
 
 
@@ -48,27 +50,38 @@ function connect() {
 }
 
 function startTask() {
+    $('#alert').empty();
     var taskname = $("input[name='assignment']:checked").val();
     if (!taskname) {
-        showOutput("Select a task to start");
+        showAlert("Select an assignment first, before starting");
         return;
     }
-    console.log(taskname);
+    console.log('taskname ' + taskname);
     stompClient.send("/app/control/starttask", {}, JSON.stringify({
         'taskName': taskname
     }));
 
     var tasktime = $("input[name='assignment']:checked").attr('time');
+
+    console.log('tasktime ' + tasktime);
     $assignmentClock = $('#assignment-clock');
     $assignmentClock.attr('data-time', tasktime);
     $assignmentClock.attr('data-time-left', tasktime);
 }
 
 function stopTask() {
+    $('#alert').empty();
+    var taskname = $("input[name='assignment']:checked").val();
+    if (!taskname) {
+        showAlert("No assignment active");
+        return;
+    }
     stompClient.send("/app/control/stoptask", {}, {});
 }
 
-function clearAssignment() {
+function clearAssignments() {
+    $('#alert').empty();
+    showAlert("competition has been restarted");
     stompClient.send("/app/control/clearCurrentAssignment", {}, {});
 }
 

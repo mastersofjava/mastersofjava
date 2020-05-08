@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.tika.mime.MediaType;
@@ -46,6 +47,7 @@ public class AssignmentFile {
 
     private final Path base;
 
+    @JsonIgnore
     private final MediaType mediaType;
 
     private final boolean readOnly;

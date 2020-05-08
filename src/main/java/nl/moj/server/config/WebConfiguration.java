@@ -99,7 +99,7 @@ public class WebConfiguration {
         protected void configure(HttpSecurity http) throws Exception {
             http.authorizeRequests()
                     .antMatchers("/login", "/register", "/feedback", "/bootstrap").permitAll()//
-                    .antMatchers("/").hasAuthority(Role.USER) //
+                    .antMatchers("/").hasAnyAuthority(Role.USER, Role.ADMIN) //
                     .antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) //
 
                     .and().formLogin().successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login")
