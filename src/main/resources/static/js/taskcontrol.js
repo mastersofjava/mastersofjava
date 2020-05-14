@@ -1,5 +1,3 @@
-var stompClient = null;
-var clock = null;
 
 $(document).ready(function () {
     connect();
@@ -15,20 +13,27 @@ function connect() {
         + window.location.hostname
         + ':' + window.location.port
         + '/control/websocket');
-    stompClient = Stomp.over(socket);
+    window.stompClient = Stomp.over(socket);
     stompClient.debug = null;
     stompClient.connect({}, function (frame) {
         console.log('Connected to control');
         console.log('Subscribe to /user/queue/controlfeedback');
         stompClient.subscribe('/user/queue/controlfeedback', function (msg) {
-            showOutput(msg.body);
+            console.log("/user/queue/controlfeedback ");
+            showAlert(msg.body);
+            if (msg.body.indexOf('reload')!=0) {
+                reloadPage();
+            }
         });
         stompClient.subscribe('/queue/controlfeedback', function(msg){
-            let m = JSON.parse(msg.body);
+            console.log("/queue/controlfeedback ");
+            console.log(msg);
+            var m = JSON.parse(msg.body);
             showAlert('['+m.assignment +'] ' + m.cause);
         });
         console.log('Subscribe to /control/queue/time');
         stompClient.subscribe('/queue/time', function (taskTimeMessage) {
+            console.log("/queue/time");
             var message = JSON.parse(taskTimeMessage.body);
             if (clock) {
                 clock.sync(message.remainingTime, message.totalTime);
@@ -36,17 +41,23 @@ function connect() {
         });
         console.log('subscribe to /control/queue/start');
         stompClient.subscribe('/queue/start', function (msg) {
-            window.setTimeout(function () {
-                window.location.reload();
-            }, 1000);
+            console.log("/queue/start");
+            reloadPage();
         });
         console.log('subscribe to /control/queue/stop');
         stompClient.subscribe('/queue/stop', function (msg) {
+            console.log("/queue/stop");
             if (clock) {
                 clock.stop();
             }
         });
     });
+}
+
+function reloadPage() {
+    window.setTimeout(function () {
+        window.location.reload();
+    }, 1000);
 }
 
 function startTask() {
@@ -90,16 +101,16 @@ function scanAssignments() {
 }
 
 function showOutput(messageOutput) {
-    let response = $('#response');
+    var response = $('#response');
     response.empty();
-    let p = document.createElement('p');
+    var p = document.createElement('p');
     p.style.wordWrap = 'break-word';
     p.appendChild(document.createTextNode(messageOutput));
     response.append(p);
 }
 
 function showAlert(txt) {
-    let alert = $('#alert');
+    var alert = $('#alert');
     alert.empty();
     alert.append('<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
         '<span>'+txt+'</span>' +
@@ -108,7 +119,7 @@ function showAlert(txt) {
 }
 
 function initializeAssignmentClock() {
-    clock = new Clock('440');
+    window.clock = new Clock('440');
     clock.start();
 }
 

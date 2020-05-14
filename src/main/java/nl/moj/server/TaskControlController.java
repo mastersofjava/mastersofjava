@@ -16,16 +16,11 @@
 */
 package nl.moj.server;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
@@ -35,22 +30,17 @@ import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
+import nl.moj.server.competition.service.GamemasterTableComponents;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.feedback.FileSubmission;
-import nl.moj.server.feedback.Submission;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -59,12 +49,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import javax.annotation.security.RolesAllowed;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -91,6 +84,8 @@ public class TaskControlController {
     private final AssignmentStatusRepository assignmentStatusRepository;
 
     private final AssignmentResultRepository assignmentResultRepository;
+
+    private final GamemasterTableComponents gamemasterTableComponents;
 
     @ModelAttribute(name = "sessions")
     public List<CompetitionSession> sessions() {
@@ -123,8 +118,8 @@ public class TaskControlController {
     public void clearAssignments() {
         log.warn("clearAssignments entered");
         competition.getCompetitionState().getCompletedAssignments().clear();
+        assignmentStatusRepository.deleteAll();// correct cleaning: first delete all status items, afterwards delete all results
         assignmentResultRepository.deleteAll();
-        assignmentStatusRepository.deleteAll();
     }
 
 
@@ -192,19 +187,18 @@ public class TaskControlController {
             model.addAttribute("currentAssignment", "-");
         }
         boolean isWithAssignmentsLoaded = !competition.getAssignmentInfo().isEmpty();
+
         if (isWithAssignmentsLoaded) {
-            model.addAttribute("assignmentDetailCanvas", toSimpleBootstrapTable(assignments()) );
+            model.addAttribute("assignmentDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTable(assignments()) );
+            model.addAttribute("gameDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForAssignmentStatus());
         } else {
             model.addAttribute("assignmentDetailCanvas", "(U moet eerst de opdrachten inladen)");
-        }
-        if (isWithAssignmentsLoaded) {
-            model.addAttribute("gameDetailCanvas", toSimpleBootstrapTableForAssignmentStatus());
-        } else {
             model.addAttribute("gameDetailCanvas", "(U moet eerst de opdrachten inladen)");
         }
+
         List<Team> teams = team();
         if (!teams.isEmpty()) {
-            model.addAttribute("teamDetailCanvas", toSimpleBootstrapTableForTeams(teams));
+            model.addAttribute("teamDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams));
         } else {
             model.addAttribute("teamDetailCanvas", "(U moet eerst de gebruikers aanmaken)");
         }
@@ -278,84 +272,5 @@ public class TaskControlController {
     }
 
 
-    @GetMapping(value = "/getGameMasterState", produces = MediaType.APPLICATION_JSON_VALUE)
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
-    public @ResponseBody
-    Map<String,Object> getAssignmentSolution() {
-        Map<String,Object> response = new TreeMap<>();
-        response.put("mojServerProperties", mojServerProperties);
-        response.put("assignments", competition.getAssignmentInfo());
-        response.put("teams", teamRepository.findAll());
 
-
-        ActiveAssignment activeAssignment = competition.getActiveAssignment();
-        if (activeAssignment!=null && activeAssignment.getAssignment()!=null) {
-            response.put("activeAssignment.assignment", activeAssignment.getAssignment());
-            response.put("activeAssignment.assignmentDescriptor", activeAssignment.getAssignmentDescriptor());
-
-            List<Team> teams = teamService.getTeams();
-            if (!teams.isEmpty()) {
-                List<AssignmentFile> files = teamService.getTeamAssignmentFiles(competition.getCompetitionSession(), activeAssignment.getAssignment(), teams.get(0));
-                response.put("files", files);
-            }
-        }
-
-        return response;
-    }
-    private String toSimpleBootstrapTableForTeams(List<Team> teams) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Teamnaam</th><th>Score</th></tr></thead>");
-
-        int counter = 1;
-        for (Team team: teams) {
-            sb.append("<tr><td>"+counter+"</td><td>"+team.getName()+"</td><td>0</td></tr>");
-            counter ++;
-        }
-        sb.append("</table>");
-        return sb.toString();
-    }
-    private String toSimpleBootstrapTableForAssignmentStatus() {
-        StringBuilder sb = new StringBuilder();
-        List<OrderedAssignment> completedList = competition.getCompetitionState().getCompletedAssignments();
-        List<OrderedAssignment> orderedList = competition.getCompetition().getAssignmentsInOrder();
-        if (orderedList.isEmpty()) {
-            return "";
-        }
-        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Opdracht</th><th>Status</th><th>High score</th></tr></thead>");
-        for (OrderedAssignment orderedAssignment: orderedList) {
-            boolean isCompleted = false;
-            boolean isCurrent = orderedAssignment.equals(competition.getCurrentAssignment());
-
-            for (OrderedAssignment completedAssignment: completedList) {
-                if (completedAssignment.getAssignment().getName().equals(orderedAssignment.getAssignment().getName())) {
-                    isCompleted = true;
-                }
-            }
-            String status = "";
-            if (isCompleted) {
-                status += " COMPLETED";
-            }
-            if (isCurrent) {
-                status += " <a href='/'>CURRENT</a>";
-            }
-            if (status.isEmpty()) {
-                status = "-";
-            }
-            sb.append("<tr><td>"+orderedAssignment.getOrder()+"</td><td>"+orderedAssignment.getAssignment().getName()+"</td><td>"+status+"</td><td>0</td></tr>");
-        }
-        sb.append("</table>");
-        return sb.toString();
-    }
-
-    private String toSimpleBootstrapTable(List<AssignmentDescriptor> assignmentDescriptorList) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Opdracht</th><th>Auteur</th><th>Java versie</th><th>Complexiteit</th></tr></thead>");
-        for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
-
-
-            sb.append("<tr><td>"+descriptor.getName()+"</td><td>"+descriptor.getAuthor().getName().split("\\(")[0]+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td></tr>");
-        }
-        sb.append("</table>");
-        return sb.toString();
-    }
 }

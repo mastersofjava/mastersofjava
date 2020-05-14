@@ -16,27 +16,12 @@
 */
 package nl.moj.server.login;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.teams.model.Role;
-import nl.moj.server.teams.model.Team;
+import nl.moj.server.competition.service.CompetitionService;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,9 +36,7 @@ public class LoginController {
 
     private final TeamRepository teamRepository;
 
-    private final PasswordEncoder encoder;
-
-    private final MojServerProperties mojServerProperties;
+    private final CompetitionService competitionService;
 
     @GetMapping("/login")
     public String loginForm(Model model) {
@@ -78,34 +61,11 @@ public class LoginController {
             model.addAttribute("errors", "Passwords don't match");
             return "register";
         }
-
-        SecurityContext context = SecurityContextHolder.getContext();
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(form.getName(), form
-                .getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.USER)));
-
-        Team team = Team.builder()
-                .company(form.getCompany())
-                .country(form.getCountry())
-                .name(form.getName())
-                .password(encoder.encode(form.getPassword()))
-                .role(Role.USER)
-                .uuid(UUID.randomUUID())
-                .build();
-
-        teamRepository.save(team);
-        context.setAuthentication(authentication);
-        Path teamdir = mojServerProperties.getDirectories().getBaseDirectory()
-                .resolve(mojServerProperties.getDirectories().getTeamDirectory())
-                .resolve(authentication.getName());
-        if (!Files.exists(teamdir)) {
-            try {
-                Files.createDirectory(teamdir);
-            } catch (IOException e) {
-                log.error("error creating teamdir", e);
-            }
-        }
+        competitionService.createNewTeam(form);
         return "redirect:/";
     }
+
+
 
     @GetMapping("/register")
     public String registrationForm(Model model) {

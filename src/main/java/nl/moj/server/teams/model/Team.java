@@ -19,6 +19,7 @@ package nl.moj.server.teams.model;
 import javax.persistence.*;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 @Entity
@@ -44,6 +45,7 @@ public class Team {
     private String name;
 
     @Column(name = "password")
+    @JsonIgnore
     private String password;
 
     @Column(name = "role")
