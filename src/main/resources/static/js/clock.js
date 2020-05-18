@@ -4,6 +4,7 @@ function Clock(initialOffset) {
     this.current = 0;
     this.time = $('#assignment-clock').attr('data-time');
     this.finished = false;
+    this.isPaused = false;
 
     this.start = function () {
         var $assignmentClock = $('#assignment-clock');
@@ -42,7 +43,9 @@ function Clock(initialOffset) {
                 clearInterval(interval);
                 return;
             } else {
-                renderTime();
+                if (!clock.isPaused) {
+                    renderTime();
+                }
             }
             clock.current++;
         }, 1000);
@@ -60,4 +63,10 @@ function Clock(initialOffset) {
         this.current = this.time;
         $('h2', $assignmentClock).text("0:00");
     };
+    this.setPaused = function (isPaused) {
+        this.isPaused = isPaused;
+    };
+    this.getPaused = function () {
+        return this.isPaused;
+    }
 }

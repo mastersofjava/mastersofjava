@@ -32,8 +32,10 @@ import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.service.GamemasterTableComponents;
 import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
@@ -45,7 +47,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -85,6 +86,8 @@ public class TaskControlController {
 
     private final AssignmentResultRepository assignmentResultRepository;
 
+    private final AssignmentRuntime assignmentRuntime;
+
     private final GamemasterTableComponents gamemasterTableComponents;
 
     @ModelAttribute(name = "sessions")
@@ -114,16 +117,59 @@ public class TaskControlController {
 
     @MessageMapping("/control/clearCurrentAssignment")
     @SendToUser("/queue/controlfeedback")
-    @Transactional
-    public void clearAssignments() {
+    public String clearAssignments() {
         log.warn("clearAssignments entered");
         competition.getCompetitionState().getCompletedAssignments().clear();
+
+        if (assignmentStatusRepository.count()==0) {
+            return "competition not started yet";
+        }
         assignmentStatusRepository.deleteAll();// correct cleaning: first delete all status items, afterwards delete all results
         assignmentResultRepository.deleteAll();
+        return "competition restarted, reloading page";
     }
 
+    @MessageMapping("/control/pauseResume")
+    @SendToUser("/queue/controlfeedback")
+    public String pauseResume() {
+        log.warn("pauseResume entered");
+        ActiveAssignment state = competition.getActiveAssignment();
+        if (state==null|| state.getAssignment()==null) {
+            return "no active assignment";
+        }
+        String name = state.getAssignment().getName();
+        assignmentRuntime.pauseResume();
+        if (assignmentRuntime.isPaused()) {
+            return "assignment '"+name+"' paused, reloading page";
+        } else {
+            return "assignment '"+name+"' running, reloading page";
+        }
+    }
+    @MessageMapping("/control/restartAssignment")
+    @SendToUser("/queue/controlfeedback")
+    public String restartAssignment(TaskMessage message) {
+        log.warn("restartAssignment entered: " +message.taskName);
+        competition.getCompetitionState().getCompletedAssignments().clear();
+        ActiveAssignment state = competition.getActiveAssignment();
+        boolean isStopCurrentAssignment=state!=null && state.getAssignment()!=null && state.getAssignment().getName().equals(message.taskName);
 
+        log.warn("isStopCurrentAssignment " + isStopCurrentAssignment);
 
+        if (isStopCurrentAssignment) {
+            competition.stopCurrentAssignment();
+        }
+        Assignment assignment = assignmentRepository.findByName(message.taskName);
+        List<AssignmentStatus> ready4deletionList = assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competition.getCompetitionSession());
+
+        log.warn("ready4deletionList " + ready4deletionList.size());
+        if (ready4deletionList.isEmpty()) {
+            return "Assignment not started yet: "  + message.taskName;
+        }
+        for (AssignmentStatus status: ready4deletionList) {
+            assignmentStatusRepository.deleteById(status.getId());// correct cleaning: first delete all status items, afterwards delete all results
+        }
+        return "Assignment resetted: " + message.taskName + ", reload page";
+    }
     @MessageMapping("/control/scanAssignments")
     @SendToUser("/queue/controlfeedback")
     public String cloneAssignmentsRepo() {
@@ -164,12 +210,6 @@ public class TaskControlController {
         };
     }
 
-    @GetMapping("/new_game_master")
-    public String gamemasterViaNewUri(Model model, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
-                              @ModelAttribute("newPasswordRequest") NewPasswordRequest npr) {
-
-        return taskControl(model, ssf, npr);
-    }
     @GetMapping("/control")
     public String taskControl(Model model, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
                               @ModelAttribute("newPasswordRequest") NewPasswordRequest npr) {
@@ -179,11 +219,13 @@ public class TaskControlController {
             model.addAttribute("timeLeft", state.getTimeRemaining());
             model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addAttribute("running", state.isRunning());
+            model.addAttribute("clockStyle", (assignmentRuntime.isPaused()?"disabled":"active"));
             model.addAttribute("currentAssignment", state.getAssignmentDescriptor().getName());
         } else {
             model.addAttribute("timeLeft", 0);
             model.addAttribute("time", 0);
             model.addAttribute("running", false);
+            model.addAttribute("clockStyle", "active");
             model.addAttribute("currentAssignment", "-");
         }
         boolean isWithAssignmentsLoaded = !competition.getAssignmentInfo().isEmpty();

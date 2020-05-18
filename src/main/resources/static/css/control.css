@@ -52,3 +52,6 @@ svg {
 .output-content {
     overflow-y: scroll;
 }
+.italic {
+    font-style: italic;
+}

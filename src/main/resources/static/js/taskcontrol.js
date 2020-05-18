@@ -21,7 +21,7 @@ function connect() {
         stompClient.subscribe('/user/queue/controlfeedback', function (msg) {
             console.log("/user/queue/controlfeedback ");
             showAlert(msg.body);
-            if (msg.body.indexOf('reload')!=0) {
+            if (msg.body.indexOf('reload')!=-1) {
                 reloadPage();
             }
         });
@@ -61,13 +61,10 @@ function reloadPage() {
 }
 
 function startTask() {
-    $('#alert').empty();
-    var taskname = $("input[name='assignment']:checked").val();
+    var taskname = validateAssignmentSelected();
     if (!taskname) {
-        showAlert("Select an assignment first, before starting");
         return;
     }
-    console.log('taskname ' + taskname);
     stompClient.send("/app/control/starttask", {}, JSON.stringify({
         'taskName': taskname
     }));
@@ -81,15 +78,31 @@ function startTask() {
 }
 
 function stopTask() {
+    if (validateAssignmentSelected()) {
+        stompClient.send("/app/control/stoptask", {}, {});
+    }
+}
+
+function restartAssignment() {
+    var taskname = validateAssignmentSelected();
+    if (!taskname) {
+        return;
+    }
+    stompClient.send("/app/control/restartAssignment", {}, JSON.stringify({
+        'taskName': taskname
+    }));
+}
+function pauseResume() {
+    stompClient.send("/app/control/pauseResume", {}, {});
+}
+function validateAssignmentSelected() {
     $('#alert').empty();
     var taskname = $("input[name='assignment']:checked").val();
     if (!taskname) {
-        showAlert("No assignment active");
-        return;
+        showAlert("No assignment selected");
     }
-    stompClient.send("/app/control/stoptask", {}, {});
+    return taskname;
 }
-
 function clearAssignments() {
     $('#alert').empty();
     showAlert("competition has been restarted");
@@ -119,7 +132,14 @@ function showAlert(txt) {
 }
 
 function initializeAssignmentClock() {
+    console.log('initializeAssignmentClock ' );
     window.clock = new Clock('440');
     clock.start();
+    var isPaused = $('#assignment-clock').hasClass('disabled');
+    console.log('isPaused ' + isPaused);
+    if (isPaused) {
+        clock.setPaused(true);
+    }
+
 }
 

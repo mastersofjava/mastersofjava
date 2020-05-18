@@ -79,43 +79,62 @@
         <div class="tab-content roundGrayBorder" id="pills-tabContent" >
 
             <div class="tab-pane fade show active" id="pills-competitie" role="tabpanel" aria-labelledby="pills-competitie-tab">
-                <h6>het starten, stoppen en herstarten van competitie opdrachten.</h6><br/>
+                <h6>Het starten, stoppen en herstarten van competitie opdrachten.</h6><br/>
 
                 <div class="row">
 
-                    <div class="form-group col-6" >
+                    <div class="form-group col-4" >
                         <th:block th:each="assignment : ${assignments}">
-                            <div class="form-check input-group radio">
+                            <div class="form-check input-group radio" th:title="${assignment.displayName}">
                                 <label class="form-check-label">
                                     <input class="form-check-input" type="radio" name="assignment" th:checked="${assignment.name==currentAssignment}"
-                                           th:text="' ' + ${assignment.displayName}" th:value="${assignment.name}"
+                                           th:text="' ' + ${assignment.name}" th:value="${assignment.name}"
                                            th:id="${assignment.name}" th:attr="time=${assignment.duration.toSeconds()}"/>
                                 </label>
                             </div>
                         </th:block>
                     </div>
 
-                    <div class="form-group col-6">
+                    <div class="form-group col-4">
                         <div class="row">
                             <div class="btn-group-vertical col-4">
                                 <div class="p-2 text-center">
                                     <button id="start" class="btn btn-success" onclick="startTask();">Start Assignment</button>
                                 </div>
                                 <div class="p-2 text-center">
-                                    <button id="stop" class="btn btn-danger" onclick="stopTask();" data-container="body" data-toggle="popover" data-placement="left" data-content="Herstarten werkt nog niet goed, dus open voor discussie.">Stop Assignment</button>
+                                    <button id="hide" class="btn btn-warning " style="visibility: hidden">hide</button>
                                 </div>
                                 <div class="p-2 text-center">
-                                    <button id="clear" class="btn btn-warning" onclick="clearAssignments();" data-container="body" data-toggle="popover" data-placement="right" data-content="Dit was nog niet geimplenteerd, dus open voor discussie.">Reset competition</button>
+                                    <button id="clear" class="btn btn-danger" onclick="clearAssignments();" data-container="body" data-toggle="popover" data-placement="right" data-content="Dit was nog niet geimplenteerd, dus open voor discussie.">Reset Competition</button>
                                 </div>
                             </div>
 
                         </div>
 
                     </div>
+
+                    <div class="form-group col-4">
+                        <div class="row">
+                            <div class="btn-group-vertical col-4">
+                                <div class="p-2 text-center">
+                                    <button id="pause" class="btn btn-success" onclick="pauseResume();">Pause/Resume</button>
+                                </div>
+                                <div class="p-2 text-center">
+                                    <button id="stop" class="btn btn-warning" onclick="stopTask();" data-container="body" data-toggle="popover" data-placement="left" data-content="Herstarten werkt nog niet goed, dus open voor discussie.">Finish Assignment</button>
+                                </div>
+                                <div class="p-2 text-center">
+                                    <button id="restart" class="btn btn-danger" onclick="restartAssignment();" >Reset Assignment</button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
             </div>
             <div class="tab-pane fade" id="pills-sessiebeheer" role="tabpanel" aria-labelledby="pills-sessiebeheer-tab">
-                <h6>het beheren van sessies</h6><br/>
+                <h6>Het beheren van sessies</h6><br/>
 
                 <div class="p-2 col-6">
                     <form class="form" method="post" th:action="@{/control/select-session}" th:object="${selectSessionForm}">
@@ -134,7 +153,7 @@
                 </div>
         </div>
             <div class="tab-pane fade" id="pills-gebruikersbeheer" role="tabpanel" aria-labelledby="pills-gebruikersbeheer-tab">
-                <h6>beheren van gebruikers</h6><br/>
+                <h6>Beheren van gebruikers</h6><br/>
 
                 <div class="p-2 col-6">
                     <div th:remove="tag" th:utext="${teamDetailCanvas}"></div>
@@ -165,7 +184,7 @@
                 </div>
             </div>
             <div class="tab-pane fade " id="pills-configuratie" role="tabpanel" aria-labelledby="pills-configuratie-tab">
-                <h6>inladen van opdrachten vanaf een geconfigureerde locatie.</h6><br/>
+                <h6>Inladen van opdrachten vanaf een geconfigureerde locatie.</h6><br/>
 
                 <div class="p-2 col-6">
                     <button id="clone" class="btn btn-primary" onclick="scanAssignments();">Scan Assignments</button>
@@ -231,14 +250,14 @@
 </div>
 <div style="position: absolute; left:120px; top:100px;">
     <div class="text-center"  th:if="${currentAssignment!='-'}" >
-        <h4>'[[${currentAssignment}]]'</h4>
+        <h4>'[[${currentAssignment}]]'<span th:if="${clockStyle=='disabled'}" class="italic">&nbsp;PAUSED</span></h4>
         <b>Beschikbare tijd:</b>
     </div>
     <div class="text-center"  th:if="${currentAssignment=='-'}" >
         <h6>Selecteer een opdracht en start!</h6>
     </div>
     <div id="assignment-clock"
-         th:attrappend="data-time-left=${timeLeft},data-time=${time},running=${running}"
+         th:attrappend="data-time-left=${timeLeft},data-time=${time},running=${running},class=${' '+clockStyle},title=${clockStyle}"
          class="align-self-center">
         <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
             <h2 class="align-self-center">--:--</h2>
