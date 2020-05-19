@@ -152,7 +152,7 @@ public class SubmitService {
                     if (sr.isSuccess() || remainingSubmits <= 0) {
                         AssignmentStatus scored = scoreService.finalizeScore(as, activeAssignment);
                         return sr.toBuilder().score(scored.getAssignmentResult().getFinalScore())
-                                .remainingSubmits(remainingSubmits).build();
+                                .remainingSubmits(0).build();
                     }
                 } catch (Exception e) {
                     log.error("Submit failed unexpectedly.", e);

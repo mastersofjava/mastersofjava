@@ -88,8 +88,10 @@ public class JavaAssignmentFileResolver {
 
         return originalAssignmentFiles;
     }
-
-    private AssignmentFile convertToAssignmentFile(String assignment, Path assignmentBase, Path prefix, Path file, AssignmentFileType type, boolean readOnly) {
+    public AssignmentFile convertToAssignmentFile(String assignment, Path assignmentBase, Path prefix, Path file, AssignmentFileType type, boolean readOnly) {
+        return convertToAssignmentFile(assignment, assignmentBase, prefix, file, type, readOnly, UUID.randomUUID());
+    }
+    public AssignmentFile convertToAssignmentFile(String assignment, Path assignmentBase, Path prefix, Path file, AssignmentFileType type, boolean readOnly, UUID uuid) {
         Path ap = assignmentBase;
         Path bp = assignmentBase;
         if (prefix != null) {
@@ -106,7 +108,7 @@ public class JavaAssignmentFileResolver {
                 .shortName(getShortName(file))
                 .fileType(type)
                 .readOnly(readOnly)
-                .uuid(UUID.randomUUID())
+                .uuid(uuid)
                 .mediaType(resolveMediaType(ap))
                 .build();
     }

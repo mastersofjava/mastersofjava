@@ -13,6 +13,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * the html creation will be moved towards the angular client in the future.
+ */
 @Service
 @RequiredArgsConstructor
 public class GamemasterTableComponents {
@@ -94,7 +97,15 @@ public class GamemasterTableComponents {
 
 
         for (DtoAssignmentState orderedAssignment: list) {
-            sb.append("<tr><td>"+orderedAssignment.order+"</td><td>"+orderedAssignment.name+"</td><td>"+orderedAssignment.state+"</td><td>0</td></tr>");
+            boolean isStateCurrent = orderedAssignment.state.contains("CURRENT");
+            String viewState = orderedAssignment.state;
+            if (isStateCurrent) {
+                viewState = "<a href='./'>"+viewState+"</a>";
+            }
+            String viewName = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"' title='view assignment'>"+orderedAssignment.name+"</a>";
+            String viewOrder = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"&solution' title='view solution'>"+orderedAssignment.order+"</a>";
+
+            sb.append("<tr><td>"+viewOrder+"</td><td>"+viewName+"</td><td>"+viewState + "</td><td>0</td></tr>");
         }
         sb.append("</table>");
         return sb.toString();
@@ -102,11 +113,20 @@ public class GamemasterTableComponents {
 
     public String toSimpleBootstrapTable(List<AssignmentDescriptor> assignmentDescriptorList) {
         StringBuilder sb = new StringBuilder();
-        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Opdracht</th><th>Auteur</th><th>Java versie</th><th>Complexiteit</th></tr></thead>");
+        String tokenForIndividualBonus = "(*1)";
+        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Opdracht</th><th>Auteur</th><th>Bonus</th><th>Minuten</th><th>Java</th><th>Complexiteit</th></tr></thead>");
         for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
+            String bonus = "";
+            String title = ""+descriptor.getLabels()+ " - " +descriptor.getScoringRules().toString();
+            boolean isWithIndividualTestBonus = title.contains("[test");
+            if (isWithIndividualTestBonus) {
+                bonus = tokenForIndividualBonus;
+            }
+            bonus = descriptor.getScoringRules().getSuccessBonus() + bonus;
+            String author = descriptor.getAuthor().getName().split("\\(")[0];
+            Long duration = descriptor.getDuration().toMinutes();
 
-
-            sb.append("<tr><td>"+descriptor.getName()+"</td><td>"+descriptor.getAuthor().getName().split("\\(")[0]+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td></tr>");
+            sb.append("<tr title='"+title+"'><td>"+descriptor.getName()+"</td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td></tr>");
         }
         sb.append("</table>");
         return sb.toString();

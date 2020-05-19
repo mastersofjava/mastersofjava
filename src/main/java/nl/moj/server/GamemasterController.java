@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -168,6 +169,7 @@ public class GamemasterController {
     Map<String, Object> getAssignmentSolution() {
         Map<String, Object> response = new TreeMap<>();
         response.put("mojServerProperties", mojServerProperties);
+        response.put("system.java.home", System.getProperties().get("java.home"));
         response.put("assignments", gamemasterTableComponents.createAssignmentStatusMap());
         response.put("teams", teamRepository.findAll());
 
@@ -181,6 +183,16 @@ public class GamemasterController {
             if (!teams.isEmpty()) {
                 List<AssignmentFile> files = teamService.getTeamAssignmentFiles(competition.getCompetitionSession(), activeAssignment.getAssignment(), teams.get(0));
                 response.put("activeAssignment.files", files);
+                for (AssignmentFile file: files) {
+                    if (!file.isReadOnly()) {
+                        String path = file.getAbsoluteFile().toFile().getPath().replace("src\\main\\java","assets").replace("src/main/java","assets");
+                        File solutionFile = new File(path.replace(".java","Solution.java"));
+
+                        response.put("activeAssignment.files.editable", file);
+                        response.put("activeAssignment.files.solution", solutionFile);
+                        response.put("activeAssignment.files.solution.exists", solutionFile.exists());
+                    }
+                }
             }
         }
 

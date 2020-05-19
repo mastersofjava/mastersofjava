@@ -26,6 +26,12 @@ function connectCompetition() {
             function (data) {
                 var msg = JSON.parse(data.body);
                 console.log('received', msg);
+
+                if ('TEST'==msg.messageType && msg.test) {
+                    var colorStr = msg.success? 'lightgreen':'pink';
+                    $('#tabLink_'+msg.test).css('background-color',colorStr);
+                }
+
                 if (userHandlers.hasOwnProperty(msg.messageType)) {
                     userHandlers[msg.messageType](msg);
                 }

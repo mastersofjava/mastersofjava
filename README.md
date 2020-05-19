@@ -18,7 +18,9 @@ The game server uses Spring Boot, Thymeleaf, H2 database and Websockets.
 Make sure you update the application.yaml to it works for the machine that is running the game server.  
 
 #### Starting
-From any IDE you can just run the MojServerApplication.class
+- From any IDE you can just run the `MojServerApplication.class`
+- For downloading all javadocs via commandline: `mvn dependency:sources dependency:resolve -Dclassifier=javadoc`
+- Startup via commandline: `mvn compile spring-boot:run`
 
 #### Controller Dashboard
 

@@ -98,7 +98,6 @@ public class CompileService {
 
         List<AssignmentFile> resources = getResourcesToCopy(state);
         List<AssignmentFile> assignmentFiles = getReadonlyAssignmentFilesToCompile(state);
-        String assignment = competition.getCurrentAssignment().getAssignment().getName();
 
         // TODO this should be somewhere else
         Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(), team, state
