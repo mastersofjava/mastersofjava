@@ -77,7 +77,7 @@ public class ScoreServiceTest {
                                                      Integer submits, boolean lastSubmitSuccess, ScoringRules scoringRules) {
         AssignmentDescriptor ad = new AssignmentDescriptor();
         ad.setScoringRules(scoringRules);
-
+        ad.setLabels(new ArrayList<>());
         List<TestAttempt> testAttempts = createTestAttempts(testRuns, totalTestCases, successTestCases);
         List<SubmitAttempt> submitAttempts = createSubmitAttempts(submits, lastSubmitSuccess, totalTestCases, successTestCases);
 
