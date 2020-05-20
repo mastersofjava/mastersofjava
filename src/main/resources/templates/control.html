@@ -79,7 +79,7 @@
         <div class="tab-content roundGrayBorder" id="pills-tabContent" >
 
             <div class="tab-pane fade show active" id="pills-competitie" role="tabpanel" aria-labelledby="pills-competitie-tab">
-                <h6>Het starten, stoppen en herstarten van competitie opdrachten.</h6><br/>
+                <h6>Het starten, stoppen en herstarten van competitie opdrachten[[${selectedYearLabel}]].</h6><br/>
 
                 <div class="row">
 
@@ -184,7 +184,7 @@
                 </div>
             </div>
             <div class="tab-pane fade " id="pills-configuratie" role="tabpanel" aria-labelledby="pills-configuratie-tab">
-                <h6>Inladen van opdrachten. Aantal goed geconfigureerde locaties: [[${locationList.size()}]]</h6><br/>
+                <h6>Inladen van opdrachten. Aantal goed geconfigureerde locaties: [[${locationList.size()}]].</h6><br/>
 
                 <div class="p-2 col-12" th:if="${locationList.size()>0}">
                     <select class="p-2" th:disabled="${locationList.size()==1}" id="selectedYear" onchange="if (this.value) {scanAssignments()}">
@@ -244,7 +244,7 @@
                     <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
                 </div>
                 <div class="tab-pane fade" id="pills-opdrachtdetails" role="tabpanel" aria-labelledby="pills-opdrachtdetails-tab">
-                    <h6>Bekijk hier alle opdrachten tot in elk detail</h6>
+                    <h6>Bekijk hier elk detail van alle opdrachten [[${selectedYearLabel}]].</h6>
 
                     <div th:remove="tag" th:utext="${assignmentDetailCanvas}"></div>
 

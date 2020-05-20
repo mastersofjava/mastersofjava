@@ -124,6 +124,9 @@ public class GamemasterTableComponents {
             }
             bonus = descriptor.getScoringRules().getSuccessBonus() + bonus;
             String author = descriptor.getAuthor().getName().split("\\(")[0];
+            if (author.contains("http")) {
+                author = author.split("/")[0];
+            }
             Long duration = descriptor.getDuration().toMinutes();
 
             sb.append("<tr title='"+title+"'><td>"+descriptor.getName()+"</td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td></tr>");

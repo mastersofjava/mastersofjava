@@ -285,12 +285,21 @@ public class TaskControlController {
         }
 
         model.addAttribute("repositoryLocation", getSelectedLocation());
+        model.addAttribute("selectedYearLabel", getSelectedYearLabel());
 
         model.addAttribute("isWithAssignmentsLoaded", isWithAssignmentsLoaded);
         ssf.setSession(competition.getCompetitionSession().getUuid());
         return "control";
     }
-
+    private String getSelectedYearLabel() {
+        String year = getSelectedLocation().getName().split("-")[0];
+        if (!StringUtils.isNumeric(year)) {
+            year = "";
+        } else {
+            year = " ("+year + ")";
+        }
+        return year;
+    }
     private File getSelectedLocation() {
         File file = mojServerProperties.getAssignmentRepo().toFile();
         Competition c = competition.getCompetition();

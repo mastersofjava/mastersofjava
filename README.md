@@ -16,10 +16,12 @@ The game server uses Spring Boot, Thymeleaf, H2 database and Websockets.
 ### Preparation
 
 Make sure you update the application.yaml to it works for the machine that is running the game server.  
+- The resources are default located in: ./moj-data/
+- For downloading all javadocs via commandline: `mvn dependency:sources dependency:resolve -Dclassifier=javadoc`
+- Download the newest SDK documentation and extract (directory `api`) into directory: `./moj-data/javadoc/api` (now the participants have easily access to these docs via the GUI))
 
 #### Starting
 - From any IDE you can just run the `MojServerApplication.class`
-- For downloading all javadocs via commandline: `mvn dependency:sources dependency:resolve -Dclassifier=javadoc`
 - Startup via commandline: `mvn compile spring-boot:run`
 
 #### Controller Dashboard
