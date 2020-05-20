@@ -61,3 +61,16 @@ div.alert.show {
 div.font10px {
     font-size: 10px;
 }
+.table .error {
+    color: red;
+    font-weight: bold;
+}
+.cursorPointer {
+    cursor:pointer;
+}
+.hide {
+    display: none;
+}
+.minWidth300 {
+    min-width: 300px;
+}

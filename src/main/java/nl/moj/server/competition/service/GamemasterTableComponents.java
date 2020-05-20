@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -117,36 +118,73 @@ public class GamemasterTableComponents {
     }
 
     private class SimpleAssignmentDetailsPanel {
-        File directory;
-        public String createTables(List<AssignmentDescriptor> assignmentDescriptorList) {
-            StringBuilder sb = new StringBuilder();
-
+        private File directory;
+        private List<File> fileList = new ArrayList<>();
+        private List<String> errorList = new ArrayList<>();
+        public String createTableList(List<AssignmentDescriptor> assignmentDescriptorList) {
+            StringBuilder sbAll = new StringBuilder();
             for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
-                directory = descriptor.getDirectory().toFile();
-                sb.append("<table class='roundGrayBorder table' ><thead><tr><th>Files - Assignment '"+directory.getName()+"' </th><th>Type</th><th>Size</th><th>Last Modified</th></tr></thead>");
                 AssignmentFiles wrapper = descriptor.getAssignmentFiles();
+                initialize(descriptor.getDirectory().toFile());
+                String text = "";
+                try {
+                    text = Files.readString(new File(descriptor.getDirectory().toFile(),"assignment.yaml").toPath());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                sbAll.append("<span title='"+text.replace("'","\"")+"'>");
+                sbAll.append(createTable(wrapper));
+                sbAll.append("</span>");
 
-                sb.append(toSimpleFileRow(wrapper.getAssignment(), "assignment"));
-                sb.append(toSimpleFileRow(wrapper.getSecurityPolicy(), "security policy"));
+            }
+            return sbAll.toString();
+        }
+        private void initialize(File directory) {
+            this.directory = directory;
+            fileList = new ArrayList<>();
+            errorList = new ArrayList<>();
+        }
+        private String createTable(AssignmentFiles wrapper) {
+            StringBuilder sb = new StringBuilder();
+            if (wrapper.getSolution().isEmpty()) {
+                errorList.add("solution file missing");
+            }
+            if (wrapper.getSources().getEditable().isEmpty()) {
+                errorList.add("editable file missing");
+            }
+            if (wrapper.getTestSources().getHiddenTests().isEmpty() && new File(directory, "src/test/java/HiddenTests.java").exists()) {
+                errorList.add("hidden test found which is not configured yet in yaml");
+            }
+            sb.append(toSimpleFileRow(wrapper.getAssignment(), "assignment"));
+            sb.append(toSimpleFileRow(wrapper.getSecurityPolicy(), "security policy"));
 
-                for (Path solution: wrapper.getSolution()) {
-                    sb.append(toSimpleFileRow(solution, "solution"));
+            for (Path file: wrapper.getSolution()) {
+                sb.append(toSimpleFileRow(file, "solution"));
+            }
+            for (Path file: wrapper.getSources().getEditable()) {
+                sb.append(toSimpleFileRow(file, "src.editable"));
+            }
+            for (Path file: wrapper.getSources().getReadonly()) {
+                sb.append(toSimpleFileRow(file, "src.readable"));
+            }
+            for (Path file: wrapper.getTestSources().getHiddenTests()) {
+                sb.append(toSimpleFileRow(file, "src.test.hidden"));
+            }
+            for (Path file: wrapper.getTestSources().getTests()) {
+                sb.append(toSimpleFileRow(file, "src.test.visible"));
+            }
+            StringBuffer header = new StringBuffer();
+            header.insert(0, "<table class='roundGrayBorder table ' ><thead class='cursorPointer' onclick=\"$(this).parent().find('.extra').toggleClass('hide')\"><tr><th class='minWidth300'>Files - Assignment '"+directory.getName()+"' - "+fileList.size()+" files</th><th class='extra hide'>Type</th><th class='extra hide'>Size</th><th class='extra hide'>Last Modified</th></tr>");
+            if (errorList.size()>0) {
+                header.append("<tr><td colspan=4 class='error'><center>ERROR</center></td></tr>");
+                for (String error: errorList) {
+                    header.append("<tr><td colspan=4 class='error'>- "+error+"</td></tr>");
                 }
-                for (Path solution: wrapper.getSources().getEditable()) {
-                    sb.append(toSimpleFileRow(solution, "src.editable"));
-                }
-                for (Path solution: wrapper.getSources().getReadonly()) {
-                    sb.append(toSimpleFileRow(solution, "src.readable"));
-                }
-                for (Path solution: wrapper.getTestSources().getHiddenTests()) {
-                    sb.append(toSimpleFileRow(solution, "src.test.hidden"));
-                }
-                for (Path solution: wrapper.getTestSources().getTests()) {
-                    sb.append(toSimpleFileRow(solution, "src.test.visible"));
-                }
-                sb.append("</table>");
             }
 
+
+            sb.insert(0, header.toString() +"</thead><tbody class='extra hide'>");
+            sb.append("</tbody></table>");
             return sb.toString();
         }
         private final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -170,14 +208,21 @@ public class GamemasterTableComponents {
                 }
                 file = new File(directory, prefix+file.getPath() );
             }
+            if (!file.exists()) {
+                errorList.add("file bestaat niet: " + file);
+            }
+            if (file.getName().contains("Hidden") && !type.contains("hidden")) {
+                errorList.add("file '"+file.getName()+"' is bedoeld als 'hidden', echter heeft het verkeerde type: " + type);
+            }
+            fileList.add(file);
             StringBuilder sb = new StringBuilder();
-            sb.append("<tr><td>"+file+"</td><td>"+type+"</td><td>"+file.length()+"</td><td>"+SDF.format(new Date(file.lastModified()))+"</td></tr>");
+            sb.append("<tr><td class='minWidth300'>"+file+"</td><td>"+type+"</td><td>"+file.length()+"</td><td>"+SDF.format(new Date(file.lastModified()))+"</td></tr>");
             return sb.toString();
         }
     }
 
     public String toSimpleBootstrapTablesForFileDetails(List<AssignmentDescriptor> assignmentDescriptorList) {
-        return new SimpleAssignmentDetailsPanel().createTables(assignmentDescriptorList);
+        return new SimpleAssignmentDetailsPanel().createTableList(assignmentDescriptorList);
     }
 
     public String toSimpleBootstrapTable(List<AssignmentDescriptor> assignmentDescriptorList) {
