@@ -187,8 +187,8 @@
                 <h6>Inladen van opdrachten. Aantal goed geconfigureerde locaties: [[${locationList.size()}]].</h6><br/>
 
                 <div class="p-2 col-12" th:if="${locationList.size()>0}">
-                    <select class="p-2" th:disabled="${locationList.size()==1}" id="selectedYear" onchange="if (this.value) {scanAssignments()}">
-                        <option th:value="0">Selecteer een ander jaar</option>
+                    <select class="p-2" th:disabled="${locationList.size()==1}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
+                        <option value="">Selecteer een ander jaar</option>
                         <option th:each="team : ${locationList}" th:value="${team.getName()}"
                                 th:text="${team.getName()}" th:selected="${team.getName().equals(repositoryLocation.getName())}"></option>
                     </select>
@@ -231,10 +231,13 @@
                 <a class="nav-link active" id="pills-wedstrijdverloop-tab" data-toggle="pill" href="#pills-wedstrijdverloop" role="tab" aria-controls="pills-wedstrijdverloop" aria-selected="true">Wedstrijdverloop</a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" id="pills-toptien-tab" data-toggle="pill" href="#pills-toptien" role="tab" aria-controls="pills-toptien" aria-selected="false">Top 10</a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" id="pills-opdrachtdetails-tab" data-toggle="pill" href="#pills-opdrachtdetails" role="tab" aria-controls="pills-opdrachtdetails" aria-selected="false">Opdrachtdetails</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="pills-toptien-tab" data-toggle="pill" href="#pills-toptien" role="tab" aria-controls="pills-toptien" aria-selected="false">Top 10</a>
+                <a class="nav-link" id="pills-opdrachtconfiguratie-tab" data-toggle="pill" href="#pills-opdrachtconfiguratie" role="tab" aria-controls="pills-opdrachtdetails" aria-selected="false">Opdrachtconfiguratie</a>
             </li>
             </ul>
             <div class="tab-content roundGrayBorder" id="pills-tabContent2">
@@ -254,6 +257,14 @@
                     <h6>Bekijk hier de beste teams tot dusver</h6>
 
                     <div th:remove="tag" th:utext="${teamDetailCanvas}"></div>
+                </div>
+                <div class="tab-pane fade" id="pills-opdrachtconfiguratie" role="tabpanel" aria-labelledby="pills-opdrachtconfiguratie-tab">
+                    <h6>Bekijk hier de configuratie van de geselecteerde opdracht</h6>
+
+                    <div class="font10px">
+                        <div th:remove="tag" th:utext="${opdrachtConfiguraties}"></div>
+                    </div>
+
                 </div>
             </div>
 

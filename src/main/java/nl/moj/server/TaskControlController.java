@@ -209,9 +209,14 @@ public class TaskControlController {
             if (StringUtils.isNumeric(message.taskName)) {
                 path = getLocationByYear(Integer.parseInt(message.taskName)).toPath();
             }
+            if (!path.toFile().isDirectory()) {
+                return "Assignment location invalid.";
+            }
             log.info("year " + message.taskName + " path " + path + " " +StringUtils.isNumeric(message.taskName)) ;
             List<Assignment> assignmentList = assignmentService.updateAssignments(path);
-
+            if (assignmentList.isEmpty()) {
+                return "No assignments scanned from location of "+path.toFile().getName()+" (improve assignments before importing).";
+            }
             log.info("assignmentList " +assignmentList.size() + " " + assignmentList) ;
 
             Competition c = competition.getCompetition();
@@ -270,11 +275,14 @@ public class TaskControlController {
         boolean isWithAssignmentsLoaded = !competition.getAssignmentInfo().isEmpty();
 
         if (isWithAssignmentsLoaded) {
-            model.addAttribute("assignmentDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTable(assignments()) );
+            List<AssignmentDescriptor> assignmentDescriptorList = assignments();
+            model.addAttribute("assignmentDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTable(assignmentDescriptorList) );
             model.addAttribute("gameDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForAssignmentStatus());
+            model.addAttribute("opdrachtConfiguraties", gamemasterTableComponents.toSimpleBootstrapTablesForFileDetails(assignmentDescriptorList));
         } else {
             model.addAttribute("assignmentDetailCanvas", "(U moet eerst de opdrachten inladen)");
             model.addAttribute("gameDetailCanvas", "(U moet eerst de opdrachten inladen)");
+            model.addAttribute("opdrachtConfiguraties","(U moet eerst de opdrachten inladen)");
         }
 
         List<Team> teams = team();

@@ -55,3 +55,9 @@ svg {
 .italic {
     font-style: italic;
 }
+div.alert.show {
+    z-index: 1;
+}
+div.font10px {
+    font-size: 10px;
+}

@@ -3,13 +3,18 @@ package nl.moj.server.competition.service;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.descriptor.AssignmentFiles;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.teams.model.Team;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -111,6 +116,70 @@ public class GamemasterTableComponents {
         return sb.toString();
     }
 
+    private class SimpleAssignmentDetailsPanel {
+        File directory;
+        public String createTables(List<AssignmentDescriptor> assignmentDescriptorList) {
+            StringBuilder sb = new StringBuilder();
+
+            for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
+                directory = descriptor.getDirectory().toFile();
+                sb.append("<table class='roundGrayBorder table' ><thead><tr><th>Files - Assignment '"+directory.getName()+"' </th><th>Type</th><th>Size</th><th>Last Modified</th></tr></thead>");
+                AssignmentFiles wrapper = descriptor.getAssignmentFiles();
+
+                sb.append(toSimpleFileRow(wrapper.getAssignment(), "assignment"));
+                sb.append(toSimpleFileRow(wrapper.getSecurityPolicy(), "security policy"));
+
+                for (Path solution: wrapper.getSolution()) {
+                    sb.append(toSimpleFileRow(solution, "solution"));
+                }
+                for (Path solution: wrapper.getSources().getEditable()) {
+                    sb.append(toSimpleFileRow(solution, "src.editable"));
+                }
+                for (Path solution: wrapper.getSources().getReadonly()) {
+                    sb.append(toSimpleFileRow(solution, "src.readable"));
+                }
+                for (Path solution: wrapper.getTestSources().getHiddenTests()) {
+                    sb.append(toSimpleFileRow(solution, "src.test.hidden"));
+                }
+                for (Path solution: wrapper.getTestSources().getTests()) {
+                    sb.append(toSimpleFileRow(solution, "src.test.visible"));
+                }
+                sb.append("</table>");
+            }
+
+            return sb.toString();
+        }
+        private final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        private String toSimpleFileRow(Path file, String type) {
+            if (file == null) {
+                return "";
+            }
+            return toSimpleFileRow(file.toFile(), type);
+        }
+        private String toSimpleFileRow(File file, String type) {
+            if (file==null) {
+                return "";
+            }
+            if (!file.exists() && !type.startsWith("src.")) {
+                file = new File(directory, file.getPath() );
+            } else
+            if (!file.exists()) {
+                String prefix = "/src/main/java/";
+                if (type.startsWith("src.test")) {
+                    prefix = "/src/test/java/";
+                }
+                file = new File(directory, prefix+file.getPath() );
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("<tr><td>"+file+"</td><td>"+type+"</td><td>"+file.length()+"</td><td>"+SDF.format(new Date(file.lastModified()))+"</td></tr>");
+            return sb.toString();
+        }
+    }
+
+    public String toSimpleBootstrapTablesForFileDetails(List<AssignmentDescriptor> assignmentDescriptorList) {
+        return new SimpleAssignmentDetailsPanel().createTables(assignmentDescriptorList);
+    }
+
     public String toSimpleBootstrapTable(List<AssignmentDescriptor> assignmentDescriptorList) {
         StringBuilder sb = new StringBuilder();
         String tokenForIndividualBonus = "(*1)";
@@ -127,8 +196,11 @@ public class GamemasterTableComponents {
             if (author.contains("http")) {
                 author = author.split("/")[0];
             }
+            if (author.contains(" based on ")) {
+                author = author.substring(0, author.indexOf(" based on "));
+            }
             Long duration = descriptor.getDuration().toMinutes();
-
+            title = " \"" +descriptor.getDisplayName()+ "\"";
             sb.append("<tr title='"+title+"'><td>"+descriptor.getName()+"</td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td></tr>");
         }
         sb.append("</table>");
