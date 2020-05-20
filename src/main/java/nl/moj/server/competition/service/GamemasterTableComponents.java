@@ -2,7 +2,6 @@ package nl.moj.server.competition.service;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.GamemasterController;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.runtime.CompetitionRuntime;
@@ -95,7 +94,7 @@ public class GamemasterTableComponents {
         }
         sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Opdracht</th><th>Status</th><th>High score</th></tr></thead>");
 
-
+        int counter = 0;
         for (DtoAssignmentState orderedAssignment: list) {
             boolean isStateCurrent = orderedAssignment.state.contains("CURRENT");
             String viewState = orderedAssignment.state;
@@ -103,9 +102,10 @@ public class GamemasterTableComponents {
                 viewState = "<a href='./'>"+viewState+"</a>";
             }
             String viewName = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"' title='view assignment'>"+orderedAssignment.name+"</a>";
-            String viewOrder = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"&solution' title='view solution'>"+orderedAssignment.order+"</a>";
+            String viewOrder = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"&solution' title='view solution'>"+counter+"</a>";
 
             sb.append("<tr><td>"+viewOrder+"</td><td>"+viewName+"</td><td>"+viewState + "</td><td>0</td></tr>");
+            counter++;
         }
         sb.append("</table>");
         return sb.toString();

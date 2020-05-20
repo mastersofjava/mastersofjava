@@ -143,16 +143,16 @@
                    target="_blank">Javadoc</a>
             </div>
             <div th:if="${running}" class="p-2 text-center">
-                <button id="compile" class="btn w-50 btn-success" th:disabled="${finished||timeLeft==0}">Compile</button>
+                <button id="compile" class="btn w-50 btn-success" th:disabled="${submitDisabled}">Compile</button>
             </div>
             <div th:if="${running}" class="p-2  text-center">
                 <button id="show-tests" class="btn w-50 btn-success" data-toggle="modal" data-target="#test-modal"
-                        onclick="resetTabColor();" th:disabled="${finished||timeLeft==0}">Test
+                        onclick="resetTabColor();" th:disabled="${submitDisabled}">Test
                 </button>
             </div>
             <div th:if="${running}" class="mt-5 p-2 text-center">
                 <button id="btn-open-submit" class="btn w-50 btn-danger" data-toggle="modal"
-                        data-target="#confirm-submit-modal" th:disabled="${finished||timeLeft==0}">SUBMIT
+                        data-target="#confirm-submit-modal" th:disabled="${submitDisabled}">SUBMIT
                 </button>
             </div>
 
@@ -167,7 +167,7 @@
 
         </div>
         <div class="mr-auto p-2">&nbsp;
-            <i>[[${bonus}]]<span th:if="${labels.size()>0}">. Points for each individual test: [[${labels.toString().replace("_","=")}]]</span></i>
+            <i>[[${bonus}]]<span th:if="${labels!=null && labels.size()>0}">. Points for each individual test: [[${labels.toString().replace("_","=")}]]</span></i>
         </div>
         <div class="ml-auto pr-2 align-self-center" id="status"></div>
         <div class="pr-2 align-self-center">
@@ -200,7 +200,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" id="test" class="btn btn-primary" th:disabled="${finished||timeLeft==0}">Run Tests</button>
+                <button type="button" id="test" class="btn btn-primary" th:disabled="${submitDisabled}">Run Tests</button>
             </div>
         </div>
     </div>
@@ -224,7 +224,7 @@
             </div>
             <div class="modal-footer">
                 <button type="cancel-submit" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button id="submit" class="btn w-50 btn-danger" th:disabled="${finished||timeLeft==0}">SUBMIT</button>
+                <button id="submit" class="btn w-50 btn-danger" th:disabled="${submitDisabled}">SUBMIT</button>
             </div>
         </div>
     </div>

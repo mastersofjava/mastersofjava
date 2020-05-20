@@ -158,9 +158,12 @@ public class IndexController {
             model.addAttribute("maxSubmits", ash.getMaximumSubmits());
             model.addAttribute("submits", ash.getRemainingSubmits());
             model.addAttribute("solution", isWithInsertSolution);
+            model.addAttribute("submitDisabled", ash.isCompleted());
+
         }
         public void saveAdminState( Assignment assignment) {
             model.addAttribute("finished",false);
+            model.addAttribute("submitDisabled", true);
             model.addAttribute("submittime", 0);
             model.addAttribute("finalscore", 0);
             model.addAttribute("maxSubmits", 1);
@@ -189,6 +192,7 @@ public class IndexController {
             model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addAttribute("tests", state.getTestFiles());
             model.addAttribute("running", state.isRunning());
+
         }
     }
     private class AssignmentStatusHelper {

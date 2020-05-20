@@ -41,6 +41,7 @@ import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -48,11 +49,14 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -98,6 +102,33 @@ public class TaskControlController {
     @ModelAttribute(name = "assignments")
     public List<AssignmentDescriptor> assignments() {
         return competition.getAssignmentInfo();
+    }
+    @ModelAttribute(name = "locationList")
+    public List<File> locationList() {
+        List<File> locationList = new ArrayList<>();
+        File defaultLocation = mojServerProperties.getAssignmentRepo().toFile();
+        if (!defaultLocation.exists()) {
+            return locationList;
+        }
+        for (File file: defaultLocation.getParentFile().listFiles()) {
+            if (file.isDirectory() && file.getName().startsWith("20")) {
+                locationList.add(file);
+            }
+        }
+        return locationList;
+    }
+    private File getLocationByYear(int year) {
+        File defaultLocation = mojServerProperties.getAssignmentRepo().toFile();
+        if (year<2008 || year>2030) {
+            return defaultLocation;
+        }
+        String token = ""+year  +"-";
+        for (File file: defaultLocation.getParentFile().listFiles()) {
+            if (file.getName().startsWith(token)) {
+                return file;
+            }
+        }
+        return defaultLocation;
     }
 
     @ModelAttribute(name = "teams")
@@ -172,26 +203,34 @@ public class TaskControlController {
     }
     @MessageMapping("/control/scanAssignments")
     @SendToUser("/queue/controlfeedback")
-    public String cloneAssignmentsRepo() {
+    public String cloneAssignmentsRepo(TaskMessage message) {
         try {
-            assignmentService.updateAssignments(mojServerProperties.getAssignmentRepo());
+            Path path = mojServerProperties.getAssignmentRepo();
+            if (StringUtils.isNumeric(message.taskName)) {
+                path = getLocationByYear(Integer.parseInt(message.taskName)).toPath();
+            }
+            log.info("year " + message.taskName + " path " + path + " " +StringUtils.isNumeric(message.taskName)) ;
+            List<Assignment> assignmentList = assignmentService.updateAssignments(path);
+
+            log.info("assignmentList " +assignmentList.size() + " " + assignmentList) ;
 
             Competition c = competition.getCompetition();
-
-            // wipe assignments
+            c.setName(path.toFile().getName());
+            // wipe previous assignments
             c.setAssignments(new ArrayList<>());
             c = competitionRepository.save(c);
-
+            Assert.isTrue( c.getAssignments().isEmpty(),"competition should have no assignments");
             // re-add updated assignments
             c.setAssignments(assignmentRepository.findAll()
                     .stream()
                     .map(createOrderedAssignments(c))
                     .collect(Collectors.toList()));
             c = competitionRepository.save(c);
+            log.info("assignment repository " +c.getAssignments().size() + " " + c.getAssignmentsInOrder().size()) ;
 
             competition.loadSession(c, competition.getCompetitionSession().getUuid());
 
-            return "Assignments scanned, reload to show them.";
+            return "Assignments scanned from location "+path+" ("+assignmentList.size()+"), reloading to show them.";
         } catch (AssignmentServiceException ase) {
             log.error("Scanning assignments failed.", ase);
             return ase.getMessage();
@@ -244,8 +283,21 @@ public class TaskControlController {
         } else {
             model.addAttribute("teamDetailCanvas", "(U moet eerst de gebruikers aanmaken)");
         }
+
+        model.addAttribute("repositoryLocation", getSelectedLocation());
+
+        model.addAttribute("isWithAssignmentsLoaded", isWithAssignmentsLoaded);
         ssf.setSession(competition.getCompetitionSession().getUuid());
         return "control";
+    }
+
+    private File getSelectedLocation() {
+        File file = mojServerProperties.getAssignmentRepo().toFile();
+        Competition c = competition.getCompetition();
+        if (c.getName().startsWith("20") && new File(file.getParentFile(),c.getName()).isDirectory()) {
+            file = new File(file.getParentFile(),c.getName());
+        }
+        return file;
     }
 
     @PostMapping("/control/select-session")

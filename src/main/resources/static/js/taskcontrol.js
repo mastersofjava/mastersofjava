@@ -110,7 +110,11 @@ function clearAssignments() {
 }
 
 function scanAssignments() {
-    stompClient.send("/app/control/scanAssignments", {}, {});
+    var year = $('#selectedYear').val().split('-')[0];
+
+    stompClient.send("/app/control/scanAssignments", {},  JSON.stringify({
+        'taskName': year
+    }));
 }
 
 function showOutput(messageOutput) {

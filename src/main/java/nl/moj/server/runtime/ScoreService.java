@@ -40,6 +40,7 @@ import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.test.model.TestCase;
 import org.aspectj.weaver.ast.Test;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 /**
  * The ScoreService calculates the score.
@@ -115,6 +116,7 @@ public class ScoreService {
 
     private Score calculateScore(ActiveAssignment state, AssignmentStatus as) {
         AssignmentDescriptor ad = state.getAssignmentDescriptor();
+        Assert.isTrue(ad!= null && ad.getLabels()!=null,"assignment should have enough rules configured.");
         return Score.builder()
                 .initialScore(calculateInitialScore(state.getTimeRemaining(), as))
                 .submitBonus(calculateSubmitBonus(ad, as))
@@ -240,12 +242,8 @@ public class ScoreService {
             String key = testCase.getName().replace(".java","").toLowerCase();
             if (configDetails.containsKey(key)) {
                 sum += configDetails.get(key);
-                log.info("sum: key " +key + " val " + configDetails.get(key) + " sum: " +sum);
-            } else {
-                log.info("no sum: key " +key + " val " + configDetails.keySet() );
             }
         }
-        log.info("sum " +sum + " configDetails " + configDetails );
         return sum;
     }
 

@@ -2,19 +2,13 @@ package nl.moj.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.repository.AssignmentRepository;
-import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.OrderedAssignment;
-import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.service.CompetitionService;
 import nl.moj.server.competition.service.GamemasterTableComponents;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.login.SignupForm;
-import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
@@ -27,10 +21,7 @@ import nl.moj.server.teams.service.TeamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -38,15 +29,16 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+/**
+ * delivering GameMaster data to the client
+ */
 @Controller
 @RequiredArgsConstructor
-public class GamemasterController {
+public class GamemasterJsonController {
 
     private static final Logger log = LoggerFactory.getLogger(nl.moj.server.TaskControlController.class);
 
@@ -54,23 +46,13 @@ public class GamemasterController {
 
     private final CompetitionRuntime competition;
 
-    private final AssignmentService assignmentService;
-
-    private final AssignmentRepository assignmentRepository;
-
-    private final CompetitionRepository competitionRepository;
-
     private final TeamRepository teamRepository;
-
-    private final PasswordEncoder encoder;
 
     private final TeamService teamService;
 
     private final AssignmentStatusRepository assignmentStatusRepository;
 
     private final AssignmentResultRepository assignmentResultRepository;
-
-    private final AssignmentRuntime assignmentRuntime;
 
     private final GamemasterTableComponents gamemasterTableComponents;
 

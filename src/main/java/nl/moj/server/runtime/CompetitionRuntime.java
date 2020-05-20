@@ -155,7 +155,7 @@ public class CompetitionRuntime {
             return Collections.emptyList();
         }
 
-        return Optional.ofNullable(competition.getAssignments()).orElse(Collections.emptyList()).stream()
+        return Optional.ofNullable(competition.getAssignmentsInOrder()).orElse(Collections.emptyList()).stream()
                 .map(v -> assignmentService.getAssignmentDescriptor(v.getAssignment())
                 ).sorted(Comparator.comparing(AssignmentDescriptor::getDisplayName)).collect(Collectors.toList());
     }

@@ -47,8 +47,22 @@ public class Competition {
     private List<OrderedAssignment> assignments = new ArrayList<>();
 
     public List<OrderedAssignment> getAssignmentsInOrder() {
-        List<OrderedAssignment> copy = new ArrayList<>(assignments);
-        copy.sort(Comparator.comparingInt(OrderedAssignment::getOrder));
-        return copy;
+        List<OrderedAssignment> copyFiltered = copyFilteredList();
+        copyFiltered.sort(Comparator.comparingInt(OrderedAssignment::getOrder));
+        return copyFiltered;
+    }
+
+    private List<OrderedAssignment> copyFilteredList() {
+        boolean isDefault = !name.startsWith("20");
+        if (isDefault) {
+            return new ArrayList<>(assignments);
+        }
+        List<OrderedAssignment> filteredList = new ArrayList<>();
+        for (OrderedAssignment oa: assignments) {
+            if (oa.getAssignment().getAssignmentDescriptor().contains(name)) {
+                filteredList.add(oa);
+            }
+        }
+        return filteredList;
     }
 }

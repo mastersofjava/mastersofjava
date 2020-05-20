@@ -162,7 +162,7 @@
                 <div class="p-2 col-6">
                     <form class="mt-5" method="POST" action="/control/resetPassword"
                           enctype="multipart/form-data" th:object="${newPasswordRequest}">
-                        <select class="p-2" th:field="*{teamUuid}">
+                        <select class="p-2" th:field="*{teamUuid}" >
                             <option th:value="0">Please select...</option>
                             <option th:each="team : ${teams}" th:value="${team.uuid}"
                                     th:text="${team.name}"></option>
@@ -184,13 +184,23 @@
                 </div>
             </div>
             <div class="tab-pane fade " id="pills-configuratie" role="tabpanel" aria-labelledby="pills-configuratie-tab">
-                <h6>Inladen van opdrachten vanaf een geconfigureerde locatie.</h6><br/>
+                <h6>Inladen van opdrachten. Aantal goed geconfigureerde locaties: [[${locationList.size()}]]</h6><br/>
 
-                <div class="p-2 col-6">
-                    <button id="clone" class="btn btn-primary" onclick="scanAssignments();">Scan Assignments</button>
+                <div class="p-2 col-12" th:if="${locationList.size()>0}">
+                    <select class="p-2" th:disabled="${locationList.size()==1}" id="selectedYear" onchange="if (this.value) {scanAssignments()}">
+                        <option th:value="0">Selecteer een ander jaar</option>
+                        <option th:each="team : ${locationList}" th:value="${team.getName()}"
+                                th:text="${team.getName()}" th:selected="${team.getName().equals(repositoryLocation.getName())}"></option>
+                    </select>
+                    <button id="clone" class="btn btn-primary" onclick="scanAssignments();">
+                        <span th:if="${isWithAssignmentsLoaded}"> Herlaad assignments van dit jaar</span><span th:if="${!isWithAssignmentsLoaded}"> Laad assignments </span>
+
+                    </button>
                 </div>
-
-                <div class="p-2 col-6">
+                <div class="p-2 col-12" th:if="${locationList.size()==0}">
+                    U moet eerst zorgen voor goede lokcaties
+                </div>
+                <div class="p-2 col-12">
 
 
                     <form class="mt-5" method="POST" action="/upload" enctype="multipart/form-data">
