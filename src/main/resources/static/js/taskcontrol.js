@@ -131,11 +131,18 @@ function clientSend(destinationUri, taskMap) {
     console.log(taskMap);
     stompClient.send(destinationUri, {}, JSON.stringify(taskMap));
 }
-function clientSelectSubtable(node) {
+function clientSelectSubtable(node, rowIdentifierValue) {
     $(node).closest('table').find('tr').removeClass('selected');
     $(node).closest('table').find('tr.subrows').addClass('hide');
     $(node).closest('tbody').find('tr.subrows').removeClass('hide');
     $(node).closest('tbody').find('tr').addClass('selected');
+    
+    // close row components in tab
+    var hiddenRowComponents = $(node).closest('.tab-pane').find('.rowComponent').addClass('hide');
+    console.log('hiddenRowComponents ' +hiddenRowComponents.length + ' val ' + rowIdentifierValue + ' hiddenRow '+ hiddenRowComponents.find('.rowIdentifier').length);
+    if (rowIdentifierValue) {
+        hiddenRowComponents.find('.rowIdentifier').val(rowIdentifierValue);
+    }
 }
 function clientOnload() {
     $('[data-toggle="popover"]').popover();

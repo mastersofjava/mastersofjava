@@ -139,7 +139,7 @@ public class GamemasterTableComponents {
             String actionsAdd = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#createNewSessionForm').submit()\">toevoegen sessie</button>";
             String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
             String styleCompetition = competition.getName().equals(selectedCompetition) ? " italic " :"";
-            sb.append("<tbody title='sessiepanel van competitie "+competition.getId()+"'><tr class='"+ styleCompetition+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;"+competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td >"+actionsAdd+"</td><td>"+actionsDelete+"</td></tr>");
+            sb.append("<tbody title='sessiepanel van competitie "+competition.getId()+"' ><tr class='"+ styleCompetition+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;"+competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td >"+actionsAdd+"</td><td>"+actionsDelete+"</td></tr>");
 
             int sessionCounter = 1;
 
@@ -201,13 +201,18 @@ public class GamemasterTableComponents {
                 specialRole = "("+team.getRole().split("_")[1]+")";
             }
             String style = isShowAllUsers?"cursorPointer":"";
-            String simpleClickEvent = isShowAllUsers?"clientSelectSubtable(this)":"";
-            sb.append("<tbody><tr class='"+style+"' onclick=\""+simpleClickEvent+"\"><td class='alignRight'>"+counter+"</td><td>"+team.getName()+specialRole+"</td><td title='"+titleList+"' class='alignRight'>"+titleList.size()+"</td><td class='alignRight minWidth100'>0</td></tr>");
+            String simpleClickEvent = isShowAllUsers?"clientSelectSubtable(this, '"+team.getUuid()+"')":"";
+            String viewTitle = titleList.isEmpty()?"deze gebruiker heeft nog geen opdrachten gedaan":titleList.toString();
+            sb.append("<tbody><tr class='"+style+"' onclick=\""+simpleClickEvent+"\"><td class='alignRight'>"+counter+"</td><td>"+team.getName()+specialRole+"</td><td title='"+viewTitle+"' class='alignRight'>"+titleList.size()+"</td><td class='alignRight minWidth100'>0</td></tr>");
 
             if (isShowAllUsers) {
                 sb.append("<tr class='subrows hide'><td colspan=3>");
                 sb.append("<input type='text' placeholder='registreer contactgegevens' class='minWidth300 font10px'/>");
-                sb.append("</td><td><button class='font10px cursorPointer minWidth100' onclick=\"$(this).closest('tbody').addClass('hide')\">delete team</button><br/><button onclick=\"$('.passwordModal').toggleClass('hide')\" class='font10px minWidth100 cursorPointer'>password</button></td></tr>");
+                String deleteButton = "<button class='font10px cursorPointer minWidth100' onclick=\"$(this).closest('tbody').addClass('hide')\">delete team</button><br/>";
+                if (team.getRole().equals(Role.ADMIN)) {
+                    deleteButton = "";
+                }
+                sb.append("</td><td>"+deleteButton+"<button onclick=\"$('.passwordModal').toggleClass('hide')\" class='font10px minWidth100 cursorPointer'>password</button></td></tr>");
             }
             sb.append("</tbody>");
             counter ++;

@@ -262,11 +262,11 @@
                         </div>
 
                         <div class="p-2 col-5">
-                            <div class="roundGrayBorder passwordModal hide">
+                            <div class="roundGrayBorder passwordModal hide rowComponent">
                                 <form class="mt-2 font10px alignCenter" method="POST" action="/control/resetPassword"
                                       enctype="multipart/form-data" th:object="${newPasswordRequest}">
 
-                                    <select class="p-2 disabled" th:field="*{teamUuid}" >
+                                    <select class="p-2 disabled rowIdentifier" th:field="*{teamUuid}" >
                                         <option th:value="0">Please select user...</option>
                                         <option th:each="team : ${teams}" th:value="${team.uuid}"
                                                 th:text="${team.name}"></option>
