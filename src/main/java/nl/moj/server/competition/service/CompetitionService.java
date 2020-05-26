@@ -47,8 +47,10 @@ public class CompetitionService {
     private final MojServerProperties mojServerProperties;
 
 
-
     public void createNewTeam(SignupForm form) {
+        createNewTeam(form, Role.USER);
+    }
+    public void createNewTeam(SignupForm form, String role) {
         SecurityContext context = SecurityContextHolder.getContext();
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(form.getName(), form
                 .getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.USER)));
@@ -58,7 +60,7 @@ public class CompetitionService {
                 .country(form.getCountry())
                 .name(form.getName())
                 .password(encoder.encode(form.getPassword()))
-                .role(Role.USER)
+                .role(role)
                 .uuid(UUID.randomUUID())
                 .build();
 

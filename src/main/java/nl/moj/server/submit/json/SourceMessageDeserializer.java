@@ -51,6 +51,10 @@ public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
             ArrayNode jsonTests = (ArrayNode) node.get("tests");
             jsonTests.forEach(t -> tests.add(t.asText()));
         }
-        return new SourceMessage(sources, tests);
+        String assignmentNameForAdminPurpose = null;
+        if (node.get("assignmentName") != null && node.get("assignmentName").isTextual()) {
+            assignmentNameForAdminPurpose = node.get("assignmentName").asText();
+        }
+        return new SourceMessage(sources, tests, assignmentNameForAdminPurpose);
     }
 }

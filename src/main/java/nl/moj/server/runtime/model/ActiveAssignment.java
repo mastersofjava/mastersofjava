@@ -68,7 +68,7 @@ public class ActiveAssignment {
     }
 
     public ExecutionModel getExecutionModel() {
-        if (assignmentDescriptor.getExecutionModel() == null) {
+        if (assignmentDescriptor==null || assignmentDescriptor.getExecutionModel() == null) {
             return ExecutionModel.PARALLEL;
         }
         return assignmentDescriptor.getExecutionModel();

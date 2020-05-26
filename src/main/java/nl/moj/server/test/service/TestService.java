@@ -49,6 +49,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 @Service
@@ -81,26 +82,28 @@ public class TestService {
         this.teamService = teamService;
     }
 
-    private CompletableFuture<TestResult> scheduleTest(Team team, TestAttempt testAttempt, AssignmentFile test, Executor executor) {
-        return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, competition.getActiveAssignment()), executor);
+    private CompletableFuture<TestResult> scheduleTest(Team team, TestAttempt testAttempt, AssignmentFile test, Executor executor, ActiveAssignment activeAssignment) {
+        return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, activeAssignment), executor);
     }
-
     public CompletableFuture<TestResults> scheduleTests(Team team, List<AssignmentFile> tests, Executor executor) {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
+        return scheduleTests(team, tests, executor, activeAssignment);
+    }
+    public CompletableFuture<TestResults> scheduleTests(Team team, List<AssignmentFile> tests, Executor executor, ActiveAssignment activeAssignment) {
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
                 activeAssignment.getCompetitionSession(), team);
-        TestAttempt ta = testAttemptRepository.save(TestAttempt.builder()
+        TestAttempt ta = registerIfNeeded(TestAttempt.builder()
                 .assignmentStatus(as)
                 .dateTimeStart(Instant.now())
                 .uuid(UUID.randomUUID())
                 .build());
 
         List<CompletableFuture<TestResult>> testFutures = new ArrayList<>();
-        tests.forEach(t -> testFutures.add(scheduleTest(team, ta, t, executor)));
+        tests.forEach(t -> testFutures.add(scheduleTest(team, ta, t, executor, activeAssignment)));
 
         return CompletableFutures.allOf(testFutures).thenApply(r -> {
             ta.setDateTimeEnd(Instant.now());
-            TestAttempt updatedTa = testAttemptRepository.save(ta);
+            TestAttempt updatedTa = registerIfNeeded(ta);
             return TestResults.builder()
                     .dateTimeStart(updatedTa.getDateTimeStart())
                     .dateTimeEnd(updatedTa.getDateTimeEnd())
@@ -110,9 +113,16 @@ public class TestService {
         });
     }
 
-    private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, ActiveAssignment activeAssignment) {
-        log.info("Running unit test: {}", file.getName());
+    private TestAttempt registerIfNeeded(TestAttempt ta) {
+        TestAttempt result = ta;
+        if (result.getAssignmentStatus()!=null) {
+            result = testAttemptRepository.save(ta);
+        }
+        return result;
+    }
 
+    private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, ActiveAssignment activeAssignment) {
+        Assert.isTrue(activeAssignment.getAssignment().getName()!=null,"assignmentcontext is not ready");
         TestCase testCase = TestCase.builder()
                 .testAttempt(testAttempt)
                 .name(file.getName())
@@ -122,6 +132,7 @@ public class TestService {
 
 
         AssignmentDescriptor ad = activeAssignment.getAssignmentDescriptor();
+
         Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(), team, activeAssignment
                 .getAssignment());
 
@@ -190,13 +201,15 @@ public class TestService {
             }
             log.info("finished unit test: {}", file.getName());
 
-            testCase = testCaseRepository.save(testCase.toBuilder()
+            testCase = testCase.toBuilder()
                     .success(success)
                     .timeout(isTimeout)
                     .testOutput(result)
                     .dateTimeEnd(Instant.now())
-                    .build());
-
+                    .build();
+            if (testAttempt.getAssignmentStatus()!=null) {
+                testCase = testCaseRepository.save(testCase);
+            }
             testAttempt.getTestCases().add(testCase);
 
             return TestResult.builder()

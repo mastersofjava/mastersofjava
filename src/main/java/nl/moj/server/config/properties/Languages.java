@@ -38,12 +38,16 @@ public class Languages {
 
         log.debug("Configured versions: ");
         javaVersions.forEach(jv -> {
-            log.debug("Version " + jv.getVersion());
-            log.debug("  Compiler " + jv.getCompiler());
-            log.debug("  Runtime " + jv.getRuntime());
-            log.debug("  -> available =  " + isAvailable(jv));
-            log.debug("  -> version ok =  " + (jv.getVersion() >= version));
-            log.debug("  -> version runtime = " + JavaVersionUtil.getRuntimeMajorVersion(jv));
+            if (jv.getVersion()==version) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Version " + jv.getVersion());
+                sb.append("  Compiler " + jv.getCompiler());
+                sb.append("  Runtime " + jv.getRuntime());
+                sb.append("  -> available =  " + isAvailable(jv));
+                sb.append("  -> version ok =  " + (jv.getVersion() >= version));
+                sb.append("  -> version runtime = " + JavaVersionUtil.getRuntimeMajorVersion(jv));
+                log.debug(sb.toString());
+            }
         });
 
         return javaVersions.stream()

@@ -53,13 +53,14 @@ public class Competition {
     }
 
     private List<OrderedAssignment> copyFilteredList() {
-        boolean isDefault = !name.startsWith("20");
+        boolean isDefault = !name.contains("|20");
         if (isDefault) {
             return new ArrayList<>(assignments);
         }
+        String collectionName = name.split("\\|")[1];
         List<OrderedAssignment> filteredList = new ArrayList<>();
         for (OrderedAssignment oa: assignments) {
-            if (oa.getAssignment().getAssignmentDescriptor().contains(name)) {
+            if (oa.getAssignment().getAssignmentDescriptor().contains(collectionName)) {
                 filteredList.add(oa);
             }
         }

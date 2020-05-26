@@ -18,26 +18,34 @@ package nl.moj.server.submit.service;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.repository.AssignmentRepository;
+import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.ScoreService;
 import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.repository.TestAttemptRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 @Service
 @AllArgsConstructor
@@ -52,19 +60,27 @@ public class SubmitService {
     private final TestAttemptRepository testAttemptRepository;
     private final CompileAttemptRepository compileAttemptRepository;
     private final SubmitAttemptRepository submitAttemptRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final AssignmentService assignmentService;
 
     public CompletableFuture<SubmitResult> compile(Team team, SourceMessage message) {
+        final Assignment assignment = determineAssignment(team, message);
         messageService.sendComplilingStarted(team);
-        return compileInternal(team, message).thenApply(r -> {
+        return compileInternal(team, message, assignment).thenApply(r -> {
+            log.info("DONE COMPILING2");
             messageService.sendComplilingEnded(team, r.isSuccess());
+            log.info("CLEAN");
+            executionService.cleanTeamAssignmentWorkspace(team, assignment);
             return r;
         });
     }
 
-    private CompletableFuture<SubmitResult> compileInternal(Team team, SourceMessage message) {
-        return executionService.compile(team, message)
+    private CompletableFuture<SubmitResult> compileInternal(Team team, SourceMessage message, Assignment assignment) {
+        return executionService.compile(team, message, assignment)
                 .thenApply(r -> {
+                    log.info("DONE COMPILING1");
                     messageService.sendCompileFeedback(team, r);
+
                     return SubmitResult.builder()
                             .team(team.getUuid())
                             .dateTimeStart(r.getDateTimeStart())
@@ -81,17 +97,46 @@ public class SubmitService {
 
     public CompletableFuture<SubmitResult> test(Team team, SourceMessage message, boolean submit) {
         messageService.sendTestingStarted(team);
-        return testInternal(team, message, submit).thenApply(r -> {
+        final Assignment assignment = determineAssignment(team, message);
+        return testInternal(team, message, submit, assignment).thenApply(r -> {
+            log.info("DONE TESTING");
             messageService.sendTestingEnded(team, r.isSuccess());
+            log.info("CLEAN");
+            executionService.cleanTeamAssignmentWorkspace(team, assignment);
             return r;
         });
     }
-
-    private CompletableFuture<SubmitResult> testInternal(Team team, SourceMessage message, boolean submit) {
+    private Assignment determineAssignment(Team team, SourceMessage message) {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
+        Assignment result = activeAssignment.getAssignment();
+        if (!team.getRole().equals(Role.ADMIN)) {
+            return result;
+        }
+        if (result==null  || !message.getAssignmentName().equals(result.getName())) {
+            result = assignmentRepository.findByName(message.getAssignmentName() );
+        }
+        return result;
+    }
+
+    private CompletableFuture<SubmitResult> testInternal(Team team, SourceMessage message, boolean submit, Assignment assignment) {
+        log.info("testInternal1 " +message.getAssignmentName() + " " + team.getRole()+ " " + submit);
+
         //compile
-        return compileInternal(team, message)
+        return compileInternal(team, message, assignment)
                 .thenCompose(sr -> {
+                    log.info("test1 " +message.getAssignmentName() + " compile " + sr.isSuccess() + " submit " + submit );
+                    ActiveAssignment activeAssignment = competition.getActiveAssignment();
+                    try {
+                        if (activeAssignment.getAssignment()==null  || !message.getAssignmentName().equals(activeAssignment.getAssignment().getName())) {
+                            List<AssignmentFile> fileList   = assignmentService.getAssignmentFiles(assignment);
+                            AssignmentDescriptor assignmentDescriptor =assignmentService.getAssignmentDescriptor(assignment);
+                            activeAssignment  = ActiveAssignment.builder().assignment(assignment).assignmentDescriptor(assignmentDescriptor).assignmentFiles(fileList).build();
+                        }
+                    } catch (Exception ex) {
+                        log.info("ERROR ", ex);
+                    }
+                    Assert.isTrue( activeAssignment.getAssignment()!=null, "not ready for test");
+
                     if (sr.isSuccess()) {
                         // filter selected test cases
                         var testCases = activeAssignment.getTestFiles().stream()
@@ -101,10 +146,13 @@ public class SubmitService {
                         if (submit) {
                             testCases = activeAssignment.getSubmitTestFiles();
                         }
+                        log.info("testCases " +testCases.size()+ " compile " + sr.isSuccess() + " submit " + submit + " " +activeAssignment.getTestFiles().size());
 
                         // run selected testcases
-                        return executionService.test(team, testCases).thenApply(r -> {
+                        return executionService.test(team, testCases, activeAssignment).thenApply(r -> {
+
                             r.getResults().forEach(tr -> messageService.sendTestFeedback(team, tr));
+
                             return sr.toBuilder()
                                     .dateTimeEnd(r.getDateTimeEnd())
                                     .success(r.isSuccess())
@@ -133,7 +181,8 @@ public class SubmitService {
                     .build();
             as.getSubmitAttempts().add(sa);
 
-            return testInternal(team, message, true).thenApply(sr -> {
+            return testInternal(team, message, true,activeAssignment
+                    .getAssignment()).thenApply(sr -> {
                 int remainingSubmits = getRemainingSubmits(as);
                 try {
                     if( sr.getCompileResult() != null) {

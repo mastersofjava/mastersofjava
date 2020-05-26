@@ -2,9 +2,9 @@
 $(document).ready(function () {
     connect();
     initializeAssignmentClock();
-
-    $('[data-toggle="popover"]').popover();
+    clientOnload();
 });
+
 
 
 function connect() {
@@ -92,6 +92,7 @@ function restartAssignment() {
         'taskName': taskname
     }));
 }
+
 function pauseResume() {
     stompClient.send("/app/control/pauseResume", {}, {});
 }
@@ -109,6 +110,70 @@ function clearAssignments() {
     stompClient.send("/app/control/clearCurrentAssignment", {}, {});
 }
 
+function doCompetitionSaveName(name, uuid) {
+    console.log('name ' + name + " " + uuid);
+    if (name) {
+        clientSend("/app/control/competitionSaveName", { taskName: 'competitionSaveName', uuid: uuid, value:name });
+    }
+}
+function doCompetitionCreateNew(name) {
+    if (name) {
+        clientSend("/app/control/competitionCreateNew", { taskName: 'competitionCreateNew', value:name });
+    }
+    return name;
+}
+function doCompetitionDelete() {
+    var selectedUuid = $('.sessionTable .selected.tableSubHeader').attr('id');
+    clientSend("/app/control/competitionDelete", { taskName: 'competitionDelete', uuid:selectedUuid });
+}
+function clientSend(destinationUri, taskMap) {
+    console.log('clientSend '+ destinationUri);
+    console.log(taskMap);
+    stompClient.send(destinationUri, {}, JSON.stringify(taskMap));
+}
+function clientSelectSubtable(node) {
+    $(node).closest('table').find('tr').removeClass('selected');
+    $(node).closest('table').find('tr.subrows').addClass('hide');
+    $(node).closest('tbody').find('tr.subrows').removeClass('hide');
+    $(node).closest('tbody').find('tr').addClass('selected');
+}
+function clientOnload() {
+    $('[data-toggle="popover"]').popover();
+    clientStoreRender();
+    $('li.nav-item a.nav-link').click(function() {
+        window.setTimeout('clientStoreStateWrite()',200);
+    });
+}
+function clientStoreStateWrite() {
+
+    var idList = [];
+    $('.nav-link.active').each(function() {
+        idList.push(this.id);
+    });
+    console.log('clientStoreStateWrite '+JSON.stringify(idList));
+    localStorage.setItem('tabState', JSON.stringify(idList));
+}
+function clientUpdateRole(value) {
+    console.log('clientUpdateRole ' + value);
+    $('.role').addClass('hide');
+
+    if (value=='admin') {
+        $('.role').removeClass('hide');
+    }
+    if (value=='gamemaster') {
+        $('.role.gamemasterRole').removeClass('hide');
+    }
+}
+function clientStoreStateRead() {
+    console.log('clientStoreStateRead '+localStorage.getItem('tabState'));
+    idList = JSON.parse(localStorage.getItem('tabState'));
+    return idList;
+}
+function clientStoreRender() {
+    $(clientStoreStateRead()).each(function() {
+        $('#'+this).click();
+    });
+}
 function scanAssignments() {
     var year = $('#selectedYear').val().split('-')[0];
 

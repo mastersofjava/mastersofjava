@@ -31,4 +31,5 @@ public class SignupForm {
 
     private String company;
 
+    private String role;
 }

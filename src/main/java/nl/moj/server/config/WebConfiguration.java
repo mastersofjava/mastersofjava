@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.TeamDetailsService;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.teams.model.Role;
@@ -44,6 +45,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+@Slf4j
 @Configuration
 @AllArgsConstructor
 public class WebConfiguration {
@@ -115,7 +117,9 @@ public class WebConfiguration {
                 List<String> roles = authentication.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
-                if (roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER)) {
+                boolean isWithControlRole = roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER);
+
+                if (isWithControlRole) {
                     response.sendRedirect("/control");
                 } else if (roles.contains(Role.USER)) {
                     teamDetailsService.initTeam(authentication.getName());

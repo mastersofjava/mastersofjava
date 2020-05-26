@@ -121,6 +121,18 @@ public class IndexController {
             isWithInsertSolution = solutionToken != null;
             model.addAttribute("team", user.getName());
         }
+        private AssignmentFile createSolution(AssignmentFile file){
+            JavaAssignmentFileResolver resolver = new JavaAssignmentFileResolver();
+            String path = file.getAbsoluteFile().toFile().getPath().replace("src\\main\\java","assets").replace("src/main/java","assets");
+            File solutionFile = new File(path.replace(".java",solutionToken+"Solution.java"));
+            if (!solutionToken.isEmpty()) {
+                log.info("solutionFile (token=" +solutionToken+ ")=" + solutionFile+ ", exist: " + solutionFile.exists() );
+            }
+            if (solutionFile.exists()) {
+                file = resolver.convertToAssignmentFile(file.getName(), solutionFile.toPath(), file.getBase(), solutionFile.toPath(), AssignmentFileType.EDIT, false, file.getUuid());
+            }
+            return file;
+        }
         public void saveFiles(CompetitionSession session, Assignment assignment, Team team) {
             List<AssignmentFile> sessionList = teamService.getTeamAssignmentFiles(session, assignment, team);
             inputFiles = new ArrayList<>();
@@ -128,21 +140,11 @@ public class IndexController {
                 if (file.isReadOnly()||!isWithInsertSolution) {
                     inputFiles.add(file);
                 } else {
-                    JavaAssignmentFileResolver resolver = new JavaAssignmentFileResolver();
-                    String path = file.getAbsoluteFile().toFile().getPath().replace("src\\main\\java","assets").replace("src/main/java","assets");
-                    File solutionFile = new File(path.replace(".java",solutionToken+"Solution.java"));
-                    if (!solutionToken.isEmpty()) {
-                        log.info("solutionFile (token=" +solutionToken+ ")=" + solutionFile+ ", exist: " + solutionFile.exists() );
-                    }
-                    if (solutionFile.exists()) {
-                        file = resolver.convertToAssignmentFile(file.getName(), solutionFile.toPath(), file.getBase(), solutionFile.toPath(), AssignmentFileType.EDIT, false, file.getUuid());
-                    }
-
-                    inputFiles.add(file);
+                    // insert writable solution
+                    inputFiles.add(createSolution(file));
                 }
 
             }
-            // TODO ugly
             inputFiles.sort((arg0, arg1) -> {
                 if (arg0.getFileType().equals(AssignmentFileType.TASK)) {
                     return -10;
@@ -152,16 +154,25 @@ public class IndexController {
             model.addAttribute("files", inputFiles);
         }
         public void saveTeamState(AssignmentStatusHelper ash) {
-            model.addAttribute("finished", ash.isCompleted());
+            boolean isCompleted = ash.isCompleted();
+            model.addAttribute("finished", isCompleted);
             model.addAttribute("submittime", ash.getSubmitTime());
             model.addAttribute("finalscore", ash.getScore());
             model.addAttribute("maxSubmits", ash.getMaximumSubmits());
             model.addAttribute("submits", ash.getRemainingSubmits());
             model.addAttribute("solution", isWithInsertSolution);
-            model.addAttribute("submitDisabled", ash.isCompleted());
+            model.addAttribute("submitDisabled", isCompleted);
 
         }
         public void saveAdminState( Assignment assignment) {
+            List<AssignmentFile> tests = new ArrayList<>();
+            for (AssignmentFile inputFile: inputFiles) {
+                String name = inputFile.getFile().toFile().getName().toLowerCase();
+                boolean isTestCase = name.endsWith(".java") && name.contains("test") && inputFile.isReadOnly();
+                if (isTestCase) {
+                    tests.add(inputFile);
+                }
+            }
             model.addAttribute("finished",false);
             model.addAttribute("submitDisabled", true);
             model.addAttribute("submittime", 0);
@@ -171,12 +182,12 @@ public class IndexController {
             model.addAttribute("assignment", assignment.getName());
             model.addAttribute("timeLeft", 0);
             model.addAttribute("time", 0);
-            model.addAttribute("tests", inputFiles);
+            model.addAttribute("tests", tests);
             model.addAttribute("running", true);
             model.addAttribute("solution", isWithInsertSolution);
             model.addAttribute("labels", new ArrayList<>());
             model.addAttribute("bonus", "");
-
+            model.addAttribute("assignmentName", assignment.getName());
         }
         public void saveAssignmentDetails(ActiveAssignment state) {
             List<String> scoreLabels = new ArrayList<>();
@@ -185,6 +196,7 @@ public class IndexController {
                     scoreLabels.add(label);
                 }
             }
+            model.addAttribute("assignmentName", state.getAssignmentDescriptor().getName());
             model.addAttribute("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addAttribute("labels", scoreLabels);
             model.addAttribute("bonus", "Success bonus: " +state.getAssignmentDescriptor().getScoringRules().getSuccessBonus());

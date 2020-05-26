@@ -241,7 +241,8 @@ function compile() {
     showOutput();
     activeAction = "COMPILE";
     stomp.send("/app/submit/compile", {}, JSON.stringify({
-        'sources': getContent()
+        'sources': getContent(),
+        'assignmentName': assignmentName
     }));
 }
 
@@ -256,7 +257,8 @@ function test() {
     activeAction = "TEST";
     stomp.send("/app/submit/test", {}, JSON.stringify({
         'sources': getContent(),
-        'tests': tests
+        'tests': tests,
+        'assignmentName': assignmentName
     }));
 }
 

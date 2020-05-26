@@ -2,11 +2,19 @@ package nl.moj.server.competition.service;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.descriptor.AssignmentFiles;
+import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.repository.CompetitionRepository;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
+import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -15,16 +23,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
 /**
  * the html creation will be moved towards the angular client in the future.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GamemasterTableComponents {
     private final CompetitionRuntime competition;
+
+    private final MojServerProperties mojServerProperties;
+
+    private final CompetitionRepository competitionRepository;
+
+    private final CompetitionSessionRepository competitionSessionRepository;
+
     @JsonSerialize
     public static class DtoAssignmentState implements Serializable {
         long order;
@@ -80,14 +98,124 @@ public class GamemasterTableComponents {
         }
         return result;
     }
-    public String toSimpleBootstrapTableForTeams(List<Team> teams) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Teamnaam</th><th>Score</th></tr></thead>");
+    public void deleteCurrentSessionResources() {
+        String uuid = competition.getCompetitionSession().getUuid().toString();
+        File rootFile = new File(mojServerProperties.getDirectories().getBaseDirectory().toFile(), "sessions\\"+uuid+"\\teams");
+        try {
+            File directory = mojServerProperties.getDirectories().getBaseDirectory().toFile();
 
-        int counter = 1;
+            Collection<File> fileList = FileUtils.listFiles(directory, new String[] {"java","class"}, true);
+
+            for (File file: fileList) {
+                if (file.exists()) {
+                    File project = file.getParentFile().getParentFile();
+                    FileUtils.deleteQuietly(project);
+                }
+            }
+            log.info("deleteCurrentSessionResources.before " + rootFile + " "+rootFile.exists() );
+            FileUtils.deleteQuietly(rootFile);
+            log.info("deleteCurrentSessionResources.after " + rootFile + " "+rootFile.exists() );
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public String toSimpleBootstrapTableForSessions() {
+        StringBuilder sb = new StringBuilder();
+        String selectedSession = competition.getCompetitionSession().getUuid().toString();
+        String selectedCompetition = competition.getCompetition().getName();
+        int competitionCounter = 1;
+        List<Competition> competitionList = competitionRepository.findAll();
+        boolean isWithDeletionButton = competitionList.size()>1;
+
+        for (Competition competition:competitionList) {
+            List<CompetitionSession> sessionList = competitionSessionRepository.findByCompetition(competition);
+            String[] parts = competition.getName().split("\\|");
+            String name = parts[0];
+            String collection = mojServerProperties.getAssignmentRepo().toFile().getName();
+            if (parts.length>=2) {
+                collection = parts[1];
+            }
+            String actionsAdd = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#createNewSessionForm').submit()\">toevoegen sessie</button>";
+            String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
+            String styleCompetition = competition.getName().equals(selectedCompetition) ? " italic " :"";
+            sb.append("<tbody title='sessiepanel van competitie "+competition.getId()+"'><tr class='"+ styleCompetition+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;"+competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td >"+actionsAdd+"</td><td>"+actionsDelete+"</td></tr>");
+
+            int sessionCounter = 1;
+
+            for (CompetitionSession session: sessionList) {
+                String styleCompetitionSession = selectedSession.equals(session.getUuid().toString())?" bold ":"";
+                String status = "-";
+                if (sessionCounter==sessionList.size()) {
+                    status = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"confirm('start sessie')\">start</button>";
+                }
+                sb.append("<tr class='"+styleCompetitionSession+" subrows hide'><td colspan=2></td><td>- Sessie "+sessionCounter+"</td><td>"+status+"</td><td></td></tr>");
+                sessionCounter ++;
+            }
+            sb.append("</tbody>");
+
+            competitionCounter++;
+        }
+        sb.insert(0, "<table class='roundGrayBorder table sessionTable' ><thead><tr><th></th><th>Competities</th><th></th><th>Aantal sessies</th><th>Acties</th></tr></thead>");
+        sb.append("<tfoot>");
+        sb.append("<tr><th colspan=4></th><th><button class='btn btn-secondary' data-toggle='modal' data-target='#createNewCompetition-modal'>Nieuwe competitie</button></th></tr>");
+        sb.append("</tfoot>");
+        sb.append("</table>");
+        return sb.toString();
+    }
+
+
+    public String toSimpleBootstrapTableForTeams(List<Team> teams, boolean isShowAllUsers) {
+        StringBuilder sb = new StringBuilder();
+        String uuid = competition.getCompetitionSession().getUuid().toString();
+
+        File rootFile = new File(mojServerProperties.getDirectories().getBaseDirectory().toFile(), "sessions\\"+uuid+"\\teams");
+        List<String> idList = new ArrayList<>();
+        if (rootFile.exists()) {
+            File[] usersInSession = rootFile.listFiles();
+            for (File file: usersInSession) {
+                idList.add(file.getName());
+            }
+        }
+        List<Team> displayList = new ArrayList<>();
         for (Team team: teams) {
-            sb.append("<tr><td>"+counter+"</td><td>"+team.getName()+"</td><td>0</td></tr>");
+            if (isShowAllUsers || idList.contains(team.getUuid().toString())) {
+                displayList.add(team);
+            }
+        }
+        int counter = 1;
+        String displayTable = displayList.size()>10 ?" scrollableTable ":"";
+        sb.append("<table class='roundGrayBorder table "+displayTable+"' ><thead><tr><th>Nr</th><th>Team</th><th>Games</th><th>Score</th></tr></thead>");
+
+        for (Team team: displayList) {
+            List<String> titleList = new ArrayList<>();
+            if (idList.contains(team.getUuid().toString())) {
+                File[] games = new File(rootFile, team.getUuid().toString()).listFiles();
+                for (File file: games) {
+                    titleList.add(file.getName());
+                }
+            }
+
+            String specialRole = "";
+            if (!team.getRole().equals(Role.USER)) {
+                specialRole = "("+team.getRole().split("_")[1]+")";
+            }
+            String style = isShowAllUsers?"cursorPointer":"";
+            String simpleClickEvent = isShowAllUsers?"clientSelectSubtable(this)":"";
+            sb.append("<tbody><tr class='"+style+"' onclick=\""+simpleClickEvent+"\"><td class='alignRight'>"+counter+"</td><td>"+team.getName()+specialRole+"</td><td title='"+titleList+"' class='alignRight'>"+titleList.size()+"</td><td class='alignRight minWidth100'>0</td></tr>");
+
+            if (isShowAllUsers) {
+                sb.append("<tr class='subrows hide'><td colspan=3>");
+                sb.append("<input type='text' placeholder='registreer contactgegevens' class='minWidth300 font10px'/>");
+                sb.append("</td><td><button class='font10px cursorPointer minWidth100' onclick=\"$(this).closest('tbody').addClass('hide')\">delete team</button><br/><button onclick=\"$('.passwordModal').toggleClass('hide')\" class='font10px minWidth100 cursorPointer'>password</button></td></tr>");
+            }
+            sb.append("</tbody>");
             counter ++;
+        }
+        if (counter==1) {
+            sb.append("<tr><td colspan=4>");
+            sb.append("De competitie is nog niet gestart.");
+            sb.append("</td></tr>");
         }
         sb.append("</table>");
         return sb.toString();
@@ -100,7 +228,7 @@ public class GamemasterTableComponents {
         }
         sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Opdracht</th><th>Status</th><th>High score</th></tr></thead>");
 
-        int counter = 0;
+        int counter = 1;
         for (DtoAssignmentState orderedAssignment: list) {
             boolean isStateCurrent = orderedAssignment.state.contains("CURRENT");
             String viewState = orderedAssignment.state;
@@ -118,29 +246,36 @@ public class GamemasterTableComponents {
     }
 
     private class SimpleAssignmentDetailsPanel {
+        private String assignmentName;
         private File directory;
         private List<File> fileList = new ArrayList<>();
         private List<String> errorList = new ArrayList<>();
+        private String localPath = mojServerProperties.getAssignmentRepo().toFile().getParentFile().getPath();
         public String createTableList(List<AssignmentDescriptor> assignmentDescriptorList) {
             StringBuilder sbAll = new StringBuilder();
+            sbAll.append("<span class='top'>");
             for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
                 AssignmentFiles wrapper = descriptor.getAssignmentFiles();
-                initialize(descriptor.getDirectory().toFile());
-                String text = "";
-                try {
-                    text = Files.readString(new File(descriptor.getDirectory().toFile(),"assignment.yaml").toPath());
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-                sbAll.append("<span title='"+text.replace("'","\"")+"'>");
+                initialize(descriptor);
+                sbAll.append("<span title='"+readYamlText(descriptor)+"'>");
                 sbAll.append(createTable(wrapper));
                 sbAll.append("</span>");
-
             }
+            sbAll.append("</span>");
             return sbAll.toString();
         }
-        private void initialize(File directory) {
-            this.directory = directory;
+        private String readYamlText(AssignmentDescriptor descriptor) {
+            String text = "";
+            try {
+                text = Files.readString(new File(descriptor.getDirectory().toFile(),"assignment.yaml").toPath()).replace("'","\"");
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+            return text;
+        }
+        private void initialize(AssignmentDescriptor descriptor) {
+            this.directory = descriptor.getDirectory().toFile();
+            assignmentName = descriptor.getName();
             fileList = new ArrayList<>();
             errorList = new ArrayList<>();
         }
@@ -153,7 +288,7 @@ public class GamemasterTableComponents {
                 errorList.add("editable file missing");
             }
             if (wrapper.getTestSources().getHiddenTests().isEmpty() && new File(directory, "src/test/java/HiddenTests.java").exists()) {
-                errorList.add("hidden test found which is not configured yet in yaml");
+                errorList.add("hidden test found which is not configured correctly in yaml");
             }
             sb.append(toSimpleFileRow(wrapper.getAssignment(), "assignment"));
             sb.append(toSimpleFileRow(wrapper.getSecurityPolicy(), "security policy"));
@@ -174,7 +309,8 @@ public class GamemasterTableComponents {
                 sb.append(toSimpleFileRow(file, "src.test.visible"));
             }
             StringBuffer header = new StringBuffer();
-            header.insert(0, "<table class='roundGrayBorder table ' ><thead class='cursorPointer' onclick=\"$(this).parent().find('.extra').toggleClass('hide')\"><tr><th class='minWidth300'>Files - Assignment '"+directory.getName()+"' - "+fileList.size()+" files</th><th class='extra hide'>Type</th><th class='extra hide'>Size</th><th class='extra hide'>Last Modified</th></tr>");
+            header.append("<table class='roundGrayBorder table noBottomMargin' ><thead class='cursorPointer' onclick=\"$(this).closest('.top').find('.extra').addClass('hide');$(this).parent().find('.extra').toggleClass('hide')\"><tr><th class='minWidth300'>Files - Assignment '");
+            header.append(assignmentName+"' - "+fileList.size()+" files</th><th class='extra hide'>Type</th><th class='extra hide'>Size</th><th class='extra hide'>Last Modified</th></tr>");
             if (errorList.size()>0) {
                 header.append("<tr><td colspan=4 class='error'><center>ERROR</center></td></tr>");
                 for (String error: errorList) {
@@ -215,8 +351,18 @@ public class GamemasterTableComponents {
                 errorList.add("file '"+file.getName()+"' is bedoeld als 'hidden', echter heeft het verkeerde type: " + type);
             }
             fileList.add(file);
+
+            String viewType = type;
+            if ("solution".equals(type)) {
+                viewType = "<a href='/assignmentAdmin?assignment="+assignmentName+"&solution' title='view solution'>" + type + "</a>";
+            } else
+            if ("src.editable".equals(type)) {
+                viewType = "<a href='/assignmentAdmin?assignment="+assignmentName+"' title='view assignment'>" + type + "</a>";
+            }
+            String viewFile = file.getPath().substring(localPath.length()).replace("\\","/");
+
             StringBuilder sb = new StringBuilder();
-            sb.append("<tr><td class='minWidth300'>"+file+"</td><td>"+type+"</td><td>"+file.length()+"</td><td>"+SDF.format(new Date(file.lastModified()))+"</td></tr>");
+            sb.append("<tr><td class='minWidth300'>"+viewFile+"</td><td>"+viewType+"</td><td class='alignRight'>"+file.length()+"</td><td>"+SDF.format(new Date(file.lastModified()))+"</td></tr>");
             return sb.toString();
         }
     }
@@ -227,7 +373,7 @@ public class GamemasterTableComponents {
 
     public String toSimpleBootstrapTable(List<AssignmentDescriptor> assignmentDescriptorList) {
         StringBuilder sb = new StringBuilder();
-        String tokenForIndividualBonus = "(*1)";
+        String tokenForIndividualBonus = "<sup>(*1)</sup>";
         sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Opdracht</th><th>Auteur</th><th>Bonus</th><th>Minuten</th><th>Java</th><th>Complexiteit</th></tr></thead>");
         for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
             String bonus = "";

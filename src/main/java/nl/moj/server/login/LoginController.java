@@ -18,6 +18,7 @@ package nl.moj.server.login;
 
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.competition.service.CompetitionService;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -61,7 +62,11 @@ public class LoginController {
             model.addAttribute("errors", "Passwords don't match");
             return "register";
         }
-        competitionService.createNewTeam(form);
+        String role = Role.USER;
+        if (!Role.USER.equals(form.getRole())) {
+            role = Role.GAME_MASTER;
+        }
+        competitionService.createNewTeam(form, role);
         return "redirect:/";
     }
 

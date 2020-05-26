@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.service.CompetitionService;
 import nl.moj.server.competition.service.GamemasterTableComponents;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -21,6 +23,8 @@ import nl.moj.server.teams.service.TeamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,6 +36,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 
 /**
  * delivering GameMaster data to the client
@@ -45,6 +50,8 @@ public class GamemasterJsonController {
     private final MojServerProperties mojServerProperties;
 
     private final CompetitionRuntime competition;
+
+    private final CompetitionRepository competitionRepository;
 
     private final TeamRepository teamRepository;
 
@@ -64,7 +71,7 @@ public class GamemasterJsonController {
     public @ResponseBody
     String clearAssignments(HttpServletResponse resp) {
         ensureSecurity(resp);
-        log.warn("clearAssignments entered");
+        log.warn("clearCompetition entered");
         competition.stopCurrentAssignment();
         competition.getCompetitionState().getCompletedAssignments().clear();
         assignmentStatusRepository.deleteAll();
@@ -144,6 +151,8 @@ public class GamemasterJsonController {
         ensureSecurity(resp);
         return parser.writeValueAsString(gamemasterTableComponents.createAssignmentStatusMap());
     }
+
+
 
     @GetMapping(value = "/getGameMasterState", produces = MediaType.APPLICATION_JSON_VALUE)
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})

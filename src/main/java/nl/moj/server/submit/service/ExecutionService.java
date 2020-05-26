@@ -22,6 +22,7 @@ import java.util.concurrent.Executor;
 
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.ExecutionModel;
+import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.compiler.service.CompileResult;
 import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.runtime.CompetitionRuntime;
@@ -53,19 +54,21 @@ public class ExecutionService {
         this.testService = testService;
     }
 
-    public CompletableFuture<CompileResult> compile(Team team, SourceMessage message) {
+    public CompletableFuture<CompileResult> compile(Team team, SourceMessage message, Assignment assignment) {
         return compileService.scheduleCompile(team, message, getExecutor());
     }
 
-    public CompletableFuture<TestResults> test(Team team, List<AssignmentFile> tests) {
-        return testService.scheduleTests(team, tests, getExecutor());
+    public CompletableFuture<TestResults> test(Team team, List<AssignmentFile> tests, ActiveAssignment activeAssignment) {
+        return testService.scheduleTests(team, tests, getExecutor(), activeAssignment);
     }
-
+    public void cleanTeamAssignmentWorkspace(Team team, Assignment assignment) {
+        compileService.createTeamProjectPathModel(team, assignment).cleanCompileLocationForTeam();
+    }
     private Executor getExecutor() {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
         if (activeAssignment == null) {
             log.debug("Executing assignment in parallel, can impact timing of assignment");
-            return parallel;
+            return sequential;
         }
         if (activeAssignment.getExecutionModel() == ExecutionModel.SEQUENTIAL) {
         	log.debug("Executing assignment sequentially, can slow down response to client");
