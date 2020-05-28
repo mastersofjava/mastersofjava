@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -60,7 +59,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
-import org.zeroturnaround.exec.listener.ProcessDestroyer;
 
 @Service
 @Slf4j
@@ -120,7 +118,7 @@ public class CompileService {
         List<AssignmentFile> allAssignmentFiles;
         Assignment assignment;
         AssignmentDescriptor assignmentDescriptor;
-        Instant startTimeInQueue = Instant.now();
+        Instant startTimeSinceQueue;
         private UUID compileAttemptId;
         CompileInputWrapper(String assignmentName) {
             assignment = assignmentRepository.findByName(assignmentName);
@@ -247,7 +245,7 @@ public class CompileService {
     }
 
     private CompileResult javaCompile(Languages.JavaVersion javaVersion, Team team, SourceMessage message, CompileInputWrapper compileInputWrapper) {
-
+        compileInputWrapper.startTimeSinceQueue = Instant.now();
         // TODO should not be here.
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(compileInputWrapper.assignment, competition
                 .getCompetitionSession(), team);
@@ -417,7 +415,7 @@ public class CompileService {
     private CompileResult createCompileResult(CompileInputWrapper compileInputWrapper, String outputMessage, boolean isSuccess) {
         return CompileResult.builder()
                 .compileAttemptUuid(compileInputWrapper.compileAttemptId)
-                .dateTimeStart(compileInputWrapper.startTimeInQueue)
+                .dateTimeStart(compileInputWrapper.startTimeSinceQueue)
                 .dateTimeEnd(Instant.now())
                 .compileOutput(outputMessage)
                 .success(isSuccess)
