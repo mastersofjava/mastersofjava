@@ -173,7 +173,7 @@ public class TaskControlController {
     @SendToUser("/queue/controlfeedback")
     public String clearCompetition() {
         log.warn("clearCompetition entered");
-
+        gamemasterTableComponents.deleteCurrentSessionResources();
         return competitionCleaningService.doCleanComplete();
     }
 
@@ -191,6 +191,36 @@ public class TaskControlController {
             return "assignment '"+name+"' paused, reloading page";
         } else {
             return "assignment '"+name+"' running, reloading page";
+        }
+    }
+
+    public class ConfigurableSettingsService {
+
+        public boolean isRegistrationFormDisabled() {
+            return teamRepository.findByName("admin").getCompany().contains("HIDE_REGISTRATION");
+        }
+        public void setRegistrationFormDisabled(boolean isDisabled) {
+            String setting = "HIDE_REGISTRATION";
+            if (!isDisabled) {
+                setting = "";
+            }
+            Team team = teamRepository.findByName("admin");//
+            team.setCompany(setting);
+            teamRepository.save(team);
+        }
+    }
+    private ConfigurableSettingsService configurableSettingsService = new ConfigurableSettingsService();
+
+    @MessageMapping("/control/updateSettingRegistration")
+    @SendToUser("/queue/controlfeedback")
+    public String updateSettingRegistration(TaskMessage message) {
+        boolean isDisable = "true".equals(message.value);
+        log.info("update.isDisable " +isDisable + " val " + message.value);
+        configurableSettingsService.setRegistrationFormDisabled(isDisable);
+        if (isDisable) {
+            return "registration form is disabled, users cannot register";
+        } else {
+            return "registration form is enabled, users can register";
         }
     }
     @MessageMapping("/control/restartAssignment")
@@ -293,6 +323,34 @@ public class TaskControlController {
         competition.startSession(c);
         return "New competition created, reloading page";
     }
+    @MessageMapping("/control/updateTeamStatus")
+    @SendToUser("/queue/controlfeedback")
+    public String doUpdateUserStatus(TaskControlController.TaskMessage message)  throws JsonProcessingException {
+        log.info("updateUserStatus " + message + " " + message.getValue() );
+        if (StringUtils.isBlank(message.uuid)) {
+            return "Please provide valid input. ";
+        }
+        Team team = teamRepository.findByUuid(UUID.fromString(message.getUuid()));
+        if (team==null) {
+            return "Team already deleted.";
+        }
+        if (message.value.equals("DISQUALIFY")) {
+            team.setCompany(message.value);
+            team.setRole(Role.ANONYMOUS);
+            teamRepository.save(team);
+            return "Disqualify team '"+team.getName()+"'";
+        } else
+        if (message.value.equals("ARCHIVE")) {
+            team.setCompany(message.value);
+            team.setRole(Role.ANONYMOUS);
+            teamRepository.delete(team);
+            return "Deleted team '"+team.getName()+"'";
+        } else {
+            team.setCompany(message.value);
+            teamRepository.save(team);
+        }
+        return "Updated team '"+team.getName()+"'";
+    }
 
     /**
      * import assignments from a selected available year.
@@ -380,6 +438,7 @@ public class TaskControlController {
             model.addAttribute("currentAssignment", "-");
         }
         model.addAttribute("isWithAdminRole", isWithAdminRole);
+        model.addAttribute("setting_registration_disabled", configurableSettingsService.isRegistrationFormDisabled());
         List<AssignmentDescriptor> assignmentDescriptorList = assignments();
         boolean isWithAssignmentsLoaded = !assignmentDescriptorList.isEmpty();
 

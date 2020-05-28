@@ -201,7 +201,7 @@
                 <div class="tab-pane fade " id="pills-configuratie" role="tabpanel" aria-labelledby="pills-configuratie-tab">
                     <h6>Inladen van opdrachten. Aantal geconfigureerde locaties: [[${locationList.size()}]].</h6><br/>
 
-                    <div class="p-2 col-12" th:if="${locationList.size()>0}">
+                    <div class="p-2 col-12 alignCenter" th:if="${locationList.size()>0}">
                         <select class="p-2" th:disabled="${locationList.size()==1}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
                             <option value="">Selecteer een ander jaar</option>
                             <option th:each="team : ${locationList}" th:value="${team.getName()}"
@@ -221,11 +221,11 @@
                     <br/>
                     <br/>
                     <div class="row">
-                        <div class="p-2 col-3">
+                        <div class="p-2 col-6 text-right">
                             <a class="btn btn-success" href="/getGameMasterState" target="getGameMasterState">Bekijk systeemstatus (export)</a><br/><br/>
 
                         </div>
-                        <div class="p-2 col-9">
+                        <div class="p-2 col-6">
 
                             <form method="POST" action="/upload" enctype="multipart/form-data">
                                 <div>
@@ -256,6 +256,27 @@
                 <div class="tab-pane fade" id="pills-gebruikersbeheer" role="tabpanel" aria-labelledby="pills-gebruikersbeheer-tab">
                     <h6>Beheren van teams (selecteer een team indien u deze wilt aanpassen)</h6>
                     <br>
+                    <div class="row">
+                        <div class="p-2 col-12">
+                            <div class="roundGrayBorder maxWidth300 p-2">
+                            <div class="form-check input-group radio maxWidth300" >
+                                <label class="form-check-label">
+                                    <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(true)" type="radio" name="setting_registration_disabled" th:checked="${setting_registration_disabled}"
+                                           value="true"
+                                            /> registration page disabled
+                                </label>
+                            </div>
+                            <br/>
+                            <div class="form-check input-group radio maxWidth300" >
+                            <label class="form-check-label">
+                                <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(false)" type="radio" name="setting_registration_disabled" th:checked="${!setting_registration_disabled}"
+                                       value="false"
+                                /> registration page enabled
+                            </label>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="p-2 col-6">
                             <div th:remove="tag" th:utext="${teamDetailCanvas}"></div>

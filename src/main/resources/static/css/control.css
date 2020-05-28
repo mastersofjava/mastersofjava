@@ -152,3 +152,9 @@ select.disabled {
 .selected .fa-angle-double-right:before {
     content: "\f103";
 }
+.nowrap {
+    white-space: nowrap;
+}
+.smallBlackBorder {
+    border: 1px solid black;
+}

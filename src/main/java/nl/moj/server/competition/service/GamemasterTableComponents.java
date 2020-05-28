@@ -195,6 +195,10 @@ public class GamemasterTableComponents {
                     titleList.add(file.getName());
                 }
             }
+            boolean isArchived = team.getCompany().equals("ARCHIVE") || team.getCompany().equals("DISQUALIFY");
+            if (isArchived) {
+                continue;
+            }
 
             String specialRole = "";
             if (!team.getRole().equals(Role.USER)) {
@@ -203,16 +207,20 @@ public class GamemasterTableComponents {
             String style = isShowAllUsers?"cursorPointer":"";
             String simpleClickEvent = isShowAllUsers?"clientSelectSubtable(this, '"+team.getUuid()+"')":"";
             String viewTitle = titleList.isEmpty()?"deze gebruiker heeft nog geen opdrachten gedaan":titleList.toString();
-            sb.append("<tbody><tr class='"+style+"' onclick=\""+simpleClickEvent+"\"><td class='alignRight'>"+counter+"</td><td>"+team.getName()+specialRole+"</td><td title='"+viewTitle+"' class='alignRight'>"+titleList.size()+"</td><td class='alignRight minWidth100'>0</td></tr>");
+            sb.append("<tbody id='"+team.getUuid()+"'><tr class='"+style+"' onclick=\""+simpleClickEvent+"\"><td class='alignRight'>"+counter+"</td><td class='minWidth100'>"+team.getName()+specialRole+"</td><td title='"+viewTitle+"' class='alignRight'>"+titleList.size()+"</td><td class='alignRight minWidth100'>0</td></tr>");
 
             if (isShowAllUsers) {
-                sb.append("<tr class='subrows hide'><td colspan=3>");
-                sb.append("<input type='text' placeholder='registreer contactgegevens' class='minWidth300 font10px'/>");
-                String deleteButton = "<button class='font10px cursorPointer minWidth100' onclick=\"$(this).closest('tbody').addClass('hide')\">delete team</button><br/>";
+                sb.append("<tr class='subrows hide font10px'><td colspan=2>");
+                String inputField = "<i>registreer contactgegevens:</i><br/><input type='text' placeholder='registreer contactgegevens' onchange=\"updateTeamStatus($(this).closest('tbody').attr('id'),this.value)\" value='"+team.getCompany()+"' class='minWidth200 font10px'/>";
+                String deleteButton = "<button class='font10px cursorPointer smallBlackBorder minWidth100' onclick=\"updateTeamStatus($(this).closest('tbody').attr('id'),'ARCHIVE');$(this).closest('tbody').addClass('hide')\">archive team</button><br/>";
+                String disqualifyButton = "<button class='font10px cursorPointer smallBlackBorder minWidth100' onclick=\"updateTeamStatus($(this).closest('tbody').attr('id'),'DISQUALIFY');$(this).closest('tbody').addClass('hide')\">disqualify</button><br/>";
                 if (team.getRole().equals(Role.ADMIN)) {
                     deleteButton = "";
+                    inputField = "";
+                    disqualifyButton = "";
                 }
-                sb.append("</td><td>"+deleteButton+"<button onclick=\"$('.passwordModal').toggleClass('hide')\" class='font10px minWidth100 cursorPointer'>password</button></td></tr>");
+                sb.append(inputField);
+                sb.append("</td><td colspan=2 class='alignCenter'>"+deleteButton+disqualifyButton+"<button onclick=\"$('.passwordModal').toggleClass('hide')\" class='font10px minWidth100 smallBlackBorder cursorPointer nowrap'>password update</button></td></tr>");
             }
             sb.append("</tbody>");
             counter ++;
@@ -359,10 +367,10 @@ public class GamemasterTableComponents {
 
             String viewType = type;
             if ("solution".equals(type)) {
-                viewType = "<a href='/assignmentAdmin?assignment="+assignmentName+"&solution' title='view solution'>" + type + "</a>";
+                viewType = "<a class='bold' href='/assignmentAdmin?assignment="+assignmentName+"&solution' title='view solution'>" + type + "</a>";
             } else
             if ("src.editable".equals(type)) {
-                viewType = "<a href='/assignmentAdmin?assignment="+assignmentName+"' title='view assignment'>" + type + "</a>";
+                viewType = "<a class='bold' href='/assignmentAdmin?assignment="+assignmentName+"' title='view assignment'>" + type + "</a>";
             }
             String viewFile = file.getPath().substring(localPath.length()).replace("\\","/");
 
@@ -379,7 +387,7 @@ public class GamemasterTableComponents {
     public String toSimpleBootstrapTable(List<AssignmentDescriptor> assignmentDescriptorList) {
         StringBuilder sb = new StringBuilder();
         String tokenForIndividualBonus = "<sup>(*1)</sup>";
-        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Opdracht</th><th>Auteur</th><th>Bonus</th><th>Minuten</th><th>Java</th><th>Complexiteit</th></tr></thead>");
+        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Opdracht</th><th>Auteur</th><th>Bonus</th><th>Tijd</th><th>Java</th><th>Level</th><th>Labels</th></tr></thead>");
         for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
             String bonus = "";
             String title = ""+descriptor.getLabels()+ " - " +descriptor.getScoringRules().toString();
@@ -395,11 +403,39 @@ public class GamemasterTableComponents {
             if (author.contains(" based on ")) {
                 author = author.substring(0, author.indexOf(" based on "));
             }
-            Long duration = descriptor.getDuration().toMinutes();
-            title = " \"" +descriptor.getDisplayName()+ "\"";
-            sb.append("<tr title='"+title+"'><td>"+descriptor.getName()+"</td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td></tr>");
+            if (author.contains(" and ")) {
+                author = author.replace(" and "," & ");
+            }
+            if (author.contains(" van ")) {
+                author = author.replace(" van "," v. ");
+            }
+            long duration = descriptor.getDuration().toMinutes();
+
+            String selectionBox = toSelectionBox(descriptor.getLabels());
+            String postfix = "";
+            boolean isNotReady = descriptor.getLabels().contains("not-ready")||descriptor.getLabels().contains("label1")||descriptor.getLabels().contains("label2");
+            boolean isNotForCompetition = descriptor.getLabels().contains("internet-searchable");
+            title = descriptor.getDisplayName();
+            if (isNotReady) {
+                postfix = "(NOT READY) ";
+            } else
+            if (isNotForCompetition) {
+                postfix = "(NOT FOR ONLINE) ";
+            }
+            title += descriptor.getDisplayName() + " - VIEW LABELS FOR MORE DETAILS";
+            sb.append("<tr title='"+title+"'><td>"+descriptor.getName()+" <i>"+postfix+"</i></td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td><td>"+selectionBox+"</td></tr>");
         }
         sb.append("</table>");
+        return sb.toString();
+    }
+
+    private String toSelectionBox(List<String> list) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<select>");
+        for (String item: list) {
+            sb.append("<option>"+item+"</option>");
+        }
+        sb.append("</select>");
         return sb.toString();
     }
 }

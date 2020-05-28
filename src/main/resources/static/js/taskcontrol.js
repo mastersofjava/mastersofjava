@@ -109,7 +109,12 @@ function clearAssignments() {
     showAlert("competition has been restarted");
     stompClient.send("/app/control/clearCurrentAssignment", {}, {});
 }
-
+function updateSettingRegistrationFormDisabled(isInput) {
+    clientSend("/app/control/updateSettingRegistration", { taskName: 'updateSettingRegistration', value:''+ (isInput==true) });
+}
+function updateTeamStatus(uuid, value) {
+    clientSend("/app/control/updateTeamStatus", { taskName: 'updateTeamStatus', uuid: uuid, value:value });
+}
 function doCompetitionSaveName(name, uuid) {
     console.log('name ' + name + " " + uuid);
     if (name) {
@@ -129,7 +134,13 @@ function doCompetitionDelete() {
 function clientSend(destinationUri, taskMap) {
     console.log('clientSend '+ destinationUri);
     console.log(taskMap);
-    stompClient.send(destinationUri, {}, JSON.stringify(taskMap));
+    if (stompClient.connected) {
+        stompClient.send(destinationUri, {}, JSON.stringify(taskMap));
+    } else {
+        showAlert('Uw connectie is verlopen, dus uw pagina wordt opnieuw geladen');
+        reloadPage();
+    }
+
 }
 function clientSelectSubtable(node, rowIdentifierValue) {
     $(node).closest('table').find('tr').removeClass('selected');
