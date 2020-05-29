@@ -199,47 +199,58 @@
 
                 </div>
                 <div class="tab-pane fade " id="pills-configuratie" role="tabpanel" aria-labelledby="pills-configuratie-tab">
-                    <h6>Inladen van opdrachten. Aantal geconfigureerde locaties: [[${locationList.size()}]].</h6><br/>
+                    <h6>Voor configuratie kun je met dit tabblad bestanden inladen en exporteren.</h6><br/>
 
-                    <div class="p-2 col-12 alignCenter" th:if="${locationList.size()>0}">
-                        <select class="p-2" th:disabled="${locationList.size()==1}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
-                            <option value="">Selecteer een ander jaar</option>
-                            <option th:each="team : ${locationList}" th:value="${team.getName()}"
-                                    th:text="${team.getName()}" th:selected="${team.getName().equals(repositoryLocation.getName())}"></option>
-                        </select>
-                        <button id="clone" class="btn btn-primary" onclick="scanAssignments();">
-                            <span th:if="${isWithAssignmentsLoaded}"> Herlaad assignments van dit jaar</span><span th:if="${!isWithAssignmentsLoaded}"> Laad assignments </span>
-
-                        </button>
-
-                    </div>
-
-                    <div class="p-2 col-12" th:if="${locationList.size()==0}">
-                        U moet eerst de goede locatie configureren van de opdrachten.
-                    </div>
-                    <br/>
-                    <br/>
-                    <br/>
                     <div class="row">
-                        <div class="p-2 col-6 text-right">
-                            <a class="btn btn-success" href="/getGameMasterState" target="getGameMasterState">Bekijk systeemstatus (export)</a><br/><br/>
-
+                        <div class="p-2 col-12" th:if="${locationList.size()==0}">
+                            U moet eerst de goede locatie configureren van de opdrachten.
                         </div>
-                        <div class="p-2 col-6">
+                        <div class="p-2 col-5 roundGrayBorder" th:if="${locationList.size()>0}">
+                            <h6>Inladen van opdrachten</h6>
+                                &nbsp;&nbsp;<sup>(# locaties beschikbaar op server: [[${locationList.size()}]])</sup>
+                        </div>
+                        <div class="p-2 col-6 roundGrayBorder" th:if="${locationList.size()>0}">
+                            <select class="p-2" th:disabled="${locationList.size()==1}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
+                                <option value="">Selecteer een ander jaar</option>
+                                <option th:each="team : ${locationList}" th:value="${team.getName()}"
+                                        th:text="${team.getName()}" th:selected="${team.getName().equals(repositoryLocation.getName())}"></option>
+                            </select>
+                            <button id="clone" class="btn btn-primary" onclick="scanAssignments();">
+                                <span th:if="${isWithAssignmentsLoaded}"> Herlaad assignments</span><span th:if="${!isWithAssignmentsLoaded}"> Laad assignments </span>
+                            </button>
+                        </div>
+                    </div>
+                    <br/><br/>
+                    <div class="row">
+                        <div class="p-2 col-5 roundGrayBorder">
+                            <h6>Importeer teamdata</h6>
+                            &nbsp;&nbsp;<sup>voor het bijwerken van deelnemers</sup>
+                        </div>
+                        <div class="p-2 col-6 roundGrayBorder">
 
-                            <form method="POST" action="/upload" enctype="multipart/form-data">
-                                <div>
-                                    <label class="btn btn-outline-secondary minWidth200" for="file">
-                                        <input id="file" type="file" name="file" hidden/>
-                                        extra importeer opties...
-                                    </label>
+                            <form method="POST" action="/importUsers" enctype="multipart/form-data" title="importeer teamdata">
+
+                                <div class="row p-2 m-2">
+                                    Stap 1. &nbsp;<input id="file" type="file" name="file"/>
                                 </div>
-                                <input class="btn btn-primary minWidth200" type="submit" value="upload"/>
+                                <div class="row p-2 m-2">
+                                    Stap 2. &nbsp;<input class="btn btn-primary minWidth200" type="submit" value="upload"/>
+                                </div>
                             </form>
 
                         </div>
                     </div>
-
+                    <br/><br/>
+                    <div class="row">
+                        <div class="p-2 col-5 roundGrayBorder">
+                            <h6>Exporteer systeemstatus</h6>
+                            &nbsp;&nbsp;<sup>met name voor development</sup>
+                        </div>
+                        <div class="p-2 col-6 roundGrayBorder">
+                            <a class="btn btn-success" href="/getGameMasterState" target="getGameMasterState">Bekijk systeemstatus (export)</a>
+                        </div>
+                    </div>
+                    <br>
                 </div>
                 <div class="tab-pane fade show active" id="pills-toptien" role="tabpanel" aria-labelledby="pills-toptien-tab">
                     <h6>Bekijk hier de beste teams tot dusver</h6>

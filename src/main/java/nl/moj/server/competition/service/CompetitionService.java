@@ -23,6 +23,8 @@ import nl.moj.server.login.SignupForm;
 import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.FileUtils;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -30,10 +32,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.DayOfWeek;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 @Service
@@ -64,11 +72,16 @@ public class CompetitionService {
                 .uuid(UUID.randomUUID())
                 .build();
 
-        teamRepository.save(team);
         context.setAuthentication(authentication);
+        saveNewTeam(team);
+    }
+
+    private void saveNewTeam(Team team) {
+        teamRepository.save(team);
+
         Path teamdir = mojServerProperties.getDirectories().getBaseDirectory()
                 .resolve(mojServerProperties.getDirectories().getTeamDirectory())
-                .resolve(authentication.getName());
+                .resolve(team.getName());
         if (!Files.exists(teamdir)) {
             try {
                 Files.createDirectory(teamdir);
@@ -76,5 +89,74 @@ public class CompetitionService {
                 log.error("error creating teamdir", e);
             }
         }
+    }
+
+    public class UserImporter {
+        private List<String> lines;
+        private List<Team> teamList = new ArrayList<>();
+        private String createRandomPassword() {
+            Integer randomNumber = new Random().nextInt(1000);
+            Integer randomDay = new Random().nextInt(7);
+
+            return DayOfWeek.of(randomDay).name() +"_"+randomNumber;
+        }
+        public UserImporter(File file) {
+            try {
+                lines = FileUtils.readLines(file, StandardCharsets.UTF_8);
+                parseLines();
+            } catch (Exception ex) {
+                log.error(ex.getMessage(), ex);
+            }
+        }
+        public UserImporter(List<String> lines) {
+            this.lines = lines;
+            parseLines();
+        }
+        private void parseLines() {
+            for (String line: lines) {
+                log.info("line " + line);
+                String[] parts = line.split("\\|");
+                String role = Role.USER;
+                if (parts.length>=3 && parts[2].equals(Role.GAME_MASTER)) {
+                    role = Role.GAME_MASTER;
+                }
+
+                Team team = Team.builder()
+                        .company(parts[1])
+                        .country("Nederland")
+                        .name(parts[0])
+                        .password(encoder.encode(createRandomPassword()))
+                        .role(role)
+                        .uuid(UUID.randomUUID())
+                        .build();
+                if (team.getName().equalsIgnoreCase("admin")) {
+                    continue;
+                }
+                teamList.add(team);
+            }
+        }
+
+
+        private void addOrUpdateAllImportableTeams() {
+            for (Team teamInput: this.teamList) {
+                Team team = teamRepository.findByName(teamInput.getName());
+                if (team==null) {
+                    saveNewTeam(teamInput);
+                } else {// update just the role and company
+                    team.setRole(teamInput.getRole());
+                    team.setCompany(teamInput.getCompany());
+                    teamRepository.save(team);
+                }
+            }
+        }
+    }
+
+    public void importTeams(List<String> lines) {
+        UserImporter importer = new UserImporter( lines);
+        importer.addOrUpdateAllImportableTeams();
+    }
+    public void importTeams(File file) {
+        UserImporter importer = new UserImporter(file);
+        importer.addOrUpdateAllImportableTeams();
     }
 }

@@ -422,7 +422,7 @@ public class GamemasterTableComponents {
             if (isNotForCompetition) {
                 postfix = "(NOT FOR DIGITAL EVENT) ";
             }
-            title += descriptor.getDisplayName() + " - VIEW LABELS FOR MORE DETAILS";
+            title += " - VIEW LABELS FOR MORE DETAILS";
             sb.append("<tr title='"+title+"'><td>"+descriptor.getName()+" <i>"+postfix+"</i></td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td><td>"+selectionBox+"</td></tr>");
         }
         sb.append("</table>");

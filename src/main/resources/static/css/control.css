@@ -24,7 +24,7 @@ svg {
     -webkit-transform: rotate(-90deg);
     transform: rotate(-90deg);
 }
-div.flex-column, .row.p-2 {
+div.flex-column {
     border: 2px solid black;
 }
 h6 {
@@ -157,4 +157,7 @@ select.disabled {
 }
 .smallBlackBorder {
     border: 1px solid black;
+}
+input[file] {
+    color:black;
 }

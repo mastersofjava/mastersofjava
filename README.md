@@ -23,14 +23,13 @@ Make sure you update the application.yaml to it works for the machine that is ru
 #### Starting
 - From any IDE you can just run the `MojServerApplication.class`
 - Startup via commandline: `mvn compile spring-boot:run`
+- Advice: do not change the official application.yaml when not needed. 
+    - Use a customizable application-local.yaml via: `mvn compile spring-boot:run -Dspring.profiles.active=local`
 
-#### Controller Dashboard
+#### Gamemaster Dashboard
 
-The controller dashboard can be found on [http://localhost:8080/control](http://localhost:8080/control). The first time
+The Gamemaster dashboard can be found on [http://localhost:8080/control](http://localhost:8080/control). The first time
 you start the application you will be asked to setup and administrator account. 
-
-TODO add commandline start info
-TODO add info on external configuration info
 
 
 # License
