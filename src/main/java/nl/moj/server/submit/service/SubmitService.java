@@ -127,7 +127,9 @@ public class SubmitService {
                     log.info("test1 " +message.getAssignmentName() + " compile " + sr.isSuccess() + " submit " + submit );
                     ActiveAssignment activeAssignment = competition.getActiveAssignment();
                     try {
-                        if (activeAssignment.getAssignment()==null  || !message.getAssignmentName().equals(activeAssignment.getAssignment().getName())) {
+                        boolean isAssignmentNull = activeAssignment.getAssignment()==null;
+                        boolean isOverride = message.getAssignmentName()!=null && !message.getAssignmentName().equals(activeAssignment.getAssignment().getName());
+                        if (isAssignmentNull  || isOverride) {
                             List<AssignmentFile> fileList   = assignmentService.getAssignmentFiles(assignment);
                             AssignmentDescriptor assignmentDescriptor =assignmentService.getAssignmentDescriptor(assignment);
                             activeAssignment  = ActiveAssignment.builder().assignment(assignment).assignmentDescriptor(assignmentDescriptor).assignmentFiles(fileList).build();
