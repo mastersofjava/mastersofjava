@@ -23,6 +23,7 @@ import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.teams.model.Team;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -31,4 +32,10 @@ public interface AssignmentStatusRepository extends JpaRepository<AssignmentStat
     List<AssignmentStatus> findByAssignmentAndCompetitionSession(Assignment assignment, CompetitionSession competitionSession);
 
     AssignmentStatus findByAssignmentAndCompetitionSessionAndTeam(Assignment assignment, CompetitionSession competitionSession, Team team);
+
+    List<AssignmentStatus> findByCompetitionSessionAndTeam(CompetitionSession competitionSession, Team team);
+
+    @Query(value = "select NAME,ASSIGNMENT_ID, max(FINAL_SCORE),min(DATE_TIME_START) from ASSIGNMENT_RESULTS a_r ,ASSIGNMENT_STATUSES a_s,ASSIGNMENTS a where a_s.ID=a_r.ASSIGNMENT_STATUS_ID and a.ID=a_s.ASSIGNMENT_ID group by a.ID", nativeQuery = true)
+    List<String[]> getHighscoreList();
+
 }

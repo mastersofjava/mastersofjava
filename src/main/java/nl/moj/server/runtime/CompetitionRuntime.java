@@ -120,8 +120,8 @@ public class CompetitionRuntime {
 
         if (assignment.isPresent()) {
             try {
-                assignmentRuntime.start(assignment.get(), competitionSession);
                 if (!completedAssignments.contains(assignment.get())) {
+                    assignmentRuntime.start(assignment.get(), competitionSession);
                     completedAssignments.add(assignment.get());
                 }
             } catch( AssignmentStartException ase ) {

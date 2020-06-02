@@ -39,13 +39,13 @@ function connectCompetition() {
         stomp.subscribe("/queue/competition",
             function (data) {
                 var msg = JSON.parse(data.body);
-                if (handlers.hasOwnProperty(msg.messageType)) {
-                    handlers[msg.messageType](msg);
+                if (competitionHandlers.hasOwnProperty(msg.messageType)) {
+                    competitionHandlers[msg.messageType](msg);
                 }
             });
     });
 
-    var userHandlers = {};
+    userHandlers = {};
     userHandlers['COMPILE'] = function (msg) {
         enable();
         appendOutput(msg.message);
@@ -76,18 +76,19 @@ function connectCompetition() {
         updateAlertContainerWithScore(msg);
     };
 
-    var handlers = {};
-    handlers['TIMER_SYNC'] = function (msg) {
+    competitionHandlers = {};
+    competitionHandlers['TIMER_SYNC'] = function (msg) {
+        lastMessage = msg;
         if (clock) {
             clock.sync(msg.remainingTime, msg.totalTime);
         }
     };
-    handlers['START_ASSIGNMENT'] = function (msg) {
+    competitionHandlers['START_ASSIGNMENT'] = function (msg) {
         window.setTimeout(function () {
             window.location.reload()
-        }, 1000);
+        }, 10);
     };
-    handlers['STOP_ASSIGNMENT'] = function (msg) {
+    competitionHandlers['STOP_ASSIGNMENT'] = function (msg) {
         disable();
         if (clock) {
             clock.stop();
@@ -97,33 +98,55 @@ function connectCompetition() {
 
 function connectButtons() {
     $('#compile').click(function (e) {
-        compile();
+        doUserActionCompile();
         e.preventDefault();
     });
     $('#test').click(function (e) {
         $('#test-modal').modal('hide');
-        test();
+        doUserActionTest();
         e.preventDefault();
     });
     $('#submit').click(function (e) {
         resetTabColor();
         $('#confirm-submit-modal').modal('hide');
         timerActive = false;
-        submit();
+        doUserActionSubmit();
         e.preventDefault();
     });
 }
 
+/**
+ * after CodeMirror the Assignment Text, this function insert images in dislay.
+ */
+function codeMirror_insertImagesInAssignmentText() {
+
+    var list = $('.CodeMirror-code:visible .CodeMirror-line');
+    $(list).each(function() {
+        var isHtml = this.innerHTML.indexOf('&gt;')!=-1&&this.innerHTML.indexOf('&lt;')!=-1;
+        if (isHtml) {
+            var input = this.innerHTML.replace(/&gt;/g,'>').replace(/&lt;/g,'<');
+            console.log(input);
+            this.innerHTML = input;
+        }
+    });
+}
 function initializeCodeMirrors() {
+    texts = [];
+    cmList = [];
     $('textarea[data-cm]').each(
         function (idx) {
             var type = $(this).attr('data-cm-file-type');
+            texts.push(this);
+            var isTask = type === 'TASK';
+            var isReadyOnly = $(this).attr('data-cm-readonly') === 'true';
+
             var cm = CodeMirror.fromTextArea(this, {
                 lineNumbers: true,
-                mode: type === 'TASK' ? 'text/plain' : "text/x-java",
+                mode: isTask ? 'text/plain' : "text/x-java",
                 matchBrackets: true,
-                readOnly: $(this).attr('data-cm-readonly') === 'true'
+                readOnly: isReadyOnly
             });
+            cmList.push(cm);
             editors.push({
                 'cm': cm,
                 'readonly': cm.isReadOnly(),
@@ -132,24 +155,27 @@ function initializeCodeMirrors() {
                 'uuid': $(this).attr('data-cm-id')
             });
 
-            $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
+            var tabLink = $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
                 function (e) {
                     console.log('shown.bs.tab', e);
                     cm.refresh();
+                    if (isTask) codeMirror_insertImagesInAssignmentText();
                 });
 
             var $wrapper = $(cm.getWrapperElement());
             $wrapper.resizable({
                 resize: function () {
                     cm.setSize($(this).width(), $(this).height());
-                    cm.refresh();
+                    tabLink.trigger('shown.bs.tab');
                 }
             });
 
             var pos = $('#tabs .tab-content').position();
             var height = window.innerHeight - pos.top - 80;
             $wrapper.css('height', height + 'px');
-            cm.refresh();
+            if (isTask) {
+                tabLink.trigger('shown.bs.tab');
+            }
         });
 }
 
@@ -234,7 +260,7 @@ function escape(txt) {
     });
 }
 
-function compile() {
+function doUserActionCompile() {
     disable();
     resetOutput();
     appendOutput("Compiling ....");
@@ -246,7 +272,7 @@ function compile() {
     }));
 }
 
-function test() {
+function doUserActionTest() {
     disable();
     resetOutput();
     appendOutput("Compiling and testing ....");
@@ -300,7 +326,7 @@ function getContent() {
     return editables;
 }
 
-function submit() {
+function doUserActionSubmit() {
     disable();
     resetOutput();
     showOutput();

@@ -57,7 +57,7 @@
                 </div>
                 <div class="d-flex flex-row-reverse">
                     <button type="submit" id="login" class="btn btn-primary ml-2">Login</button>
-                    <a class="btn btn-outline-primary ml-2" th:href="@{/register}" th:if="${!registration_disabled}">Register</a>
+                    <a class="btn btn-outline-primary ml-2" th:href="@{/register}" th:if="${registration_disabled==null||!registration_disabled}">Register</a>
                 </div>
             </form>
         </div>

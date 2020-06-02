@@ -11,7 +11,9 @@ import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.rankings.model.Ranking;
 import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import org.apache.commons.io.FileUtils;
@@ -26,7 +28,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * the html creation will be moved towards the angular client in the future.
@@ -43,6 +47,7 @@ public class GamemasterTableComponents {
 
     private final CompetitionSessionRepository competitionSessionRepository;
 
+    private final AssignmentStatusRepository assignmentStatusRepository;
     @JsonSerialize
     public static class DtoAssignmentState implements Serializable {
         long order;
@@ -126,7 +131,6 @@ public class GamemasterTableComponents {
         String selectedCompetition = competition.getCompetition().getName();
         int competitionCounter = 1;
         List<Competition> competitionList = competitionRepository.findAll();
-        boolean isWithDeletionButton = competitionList.size()>1;
 
         for (Competition competition:competitionList) {
             List<CompetitionSession> sessionList = competitionSessionRepository.findByCompetition(competition);
@@ -164,8 +168,16 @@ public class GamemasterTableComponents {
         return sb.toString();
     }
 
+    public String toSimpleBootstrapTableForTeams(List<Team> teams, boolean isShowAllUsers, List<Ranking> rankings) {
+        List<String> orderedList = new ArrayList<>();
+        Map<String,Long> rankingMap = new LinkedHashMap<>();
+        for (Ranking ranking: rankings) {
+            rankingMap.put(ranking.getTeam(), ranking.getTotalScore());
+            if (orderedList.size()<10) {
+                orderedList.add(ranking.getTeam());
+            }
+        }
 
-    public String toSimpleBootstrapTableForTeams(List<Team> teams, boolean isShowAllUsers) {
         StringBuilder sb = new StringBuilder();
         String uuid = competition.getCompetitionSession().getUuid().toString();
 
@@ -177,17 +189,25 @@ public class GamemasterTableComponents {
                 idList.add(file.getName());
             }
         }
-        List<Team> displayList = new ArrayList<>();
+        Map<String,Team> teamData = new LinkedHashMap<>();
+
         for (Team team: teams) {
             if (isShowAllUsers || idList.contains(team.getUuid().toString())) {
-                displayList.add(team);
+                teamData.put(team.getName(), team);
+                if (isShowAllUsers) {
+                    orderedList.add(team.getName());
+                }
             }
         }
+
+
+
         int counter = 1;
-        String displayTable = displayList.size()>10 ?" scrollableTable ":"";
+        String displayTable = orderedList.size()>10 ?" scrollableTable ":"";
         sb.append("<table class='roundGrayBorder table "+displayTable+"' ><thead><tr><th>Nr</th><th>Team</th><th>Games</th><th>Score</th></tr></thead>");
 
-        for (Team team: displayList) {
+        for (String name: orderedList) {
+            Team team = teamData.get(name);
             List<String> titleList = new ArrayList<>();
             if (idList.contains(team.getUuid().toString())) {
                 File[] games = new File(rootFile, team.getUuid().toString()).listFiles();
@@ -207,7 +227,8 @@ public class GamemasterTableComponents {
             String style = isShowAllUsers?"cursorPointer":"";
             String simpleClickEvent = isShowAllUsers?"clientSelectSubtable(this, '"+team.getUuid()+"')":"";
             String viewTitle = titleList.isEmpty()?"deze gebruiker heeft nog geen opdrachten gedaan":titleList.toString();
-            sb.append("<tbody id='"+team.getUuid()+"'><tr class='"+style+"' onclick=\""+simpleClickEvent+"\"><td class='alignRight'>"+counter+"</td><td class='minWidth100'>"+team.getName()+specialRole+"</td><td title='"+viewTitle+"' class='alignRight'>"+titleList.size()+"</td><td class='alignRight minWidth100'>0</td></tr>");
+            Long total = rankingMap.getOrDefault(team.getName(),0L);
+            sb.append("<tbody id='"+team.getUuid()+"'><tr class='"+style+"' onclick=\""+simpleClickEvent+"\"><td class='alignRight'>"+counter+"</td><td class='minWidth100'>"+team.getName()+specialRole+"</td><td title='"+viewTitle+"' class='alignRight'>"+titleList.size()+"</td><td class='alignRight minWidth100'>"+total+"</td></tr>");
 
             if (isShowAllUsers) {
                 sb.append("<tr class='subrows hide font10px'><td colspan=2>");
@@ -239,7 +260,14 @@ public class GamemasterTableComponents {
         if (list.isEmpty()) {
             return "";
         }
-        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Opdracht</th><th>Status</th><th>High score</th></tr></thead>");
+        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Opdracht</th><th>Status</th><th>Starttijd</th><th>Highscore</th></tr></thead>");
+
+        List<String[]> highscoreList = assignmentStatusRepository.getHighscoreList();
+        Map<String, String[]> highscoreMap = new LinkedHashMap<>();
+
+        for (String[] item : highscoreList) {
+            highscoreMap.put(item[0],item);
+        }
 
         int counter = 1;
         for (DtoAssignmentState orderedAssignment: list) {
@@ -250,8 +278,14 @@ public class GamemasterTableComponents {
             }
             String viewName = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"' title='view assignment'>"+orderedAssignment.name+"</a>";
             String viewOrder = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"&solution' title='view solution'>"+counter+"</a>";
+            String viewTime = "";
+            String viewScore = "0";
+            if (highscoreMap.containsKey(orderedAssignment.name)) {
+                viewTime = highscoreMap.get(orderedAssignment.name)[3].split("\\.")[0];
+                viewScore = highscoreMap.get(orderedAssignment.name)[2];
+            }
 
-            sb.append("<tr><td>"+viewOrder+"</td><td>"+viewName+"</td><td>"+viewState + "</td><td>0</td></tr>");
+            sb.append("<tr><td>"+viewOrder+"</td><td>"+viewName+"</td><td>"+viewState + "</td><td>"+viewTime+"</td><td>"+viewScore+"</td></tr>");
             counter++;
         }
         sb.append("</table>");

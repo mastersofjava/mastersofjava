@@ -35,6 +35,8 @@ import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.CompetitionCleaningService;
 import nl.moj.server.competition.service.GamemasterTableComponents;
 import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.rankings.model.Ranking;
+import nl.moj.server.rankings.service.RankingsService;
 import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
@@ -106,6 +108,8 @@ public class TaskControlController {
     private final CompetitionSessionRepository competitionSessionRepository;
 
     private final CompetitionCleaningService competitionCleaningService;
+
+    private final RankingsService rankingsService;
 
     @ModelAttribute(name = "sessions")
     public List<CompetitionSession> sessions() {
@@ -414,6 +418,9 @@ public class TaskControlController {
     @GetMapping("/control")
     public String taskControl(Model model, @AuthenticationPrincipal Authentication user, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
                               @ModelAttribute("newPasswordRequest") NewPasswordRequest npr) {
+        if (sessions().isEmpty()) {
+            competition.startSession(competition.getCompetition());
+        }
         List<String> roles = user.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
         String selectedYearLabel = getSelectedYearLabel();
@@ -458,9 +465,10 @@ public class TaskControlController {
         model.addAttribute("assignments",assignmentDescriptorList);
 
         List<Team> teams = team();
-        if (!teams.isEmpty()) {
-            model.addAttribute("teamDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, true));
-            model.addAttribute("activeTeamDetailCanvas",  gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, false));
+        if (!teams.isEmpty() && isWithAdminRole) {
+            List<Ranking> rankings = rankingsService.getRankings(competition.getCompetitionSession());
+            model.addAttribute("teamDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, true, rankings));
+            model.addAttribute("activeTeamDetailCanvas",  gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, false, rankings));
         } else {
             model.addAttribute("activeTeamDetailCanvas", "(U moet eerst de gebruikers aanmaken)");
             model.addAttribute("teamDetailCanvas", "(U moet eerst de gebruikers aanmaken)");

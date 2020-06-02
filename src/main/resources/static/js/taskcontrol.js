@@ -65,9 +65,7 @@ function startTask() {
     if (!taskname) {
         return;
     }
-    stompClient.send("/app/control/starttask", {}, JSON.stringify({
-        'taskName': taskname
-    }));
+    clientSend("/app/control/starttask",  {'taskName': taskname});
 
     var tasktime = $("input[name='assignment']:checked").attr('time');
 
@@ -79,7 +77,7 @@ function startTask() {
 
 function stopTask() {
     if (validateAssignmentSelected()) {
-        stompClient.send("/app/control/stoptask", {}, {});
+        clientSend("/app/control/stoptask", {});
     }
 }
 
@@ -88,13 +86,13 @@ function restartAssignment() {
     if (!taskname) {
         return;
     }
-    stompClient.send("/app/control/restartAssignment", {}, JSON.stringify({
+    clientSend("/app/control/restartAssignment", {
         'taskName': taskname
-    }));
+    });
 }
 
 function pauseResume() {
-    stompClient.send("/app/control/pauseResume", {}, {});
+    clientSend("/app/control/pauseResume", {});
 }
 function validateAssignmentSelected() {
     $('#alert').empty();
@@ -189,7 +187,12 @@ function clientStoreStateRead() {
 }
 function clientStoreRender() {
     $(clientStoreStateRead()).each(function() {
-        $('#'+this).click();
+        var tabButton = $('#'+this);
+        if (tabButton.length) {
+            tabButton.click();
+        } else {
+            console.log("not existing tabButton with id: "+this);
+        }
     });
 }
 function scanAssignments() {
