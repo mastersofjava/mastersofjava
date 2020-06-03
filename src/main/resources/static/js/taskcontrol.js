@@ -235,10 +235,7 @@ function initializeAssignmentClock() {
 
 function doViewDeltaSolution(node) {
     var title= node.title.split('-')[0];
-    lastNode = node;
-    console.log('title ' +title);
-    console.log(node);
     $('#deltaSolution-modal .modal-title').html(title);
-    var code = $(node).find('textarea').val();
+    var code = $(node).find('textarea').val().replace(/</g,'&lt;').replace(/>/g,'&gt;');//small encoding into valid html
     $('#deltaSolution-modal pre').html(code);
 }
