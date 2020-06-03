@@ -234,6 +234,11 @@ function initializeAssignmentClock() {
 }
 
 function doViewDeltaSolution(node) {
+    var isOtherChildEvent = window.event.target.tagName.toLowerCase()==='select';
+    if (isOtherChildEvent) {
+        return;
+    }
+    $('#deltaSolution-modal').find('.openModalViaJs').click();
     var title= node.title.split('-')[0];
     $('#deltaSolution-modal .modal-title').html(title);
     var code = $(node).find('textarea').val().replace(/</g,'&lt;').replace(/>/g,'&gt;');//small encoding into valid html

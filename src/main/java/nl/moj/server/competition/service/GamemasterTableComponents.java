@@ -444,7 +444,7 @@ public class GamemasterTableComponents {
                 model.solutionFile = new File(directory, "assets/" +list.get(0).toFile().getName());
                 model.problemFile = new File(directory, "src/main/java/" +descriptor.getAssignmentFiles().getSources().getEditable().get(0).toFile().getName());
 
-                sb.append("<tr title=\""+title+"\" data-toggle='modal' data-target='#deltaSolution-modal'  class='cursorPointer' onclick='doViewDeltaSolution(this)'><td>");
+                sb.append("<tr title=\""+title+"\"  class='cursorPointer' onclick='doViewDeltaSolution(this)'><td>");
                 sb.append(descriptor.getName()+" <i>"+postfix+"</i></td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td><td>"+selectionBox);
 
                 sb.append("<textarea class='hide'>"+model.createDiffString()+"</textarea>");
@@ -491,7 +491,7 @@ public class GamemasterTableComponents {
         }
         private String toSelectionBox(List<String> list) {
             StringBuilder sb = new StringBuilder();
-            sb.append("<select>");
+            sb.append("<select >");
             for (String item: list) {
                 sb.append("<option>"+item+"</option>");
             }
