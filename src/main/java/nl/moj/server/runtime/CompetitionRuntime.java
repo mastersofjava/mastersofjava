@@ -79,13 +79,13 @@ public class CompetitionRuntime {
         this.completedAssignments = new ArrayList<>();
 
         // get the completed assignment uuids
-        List<UUID> assignments = assignmentResultRepository.findByCompetitionSession(competitionSession).stream()
+        List<UUID> completedAssignmentList = assignmentResultRepository.findByCompetitionSession(competitionSession).stream()
                 .filter(ar -> ar.getAssignmentStatus().getDateTimeEnd() != null)
                 .map(ar -> ar.getAssignmentStatus().getAssignment().getUuid())
                 .distinct().collect(Collectors.toList());
 
         this.competition.getAssignments().forEach(oa -> {
-            if (assignments.contains(oa.getAssignment().getUuid())) {
+            if (completedAssignmentList.contains(oa.getAssignment().getUuid())) {
                 this.completedAssignments.add(oa);
             }
         });
@@ -121,8 +121,8 @@ public class CompetitionRuntime {
         if (assignment.isPresent()) {
             try {
                 if (!completedAssignments.contains(assignment.get())) {
-                    assignmentRuntime.start(assignment.get(), competitionSession);
                     completedAssignments.add(assignment.get());
+                    assignmentRuntime.start(assignment.get(), competitionSession);
                 }
             } catch( AssignmentStartException ase ) {
                 messageService.sendStartFail(name, ase.getMessage());

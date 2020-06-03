@@ -286,7 +286,7 @@ public class ScoreService {
             registerScore(as, score);
 
             // make sure cannot finalize twice.
-            as.setDateTimeEnd(Instant.ofEpochSecond(Instant.now().getEpochSecond()));
+            as.setDateTimeEnd(Instant.now());
 
             as = assignmentStatusRepository.save(as);
 

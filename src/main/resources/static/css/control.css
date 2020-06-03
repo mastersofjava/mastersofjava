@@ -115,6 +115,9 @@ body .hide {
 .minWidth200 {
     min-width: 200px;
 }
+.minWidth800 {
+    min-width: 800px;
+}
 .maxWidth300 {
     max-width: 300px;
 }

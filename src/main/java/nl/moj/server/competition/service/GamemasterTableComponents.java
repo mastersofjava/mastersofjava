@@ -1,6 +1,9 @@
 package nl.moj.server.competition.service;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.github.difflib.DiffUtils;
+import com.github.difflib.UnifiedDiffUtils;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
@@ -21,11 +24,11 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -292,13 +295,13 @@ public class GamemasterTableComponents {
         return sb.toString();
     }
 
-    private class SimpleAssignmentDetailsPanel {
+    private class SimpleAssignmentFileDetailsPanel {
         private String assignmentName;
         private File directory;
         private List<File> fileList = new ArrayList<>();
         private List<String> errorList = new ArrayList<>();
         private String localPath = mojServerProperties.getAssignmentRepo().toFile().getParentFile().getPath();
-        public String createTableList(List<AssignmentDescriptor> assignmentDescriptorList) {
+        public String createTableFromAssignmentList(List<AssignmentDescriptor> assignmentDescriptorList) {
             StringBuilder sbAll = new StringBuilder();
             sbAll.append("<span class='top'>");
             for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
@@ -415,21 +418,62 @@ public class GamemasterTableComponents {
     }
 
     public String toSimpleBootstrapTablesForFileDetails(List<AssignmentDescriptor> assignmentDescriptorList) {
-        return new SimpleAssignmentDetailsPanel().createTableList(assignmentDescriptorList);
+        return new SimpleAssignmentFileDetailsPanel().createTableFromAssignmentList(assignmentDescriptorList);
     }
 
     public String toSimpleBootstrapTable(List<AssignmentDescriptor> assignmentDescriptorList) {
-        StringBuilder sb = new StringBuilder();
-        String tokenForIndividualBonus = "<sup>(*1)</sup>";
-        sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Opdracht</th><th>Auteur</th><th>Bonus</th><th>Tijd</th><th>Java</th><th>Level</th><th>Labels</th></tr></thead>");
-        for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
-            String bonus = "";
-            String title = ""+descriptor.getLabels()+ " - " +descriptor.getScoringRules().toString();
-            boolean isWithIndividualTestBonus = title.contains("[test");
-            if (isWithIndividualTestBonus) {
-                bonus = tokenForIndividualBonus;
+        return new SimpleAssignmentPanel().createTableFromAssignmentList(assignmentDescriptorList);
+    }
+
+    private static class SimpleAssignmentPanel {
+
+        public String createTableFromAssignmentList(List<AssignmentDescriptor> assignmentDescriptorList) {
+            StringBuilder sb = new StringBuilder();
+            String tokenForIndividualBonus = "<sup>(*1)</sup>";
+            sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Opdracht</th><th>Auteur</th><th>Bonus</th><th>Tijd</th><th>Java</th><th>Level</th><th>Labels</th></tr></thead>");
+            for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
+                String bonus = createBonusInfo(descriptor, tokenForIndividualBonus);
+                String title = descriptor.getDisplayName()+ " - VIEW LABELS FOR MORE DETAILS";
+                String author = createShortAuthorColumn(descriptor);
+                long duration = descriptor.getDuration().toMinutes();
+                String selectionBox = toSelectionBox(descriptor.getLabels());
+                String postfix = createAssignmentWarningIfNeeded(descriptor);
+                List<Path> list = descriptor.getAssignmentFiles().getSolution();
+                File directory = descriptor.getDirectory().toFile();
+                AssignmentModel model = new AssignmentModel();
+                model.solutionFile = new File(directory, "assets/" +list.get(0).toFile().getName());
+                model.problemFile = new File(directory, "src/main/java/" +descriptor.getAssignmentFiles().getSources().getEditable().get(0).toFile().getName());
+
+                sb.append("<tr title=\""+title+"\" data-toggle='modal' data-target='#deltaSolution-modal'  class='cursorPointer' onclick='doViewDeltaSolution(this)'><td>");
+                sb.append(descriptor.getName()+" <i>"+postfix+"</i></td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td><td>"+selectionBox);
+
+                sb.append("<textarea class='hide'>"+model.createDiffString()+"</textarea>");
+                sb.append("</td></tr>");
             }
-            bonus = descriptor.getScoringRules().getSuccessBonus() + bonus;
+            sb.append("</table>");
+            return sb.toString();
+        }
+        private String createBonusInfo(AssignmentDescriptor descriptor, String tokenForIndividualBonus) {
+            String bonus = "" + descriptor.getScoringRules().getSuccessBonus() ;
+            boolean isWithIndividualTestBonus = descriptor.getLabels().toString().contains("[test");
+            if (isWithIndividualTestBonus) {
+                bonus += tokenForIndividualBonus;
+            }
+            return bonus;
+        }
+        private String createAssignmentWarningIfNeeded(AssignmentDescriptor descriptor) {
+            boolean isNotReady = descriptor.getLabels().contains("not-ready")||descriptor.getLabels().contains("label1")||descriptor.getLabels().contains("label2");
+            boolean isNotForCompetition = descriptor.getLabels().contains("internet-searchable");
+            String postfix = "";
+            if (isNotReady) {
+                postfix = "(NOT READY) ";
+            } else
+            if (isNotForCompetition) {
+                postfix = "(NOT FOR DIGITAL EVENT) ";
+            }
+            return postfix;
+        }
+        private String createShortAuthorColumn(AssignmentDescriptor descriptor) {
             String author = descriptor.getAuthor().getName().split("\\(")[0];
             if (author.contains("http")) {
                 author = author.split("/")[0];
@@ -443,33 +487,37 @@ public class GamemasterTableComponents {
             if (author.contains(" van ")) {
                 author = author.replace(" van "," v. ");
             }
-            long duration = descriptor.getDuration().toMinutes();
-
-            String selectionBox = toSelectionBox(descriptor.getLabels());
-            String postfix = "";
-            boolean isNotReady = descriptor.getLabels().contains("not-ready")||descriptor.getLabels().contains("label1")||descriptor.getLabels().contains("label2");
-            boolean isNotForCompetition = descriptor.getLabels().contains("internet-searchable");
-            title = descriptor.getDisplayName();
-            if (isNotReady) {
-                postfix = "(NOT READY) ";
-            } else
-            if (isNotForCompetition) {
-                postfix = "(NOT FOR DIGITAL EVENT) ";
+            return author;
+        }
+        private String toSelectionBox(List<String> list) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("<select>");
+            for (String item: list) {
+                sb.append("<option>"+item+"</option>");
             }
-            title += " - VIEW LABELS FOR MORE DETAILS";
-            sb.append("<tr title='"+title+"'><td>"+descriptor.getName()+" <i>"+postfix+"</i></td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td><td>"+selectionBox+"</td></tr>");
+            sb.append("</select>");
+            return sb.toString();
         }
-        sb.append("</table>");
-        return sb.toString();
-    }
+        @Data
+        private class AssignmentModel {
+            private File problemFile;
+            private File solutionFile;
 
-    private String toSelectionBox(List<String> list) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<select>");
-        for (String item: list) {
-            sb.append("<option>"+item+"</option>");
+            public String createDiffString() {
+                StringBuilder html = new StringBuilder();
+                try {
+                    List<String> original = FileUtils.readLines(problemFile, Charset.defaultCharset());
+                    List<String> revised = FileUtils.readLines(solutionFile, Charset.defaultCharset());
+                    String label = getProblemFile().getName();
+                    for (String line: UnifiedDiffUtils.generateUnifiedDiff(label, label, original, DiffUtils.diff(original, revised), 10)) {
+                        html.append(line + "\n");
+                    }
+                } catch (Exception ex) {
+                    html.append("ERROR during DIFF");
+                    log.error(ex.getMessage(), ex);
+                }
+                return html.toString();
+            }
         }
-        sb.append("</select>");
-        return sb.toString();
     }
 }

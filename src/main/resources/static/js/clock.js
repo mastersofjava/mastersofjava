@@ -17,9 +17,9 @@ function Clock(initialOffset) {
         // make sure it is rendered at least once in case this team has finished
         this.current = clock.time - timeleft;
 
-        var isStarting = (100*this.current / clock.time)<1;
+        var isStarting = 100*(this.current / clock.time)<1.7// on page load, sound the start gong if in first 20 seconds.
         if (isStarting) {
-            doPlaySoundOnAssigmentStart();
+            doPlaySoundOnAssigmentStartGong();
         }
         renderTime();
 
@@ -85,13 +85,16 @@ function Clock(initialOffset) {
 }
 
 function doPlaySoundOnUserStatus(fileName) {
-    if (!window['Howl']) {
+    var isAdminGUI = window['Howl']==null;
+    console.log('fileName '+fileName + ' isAdminGUI '+ isAdminGUI);
+
+    if (isAdminGUI) {
         return;
     }
     howl=new Howl({urls: [fileName]});
     howl.play();
 }
-function doPlaySoundOnAssigmentStart() {
+function doPlaySoundOnAssigmentStartGong() {
     doPlaySoundOnUserStatus('/gong.wav');
 }
 function doPlaySoundOnAssigmentLast10SecondsBeforeLast15() {
