@@ -452,7 +452,8 @@ public class TaskControlController {
         if (isWithAssignmentsLoaded) {
             String assignmentDetailCanvas = gamemasterTableComponents.toSimpleBootstrapTable(assignmentDescriptorList);
 
-            model.addAttribute("isWithConfigurableTestScore",assignmentDetailCanvas.contains("(*1)"));
+            model.addAttribute("isWithConfigurableTestScore",assignmentDetailCanvas.contains("(*2)"));
+            model.addAttribute("isWithHiddenTests",assignmentDetailCanvas.contains("(*1)"));
             model.addAttribute("assignmentDetailCanvas",  assignmentDetailCanvas);
             model.addAttribute("gameDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForAssignmentStatus());
             model.addAttribute("opdrachtConfiguraties", gamemasterTableComponents.toSimpleBootstrapTablesForFileDetails(assignmentDescriptorList));
@@ -461,6 +462,7 @@ public class TaskControlController {
             model.addAttribute("gameDetailCanvas", "(U moet eerst de opdrachten inladen)");
             model.addAttribute("opdrachtConfiguraties","(U moet eerst de opdrachten inladen)");
             model.addAttribute("isWithConfigurableTestScore",false);
+            model.addAttribute("isWithHiddenTests",false);
         }
         model.addAttribute("assignments",assignmentDescriptorList);
 

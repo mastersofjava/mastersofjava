@@ -195,11 +195,14 @@
 
 
                 <div class="tab-pane fade" id="pills-opdrachtdetails" role="tabpanel" aria-labelledby="pills-opdrachtdetails-tab">
-                    <h6>Bekijk hier elk detail van alle opdrachten[[${selectedYearLabel}]].</h6>
+                    <h6>Bekijk hier de details van alle opdrachten[[${selectedYearLabel}]]. Klik op de opdracht voor extra inzage.</h6>
 
                     <div th:remove="tag" th:utext="${assignmentDetailCanvas}"></div>
-
-                    <br/><i th:if="${isWithConfigurableTestScore}"><sup>(*1) = puntenverdeling per individuele test.</sup></i>
+                    <br/>
+                    <ul style="list-style-type: none">
+                        <li th:if="${isWithConfigurableTestScore}"> <i ><sup>(*1) = heeft extra hidden tests.</sup></i></li>
+                        <li th:if="${isWithConfigurableTestScore}"> <i ><sup>(*2) = puntenverdeling per individuele test.</sup></i></li>
+                    </ul>
                 </div>
                 <div class="tab-pane fade" id="pills-opdrachtconfiguratie" role="tabpanel" aria-labelledby="pills-opdrachtconfiguratie-tab">
                     <h6>Bekijk hier de bestandsdata van de geselecteerde opdracht(en)</h6>

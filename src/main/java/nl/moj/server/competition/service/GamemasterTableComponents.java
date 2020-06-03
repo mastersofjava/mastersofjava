@@ -429,10 +429,10 @@ public class GamemasterTableComponents {
 
         public String createTableFromAssignmentList(List<AssignmentDescriptor> assignmentDescriptorList) {
             StringBuilder sb = new StringBuilder();
-            String tokenForIndividualBonus = "<sup>(*1)</sup>";
+
             sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Opdracht</th><th>Auteur</th><th>Bonus</th><th>Tijd</th><th>Java</th><th>Level</th><th>Labels</th></tr></thead>");
             for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
-                String bonus = createBonusInfo(descriptor, tokenForIndividualBonus);
+                String bonus = createBonusInfo(descriptor);
                 String title = descriptor.getDisplayName()+ " - VIEW LABELS FOR MORE DETAILS";
                 String author = createShortAuthorColumn(descriptor);
                 long duration = descriptor.getDuration().toMinutes();
@@ -453,10 +453,24 @@ public class GamemasterTableComponents {
             sb.append("</table>");
             return sb.toString();
         }
-        private String createBonusInfo(AssignmentDescriptor descriptor, String tokenForIndividualBonus) {
+        private String createBonusInfo(AssignmentDescriptor descriptor) {
+            boolean isWithHiddenTests = !descriptor.getAssignmentFiles().getTestSources().getHiddenTests().isEmpty();
             String bonus = "" + descriptor.getScoringRules().getSuccessBonus() ;
             boolean isWithIndividualTestBonus = descriptor.getLabels().toString().contains("[test");
+            if (isWithHiddenTests) {
+                File directory = descriptor.getDirectory().toFile();
+                File hiddenTestFile = new File(directory, "src/test/java/" +descriptor.getAssignmentFiles().getTestSources().getHiddenTests().get(0).toFile().getName());
+                try {
+                    String content = FileUtils.readFileToString(hiddenTestFile, Charset.defaultCharset()).replace("\"","'");
+                    String tokenForHiddenTestBonus = "<sup title=\""+content+"\">(*1)</sup>";
+                    bonus += tokenForHiddenTestBonus;
+                } catch (Exception ex) {
+                    log.error(ex.getMessage(), ex);
+                }
+
+            }
             if (isWithIndividualTestBonus) {
+                String tokenForIndividualBonus = "<sup title='"+descriptor.getLabels().toString().replace("_","=")+"'>(*2)</sup>";
                 bonus += tokenForIndividualBonus;
             }
             return bonus;
@@ -503,7 +517,7 @@ public class GamemasterTableComponents {
             private File problemFile;
             private File solutionFile;
 
-            public String createDiffString() {
+            private String createDiffString() {
                 StringBuilder html = new StringBuilder();
                 try {
                     List<String> original = FileUtils.readLines(problemFile, Charset.defaultCharset());

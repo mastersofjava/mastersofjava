@@ -123,12 +123,12 @@ public class SubmitService {
 
         //compile
         return compileInternal(team, message, assignment)
-                .thenCompose(sr -> {
-                    log.info("test1 " +message.getAssignmentName() + " compile " + sr.isSuccess() + " submit " + submit );
+                .thenCompose(submitResult -> {
+                    log.info("test1 " +message.getAssignmentName() + " compile " + submitResult.isSuccess() + " submit " + submit );
                     ActiveAssignment activeAssignment = competition.getActiveAssignment();
                     try {
                         boolean isAssignmentNull = activeAssignment.getAssignment()==null;
-                        boolean isOverride = message.getAssignmentName()!=null && !message.getAssignmentName().equals(activeAssignment.getAssignment().getName());
+                        boolean isOverride = !isAssignmentNull && message.getAssignmentName()!=null && !message.getAssignmentName().equals(activeAssignment.getAssignment().getName());
                         if (isAssignmentNull  || isOverride) {
                             List<AssignmentFile> fileList   = assignmentService.getAssignmentFiles(assignment);
                             AssignmentDescriptor assignmentDescriptor =assignmentService.getAssignmentDescriptor(assignment);
@@ -139,30 +139,30 @@ public class SubmitService {
                     }
                     Assert.isTrue( activeAssignment.getAssignment()!=null, "not ready for test");
 
-                    if (sr.isSuccess()) {
+                    if (submitResult.isSuccess()) {
                         // filter selected test cases
-                        var testCases = activeAssignment.getTestFiles().stream()
+                        List<AssignmentFile> testCases = activeAssignment.getTestFiles().stream()
                                 .filter(t -> message.getTests().contains(t.getUuid().toString()))
                                 .collect(Collectors.toList());
 
-                        if (submit) {
+                        if (submit || team.getRole().equals(Role.ADMIN)) {
                             testCases = activeAssignment.getSubmitTestFiles();
                         }
-                        log.info("testCases " +testCases.size()+ " compile " + sr.isSuccess() + " submit " + submit + " " +activeAssignment.getTestFiles().size());
+                        log.info("testCases " +testCases.size()+ " compile " + submitResult.isSuccess() + " submit " + submit + " " +activeAssignment.getTestFiles().size());
 
                         // run selected testcases
                         return executionService.test(team, testCases, activeAssignment).thenApply(r -> {
 
                             r.getResults().forEach(tr -> messageService.sendTestFeedback(team, tr));
 
-                            return sr.toBuilder()
+                            return submitResult.toBuilder()
                                     .dateTimeEnd(r.getDateTimeEnd())
                                     .success(r.isSuccess())
                                     .testResults(r)
                                     .build();
                         });
                     } else {
-                        return CompletableFuture.completedFuture(sr);
+                        return CompletableFuture.completedFuture(submitResult);
                     }
                 });
     }
