@@ -358,9 +358,11 @@ public class GamemasterTableComponents {
             for (Path file: wrapper.getTestSources().getTests()) {
                 sb.append(toSimpleFileRow(file, "src.test.visible"));
             }
+
             StringBuffer header = new StringBuffer();
             header.append("<table class='roundGrayBorder table noBottomMargin' ><thead class='cursorPointer' onclick=\"$(this).closest('.top').find('.extra').addClass('hide');$(this).parent().find('.extra').toggleClass('hide')\"><tr><th class='minWidth300'>Files - Assignment '");
-            header.append(assignmentName+"' - "+fileList.size()+" files</th><th class='extra hide'>Type</th><th class='extra hide'>Size</th><th class='extra hide'>Last Modified</th></tr>");
+            header.append(assignmentName+"' - files:"+fileList.size());
+            header.append("<div  class='extra hide'></div></th><th class='extra hide'>Type</th><th class='extra hide'>Size</th><th class='extra hide'>Last Modified</th></tr>");
             if (errorList.size()>0) {
                 header.append("<tr><td colspan=4 class='error'><center>ERROR</center></td></tr>");
                 for (String error: errorList) {
@@ -444,7 +446,7 @@ public class GamemasterTableComponents {
                 model.solutionFile = new File(directory, "assets/" +list.get(0).toFile().getName());
                 model.problemFile = new File(directory, "src/main/java/" +descriptor.getAssignmentFiles().getSources().getEditable().get(0).toFile().getName());
 
-                sb.append("<tr title=\""+title+"\"  class='cursorPointer' onclick='doViewDeltaSolution(this)'><td>");
+                sb.append("<tr title=\""+title+"\"  class='cursorPointer' onclick=\"doViewDeltaSolution('"+descriptor.getName()+"',this)\"><td>");
                 sb.append(descriptor.getName()+" <i>"+postfix+"</i></td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td><td>"+selectionBox);
 
                 sb.append("<textarea class='hide'>"+model.createDiffString()+"</textarea>");

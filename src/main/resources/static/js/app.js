@@ -94,6 +94,9 @@ function connectCompetition() {
             clock.stop();
         }
     }
+    if (window.isWithValidation) {
+        window.setTimeout('doUserActionTest();',1000);
+    }
 }
 
 function connectButtons() {

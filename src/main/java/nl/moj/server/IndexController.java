@@ -35,6 +35,7 @@ import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
+import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
@@ -63,7 +64,7 @@ public class IndexController {
             model.addAttribute("team", user.getName());
             return "index";
         }
-        addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment(), null);
+        addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment());
         return "index";
     }
     @GetMapping("/assignmentAdmin")
@@ -73,24 +74,28 @@ public class IndexController {
             return "login";
         }
         String isWithSolution = request.getParameter("solution");
+        boolean isWithAdminValidation = request.getParameterMap().containsKey("validate");
         Assignment assignment = assignmentRepository.findByName(request.getParameter("assignment"));
         Assert.isTrue(assignment!=null,"unauthorized");
 
         if (competition.getCurrentAssignment()!=null && assignment.equals(competition.getActiveAssignment().getAssignment())) {
             log.info("solution '" + isWithSolution+ "'");
-            addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment(), isWithSolution);
+            addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment(), isWithSolution, isWithAdminValidation);
         } else {
-            addModelDataForAdmin(model, user, assignment, isWithSolution);
+            addModelDataForAdmin(model, user, assignment, isWithSolution, isWithAdminValidation);
         }
         return "index";
     }
-    private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String isWithSolution) {
+    private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String isWithSolution, boolean isWithValidation) {
         Team team = teamRepository.findByName(user.getName());
-        CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, isWithSolution);
+        CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, isWithSolution, isWithValidation);
         codePage.saveFiles(competition.getCompetitionSession(), assignment, team);
         codePage.saveAdminState(assignment);
     }
-    private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state, String isWithSolution) {
+    private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state) {
+        addModelDataForUserWithAssignment(model, user, state, null, false);
+    }
+    private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state, String isWithSolution, boolean isWithAdminValidation) {
         Team team = teamRepository.findByName(user.getName());
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(), state
                 .getCompetitionSession(), team);
@@ -102,7 +107,7 @@ public class IndexController {
 
         AssignmentStatusHelper ash = new AssignmentStatusHelper(as, state.getAssignmentDescriptor());
 
-        CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, isWithSolution);
+        CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, isWithSolution, isWithAdminValidation && team.getRole().equals(Role.ADMIN));
         codePage.saveFiles(competition.getCompetitionSession(), state.getAssignment(), team);
         codePage.saveAssignmentDetails(state);
         codePage.saveTeamState(ash);
@@ -115,10 +120,12 @@ public class IndexController {
         private List<AssignmentFile> inputFiles;
         private String solutionToken;
         private boolean isWithInsertSolution;
-        public CodePageModelWrapper(Model model, Principal user, String solutionToken) {
+        private boolean isWithValidation;
+        public CodePageModelWrapper(Model model, Principal user, String solutionToken, boolean isWithValidation) {
             this.model = model ;
             this.solutionToken = solutionToken;
             isWithInsertSolution = solutionToken != null;
+            this.isWithValidation = isWithValidation;
             model.addAttribute("team", user.getName());
         }
         private AssignmentFile createSolution(AssignmentFile file){
@@ -185,6 +192,7 @@ public class IndexController {
             model.addAttribute("tests", tests);
             model.addAttribute("running", true);
             model.addAttribute("solution", isWithInsertSolution);
+            model.addAttribute("isWithValidation", isWithValidation);
             model.addAttribute("labels", new ArrayList<>());
             model.addAttribute("bonus", "");
             model.addAttribute("assignmentName", assignment.getName());
@@ -204,6 +212,7 @@ public class IndexController {
             model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addAttribute("tests", state.getTestFiles());
             model.addAttribute("running", state.isRunning());
+            model.addAttribute("isWithValidation", isWithValidation);
 
         }
     }

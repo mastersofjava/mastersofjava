@@ -105,7 +105,7 @@ function validateAssignmentSelected() {
 function clearAssignments() {
     $('#alert').empty();
     showAlert("competition has been restarted");
-    stompClient.send("/app/control/clearCurrentAssignment", {}, {});
+    clientSend("/app/control/clearCurrentAssignment",{});
 }
 function updateSettingRegistrationFormDisabled(isInput) {
     clientSend("/app/control/updateSettingRegistration", { taskName: 'updateSettingRegistration', value:''+ (isInput==true) });
@@ -171,12 +171,13 @@ function clientStoreStateWrite() {
 }
 function clientUpdateRole(value) {
     console.log('clientUpdateRole ' + value);
-    $('.role').addClass('hide');
+    var roleSpecificFields = $('.role');
+    roleSpecificFields.addClass('hide');
 
-    if (value=='admin') {
-        $('.role').removeClass('hide');
+    if (value==='admin') {
+        roleSpecificFields.removeClass('hide');
     }
-    if (value=='gamemaster') {
+    if (value==='gamemaster') {
         $('.role.gamemasterRole').removeClass('hide');
     }
 }
@@ -197,10 +198,7 @@ function clientStoreRender() {
 }
 function scanAssignments() {
     var year = $('#selectedYear').val().split('-')[0];
-
-    stompClient.send("/app/control/scanAssignments", {},  JSON.stringify({
-        'taskName': year
-    }));
+    clientSend("/app/control/scanAssignments", { 'taskName': year });
 }
 
 function showOutput(messageOutput) {
@@ -232,8 +230,13 @@ function initializeAssignmentClock() {
     }
 
 }
-
-function doViewDeltaSolution(node) {
+function doValidateAssignment(assignmentId, isWithSolution) {
+    var postFix = isWithSolution?'&solution':'';
+    if (assignmentId) {
+        window.open('/assignmentAdmin?assignment='+assignmentId+'&validate'+postFix,'admin');
+    }
+}
+function doViewDeltaSolution(assignmentId,node) {
     var isOtherChildEvent = window.event.target.tagName.toLowerCase()==='select';
     if (isOtherChildEvent) {
         return;
@@ -241,6 +244,7 @@ function doViewDeltaSolution(node) {
     $('#deltaSolution-modal').find('.openModalViaJs').click();
     var title= node.title.split('-')[0];
     $('#deltaSolution-modal .modal-title').html(title);
+    $('#deltaSolution-modal button').attr('title', assignmentId);
     var code = $(node).find('textarea').val().replace(/</g,'&lt;').replace(/>/g,'&gt;');//small encoding into valid html
     $('#deltaSolution-modal pre').html(code);
 }
