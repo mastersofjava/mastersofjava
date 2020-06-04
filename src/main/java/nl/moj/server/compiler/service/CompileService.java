@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -289,8 +290,7 @@ public class CompileService {
                         parentFile.mkdirs();
                     }
                     Files.deleteIfExists(f.toPath());
-                    FileUtils.write(f, v);
-                    //FileUtils.writeStringToFile(f, v, StandardCharsets.UTF_8);
+                    FileUtils.writeStringToFile(f, v, StandardCharsets.UTF_8);
                     assignmentFiles.add(orig.toBuilder()
                             .absoluteFile(f.toPath())
                             .build());
@@ -319,12 +319,14 @@ public class CompileService {
             try {
                 List<String> cmd = new ArrayList<>();
                 cmd.add(javaVersion.getCompiler().toString());
+                cmd.add("-Xlint:all");
+                cmd.add("-encoding");
+                cmd.add("UTF8");
+                cmd.add("-g:source,lines,vars");
                 cmd.add("-cp");
                 cmd.add(makeClasspath(pathModel.classesDir).stream()
                         .map(f -> f.getAbsoluteFile().toString())
                         .collect(Collectors.joining(File.pathSeparator)));
-                cmd.add("-Xlint:all");
-                cmd.add("-g:source,lines,vars");
                 cmd.add("-d");
                 cmd.add(toSafeClasspathInputForEachOperatingSystem(pathModel.classesDir.toAbsolutePath().toFile()));
                 assignmentFiles.forEach(a -> {
