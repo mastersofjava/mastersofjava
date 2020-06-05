@@ -161,17 +161,25 @@ public class TestService {
             final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
                     .getTestOutputLimits());
             try {
-                final ProcessExecutor jUnitCommand = new ProcessExecutor().command(mojServerProperties.getLanguages()
-                                .getJavaVersion(ad.getJavaVersion())
-                                .getRuntime()
-                                .toString(), "-cp",
-                        makeClasspath(teamAssignmentDir),
-                        "-Djava.security.manager",
-                        "-Djava.security.policy=" + policy.toAbsolutePath(),
-                        "org.junit.runner.JUnitCore",
-                        file.getName());
-                log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
-                exitvalue = jUnitCommand.directory(teamAssignmentDir.toFile())
+                List<String> commandParts = new ArrayList<>();
+
+                commandParts.add(mojServerProperties.getLanguages()
+                        .getJavaVersion(ad.getJavaVersion())
+                        .getRuntime()
+                        .toString());
+                if (ad.getJavaVersion()>12) {
+                    commandParts.add("--enable-preview");
+                }
+                commandParts.add("-cp");
+                commandParts.add(makeClasspath(teamAssignmentDir));
+                commandParts.add("-Djava.security.manager");
+                commandParts.add("-Djava.security.policy=" + policy.toAbsolutePath());
+                commandParts.add("org.junit.runner.JUnitCore");
+                commandParts.add(file.getName());
+
+                final ProcessExecutor commandExecutor = new ProcessExecutor().command(commandParts);
+                log.debug("Executing command {}", commandExecutor.getCommand().toString().replaceAll(",", "\n"));
+                exitvalue = commandExecutor.directory(teamAssignmentDir.toFile())
                         .timeout(timeout.toSeconds(), TimeUnit.SECONDS).redirectOutput(jUnitOutput)
                         .redirectError(jUnitError).execute().getExitValue();
             } catch (TimeoutException e) {
