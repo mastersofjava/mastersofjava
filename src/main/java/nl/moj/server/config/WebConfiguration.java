@@ -100,9 +100,9 @@ public class WebConfiguration {
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             http.authorizeRequests()
-                    .antMatchers("/login", "/register", "/feedback", "/bootstrap").permitAll()//
-                    .antMatchers("/").hasAnyAuthority(Role.USER, Role.ADMIN) //
-                    .antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) //
+                    .antMatchers("/login", "/register", "/feedback", "/bootstrap").permitAll() // always access
+                    .antMatchers("/").hasAnyAuthority(Role.USER, Role.ADMIN, Role.GAME_MASTER) // only when registrated
+                    .antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
 
                     .and().formLogin().successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login")
                     .and().logout().and().headers().frameOptions().disable().and().csrf().disable();

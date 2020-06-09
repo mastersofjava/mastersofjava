@@ -67,10 +67,16 @@ public class IndexController {
         addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment());
         return "index";
     }
+
+    private boolean isAuthorized(Principal user, HttpServletRequest request) {
+        return user!=null &&  user.getName().equalsIgnoreCase("admin") && request.getParameterMap().containsKey("assignment");
+    }
+    private boolean isUsingCurrentCompetitionAssignment(Assignment assignment) {
+        return competition.getCurrentAssignment()!=null && assignment.equals(competition.getActiveAssignment().getAssignment());
+    }
     @GetMapping("/assignmentAdmin")
     public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user, HttpServletRequest request) {
-        boolean isAuthorized = user!=null &&  user.getName().equalsIgnoreCase("admin") && request.getParameterMap().containsKey("assignment");
-        if (!isAuthorized) {
+        if (!isAuthorized(user, request)) {
             return "login";
         }
         String isWithSolution = request.getParameter("solution");
@@ -78,7 +84,7 @@ public class IndexController {
         Assignment assignment = assignmentRepository.findByName(request.getParameter("assignment"));
         Assert.isTrue(assignment!=null,"unauthorized");
 
-        if (competition.getCurrentAssignment()!=null && assignment.equals(competition.getActiveAssignment().getAssignment())) {
+        if (isUsingCurrentCompetitionAssignment(assignment)) {
             log.info("solution '" + isWithSolution+ "'");
             addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment(), isWithSolution, isWithAdminValidation);
         } else {
@@ -86,15 +92,18 @@ public class IndexController {
         }
         return "index";
     }
+
     private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String isWithSolution, boolean isWithValidation) {
         Team team = teamRepository.findByName(user.getName());
         CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, isWithSolution, isWithValidation);
         codePage.saveFiles(competition.getCompetitionSession(), assignment, team);
         codePage.saveAdminState(assignment);
     }
+
     private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state) {
         addModelDataForUserWithAssignment(model, user, state, null, false);
     }
+
     private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state, String isWithSolution, boolean isWithAdminValidation) {
         Team team = teamRepository.findByName(user.getName());
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(), state
@@ -112,8 +121,6 @@ public class IndexController {
         codePage.saveAssignmentDetails(state);
         codePage.saveTeamState(ash);
     }
-
-
 
     private class CodePageModelWrapper {
         private Model model;
@@ -141,25 +148,29 @@ public class IndexController {
             return file;
         }
         public void saveFiles(CompetitionSession session, Assignment assignment, Team team) {
-            List<AssignmentFile> sessionList = teamService.getTeamAssignmentFiles(session, assignment, team);
+            List<AssignmentFile> teamAssignmentFiles = teamService.getTeamAssignmentFiles(session, assignment, team);
+            model.addAttribute("files", prepareInputFilesOnScreen(teamAssignmentFiles));
+        }
+        private List<AssignmentFile> prepareInputFilesOnScreen(List<AssignmentFile> teamAssignmentFiles) {
             inputFiles = new ArrayList<>();
-            for (AssignmentFile file: sessionList) {
+            for (AssignmentFile file: teamAssignmentFiles) {
                 if (file.isReadOnly()||!isWithInsertSolution) {
                     inputFiles.add(file);
                 } else {
-                    // insert writable solution
+                    // insert solution for the admin (instead of editable file)
                     inputFiles.add(createSolution(file));
                 }
-
             }
+            // order the task file(s) at the beginning.
             inputFiles.sort((arg0, arg1) -> {
                 if (arg0.getFileType().equals(AssignmentFileType.TASK)) {
                     return -10;
                 }
                 return 10;
             });
-            model.addAttribute("files", inputFiles);
+            return inputFiles;
         }
+
         public void saveTeamState(AssignmentStatusHelper ash) {
             boolean isCompleted = ash.isCompleted();
             model.addAttribute("finished", isCompleted);
@@ -169,8 +180,8 @@ public class IndexController {
             model.addAttribute("submits", ash.getRemainingSubmits());
             model.addAttribute("solution", isWithInsertSolution);
             model.addAttribute("submitDisabled", isCompleted);
-
         }
+
         public void saveAdminState( Assignment assignment) {
             List<AssignmentFile> tests = new ArrayList<>();
             for (AssignmentFile inputFile: inputFiles) {
@@ -197,6 +208,7 @@ public class IndexController {
             model.addAttribute("bonus", "");
             model.addAttribute("assignmentName", assignment.getName());
         }
+
         public void saveAssignmentDetails(ActiveAssignment state) {
             List<String> scoreLabels = new ArrayList<>();
             for (String label :state.getAssignmentDescriptor().getLabels()) {

@@ -27,7 +27,7 @@ function connectCompetition() {
                 var msg = JSON.parse(data.body);
                 console.log('received', msg);
 
-                if ('TEST'==msg.messageType && msg.test) {
+                if ('TEST'===msg.messageType && msg.test) {
                     var colorStr = msg.success? 'lightgreen':'pink';
                     $('#tabLink_'+msg.test).css('background-color',colorStr);
                 }
@@ -141,13 +141,13 @@ function initializeCodeMirrors() {
             var type = $(this).attr('data-cm-file-type');
             texts.push(this);
             var isTask = type === 'TASK';
-            var isReadyOnly = $(this).attr('data-cm-readonly') === 'true';
+            var isReadOnly = $(this).attr('data-cm-readonly') === 'true';
 
             var cm = CodeMirror.fromTextArea(this, {
                 lineNumbers: true,
                 mode: isTask ? 'text/plain' : "text/x-java",
                 matchBrackets: true,
-                readOnly: isReadyOnly
+                readOnly: isReadOnly
             });
             cmList.push(cm);
             editors.push({
