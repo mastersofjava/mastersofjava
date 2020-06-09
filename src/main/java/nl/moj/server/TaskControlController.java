@@ -380,27 +380,35 @@ public class TaskControlController {
             log.info("assignmentList " +assignmentList.size() + " " + assignmentList) ;
 
             Competition c = competition.getCompetition();
-            String name = c.getName().split("\\|")[0]+ "|" + path.toFile().getName();
-            c.setName(name);
-            // wipe previous assignments
-            c.setAssignments(new ArrayList<>());
-            c = competitionRepository.save(c);
-            Assert.isTrue( c.getAssignments().isEmpty(),"competition should have no assignments");
-            // re-add updated assignments
-            c.setAssignments(assignmentRepository.findAll()
-                    .stream()
-                    .map(createOrderedAssignments(c))
-                    .collect(Collectors.toList()));
-            c = competitionRepository.save(c);
-            log.info("assignment repository " +c.getAssignments().size() + " " + c.getAssignmentsInOrder().size()) ;
 
-            competition.loadSession(c, competition.getCompetitionSession().getUuid());
+            String name = c.getName().split("\\|")[0]+ "|" + path.toFile().getName();
+
+            startCompetitionWithFreshAssignments(name);
 
             return "Assignments scanned from location "+path+" ("+assignmentList.size()+"), reloading to show them.";
         } catch (AssignmentServiceException ase) {
             log.error("Scanning assignments failed.", ase);
             return ase.getMessage();
         }
+    }
+    private void startCompetitionWithFreshAssignments(String name) {
+        Competition c = competition.getCompetition();
+
+        c.setName(name);
+        // wipe previous assignments
+        c.setAssignments(new ArrayList<>());
+        c = competitionRepository.save(c);
+
+        Assert.isTrue( c.getAssignments().isEmpty(),"competition should have no assignments");
+        // re-add updated assignments
+        c.setAssignments(assignmentRepository.findAll()
+                .stream()
+                .map(createOrderedAssignments(c))
+                .collect(Collectors.toList()));
+        c = competitionRepository.save(c);
+        log.info("assignment repository " +c.getAssignments().size() + " " + c.getAssignmentsInOrder().size()) ;
+
+        competition.loadSession(c, competition.getCompetitionSession().getUuid());
     }
 
     private Function<Assignment, OrderedAssignment> createOrderedAssignments(Competition c) {
