@@ -182,7 +182,7 @@ public class IndexController {
             model.addAttribute("submitDisabled", isCompleted);
         }
 
-        public void saveAdminState( Assignment assignment) {
+        private List<AssignmentFile> filterUnitTestsFromInputFiles() {
             List<AssignmentFile> tests = new ArrayList<>();
             for (AssignmentFile inputFile: inputFiles) {
                 String name = inputFile.getFile().toFile().getName().toLowerCase();
@@ -191,6 +191,10 @@ public class IndexController {
                     tests.add(inputFile);
                 }
             }
+            return tests;
+        }
+
+        public void saveAdminState( Assignment assignment) {
             model.addAttribute("finished",false);
             model.addAttribute("submitDisabled", true);
             model.addAttribute("submittime", 0);
@@ -200,7 +204,7 @@ public class IndexController {
             model.addAttribute("assignment", assignment.getName());
             model.addAttribute("timeLeft", 0);
             model.addAttribute("time", 0);
-            model.addAttribute("tests", tests);
+            model.addAttribute("tests", filterUnitTestsFromInputFiles());
             model.addAttribute("running", true);
             model.addAttribute("solution", isWithInsertSolution);
             model.addAttribute("isWithValidation", isWithValidation);
@@ -210,12 +214,8 @@ public class IndexController {
         }
 
         public void saveAssignmentDetails(ActiveAssignment state) {
-            List<String> scoreLabels = new ArrayList<>();
-            for (String label :state.getAssignmentDescriptor().getLabels()) {
-                if (label.startsWith("test")) {
-                    scoreLabels.add(label);
-                }
-            }
+            List<String> scoreLabels = state.getAssignmentDescriptor().readScoreLables();
+
             model.addAttribute("assignmentName", state.getAssignmentDescriptor().getName());
             model.addAttribute("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addAttribute("labels", scoreLabels);
