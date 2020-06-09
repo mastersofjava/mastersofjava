@@ -370,7 +370,7 @@ public class TaskControlController {
                 path = getLocationByYear(Integer.parseInt(message.taskName)).toPath();
             }
             if (!path.toFile().isDirectory()) {
-                return "Assignment location invalid.";
+                return "Assignment location invalid ("+path+").";
             }
             log.info("year " + message.taskName + " path " + path + " " +StringUtils.isNumeric(message.taskName)) ;
             List<Assignment> assignmentList = assignmentService.updateAssignments(path);
