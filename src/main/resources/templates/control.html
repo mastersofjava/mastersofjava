@@ -230,7 +230,7 @@
                                         th:text="${team.getName()}" th:selected="${team.getName().equals(repositoryLocation.getName())}"></option>
                             </select>
                             <button id="clone" class="btn btn-primary" onclick="scanAssignments();">
-                                <span th:if="${isWithAssignmentsLoaded || locationList.isEmpty()}"> Herlaad assignments</span><span th:if="${!isWithAssignmentsLoaded}"> Laad assignments </span>
+                                <span th:if="${isWithAssignmentsLoaded}"> Herlaad assignments</span><span th:if="${!isWithAssignmentsLoaded}"> Laad assignments </span>
                             </button>
                         </div>
                     </div>
