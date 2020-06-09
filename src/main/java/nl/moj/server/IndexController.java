@@ -79,23 +79,23 @@ public class IndexController {
         if (!isAuthorized(user, request)) {
             return "login";
         }
-        String isWithSolution = request.getParameter("solution");
+        String solutionInputFileName = request.getParameter("solution");
         boolean isWithAdminValidation = request.getParameterMap().containsKey("validate");
         Assignment assignment = assignmentRepository.findByName(request.getParameter("assignment"));
         Assert.isTrue(assignment!=null,"unauthorized");
 
         if (isUsingCurrentCompetitionAssignment(assignment)) {
-            log.info("solution '" + isWithSolution+ "'");
-            addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment(), isWithSolution, isWithAdminValidation);
+            log.info("solution '" + solutionInputFileName+ "'");
+            addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment(), solutionInputFileName, isWithAdminValidation);
         } else {
-            addModelDataForAdmin(model, user, assignment, isWithSolution, isWithAdminValidation);
+            addModelDataForAdmin(model, user, assignment, solutionInputFileName, isWithAdminValidation);
         }
         return "index";
     }
 
-    private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String isWithSolution, boolean isWithValidation) {
+    private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String solutionInputFileName, boolean isWithValidation) {
         Team team = teamRepository.findByName(user.getName());
-        CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, isWithSolution, isWithValidation);
+        CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, solutionInputFileName, isWithValidation);
         codePage.saveFiles(competition.getCompetitionSession(), assignment, team);
         codePage.saveAdminState(assignment);
     }
@@ -104,7 +104,7 @@ public class IndexController {
         addModelDataForUserWithAssignment(model, user, state, null, false);
     }
 
-    private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state, String isWithSolution, boolean isWithAdminValidation) {
+    private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state, String solutionInputFileName, boolean isWithAdminValidation) {
         Team team = teamRepository.findByName(user.getName());
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(), state
                 .getCompetitionSession(), team);
@@ -116,7 +116,7 @@ public class IndexController {
 
         AssignmentStatusHelper ash = new AssignmentStatusHelper(as, state.getAssignmentDescriptor());
 
-        CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, isWithSolution, isWithAdminValidation && team.getRole().equals(Role.ADMIN));
+        CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, solutionInputFileName, isWithAdminValidation && team.getRole().equals(Role.ADMIN));
         codePage.saveFiles(competition.getCompetitionSession(), state.getAssignment(), team);
         codePage.saveAssignmentDetails(state);
         codePage.saveTeamState(ash);
