@@ -223,7 +223,7 @@
                             <h6>Inladen van opdrachten</h6>
                                 &nbsp;&nbsp;<sup>(# locaties beschikbaar op server: [[${locationList.size()}]])</sup>
                         </div>
-                        <div class="p-2 col-6 roundGrayBorder" th:if="${locationList.size()>0}">
+                        <div class="p-2 col-6 roundGrayBorder" th:if="${locationList.size()>=0}">
                             <select class="p-2" th:disabled="${locationList.size()==1}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
                                 <option value="">Selecteer een ander jaar</option>
                                 <option th:each="team : ${locationList}" th:value="${team.getName()}"
