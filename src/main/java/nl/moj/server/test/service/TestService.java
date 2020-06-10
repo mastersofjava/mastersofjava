@@ -167,7 +167,7 @@ public class TestService {
                         .getJavaVersion(ad.getJavaVersion())
                         .getRuntime()
                         .toString());
-                if (ad.getJavaVersion()>12) {
+                if (ad.getJavaVersion()>=12) {
                     commandParts.add("--enable-preview");
                 }
                 commandParts.add("-cp");
@@ -187,6 +187,7 @@ public class TestService {
                 log.debug("Unit test for {} timed out and got killed", team.getName());
                 isTimeout = true;
             } catch (SecurityException se) {
+                log.debug("Unit test for {} got security error", team.getName());
                 log.error(se.getMessage(), se);
             }
             if (isTimeout) {
@@ -202,12 +203,15 @@ public class TestService {
                 // if we still have some output left and exitvalue = 0
                 success = jUnitOutput.length() > 0 && exitvalue == 0 && !isTimeout;
                 result = jUnitOutput.toString();
+                if (jUnitOutput.length()==0) {
+                    log.info("zero normal junit output, error output: " + jUnitOutput.toString()  + " - " +jUnitError.toString()  );
+                }
             } else {
-                log.trace(jUnitOutput.toString());
+                log.info("zero normal junit output, error output: " + jUnitError.toString() );
                 result = jUnitError.toString();
                 success = (exitvalue == 0) && !isTimeout;
             }
-            log.info("finished unit test: {}", file.getName());
+            log.info("finished unit test: {}, exitvalue: {}, outputlength: {}, isTimeout: {} " , file.getName(),exitvalue ,result.length(),isTimeout );
 
             testCase = testCase.toBuilder()
                     .success(success)

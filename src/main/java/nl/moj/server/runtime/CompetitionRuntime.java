@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
@@ -66,7 +67,20 @@ public class CompetitionRuntime {
         this.competitionSession = competitionSessionRepository.save(createNewCompetitionSession(competition));
         restoreSession();
     }
+    public List<AssignmentDescriptor> getAssignmentInfoOrderedForCompetition() {
+        List<AssignmentDescriptor> notSortedList = this.getAssignmentInfo();
+        List<String> orderedList = competition.getAssignmentsInOrder().stream().map(OrderedAssignment::getAssignment).map(Assignment::getName).collect(Collectors.toList());
 
+        List<AssignmentDescriptor> officiallyOrderedList = new ArrayList<>();
+        for (String name : orderedList ) {
+            for (AssignmentDescriptor assignmentDescriptor: notSortedList) {
+                if (assignmentDescriptor.getName().equals(name)) {
+                    officiallyOrderedList.add(assignmentDescriptor);
+                }
+            }
+        }
+        return officiallyOrderedList;
+    }
     public void loadSession(Competition competition, UUID session) {
         log.info("Loading session {} for competition {}", session, competition.getName());
         this.competition = competition;

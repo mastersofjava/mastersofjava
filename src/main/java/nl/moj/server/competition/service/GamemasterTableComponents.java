@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,9 +54,9 @@ public class GamemasterTableComponents {
     private final AssignmentStatusRepository assignmentStatusRepository;
     @JsonSerialize
     public static class DtoAssignmentState implements Serializable {
-        long order;
-        String name;
-        String state;
+        private long order;
+        private String name;
+        private String state;
 
         public long getOrder() {
             return order;
@@ -71,16 +72,17 @@ public class GamemasterTableComponents {
     }
 
     public List<DtoAssignmentState> createAssignmentStatusMap() {
-        List<DtoAssignmentState> result = new ArrayList<>();
         List<OrderedAssignment> orderedList = competition.getCompetition().getAssignmentsInOrder();
-
         if (orderedList.isEmpty()) {
-            return result;
+            return Collections.emptyList();
         }
+        List<DtoAssignmentState> result = new ArrayList<>();
+
         List<OrderedAssignment> completedList = competition.getCompetitionState().getCompletedAssignments();
         for (OrderedAssignment orderedAssignment: orderedList) {
             boolean isCompleted = false;
-            boolean isCurrent = orderedAssignment.equals(competition.getCurrentAssignment());
+            boolean isSelectedAndNotCompleted = orderedAssignment.equals(competition.getCurrentAssignment())
+                    &&  competition.getActiveAssignment().getTimeRemaining()>0;
 
             for (OrderedAssignment completedAssignment: completedList) {
                 if (completedAssignment.getAssignment().getName().equals(orderedAssignment.getAssignment().getName())) {
@@ -88,16 +90,14 @@ public class GamemasterTableComponents {
                 }
             }
 
-            String status = "";
+            String status = "-";
+            if (isSelectedAndNotCompleted ) {
+                status = "CURRENT";
+            } else
             if (isCompleted) {
-                status += "COMPLETED"; // NB: started assignments are completed by default, this seems like a bug.
+                status = "COMPLETED";
             }
-            if (isCurrent &&  competition.getActiveAssignment().getTimeRemaining()>0) {
-                status = "CURRENT"; // NB: if current, then not completed and with time remaining!
-            }
-            if (status.isEmpty()) {
-                status = "-";
-            }
+
             DtoAssignmentState state = new DtoAssignmentState();
             state.name = orderedAssignment.getAssignment().getName();
             state.state = status;
@@ -197,13 +197,19 @@ public class GamemasterTableComponents {
         for (Team team: teams) {
             if (isShowAllUsers || idList.contains(team.getUuid().toString())) {
                 teamData.put(team.getName(), team);
-                if (isShowAllUsers) {
+                if (!isShowAllUsers || orderedList.contains(team.getName())) {
+                    continue;
+                }
+                orderedList.add(team.getName());
+            }
+        }
+        if (isShowAllUsers) {
+            for (Team team: teams) {
+                if (!orderedList.contains(team.getName())) {
                     orderedList.add(team.getName());
                 }
             }
         }
-
-
 
         int counter = 1;
         String displayTable = orderedList.size()>10 ?" scrollableTable ":"";
@@ -211,6 +217,15 @@ public class GamemasterTableComponents {
 
         for (String name: orderedList) {
             Team team = teamData.get(name);
+            boolean isUserInCompetition = team != null;
+            if (isUserInCompetition) {
+                continue;// not in competition yet
+            }
+
+            boolean isArchived = team.getCompany().equals("ARCHIVE") || team.getCompany().equals("DISQUALIFY");
+            if (isArchived) {
+                continue;
+            }
             List<String> titleList = new ArrayList<>();
             if (idList.contains(team.getUuid().toString())) {
                 File[] games = new File(rootFile, team.getUuid().toString()).listFiles();
@@ -218,11 +233,6 @@ public class GamemasterTableComponents {
                     titleList.add(file.getName());
                 }
             }
-            boolean isArchived = team.getCompany().equals("ARCHIVE") || team.getCompany().equals("DISQUALIFY");
-            if (isArchived) {
-                continue;
-            }
-
             String specialRole = "";
             if (!team.getRole().equals(Role.USER)) {
                 specialRole = "("+team.getRole().split("_")[1]+")";

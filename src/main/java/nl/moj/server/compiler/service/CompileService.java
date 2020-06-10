@@ -320,7 +320,7 @@ public class CompileService {
                 List<String> cmd = new ArrayList<>();
                 cmd.add(javaVersion.getCompiler().toString());
                 cmd.add("-Xlint:all");
-                if (javaVersion.getVersion()>12) {
+                if (javaVersion.getVersion()>=12) {
                     cmd.add("--enable-preview");
                     cmd.add("--release");
                     cmd.add("" +javaVersion.getVersion());

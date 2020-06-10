@@ -61,5 +61,8 @@ public class Team {
         return name.length() > 20 ? name.substring(0, 20) + "..." : name;
     }
 
+    public void setTeamStatus(String input) {
+        company = input;// currently the company field is not used, so it contains the disabled status. TODO:extend model
+    }
 }
 

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -58,12 +59,8 @@ public class Competition {
             return new ArrayList<>(assignments);
         }
         String collectionName = name.split("\\|")[1];
-        List<OrderedAssignment> filteredList = new ArrayList<>();
-        for (OrderedAssignment oa: assignments) {
-            if (oa.getAssignment().getAssignmentDescriptor().contains(collectionName)) {
-                filteredList.add(oa);
-            }
-        }
-        return filteredList;
+        return assignments.stream()
+                .filter(a -> a.getAssignment().getAssignmentDescriptor().contains(collectionName))
+                .collect(Collectors.toList());
     }
 }
