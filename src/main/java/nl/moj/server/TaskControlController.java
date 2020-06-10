@@ -158,7 +158,7 @@ public class TaskControlController {
     @SendToUser("/queue/controlfeedback")
     public String updateSettingRegistration(TaskMessage message) {
         boolean isDisable = "true".equals(message.value);
-        log.info("update.isDisable " +isDisable + " val " + message.value);
+        log.warn("updateSettingRegistration disabled = {} " ,isDisable);
         competitionService.setRegistrationFormDisabled(isDisable);
         if (isDisable) {
             return "registration form is disabled, users cannot register";
@@ -169,12 +169,10 @@ public class TaskControlController {
     @MessageMapping("/control/restartAssignment")
     @SendToUser("/queue/controlfeedback")
     public String restartAssignment(TaskMessage message) {
-        log.warn("restartAssignment entered: " +message.taskName);
+        log.warn("restartAssignment entered = {} " , message.taskName);
         competition.getCompetitionState().getCompletedAssignments().clear();
         ActiveAssignment state = competition.getActiveAssignment();
         boolean isStopCurrentAssignment=state!=null && state.getAssignment()!=null && state.getAssignment().getName().equals(message.taskName);
-
-        log.warn("isStopCurrentAssignment " + isStopCurrentAssignment);
 
         if (isStopCurrentAssignment) {
             competition.stopCurrentAssignment();
@@ -182,7 +180,6 @@ public class TaskControlController {
         Assignment assignment = assignmentRepository.findByName(message.taskName);
         List<AssignmentStatus> ready4deletionList = assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competition.getCompetitionSession());
 
-        log.warn("ready4deletionList " + ready4deletionList.size());
         if (ready4deletionList.isEmpty()) {
             return "Assignment not started yet: "  + message.taskName;
         }
@@ -195,17 +192,17 @@ public class TaskControlController {
 
     @MessageMapping("/control/competitionSaveName")
     public void doCompetitionSaveName(TaskControlController.TaskMessage message)  throws JsonProcessingException {
-        log.info("doCompetitionSaveName " + message + " " + message.getValue() );
+        log.warn("doCompetitionSaveName = {} ", message.getValue() );
 
         UUID uuid = UUID.fromString(message.getUuid());
-        Competition competition =  competitionRepository.findByUuid(uuid);
-        String[] parts = competition.getName().split("\\|");
+        Competition competitionToUpdate =  competitionRepository.findByUuid(uuid);
+        String[] parts = competitionToUpdate.getName().split("\\|");
         String input = message.getValue();
         if (parts.length>=2) {
             input = message.getValue() + "|" +parts[1];
         }
-        competition.setName(input );
-        competitionRepository.save(competition);
+        competitionToUpdate.setName(input );
+        competitionRepository.save(competitionToUpdate);
 
     }
     @MessageMapping("/control/competitionDelete")
@@ -213,13 +210,13 @@ public class TaskControlController {
    // @Transactional
     public String deleteCompetition(TaskControlController.TaskMessage message) {
         boolean isUpdateCurrentCompetition =  message.getUuid().equals(competition.getCompetition().getUuid());
-        log.info("deleteCompetition " +message.getUuid() + " isUpdateCurrentCompetition " +isUpdateCurrentCompetition);
+        log.info("deleteCompetition isCurrentCompetition {} ", isUpdateCurrentCompetition);
 
         try {
             long startAmount = competitionRepository.count();
             Competition competitionToClean = competitionRepository.findByUuid(UUID.fromString(message.getUuid()));
             List<CompetitionSession> sessionsToDelete = competitionSessionRepository.findByCompetition(competitionToClean);
-            log.info("sessionsToDelete " +sessionsToDelete.size());
+            log.info("sessionsToDelete {} ", sessionsToDelete.size());
             if (isUpdateCurrentCompetition) {
                 clearCompetition();
             }
@@ -249,7 +246,7 @@ public class TaskControlController {
     @MessageMapping("/control/competitionCreateNew")
     @SendToUser("/queue/controlfeedback")
     public String doCompetitionCreateNew(TaskControlController.TaskMessage message)  throws JsonProcessingException {
-        log.info("doCompetitionCreateNew " + message + " " + message.getValue() );
+        log.info("doCompetitionCreateNew value {} " , message.getValue() );
         if (StringUtils.isBlank(message.value)) {
             return "Please provide a valid name. ";
         }
@@ -269,7 +266,7 @@ public class TaskControlController {
     @MessageMapping("/control/updateTeamStatus")
     @SendToUser("/queue/controlfeedback")
     public String doUpdateUserStatus(TaskControlController.TaskMessage message)  throws JsonProcessingException {
-        log.info("updateUserStatus " + message + " " + message.getValue() );
+        log.info("updateUserStatus value {} " , message.getValue() );
         if (StringUtils.isBlank(message.uuid)) {
             return "Please provide valid input.";
         }
@@ -325,12 +322,12 @@ public class TaskControlController {
             if (!path.toFile().isDirectory()) {
                 return "Assignment location invalid ("+path+").";
             }
-            log.info("year " + message.taskName + " path " + path + " " +StringUtils.isNumeric(message.taskName)) ;
+            log.info("scanAssignments year {}, path {}" ,  message.taskName , path ) ;
             List<Assignment> assignmentList = assignmentService.updateAssignments(path);
             if (assignmentList.isEmpty()) {
                 return "No assignments scanned from location of "+path.toFile().getName()+" (improve assignments before importing).";
             }
-            log.info("assignmentList " +assignmentList.size() + " " + assignmentList) ;
+            log.info("assignmentList size {} ",assignmentList.size()) ;
 
             String name = competition.getCompetition().getName().split("\\|")[0]+ "|" + path.toFile().getName();
 
@@ -358,7 +355,6 @@ public class TaskControlController {
                 .map(competitionService.createOrderedAssignments(startCompetition))
                 .collect(Collectors.toList()));
         startCompetition= competitionRepository.save(startCompetition);
-        log.info("assignment repository " +startCompetition.getAssignments().size() + " " + startCompetition.getAssignmentsInOrder().size()) ;
 
         competition.loadSession(startCompetition, competition.getCompetitionSession().getUuid());
     }

@@ -45,7 +45,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@Slf4j
 @Configuration
 @AllArgsConstructor
 public class WebConfiguration {

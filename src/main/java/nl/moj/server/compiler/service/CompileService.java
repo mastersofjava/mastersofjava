@@ -105,9 +105,6 @@ public class CompileService {
                 .getJavaVersion(input
                         .getJavaVersion());
 
-       // TeamProjectPathModel pathModel = new TeamProjectPathModel(team, compileInputWrapper.assignment);
-       // boolean isCleaned = pathModel.cleanCompileLocationForTeam();
-
         log.info("supplyAsync.javaCompile " + message.getAssignmentName() + " " +javaVersion  );
         // compile code.
         return CompletableFuture.supplyAsync(() -> javaCompile(javaVersion, team, message, compileInputWrapper), executor);

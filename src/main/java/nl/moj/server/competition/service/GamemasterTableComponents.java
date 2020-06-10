@@ -127,146 +127,205 @@ public class GamemasterTableComponents {
             ex.printStackTrace();
         }
     }
-
     public String toSimpleBootstrapTableForSessions() {
-        StringBuilder sb = new StringBuilder();
+        return new BootstrapTableForSessions().createHtml();
+    }
+    public class BootstrapTableForSessions {
         String selectedSession = competition.getCompetitionSession().getUuid().toString();
         String selectedCompetition = competition.getCompetition().getName();
         int competitionCounter = 1;
         List<Competition> competitionList = competitionRepository.findAll();
-
-        for (Competition competition:competitionList) {
-            List<CompetitionSession> sessionList = competitionSessionRepository.findByCompetition(competition);
-            String[] parts = competition.getName().split("\\|");
-            String name = parts[0];
-            String collection = mojServerProperties.getAssignmentRepo().toFile().getName();
-            if (parts.length>=2) {
-                collection = parts[1];
-            }
-            String actionsAdd = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#createNewSessionForm').submit()\">toevoegen sessie</button>";
-            String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
-            String styleCompetition = competition.getName().equals(selectedCompetition) ? " italic " :"";
-            sb.append("<tbody title='sessiepanel van competitie "+competition.getId()+"' ><tr class='"+ styleCompetition+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;"+competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td >"+actionsAdd+"</td><td>"+actionsDelete+"</td></tr>");
-
-            int sessionCounter = 1;
-
-            for (CompetitionSession session: sessionList) {
-                String styleCompetitionSession = selectedSession.equals(session.getUuid().toString())?" bold ":"";
-                String status = "-";
-                if (sessionCounter==sessionList.size()) {
-                    status = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"confirm('start sessie')\">start</button>";
-                }
-                sb.append("<tr class='"+styleCompetitionSession+" subrows hide'><td colspan=2></td><td>- Sessie "+sessionCounter+"</td><td>"+status+"</td><td></td></tr>");
-                sessionCounter ++;
-            }
-            sb.append("</tbody>");
-
-            competitionCounter++;
+        public String createHtmlFooterRow() {
+            StringBuilder html = new StringBuilder();
+            html.append("<tr><th colspan=4></th><th><button class='btn btn-secondary' data-toggle='modal' data-target='#createNewCompetition-modal'>Nieuwe competitie</button></th></tr>");
+            return html.toString();
         }
-        sb.insert(0, "<table class='roundGrayBorder table sessionTable' ><thead><tr><th></th><th>Competities</th><th></th><th>Aantal sessies</th><th>Acties</th></tr></thead>");
-        sb.append("<tfoot>");
-        sb.append("<tr><th colspan=4></th><th><button class='btn btn-secondary' data-toggle='modal' data-target='#createNewCompetition-modal'>Nieuwe competitie</button></th></tr>");
-        sb.append("</tfoot>");
-        sb.append("</table>");
-        return sb.toString();
+        public String createHtmlHeaderRow() {
+            StringBuilder html = new StringBuilder();
+            html.append("<tr><th></th><th>Competities</th><th></th><th>Aantal sessies</th><th>Acties</th></tr>");
+            return html.toString();
+        }
+        public String createHtmlTableBody() {
+            StringBuilder html = new StringBuilder();
+            for (Competition competition:competitionList) {
+                List<CompetitionSession> sessionList = competitionSessionRepository.findByCompetition(competition);
+                String[] parts = competition.getName().split("\\|");
+                String name = parts[0];
+                String collection = mojServerProperties.getAssignmentRepo().toFile().getName();
+                if (parts.length>=2) {
+                    collection = parts[1];
+                }
+                String actionsAdd = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#createNewSessionForm').submit()\">toevoegen sessie</button>";
+                String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
+                String styleCompetition = competition.getName().equals(selectedCompetition) ? " italic " :"";
+                html.append("<tbody title='sessiepanel van competitie "+competition.getId()+"' ><tr class='"+ styleCompetition+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;"+competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td >"+actionsAdd+"</td><td>"+actionsDelete+"</td></tr>");
+
+                int sessionCounter = 1;
+
+                for (CompetitionSession session: sessionList) {
+                    String styleCompetitionSession = selectedSession.equals(session.getUuid().toString())?" bold ":"";
+                    String status = "-";
+                    if (sessionCounter==sessionList.size()) {
+                        status = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"confirm('start sessie')\">start</button>";
+                    }
+                    html.append("<tr class='"+styleCompetitionSession+" subrows hide'><td colspan=2></td><td>- Sessie "+sessionCounter+"</td><td>"+status+"</td><td></td></tr>");
+                    sessionCounter ++;
+                }
+                html.append("</tbody>");
+
+                competitionCounter++;
+            }
+            return html.toString();
+        }
+        public String createHtml() {
+            StringBuilder html = new StringBuilder();
+            html.append("<table class='roundGrayBorder table sessionTable' ><thead>"+createHtmlHeaderRow()+"</thead>"+createHtmlTableBody());
+            html.append("<tfoot>" +createHtmlFooterRow());
+            html.append("</tfoot>");
+            html.append("</table>");
+            return html.toString();
+        }
+    }
+    public class BootstrapTableForTeams {
+        private List<String> orderedList = new ArrayList<>();
+        private Map<String,Long> rankingMap = new LinkedHashMap<>();
+        private Map<String,Team> teamData = new LinkedHashMap<>();
+        private List<String> usersWithWorkspaceList = new ArrayList<>();
+        private File rootFile;
+        private boolean isShowAllUsers;
+        private int counter;
+
+        private void initializeOrderedListOfTeamReferences(List<Team> teams, List<Ranking> rankings) {
+            // provide 10 best scoring teams first (when enough ranking).
+            for (Ranking ranking: rankings) {
+                rankingMap.put(ranking.getTeam(), ranking.getTotalScore());
+                if (orderedList.size()<10) {
+                    orderedList.add(ranking.getTeam());
+                }
+            }
+
+            if (isShowAllUsers) {
+                // also show all other users when required
+                for (Team team: teams) {
+                    if (!orderedList.contains(team.getName())) {
+                        orderedList.add(team.getName());
+                    }
+                }
+            }
+        }
+        private void registerTeamWorkspaces() {
+            String uuid = competition.getCompetitionSession().getUuid().toString();
+
+            rootFile = new File(mojServerProperties.getDirectories().getBaseDirectory().toFile(), "sessions\\"+uuid+"\\teams");
+            if (rootFile.exists()) {
+                File[] usersInSession = rootFile.listFiles();
+                for (File file: usersInSession) {
+                    usersWithWorkspaceList.add(file.getName());
+                }
+            }
+        }
+
+        public BootstrapTableForTeams(List<Team> teams, boolean isShowAllUsers, List<Ranking> rankings) {
+            this.isShowAllUsers = isShowAllUsers;
+            registerTeamWorkspaces();
+            initializeOrderedListOfTeamReferences(teams, rankings);
+        }
+
+
+        private class TableComponentForTeam {
+            private List<String> personalWorkspaceList = new ArrayList<>();
+            private String specialRoleIndication = "";
+            private String rowClass = isShowAllUsers?"cursorPointer":"";
+            private Team team;
+            private Long totalScore;
+            private void ensureUserRoleIndication() {
+                if (!team.getRole().equals(Role.USER)) {
+                    specialRoleIndication = "("+team.getRole().replace("ROLE_","")+")";
+                }
+            }
+            public TableComponentForTeam(Team team) {
+                this.team = team;
+
+                ensureUserRoleIndication();
+
+                totalScore = rankingMap.getOrDefault(team.getName(),0L);
+            }
+
+            public boolean isShowUserButtons() {
+                return isShowAllUsers;
+            }
+            public String createHtml() {
+                StringBuilder sb = new StringBuilder();
+                String simpleClickEvent = isShowAllUsers?"clientSelectSubtable(this, '"+team.getUuid()+"')":"";
+
+                String viewTitle = personalWorkspaceList.isEmpty()?"deze gebruiker heeft nog geen opdrachten gedaan": personalWorkspaceList.toString();
+
+                sb.append("<tbody id='"+team.getUuid()+"'><tr class='"+ rowClass +"' onclick=\""+simpleClickEvent+"\"><td class='alignRight'>"+counter+"</td><td class='minWidth100'>"+team.getName()+ specialRoleIndication +"</td><td title='"+viewTitle+"' class='alignRight'>"+ personalWorkspaceList.size()+"</td><td class='alignRight minWidth100'>"+totalScore+"</td></tr>");
+
+                if (isShowUserButtons()) {
+                    String inputField = "<i>registreer contactgegevens:</i><br/><input type='text' placeholder='registreer contactgegevens' onchange=\"updateTeamStatus($(this).closest('tbody').attr('id'),this.value)\" value='"+team.getCompany()+"' class='minWidth200 font10px'/>";
+                    String deleteButton = "<button class='font10px cursorPointer smallBlackBorder minWidth100' onclick=\"updateTeamStatus($(this).closest('tbody').attr('id'),'ARCHIVE');$(this).closest('tbody').addClass('hide')\">archive team</button><br/>";
+                    String disqualifyButton = "<button class='font10px cursorPointer smallBlackBorder minWidth100' onclick=\"updateTeamStatus($(this).closest('tbody').attr('id'),'DISQUALIFY');$(this).closest('tbody').addClass('hide')\">disqualify</button><br/>";
+                    if (team.getRole().equals(Role.ADMIN)) {
+                        deleteButton = "";
+                        inputField = "";
+                        disqualifyButton = "";
+                    }
+                    sb.append("<tr class='subrows hide font10px'><td colspan=2>");
+                    sb.append(inputField);
+                    sb.append("</td><td colspan=2 class='alignCenter'>"+deleteButton+disqualifyButton+"<button onclick=\"$('.passwordModal').toggleClass('hide')\" class='font10px minWidth100 smallBlackBorder cursorPointer nowrap'>password update</button></td></tr>");
+                }
+                sb.append("</tbody>");
+                return sb.toString();
+            }
+        }
+
+        private boolean isUserInCompetition(Team team) {
+            boolean result = true;
+            if (team == null|| "ARCHIVE".equals(team.getCompany()) || "DISQUALIFY".equals(team.getCompany())) {
+                result = false;
+            }
+            return result;
+        }
+        public String createHtmlTableRows() {
+            StringBuilder sb = new StringBuilder();
+            for (String name: orderedList) {
+                Team team = teamData.get(name);
+                if (!isUserInCompetition(team)) {
+                    continue;
+                }
+                sb.append(new TableComponentForTeam(team).createHtml());
+                counter ++;
+            }
+            return sb.toString();
+        }
+        private boolean isNoCompetitionFound() {
+            return counter==1;
+        }
+        private String createHtmlHeader() {
+            return "<tr><th>Nr</th><th>Team</th><th>Games</th><th>Score</th></tr>";
+        }
+        public String createHtml() {
+            counter = 1;
+
+            String displayTable = orderedList.size()>10 ?" scrollableTable ":"";
+            StringBuilder sb = new StringBuilder();
+            sb.append("<table class='roundGrayBorder table "+displayTable+"' ><thead>"+createHtmlHeader()+"</thead>" + createHtmlTableRows());
+
+            if (isNoCompetitionFound()) {
+                sb.append("<tr><td colspan=4>");
+                sb.append("De competitie is nog niet gestart.");
+                sb.append("</td></tr>");
+            }
+            sb.append("</table>");
+            return sb.toString();
+        }
     }
 
     public String toSimpleBootstrapTableForTeams(List<Team> teams, boolean isShowAllUsers, List<Ranking> rankings) {
-        List<String> orderedList = new ArrayList<>();
-        Map<String,Long> rankingMap = new LinkedHashMap<>();
-        for (Ranking ranking: rankings) {
-            rankingMap.put(ranking.getTeam(), ranking.getTotalScore());
-            if (orderedList.size()<10) {
-                orderedList.add(ranking.getTeam());
-            }
-        }
-
-        StringBuilder sb = new StringBuilder();
-        String uuid = competition.getCompetitionSession().getUuid().toString();
-
-        File rootFile = new File(mojServerProperties.getDirectories().getBaseDirectory().toFile(), "sessions\\"+uuid+"\\teams");
-        List<String> idList = new ArrayList<>();
-        if (rootFile.exists()) {
-            File[] usersInSession = rootFile.listFiles();
-            for (File file: usersInSession) {
-                idList.add(file.getName());
-            }
-        }
-        Map<String,Team> teamData = new LinkedHashMap<>();
-
-        for (Team team: teams) {
-            if (isShowAllUsers || idList.contains(team.getUuid().toString())) {
-                teamData.put(team.getName(), team);
-                if (!isShowAllUsers || orderedList.contains(team.getName())) {
-                    continue;
-                }
-                orderedList.add(team.getName());
-            }
-        }
-        if (isShowAllUsers) {
-            for (Team team: teams) {
-                if (!orderedList.contains(team.getName())) {
-                    orderedList.add(team.getName());
-                }
-            }
-        }
-
-        int counter = 1;
-        String displayTable = orderedList.size()>10 ?" scrollableTable ":"";
-        sb.append("<table class='roundGrayBorder table "+displayTable+"' ><thead><tr><th>Nr</th><th>Team</th><th>Games</th><th>Score</th></tr></thead>");
-
-        for (String name: orderedList) {
-            Team team = teamData.get(name);
-            boolean isUserInCompetition = team != null;
-            if (isUserInCompetition) {
-                continue;// not in competition yet
-            }
-
-            boolean isArchived = team.getCompany().equals("ARCHIVE") || team.getCompany().equals("DISQUALIFY");
-            if (isArchived) {
-                continue;
-            }
-            List<String> titleList = new ArrayList<>();
-            if (idList.contains(team.getUuid().toString())) {
-                File[] games = new File(rootFile, team.getUuid().toString()).listFiles();
-                for (File file: games) {
-                    titleList.add(file.getName());
-                }
-            }
-            String specialRole = "";
-            if (!team.getRole().equals(Role.USER)) {
-                specialRole = "("+team.getRole().split("_")[1]+")";
-            }
-            String style = isShowAllUsers?"cursorPointer":"";
-            String simpleClickEvent = isShowAllUsers?"clientSelectSubtable(this, '"+team.getUuid()+"')":"";
-            String viewTitle = titleList.isEmpty()?"deze gebruiker heeft nog geen opdrachten gedaan":titleList.toString();
-            Long total = rankingMap.getOrDefault(team.getName(),0L);
-            sb.append("<tbody id='"+team.getUuid()+"'><tr class='"+style+"' onclick=\""+simpleClickEvent+"\"><td class='alignRight'>"+counter+"</td><td class='minWidth100'>"+team.getName()+specialRole+"</td><td title='"+viewTitle+"' class='alignRight'>"+titleList.size()+"</td><td class='alignRight minWidth100'>"+total+"</td></tr>");
-
-            if (isShowAllUsers) {
-                sb.append("<tr class='subrows hide font10px'><td colspan=2>");
-                String inputField = "<i>registreer contactgegevens:</i><br/><input type='text' placeholder='registreer contactgegevens' onchange=\"updateTeamStatus($(this).closest('tbody').attr('id'),this.value)\" value='"+team.getCompany()+"' class='minWidth200 font10px'/>";
-                String deleteButton = "<button class='font10px cursorPointer smallBlackBorder minWidth100' onclick=\"updateTeamStatus($(this).closest('tbody').attr('id'),'ARCHIVE');$(this).closest('tbody').addClass('hide')\">archive team</button><br/>";
-                String disqualifyButton = "<button class='font10px cursorPointer smallBlackBorder minWidth100' onclick=\"updateTeamStatus($(this).closest('tbody').attr('id'),'DISQUALIFY');$(this).closest('tbody').addClass('hide')\">disqualify</button><br/>";
-                if (team.getRole().equals(Role.ADMIN)) {
-                    deleteButton = "";
-                    inputField = "";
-                    disqualifyButton = "";
-                }
-                sb.append(inputField);
-                sb.append("</td><td colspan=2 class='alignCenter'>"+deleteButton+disqualifyButton+"<button onclick=\"$('.passwordModal').toggleClass('hide')\" class='font10px minWidth100 smallBlackBorder cursorPointer nowrap'>password update</button></td></tr>");
-            }
-            sb.append("</tbody>");
-            counter ++;
-        }
-        if (counter==1) {
-            sb.append("<tr><td colspan=4>");
-            sb.append("De competitie is nog niet gestart.");
-            sb.append("</td></tr>");
-        }
-        sb.append("</table>");
-        return sb.toString();
+        return new BootstrapTableForTeams(teams, isShowAllUsers, rankings).createHtml();
     }
+
     public String toSimpleBootstrapTableForAssignmentStatus() {
         StringBuilder sb = new StringBuilder();
         List<DtoAssignmentState> list = createAssignmentStatusMap();

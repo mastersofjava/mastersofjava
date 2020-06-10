@@ -67,7 +67,7 @@ public class ExecutionService {
     private Executor getExecutor() {
         ActiveAssignment activeAssignment = competition.getActiveAssignment();
         if (activeAssignment == null) {
-            log.debug("Executing assignment in parallel, can impact timing of assignment");
+            log.debug("Executing assignment in sequentially, can slow down client response (only used by admin)");
             return sequential;
         }
         if (activeAssignment.getExecutionModel() == ExecutionModel.SEQUENTIAL) {
