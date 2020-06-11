@@ -153,13 +153,13 @@ public class TestService {
             throw new RuntimeException("security policy file not found");
         }
 
-        try {
+        try (final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
+                .getTestOutputLimits());
+             final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
+                     .getTestOutputLimits())){
             boolean isTimeout = false;
             int exitvalue = 0;
-            final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
-                    .getTestOutputLimits());
-            final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
-                    .getTestOutputLimits());
+
             try {
                 List<String> commandParts = new ArrayList<>();
 
