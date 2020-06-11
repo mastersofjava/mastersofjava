@@ -38,7 +38,6 @@ import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.test.model.TestCase;
-import org.aspectj.weaver.ast.Test;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 

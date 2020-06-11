@@ -67,9 +67,8 @@ public class SubmitService {
         final Assignment assignment = determineAssignment(team, message);
         messageService.sendComplilingStarted(team);
         return compileInternal(team, message, assignment).thenApply(r -> {
-            log.info("DONE COMPILING2");
+            log.info("DONE with compile request team {}, cleaning workspace afterwards " , team.getName());
             messageService.sendComplilingEnded(team, r.isSuccess());
-            log.info("CLEAN");
             executionService.cleanTeamAssignmentWorkspace(team, assignment);
             return r;
         });
@@ -78,7 +77,7 @@ public class SubmitService {
     private CompletableFuture<SubmitResult> compileInternal(Team team, SourceMessage message, Assignment assignment) {
         return executionService.compile(team, message, assignment)
                 .thenApply(r -> {
-                    log.info("DONE COMPILING1");
+                    log.info("DONE with compile execution team {}", team.getName());
                     messageService.sendCompileFeedback(team, r);
 
                     return SubmitResult.builder()
@@ -99,9 +98,8 @@ public class SubmitService {
         messageService.sendTestingStarted(team);
         final Assignment assignment = determineAssignment(team, message);
         return testInternal(team, message, submit, assignment).thenApply(r -> {
-            log.info("DONE TESTING");
+            log.info("DONE with test request team {}, cleaning workspace afterwards " , team.getName());
             messageService.sendTestingEnded(team, r.isSuccess());
-            log.info("CLEAN");
             executionService.cleanTeamAssignmentWorkspace(team, assignment);
             return r;
         });
@@ -119,12 +117,12 @@ public class SubmitService {
     }
 
     private CompletableFuture<SubmitResult> testInternal(Team team, SourceMessage message, boolean submit, Assignment assignment) {
-        log.info("testInternal1 " +message.getAssignmentName() + " " + team.getRole()+ " " + submit);
+        log.info("testInternal start with ( assignent {}, submit {}) ", message.getAssignmentName() , submit);
 
         //compile
         return compileInternal(team, message, assignment)
                 .thenCompose(submitResult -> {
-                    log.info("test1 " +message.getAssignmentName() + " compile " + submitResult.isSuccess() + " submit " + submit );
+                    log.info("testInternal.after compile ( assignent {}, compile {}) ", message.getAssignmentName(),  submitResult.isSuccess() );
                     ActiveAssignment activeAssignment = competition.getActiveAssignment();
                     try {
                         boolean isAssignmentNull = activeAssignment.getAssignment()==null;
@@ -148,7 +146,7 @@ public class SubmitService {
                         if (submit || team.getRole().equals(Role.ADMIN)) {
                             testCases = activeAssignment.getSubmitTestFiles();
                         }
-                        log.info("testCases " +testCases.size()+ " compile " + submitResult.isSuccess() + " submit " + submit + " " +activeAssignment.getTestFiles().size());
+                        log.info("testCases (size {}, compile {}) " , testCases.size(), submitResult.isSuccess());
 
                         // run selected testcases
                         return executionService.test(team, testCases, activeAssignment).thenApply(r -> {

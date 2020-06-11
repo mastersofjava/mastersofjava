@@ -120,11 +120,11 @@ public class GamemasterTableComponents {
                     FileUtils.deleteQuietly(project);
                 }
             }
-            log.info("deleteCurrentSessionResources.before " + rootFile + " "+rootFile.exists() );
+            log.info("deleteCurrentSessionResources.before {}, {}", rootFile , rootFile.exists() );
             FileUtils.deleteQuietly(rootFile);
-            log.info("deleteCurrentSessionResources.after " + rootFile + " "+rootFile.exists() );
+            log.info("deleteCurrentSessionResources.after {}, {}", rootFile , rootFile.exists() );
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error(ex.getMessage(), ex);
         }
     }
     public String toSimpleBootstrapTableForSessions() {
@@ -371,24 +371,24 @@ public class GamemasterTableComponents {
         private List<String> errorList = new ArrayList<>();
         private String localPath = mojServerProperties.getAssignmentRepo().toFile().getParentFile().getPath();
         public String createTableFromAssignmentList(List<AssignmentDescriptor> assignmentDescriptorList) {
-            StringBuilder sbAll = new StringBuilder();
-            sbAll.append("<span class='top'>");
+            StringBuilder sb = new StringBuilder();
+            sb.append("<span class='top'>");
             for (AssignmentDescriptor descriptor: assignmentDescriptorList) {
                 AssignmentFiles wrapper = descriptor.getAssignmentFiles();
                 initialize(descriptor);
-                sbAll.append("<span title='"+readYamlText(descriptor)+"'>");
-                sbAll.append(createTable(wrapper));
-                sbAll.append("</span>");
+                sb.append("<span title='"+readYamlText(descriptor)+"'>");
+                sb.append(createTable(wrapper));
+                sb.append("</span>");
             }
-            sbAll.append("</span>");
-            return sbAll.toString();
+            sb.append("</span>");
+            return sb.toString();
         }
         private String readYamlText(AssignmentDescriptor descriptor) {
             String text = "";
             try {
                 text = Files.readString(new File(descriptor.getDirectory().toFile(),"assignment.yaml").toPath()).replace("'","\"");
             } catch (Exception ex) {
-                ex.printStackTrace();
+                log.error(ex.getMessage(), ex);
             }
             return text;
         }
@@ -432,7 +432,7 @@ public class GamemasterTableComponents {
             header.append("<table class='roundGrayBorder table noBottomMargin' ><thead class='cursorPointer' onclick=\"$(this).closest('.top').find('.extra').addClass('hide');$(this).parent().find('.extra').toggleClass('hide')\"><tr><th class='minWidth300'>Files - Assignment '");
             header.append(assignmentName+"' - files:"+fileList.size());
             header.append("<div  class='extra hide'></div></th><th class='extra hide'>Type</th><th class='extra hide'>Size</th><th class='extra hide'>Last Modified</th></tr>");
-            if (errorList.size()>0) {
+            if (!errorList.isEmpty()) {
                 header.append("<tr><td colspan=4 class='error'><center>ERROR</center></td></tr>");
                 for (String error: errorList) {
                     header.append("<tr><td colspan=4 class='error'>- "+error+"</td></tr>");

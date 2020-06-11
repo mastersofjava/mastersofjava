@@ -40,9 +40,9 @@ public class LoginController {
 
     private final CompetitionService competitionService;
 
-    public boolean isRegistrationFormDisabled() {
+    private boolean isRegistrationFormDisabled() {
         Team team = teamRepository.findByName("admin");
-        log.info("isRegistrationFormDisabled " +team.getCompany());
+        log.info("isRegistrationFormDisabled {}", team.getCompany());
         return team.getCompany().contains("HIDE_REGISTRATION");
     }
 

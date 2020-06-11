@@ -209,24 +209,59 @@ public class CompileService {
                 } else {
                     isValidCleanStart = true;
                 }
-
-
-
             } catch (Exception e) {
                 log.error("error while cleaning teamdir: " +teamAssignmentDir.toFile(), e);
             }
             boolean isValidSources= sourcesDir.toFile().mkdirs();
             boolean isValidClasses= classesDir.toFile().mkdirs();
             isValidCleanStart &= isValidSources &&  isValidClasses;
-            log.info("cleanedDirectory: " + teamAssignmentDir + " " +isValidCleanStart);
-            System.out.println("sources created? -> " + isValidSources + " as " + sourcesDir.toString());
-            System.out.println("classes created? -> " + isValidClasses + " as " + classesDir.toString());
+            log.info("cleanedDirectory: {} isValidCleanStart {}", teamAssignmentDir , isValidCleanStart);
+            log.info("sources created? -> {} isValidSources {}", sourcesDir, isValidSources);
+            log.info("classes created? -> {} isValidClasses {}", classesDir, isValidClasses);
             return isValidCleanStart;
         }
         public void destroy() {
             sourcesDir = null;
             classesDir = null;
             teamAssignmentDir = null;
+        }
+        private void prepareResources(List<AssignmentFile> resources) {
+            resources.forEach(r -> {
+                try {
+                    File target = this.classesDir.resolve(r.getFile()).toFile();
+                    File parentFile = target.getParentFile();
+                    if (parentFile != null) {
+                        parentFile.mkdirs();
+                        target.getParentFile().mkdirs();
+                    }
+                    FileUtils.copyFile(r.getAbsoluteFile().toFile(), target);
+                } catch (IOException e) {
+                    log.error("error while writing resources to classes dir", e);
+                    this.errorMessage =  e.getMessage();
+                }
+            });
+        }
+        private void prepareInputSources(SourceMessage message, CompileInputWrapper compileInputWrapper) {
+            message.getSources().forEach((uuid, v) -> {
+                try {
+                    AssignmentFile orig = compileInputWrapper.getOriginalAssignmentFile(uuid);
+                    File f = this.sourcesDir.resolve(orig.getFile()).toFile();
+                    File parentFile = f.getParentFile();
+                    if (!parentFile.exists()) {
+                        parentFile.mkdirs();
+                    }
+                    Files.deleteIfExists(f.toPath());
+                    FileUtils.writeStringToFile(f, v, StandardCharsets.UTF_8);
+                    compileInputWrapper.readonlyAssignmentFiles.add(orig.toBuilder()
+                            .absoluteFile(f.toPath())
+                            .build());
+                } catch (IOException|RuntimeException e) {
+                    log.error("error while writing sourcefiles to sources dir", e);
+                    this.errorMessage = e.getMessage();
+                }
+
+            });
+            Assert.isTrue(this.errorMessage==null,this.errorMessage);
         }
     }
 
@@ -247,7 +282,7 @@ public class CompileService {
         // TODO should not be here.
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(compileInputWrapper.assignment, competition
                 .getCompetitionSession(), team);
-        log.info("javaCompile: " + compileInputWrapper.assignment.getName() + " for team " +team.getName());
+        log.info("javaCompile: {} for team {} ", compileInputWrapper.assignment.getName() , team.getName());
         compileInputWrapper.compileAttemptId = UUID.randomUUID();
         CompileAttempt compileAttempt = CompileAttempt.builder()
                 .assignmentStatus(as)
@@ -256,48 +291,16 @@ public class CompileService {
                 .build();
         List<AssignmentFile> resources = compileInputWrapper.resources;
         List<AssignmentFile> assignmentFiles = compileInputWrapper.readonlyAssignmentFiles;
-        log.info("resources: " + resources.size() + " assignmentFiles: " + assignmentFiles.size());
+        log.info("resources: {}, assignmentFiles: {}" ,resources.size(), assignmentFiles.size());
 
         // TODO this should be somewhere else
         TeamProjectPathModel pathModel = createTeamProjectPathModel(team, compileInputWrapper.assignment);
         pathModel.cleanCompileLocationForTeam();
         // copy resources
-        resources.forEach(r -> {
-            try {
-                File target = pathModel.classesDir.resolve(r.getFile()).toFile();
-                File parentFile = target.getParentFile();
-                if (parentFile != null) {
-                    parentFile.mkdirs();
-                    target.getParentFile().mkdirs();
-                }
-                FileUtils.copyFile(r.getAbsoluteFile().toFile(), target);
-            } catch (IOException e) {
-                log.error("error while writing resources to classes dir", e);
-                pathModel.errorMessage =  e.getMessage();
-            }
-        });
+        pathModel.prepareResources(compileInputWrapper.resources);
         // TODO fix compile result so team knows something is very wrong.
         try {
-            message.getSources().forEach((uuid, v) -> {
-                try {
-                    AssignmentFile orig = compileInputWrapper.getOriginalAssignmentFile(uuid);
-                    File f = pathModel.sourcesDir.resolve(orig.getFile()).toFile();
-                    File parentFile = f.getParentFile();
-                    if (!parentFile.exists()) {
-                        parentFile.mkdirs();
-                    }
-                    Files.deleteIfExists(f.toPath());
-                    FileUtils.writeStringToFile(f, v, StandardCharsets.UTF_8);
-                    assignmentFiles.add(orig.toBuilder()
-                            .absoluteFile(f.toPath())
-                            .build());
-                } catch (IOException|RuntimeException e) {
-                    log.error("error while writing sourcefiles to sources dir", e);
-                    pathModel.errorMessage = e.getMessage();
-                }
-
-            });
-            Assert.isTrue(pathModel.errorMessage==null,pathModel.errorMessage);
+            pathModel.prepareInputSources(message, compileInputWrapper);
         } catch (Exception e) {
             log.error("error while preparing sources.", e);
             return createCompileResult(compileInputWrapper, "error while preparing sources: "+pathModel.errorMessage, false);
@@ -351,7 +354,6 @@ public class CompileService {
                 InputStream is = commandExecutor.pumps().getInput();
                 OutputStream error = commandExecutor.pumps().getErr();
                 OutputStream out = commandExecutor.pumps().getOut();
-                log.debug("close " +(is!=null) + "-"+(error!=null)+"-"+(out!=null) );
                 commandExecutor.pumps().flush();
                 if (is!=null) {
                     is.close();
@@ -384,13 +386,11 @@ public class CompileService {
                 // if we still have some output left and exitvalue = 0
                 if (compileOutput.length() > 0 && exitvalue == 0 && !timedOut) {
                     compileAttempt = registerWhenNeeded(compileAttempt.toBuilder()
-                            .dateTimeEnd(Instant.now())
                             .success(true)
                             .build(), isAlwaysNeeded);
                 } else {
                     String output = stripTeamPathInfo(compileOutput.getBuffer(), FileUtils.getFile(pathModel.teamAssignmentDir.toFile(), "sources"));
                     compileAttempt = registerWhenNeeded(compileAttempt.toBuilder()
-                            .dateTimeEnd(Instant.now())
                             .success(false)
                             .compilerOutput(output)
                             .build(), isAlwaysNeeded);
@@ -400,13 +400,11 @@ public class CompileService {
                 String output = stripTeamPathInfo(compileErrorOutput.getBuffer(), FileUtils.getFile(pathModel.teamAssignmentDir.toFile(), "sources"));
                 if ((exitvalue == 0) && !timedOut) {
                     compileAttempt = registerWhenNeeded(compileAttempt.toBuilder()
-                            .dateTimeEnd(Instant.now())
                             .compilerOutput("OK")
                             .success(true)
                             .build(), isAlwaysNeeded);
                 } else {
                     compileAttempt = registerWhenNeeded(compileAttempt.toBuilder()
-                            .dateTimeEnd(Instant.now())
                             .success(false)
                             .compilerOutput(output)
                             .build(), isAlwaysNeeded);
@@ -428,6 +426,7 @@ public class CompileService {
     }
     private CompileAttempt registerWhenNeeded(CompileAttempt input, boolean isAlwaysNeeded) {
         CompileAttempt result = input;
+        result.setDateTimeEnd(Instant.now());
         if (input.getAssignmentStatus()!=null||isAlwaysNeeded) {
             result = compileAttemptRepository.save(input);
         }

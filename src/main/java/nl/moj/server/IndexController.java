@@ -44,6 +44,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -75,17 +76,18 @@ public class IndexController {
         return competition.getCurrentAssignment()!=null && assignment.equals(competition.getActiveAssignment().getAssignment());
     }
     @GetMapping("/assignmentAdmin")
-    public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user, HttpServletRequest request) {
+    public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user,
+                              HttpServletRequest request,@RequestParam("assignment") String assignmentInput,
+                              @RequestParam(required = false, name = "solution") String solutionInputFileName) {
         if (!isAuthorized(user, request)) {
             return "login";
         }
-        String solutionInputFileName = request.getParameter("solution");
         boolean isWithAdminValidation = request.getParameterMap().containsKey("validate");
-        Assignment assignment = assignmentRepository.findByName(request.getParameter("assignment"));
+        Assignment assignment = assignmentRepository.findByName(assignmentInput);
         Assert.isTrue(assignment!=null,"unauthorized");
-
+        log.info("viewAsAdmin.solution {}, assignment {}", solutionInputFileName, assignmentInput);
         if (isUsingCurrentCompetitionAssignment(assignment)) {
-            log.info("solution '" + solutionInputFileName+ "'");
+
             addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment(), solutionInputFileName, isWithAdminValidation);
         } else {
             addModelDataForAdmin(model, user, assignment, solutionInputFileName, isWithAdminValidation);

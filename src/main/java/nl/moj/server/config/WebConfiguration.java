@@ -60,7 +60,6 @@ public class WebConfiguration {
             if (!path.isAbsolute()) {
                 path = mojServerProperties.getDirectories().getBaseDirectory().resolve(
                         mojServerProperties.getDirectories().getJavadocDirectory());
-                System.out.println("javadoc -> " + path.toAbsolutePath().toUri().toString());
             }
             registry
                     .addResourceHandler("/javadoc/**")
