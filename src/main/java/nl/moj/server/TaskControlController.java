@@ -101,13 +101,6 @@ public class TaskControlController {
 
     private final CompetitionService competitionService;
 
-    @ModelAttribute(name = "sessions")
-    public List<CompetitionSession> sessions() {
-        return competition.getSessions();
-    }
-
-
-
     @ModelAttribute(name = "locationList")
     public List<File> locationList() {
         return competitionService.locationList();
@@ -426,7 +419,7 @@ public class TaskControlController {
 
             List<Team> teams = team();
             if (!teams.isEmpty() && this.isWithAdminRole) {
-                List<Ranking> rankings = rankingsService.getRankings(competition.getCompetitionSession());
+                List<Ranking> rankings = rankingsService.getRankings(competition.getCompetitionSession(), competitionService.getSelectedYearValue());
                 model.addAttribute("teamDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, true, rankings));
                 model.addAttribute("activeTeamDetailCanvas",  gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, false, rankings));
             }
@@ -434,19 +427,20 @@ public class TaskControlController {
                 model.addAttribute("repositoryLocation", competitionService.getSelectedLocation());
                 model.addAttribute("selectedYearLabel", this.selectedYearLabel);
             }
+            List<CompetitionSession> sessions = competition.getSessions();
 
+            model.addAttribute("sessions", sessions);
             model.addAttribute("setting_registration_disabled", competitionService.isRegistrationFormDisabled());
             model.addAttribute("sessionDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForSessions());
-
+            if (sessions.isEmpty()) {
+                competition.startSession(competition.getCompetition());
+            }
         }
     }
 
     @GetMapping("/control")
     public String taskControl(Model model, @AuthenticationPrincipal Authentication user, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
                               @ModelAttribute("newPasswordRequest") NewPasswordRequest npr) {
-        if (sessions().isEmpty()) {
-            competition.startSession(competition.getCompetition());
-        }
         AdminPageStatus pageStatus = new AdminPageStatus(user);
         pageStatus.validateRoleAuthorization();
         pageStatus.insertPageDefaults(model);

@@ -222,10 +222,7 @@ public class CompetitionService {
     }
 
     public String getSelectedYearLabel() {
-        if (competitionRuntime.getAssignmentInfo().isEmpty()) {
-            return "";
-        }
-        String year = getSelectedLocation().getName().split("-")[0];
+        String year = getSelectedYearValue();
         if (!StringUtils.isNumeric(year)) {
             year = "";
         } else {
@@ -233,7 +230,13 @@ public class CompetitionService {
         }
         return year;
     }
-
+    public String getSelectedYearValue() {
+        String year = getSelectedLocation().getName().split("-")[0];
+        if (!StringUtils.isNumeric(year)) {
+            year = "";
+        }
+        return year;
+    }
     public File getLocationByYear(int year) {
         File defaultLocation = mojServerProperties.getAssignmentRepo().toFile();
 
