@@ -15,6 +15,7 @@ import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.rankings.model.Ranking;
+import nl.moj.server.rankings.service.RankingsService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.teams.model.Role;
@@ -189,7 +190,7 @@ public class GamemasterTableComponents {
     public class BootstrapTableForTeams {
         private List<String> orderedList = new ArrayList<>();
         private Map<String,Long> rankingMap = new LinkedHashMap<>();
-        private Map<String,Team> teamData = new LinkedHashMap<>();
+        private Map<String,Team> teamStore = new LinkedHashMap<>();
         private List<String> usersWithWorkspaceList = new ArrayList<>();
         private File rootFile;
         private boolean isShowAllUsers;
@@ -203,7 +204,9 @@ public class GamemasterTableComponents {
                     orderedList.add(ranking.getTeam());
                 }
             }
-
+            for (Team team: teams) {
+                teamStore.put(team.getName(), team);
+            }
             if (isShowAllUsers) {
                 // also show all other users when required
                 for (Team team: teams) {
@@ -290,7 +293,7 @@ public class GamemasterTableComponents {
         public String createHtmlTableRows() {
             StringBuilder sb = new StringBuilder();
             for (String name: orderedList) {
-                Team team = teamData.get(name);
+                Team team = teamStore.get(name);
                 if (!isUserInCompetition(team)) {
                     continue;
                 }
