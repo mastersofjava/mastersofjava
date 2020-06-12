@@ -19,6 +19,7 @@ package nl.moj.server.teams.model;
 import javax.persistence.*;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 @Entity
@@ -44,6 +45,7 @@ public class Team {
     private String name;
 
     @Column(name = "password")
+    @JsonIgnore
     private String password;
 
     @Column(name = "role")
@@ -55,8 +57,15 @@ public class Team {
     @Column(name = "company")
     private String company;
 
+    @Column(name = "indication")
+    private String indication;
+
     public String getShortName() {
         return name.length() > 20 ? name.substring(0, 20) + "..." : name;
+    }
+
+    public boolean isDisabled() {
+        return !"ARCHIVE".equals(indication) && !"DISQUALIFY".equals(indication) && !Role.ANONYMOUS.equals(role);
     }
 
 }

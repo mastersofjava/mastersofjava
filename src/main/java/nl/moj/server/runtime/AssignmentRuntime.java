@@ -97,6 +97,8 @@ public class AssignmentRuntime {
     @Getter
     private boolean running;
 
+    @Getter
+    private boolean paused;
     private CompetitionSession competitionSession;
 
     /**
@@ -140,6 +142,21 @@ public class AssignmentRuntime {
         log.info("Started assignment {}", assignment.getName());
 
         return stopHandle;
+    }
+
+    public void pauseResume() {
+        if (!paused) {
+            if (timer.isStarted()) {
+                timer.suspend();
+            }
+            paused = true;
+        } else {
+            if (timer.isSuspended()) {
+                timer.resume();
+            }
+
+            paused = false;
+        }
     }
 
     /**

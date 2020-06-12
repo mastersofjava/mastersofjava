@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.TeamDetailsService;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.teams.model.Role;
@@ -59,7 +60,6 @@ public class WebConfiguration {
             if (!path.isAbsolute()) {
                 path = mojServerProperties.getDirectories().getBaseDirectory().resolve(
                         mojServerProperties.getDirectories().getJavadocDirectory());
-                System.out.println("javadoc -> " + path.toAbsolutePath().toUri().toString());
             }
             registry
                     .addResourceHandler("/javadoc/**")
@@ -98,9 +98,9 @@ public class WebConfiguration {
         @Override
         protected void configure(HttpSecurity http) throws Exception {
             http.authorizeRequests()
-                    .antMatchers("/login", "/register", "/feedback", "/bootstrap").permitAll()//
-                    .antMatchers("/").hasAuthority(Role.USER) //
-                    .antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) //
+                    .antMatchers("/login", "/register", "/feedback", "/bootstrap").permitAll() // always access
+                    .antMatchers("/").hasAnyAuthority(Role.USER, Role.ADMIN, Role.GAME_MASTER) // only when registrated
+                    .antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
 
                     .and().formLogin().successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login")
                     .and().logout().and().headers().frameOptions().disable().and().csrf().disable();
@@ -115,7 +115,9 @@ public class WebConfiguration {
                 List<String> roles = authentication.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
-                if (roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER)) {
+                boolean isWithControlRole = roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER);
+
+                if (isWithControlRole) {
                     response.sendRedirect("/control");
                 } else if (roles.contains(Role.USER)) {
                     teamDetailsService.initTeam(authentication.getName());

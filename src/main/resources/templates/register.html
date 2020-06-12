@@ -49,16 +49,16 @@
         <div class="register-container">
             <form action="#" th:action="@{/register}" th:object="${form}" method="post">
                 <div class="form-group">
-                    <label for="name">Team</label>
-                    <input type="text" class="form-control" id="name" th:field="*{name}" placeholder="" maxlength="50">
-                    <small id="usernameHelp" class="form-text text-muted">This will show up everywhere.</small>
+                    <label for="name">Contestant name</label>
+                    <input type="text" class="form-control" id="name" th:field="*{name}" placeholder="enter your contestant name here" maxlength="50">
+                    <small id="usernameHelp" class="form-text text-muted">Your contestant name will be seen everywhere.</small>
                 </div>
-                <div class="form-group">
+                <div class="form-group hide" >
                     <label for="company">Company</label>
                     <input type="text" class="form-control" id="company" th:field="*{company}" placeholder="" maxlength="50">
-                    <small id="companyHelp" class="form-text text-muted">Yours or your teammate's or both or ...</small>
+                    <small id="companyHelp" class="form-text text-muted">Fill in with zero or more names</small>
                 </div>
-                <div class="form-group">
+                <div class="form-group hide">
                     <label for="country">Country</label>
                     <select id="country" th:field="*{country}" class="form-control">
                         <option value="Nederland">Nederland</option>
@@ -75,9 +75,20 @@
                     <input type="password" class="form-control" id="passwordCheck" th:field="*{passwordCheck}"
                            placeholder="">
                 </div>
-                <div class="d-flex flex-row-reverse">
-                    <button type="submit" id="login" class="btn btn-primary ml-2">Register</button>
-                    <a class="btn btn-outline-primary ml-2" th:href="@{/}">Back</a>
+                <div class="form-group">
+                    <div class="row">
+                        <div class="col-8" style="text-align: right">
+                            <label for="selectRole" >Select Role:&nbsp;&nbsp;</label>
+                        </div>
+                        <div class="col-4">
+                            <select name="role" id="selectRole" class="floatRight"><option value="ROLE_USER">Team</option><option>Facilitator</option></select>
+                        </div>
+                    </div>
+                    <br/>
+                </div>
+                <div class="form-group">
+                    <a class="btn btn-outline-primary ml-2 floatLeft" th:href="@{/}">Back</a>
+                    <button type="submit" id="login" class="btn btn-primary ml-2 floatRight">Register</button>
                 </div>
             </form>
         </div>

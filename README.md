@@ -16,17 +16,20 @@ The game server uses Spring Boot, Thymeleaf, H2 database and Websockets.
 ### Preparation
 
 Make sure you update the application.yaml to it works for the machine that is running the game server.  
+- The resources are default located in: ./moj-data/
+- For downloading all javadocs via commandline: `mvn dependency:sources dependency:resolve -Dclassifier=javadoc`
+- Download the newest SDK documentation and extract (directory `api`) into directory: `./moj-data/javadoc/api` (now the participants have easily access to these docs via the GUI))
 
 #### Starting
-From any IDE you can just run the MojServerApplication.class
+- From any IDE you can just run the `MojServerApplication.class`
+- Startup via commandline: `mvn compile spring-boot:run`
+- Advice: do not change the official application.yaml when not needed. 
+    - Use a customizable application-local.yaml via: `mvn compile spring-boot:run -Dspring.profiles.active=local`
 
-#### Controller Dashboard
+#### Gamemaster Dashboard
 
-The controller dashboard can be found on [http://localhost:8080/control](http://localhost:8080/control). The first time
+The Gamemaster dashboard can be found on [http://localhost:8080/control](http://localhost:8080/control). The first time
 you start the application you will be asked to setup and administrator account. 
-
-TODO add commandline start info
-TODO add info on external configuration info
 
 
 # License

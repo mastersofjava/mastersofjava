@@ -55,6 +55,8 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+  resources:
+    static-locations: classpath:/bootstrap/sounds/,classpath:/static/
 #  jpa:
 #    generate-ddl: true
 

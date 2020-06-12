@@ -57,3 +57,19 @@ svg {
 .output-content {
     overflow-y: scroll;
 }
+
+button[disabled] {
+    pointer-events: none;
+}
+.inlineBlock {
+    display: inline-block;
+}
+.alignCenter {
+    text-align: center;
+}
+.cursorPointer {
+    cursor:pointer;
+}
+.paddingLeft50 {
+    padding-left: 50px;
+}

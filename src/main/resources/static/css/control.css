@@ -24,6 +24,38 @@ svg {
     -webkit-transform: rotate(-90deg);
     transform: rotate(-90deg);
 }
+div.flex-column {
+    border: 2px solid black;
+}
+h6 {
+    font-style: italic;
+}
+.form-check.input-group.radio:hover,.nav-link:hover {
+    background-color: lightgray;
+    cursor: pointer;
+}
+.nav-pills .nav-link, .roundGrayTabBorder {
+    border-radius: .6rem;
+    border: 1px solid lightgray;
+    border-bottom-left-radius: 0.2rem;
+    border-bottom-right-radius: 0.2rem;
+}
+ul.nav {
+    padding-left: 8px;
+}
+.roundGrayBorder {
+    border-radius: .6rem;
+    border: 1px solid lightgray;
+}
+.nav-pills .nav-link.active {
+    border: 1px solid #007bff;
+}
+.paddingLeft50,.tab-content>div {
+    padding-left: 50px;
+}
+table th {
+    background-color: deepskyblue;
+}
 
 .circle_animation {
     stroke-dasharray: 440; /* this value is the pixel circumference of the circle */
@@ -51,4 +83,84 @@ svg {
 
 .output-content {
     overflow-y: scroll;
+}
+.italic {
+    font-style: italic;
+}
+div.alert.show {
+    z-index: 1;
+}
+.font10px {
+    font-size: 10px;
+}
+.table .error {
+    color: red;
+    font-weight: bold;
+}
+.cursorPointer {
+    cursor:pointer;
+}
+body .hide {
+    display: none;
+}
+.minWidth300 {
+    min-width: 300px;
+}
+.minWidth100 {
+    min-width: 100px;
+}
+.minWidth150 {
+    min-width: 150px;
+}
+.minWidth200 {
+    min-width: 200px;
+}
+.minWidth800 {
+    min-width: 800px;
+}
+.maxWidth300 {
+    max-width: 300px;
+}
+.alignRight {
+    text-align: right;
+}
+.alignCenter {
+    text-align: center;
+}
+.table tbody tr:hover,.selected {
+    background-color: aliceblue;
+}
+.inlineBlock {
+    display: inline-block;
+}
+.bold {
+    font-weight: bold;
+}
+.noBottomMargin {
+    margin-bottom: 0px;
+}
+select.disabled {
+    pointer-events: none;
+}
+.tableSubHeader {
+    background-color: turquoise;
+}
+.scrollableTable {
+    max-height: 500px;
+    overflow-y: scroll;
+    display: block;
+    overflow-x: hidden;
+}
+
+.selected .fa-angle-double-right:before {
+    content: "\f103";
+}
+.nowrap {
+    white-space: nowrap;
+}
+.smallBlackBorder {
+    border: 1px solid black;
+}
+input[file] {
+    color:black;
 }

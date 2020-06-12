@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -47,8 +48,19 @@ public class Competition {
     private List<OrderedAssignment> assignments = new ArrayList<>();
 
     public List<OrderedAssignment> getAssignmentsInOrder() {
-        List<OrderedAssignment> copy = new ArrayList<>(assignments);
-        copy.sort(Comparator.comparingInt(OrderedAssignment::getOrder));
-        return copy;
+        List<OrderedAssignment> copyFiltered = copyFilteredList();
+        copyFiltered.sort(Comparator.comparingInt(OrderedAssignment::getOrder));
+        return copyFiltered;
+    }
+
+    private List<OrderedAssignment> copyFilteredList() {
+        boolean isDefault = !name.contains("|20");
+        if (isDefault) {
+            return new ArrayList<>(assignments);
+        }
+        String collectionName = name.split("\\|")[1];
+        return assignments.stream()
+                .filter(orderedAssignment-> orderedAssignment.getAssignment().getAssignmentDescriptor().contains(collectionName))
+                .collect(Collectors.toList());
     }
 }

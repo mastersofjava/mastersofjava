@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
@@ -66,7 +67,17 @@ public class CompetitionRuntime {
         this.competitionSession = competitionSessionRepository.save(createNewCompetitionSession(competition));
         restoreSession();
     }
-
+    public List<AssignmentDescriptor> getAssignmentInfoOrderedForCompetition() {
+        List<AssignmentDescriptor> notSortedList = this.getAssignmentInfo();
+        return competition.getAssignmentsInOrder().stream()
+                .map(OrderedAssignment::getAssignment)
+                .map(Assignment::getName)
+                .flatMap(name -> {
+                    return notSortedList.stream()
+                            .filter(assignmentDescriptor -> assignmentDescriptor.getName().equals(name));
+                })
+                .collect(Collectors.toList());
+    }
     public void loadSession(Competition competition, UUID session) {
         log.info("Loading session {} for competition {}", session, competition.getName());
         this.competition = competition;
@@ -79,13 +90,13 @@ public class CompetitionRuntime {
         this.completedAssignments = new ArrayList<>();
 
         // get the completed assignment uuids
-        List<UUID> assignments = assignmentResultRepository.findByCompetitionSession(competitionSession).stream()
+        List<UUID> completedAssignmentList = assignmentResultRepository.findByCompetitionSession(competitionSession).stream()
                 .filter(ar -> ar.getAssignmentStatus().getDateTimeEnd() != null)
                 .map(ar -> ar.getAssignmentStatus().getAssignment().getUuid())
                 .distinct().collect(Collectors.toList());
 
         this.competition.getAssignments().forEach(oa -> {
-            if (assignments.contains(oa.getAssignment().getUuid())) {
+            if (completedAssignmentList.contains(oa.getAssignment().getUuid())) {
                 this.completedAssignments.add(oa);
             }
         });
@@ -120,9 +131,9 @@ public class CompetitionRuntime {
 
         if (assignment.isPresent()) {
             try {
-                assignmentRuntime.start(assignment.get(), competitionSession);
                 if (!completedAssignments.contains(assignment.get())) {
                     completedAssignments.add(assignment.get());
+                    assignmentRuntime.start(assignment.get(), competitionSession);
                 }
             } catch( AssignmentStartException ase ) {
                 messageService.sendStartFail(name, ase.getMessage());
@@ -155,7 +166,7 @@ public class CompetitionRuntime {
             return Collections.emptyList();
         }
 
-        return Optional.ofNullable(competition.getAssignments()).orElse(Collections.emptyList()).stream()
+        return Optional.ofNullable(competition.getAssignmentsInOrder()).orElse(Collections.emptyList()).stream()
                 .map(v -> assignmentService.getAssignmentDescriptor(v.getAssignment())
                 ).sorted(Comparator.comparing(AssignmentDescriptor::getDisplayName)).collect(Collectors.toList());
     }

@@ -47,7 +47,7 @@
         <div class="login-container">
             <form method="post" th:action="@{/login}">
                 <div class="form-group">
-                    <label for="username">Team</label>
+                    <label for="username">Contestor name</label>
                     <input type="text" class="form-control" id="username" name="username" placeholder="">
                     <small id="usernameHelp" class="form-text text-muted">This will show up everywhere.</small>
                 </div>
@@ -57,7 +57,7 @@
                 </div>
                 <div class="d-flex flex-row-reverse">
                     <button type="submit" id="login" class="btn btn-primary ml-2">Login</button>
-                    <a class="btn btn-outline-primary ml-2" th:href="@{/register}">Register</a>
+                    <a class="btn btn-outline-primary ml-2" th:href="@{/register}" th:if="${registration_disabled==null||!registration_disabled}">Register</a>
                 </div>
             </form>
         </div>
@@ -65,7 +65,6 @@
 </div>
 
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/popper.js/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 
 </body>
