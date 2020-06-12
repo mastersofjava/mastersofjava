@@ -204,14 +204,14 @@ public class TestService {
                 success = jUnitOutput.length() > 0 && exitvalue == 0 && !isTimeout;
                 result = jUnitOutput.toString();
                 if (jUnitOutput.length()==0) {
-                    log.info("zero normal junit output, error output: " + jUnitOutput.toString()  + " - " +jUnitError.toString()  );
+                    log.info("zero normal junit output, error output: {}-{}", jUnitOutput.toString(), jUnitError.toString()  );
                 }
             } else {
-                log.info("zero normal junit output, error output: " + jUnitError.toString() );
+                log.info("zero normal junit output, error output: {}", jUnitError.toString() );
                 result = jUnitError.toString();
                 success = (exitvalue == 0) && !isTimeout;
             }
-            log.info("finished unit test: {}, exitvalue: {}, outputlength: {}, isTimeout: {} " , file.getName(),exitvalue ,result.length(),isTimeout );
+            log.info("finished unit test: {}, exitvalue: {}, outputlength: {}, isTimeout: {} ", file.getName(), exitvalue, result.length(), isTimeout );
 
             testCase = testCase.toBuilder()
                     .success(success)

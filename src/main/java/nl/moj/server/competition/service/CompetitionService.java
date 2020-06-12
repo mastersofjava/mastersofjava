@@ -52,6 +52,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -263,12 +264,9 @@ public class CompetitionService {
         if (!defaultLocation.exists()||!defaultLocation.getParentFile().isDirectory()) {
             return locationList;
         }
-        for (File file: defaultLocation.getParentFile().listFiles()) {
-            if (file.isDirectory() && file.getName().startsWith(YEAR_PREFIX)) {
-                locationList.add(file);
-            }
-        }
-        return locationList;
+        return Arrays.stream(defaultLocation.getParentFile().listFiles())
+                .filter(file -> file.getName().startsWith(YEAR_PREFIX) && file.isDirectory())
+                .collect(Collectors.toList());
     }
 
 

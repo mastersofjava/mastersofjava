@@ -57,12 +57,16 @@ public class Team {
     @Column(name = "company")
     private String company;
 
+    @Column(name = "indication")
+    private String indication;
+
     public String getShortName() {
         return name.length() > 20 ? name.substring(0, 20) + "..." : name;
     }
 
-    public void setTeamStatus(String input) {
-        company = input;// currently the company field is not used, so it contains the disabled status. TODO:extend model
+    public boolean isDisabled() {
+        return !"ARCHIVE".equals(indication) && !"DISQUALIFY".equals(indication) && !Role.ANONYMOUS.equals(role);
     }
+
 }
 

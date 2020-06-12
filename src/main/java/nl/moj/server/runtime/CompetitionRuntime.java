@@ -69,17 +69,14 @@ public class CompetitionRuntime {
     }
     public List<AssignmentDescriptor> getAssignmentInfoOrderedForCompetition() {
         List<AssignmentDescriptor> notSortedList = this.getAssignmentInfo();
-        List<String> orderedList = competition.getAssignmentsInOrder().stream().map(OrderedAssignment::getAssignment).map(Assignment::getName).collect(Collectors.toList());
-
-        List<AssignmentDescriptor> officiallyOrderedList = new ArrayList<>();
-        for (String name : orderedList ) {
-            for (AssignmentDescriptor assignmentDescriptor: notSortedList) {
-                if (assignmentDescriptor.getName().equals(name)) {
-                    officiallyOrderedList.add(assignmentDescriptor);
-                }
-            }
-        }
-        return officiallyOrderedList;
+        return competition.getAssignmentsInOrder().stream()
+                .map(OrderedAssignment::getAssignment)
+                .map(Assignment::getName)
+                .flatMap(name -> {
+                    return notSortedList.stream()
+                            .filter(assignmentDescriptor -> assignmentDescriptor.getName().equals(name));
+                })
+                .collect(Collectors.toList());
     }
     public void loadSession(Competition competition, UUID session) {
         log.info("Loading session {} for competition {}", session, competition.getName());
