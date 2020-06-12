@@ -48,7 +48,7 @@
                 <a class="nav-link" id="pills-sessiebeheer-tab" data-toggle="pill" href="#pills-sessiebeheer" role="tab" aria-controls="pills-sessiebeheer" aria-selected="false">Manage competities</a>
             </li>
             <li class="nav-item adminRole role" th:if="${isWithAdminRole}">
-                <a class="nav-link" id="pills-uitleg-tab" data-toggle="pill" href="#pills-uitleg" role="tab" aria-controls="pills-uitleg" aria-selected="false">Uitleg</a>
+                <a class="nav-link" id="pills-uitleg-tab" data-toggle="pill" href="#pills-uitleg" role="tab" aria-controls="pills-uitleg" aria-selected="false">Uitleg bij bouwen opdrachten</a>
             </li>
 
         </ul>
@@ -74,6 +74,9 @@
             <div class="tab-pane fade  show active" id="pills-competitie" role="tabpanel" aria-labelledby="pills-competitie-tab">
                 <div th:if="${!running}" >
                     <h6>Selecteer een opdracht en start!</h6>
+                </div>
+                <div th:if="${!isWithAssignmentsLoaded}" >
+                    <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
                 </div>
                 <div th:if="${running}" >
                     <h6>Met dit scherm kan de admin de competitie opdrachten pauzeren, stoppen en herstarten.</h6>
@@ -136,25 +139,23 @@
 
                 <div class="row">
 
-                        <div class="p-2 col-9">
+                        <div class="p-2 col-9" th:if="${sessions.size()>1}">
                             <form class="form" method="post" th:action="@{/control/select-session}" th:object="${selectSessionForm}">
-                                <label for="sessions" class="inlineBlock">Speelbare sessies: </label>
-                                <select class="form-control inlineBlock maxWidth300 font10px" id="sessions" onchange="$('#loadSession').removeClass('hide')" th:field="*{session}">
-                                    <option th:each="s : ${sessions}" th:value="${s.uuid}" th:text="${'Session '+(sStat.index +1)+ ' (' + s.getCompetition().getName()+ ')'}">
-                                    </option>
-                                </select>
-
-                                <button type="submit" name="load" id="loadSession" class="hide btn btn-primary inlineBlock">Selecteer</button>
+                                <div >
+                                    <label for="sessions" class="inlineBlock">Speelbare sessies: </label>
+                                    <select class="form-control inlineBlock maxWidth300 font10px" id="sessions" onchange="$('#loadSession').removeClass('hide')" th:field="*{session}">
+                                        <option th:each="s : ${sessions}" th:value="${s.uuid}" th:text="${'Session '+(sStat.index +1)+ ' (' + s.getCompetition().getName()+ ')'}">
+                                        </option>
+                                    </select>
+                                </div>
                             </form>
                         </div>
 
-                    <div class="p-2 col-2 hide" >
+                    <div class="p-2 col-2" >
                         <form class="form" id="createNewSessionForm" method="post" th:action="@{/control/new-session}">
-                            <button type="submit" name="create" class="btn btn-secondary"  >Nieuwe sessie</button>
                         </form>
                     </div>
                 </div>
-                <br/>
                 <div class="p-2 col-12">
                     <div th:remove="tag" th:utext="${sessionDetailCanvas}"></div>
                 </div>
@@ -180,15 +181,13 @@
             </li>
 
             <li class="nav-item">
-                <a class="nav-link" id="pills-configuratie-tab" data-toggle="pill" href="#pills-configuratie" role="tab" aria-controls="pills-configuratie" aria-selected="false">Configuratie</a>
+                <a class="nav-link show active" id="pills-configuratie-tab" data-toggle="pill" href="#pills-configuratie" role="tab" aria-controls="pills-configuratie" aria-selected="true">Configuratie</a>
             </li>
-
-
                 <li class="nav-item">
                     <a class="nav-link" id="pills-gebruikersbeheer-tab" data-toggle="pill" href="#pills-gebruikersbeheer" role="tab" aria-controls="pills-gebruikersbeheer" aria-selected="false">Gebruikersbeheer</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link show active" id="pills-toptien-tab" data-toggle="pill" href="#pills-toptien" role="tab" aria-controls="pills-toptien" aria-selected="true">Top 10</a>
+                    <a class="nav-link" id="pills-toptien-tab" data-toggle="pill" href="#pills-toptien" role="tab" aria-controls="pills-toptien" aria-selected="false">Top 10</a>
                 </li>
             </ul>
             <div class="tab-content roundGrayBorder" id="pills-tabContent2">
@@ -207,12 +206,12 @@
                 <div class="tab-pane fade" id="pills-opdrachtconfiguratie" role="tabpanel" aria-labelledby="pills-opdrachtconfiguratie-tab">
                     <h6>Bekijk hier de bestandsdata van de geselecteerde opdracht(en)</h6>
                     <br/>
-                    <div class="font10px">
+                    <div th:class="${isWithAssignmentsLoaded?'font10px':''}">
                         <div th:remove="tag" th:utext="${opdrachtConfiguraties}"></div>
                     </div>
 
                 </div>
-                <div class="tab-pane fade " id="pills-configuratie" role="tabpanel" aria-labelledby="pills-configuratie-tab">
+                <div class="tab-pane fade show active" id="pills-configuratie" role="tabpanel" aria-labelledby="pills-configuratie-tab">
                     <h6>Voor configuratie kun je met dit tabblad bestanden inladen en exporteren.</h6><br/>
 
                     <div class="row">
@@ -266,8 +265,8 @@
                     </div>
                     <br>
                 </div>
-                <div class="tab-pane fade show active" id="pills-toptien" role="tabpanel" aria-labelledby="pills-toptien-tab">
-                    <h6>Bekijk hier de beste teams tot dusver</h6>
+                <div class="tab-pane fade" id="pills-toptien" role="tabpanel" aria-labelledby="pills-toptien-tab">
+                    <h6>Bekijk hier de beste teams tot dusver [[${selectedYearLabel}]]</h6>
                     <br>
                     <div class="row">
                         <div class="p-2 col-6">
