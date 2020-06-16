@@ -40,6 +40,13 @@ moj:
       uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
       success-bonus: 400
 
+keycloak:
+   auth-server-url: http://https://auth.moj.first8.nl/auth
+   realm: Masters-of-java-dev
+   resource: moj
+   public-client: true
+   principal-attribute: preferred_username
+
 spring:
   h2:
     console:

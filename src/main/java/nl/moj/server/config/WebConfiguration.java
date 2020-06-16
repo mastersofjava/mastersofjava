@@ -16,116 +16,131 @@
 */
 package nl.moj.server.config;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.TeamDetailsService;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.teams.model.Role;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
+import org.keycloak.adapters.springsecurity.KeycloakSecurityComponents;
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
+import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import lombok.AllArgsConstructor;
+import nl.moj.server.TeamDetailsService;
+import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.teams.model.Role;
 
 @Configuration
 @AllArgsConstructor
 public class WebConfiguration {
 
-    private MojServerProperties mojServerProperties;
+	private MojServerProperties mojServerProperties;
 
-    @Configuration
-    public class WebConfig implements WebMvcConfigurer {
+	@Configuration
+	public class WebConfig implements WebMvcConfigurer {
 
-        @Override
-        public void addResourceHandlers(ResourceHandlerRegistry registry) {
-            Path path = Paths.get(mojServerProperties.getDirectories().getJavadocDirectory());
-            if (!path.isAbsolute()) {
-                path = mojServerProperties.getDirectories().getBaseDirectory().resolve(
-                        mojServerProperties.getDirectories().getJavadocDirectory());
-            }
-            registry
-                    .addResourceHandler("/javadoc/**")
-                    .addResourceLocations(path.toAbsolutePath().toUri().toString());
-        }
-    }
+		@Override
+		public void addResourceHandlers(ResourceHandlerRegistry registry) {
+			Path path = Paths.get(mojServerProperties.getDirectories().getJavadocDirectory());
+			if (!path.isAbsolute()) {
+				path = mojServerProperties.getDirectories().getBaseDirectory()
+						.resolve(mojServerProperties.getDirectories().getJavadocDirectory());
+			}
+			registry.addResourceHandler("/javadoc/**").addResourceLocations(path.toAbsolutePath().toUri().toString());
+		}
+	}
 
-    @EnableWebSecurity
-    @EnableGlobalMethodSecurity(jsr250Enabled = true)
-    @Configuration
-    public class SecurityConfig extends WebSecurityConfigurerAdapter {
+	@EnableWebSecurity
+	@ComponentScan(basePackageClasses = KeycloakSecurityComponents.class)
+	@EnableGlobalMethodSecurity(jsr250Enabled = true)
+	@Configuration
+	public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 
-        private TeamDetailsService teamDetailsService;
+		private TeamDetailsService teamDetailsService;
 
-        public SecurityConfig(TeamDetailsService teamDetailsService) {
-            this.teamDetailsService = teamDetailsService;
-        }
+		public SecurityConfig(TeamDetailsService teamDetailsService) {
+			this.teamDetailsService = teamDetailsService;
+		}
 
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-            return new BCryptPasswordEncoder();
-        }
+		@Autowired
+		public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
 
-        private DaoAuthenticationProvider authProvider() {
-            DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-            authProvider.setUserDetailsService(teamDetailsService);
-            authProvider.setPasswordEncoder(passwordEncoder());
-            return authProvider;
-        }
+			KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
+			keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
+			auth.authenticationProvider(keycloakAuthenticationProvider);
+		}
 
-        @Override
-        protected void configure(AuthenticationManagerBuilder auth) {
-            auth.authenticationProvider(authProvider());
-        }
+		@Bean
+		public KeycloakSpringBootConfigResolver KeycloakConfigResolver() {
+			return new KeycloakSpringBootConfigResolver();
+		}
 
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            http.authorizeRequests()
-                    .antMatchers("/login", "/register", "/feedback", "/bootstrap").permitAll() // always access
-                    .antMatchers("/").hasAnyAuthority(Role.USER, Role.ADMIN, Role.GAME_MASTER) // only when registrated
-                    .antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
+		@Bean
+		@Override
+		protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+			return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
+		}
 
-                    .and().formLogin().successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login")
-                    .and().logout().and().headers().frameOptions().disable().and().csrf().disable();
-        }
+		@Bean
+		public PasswordEncoder passwordEncoder() {
+			return new BCryptPasswordEncoder();
+		}
 
-        private class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+		@Override
+		protected void configure(HttpSecurity http) throws Exception {
+			http.authorizeRequests()
+					.antMatchers("/login", "/register", "/feedback", "/bootstrap").permitAll() // always access
+					.antMatchers("/").hasAnyAuthority(Role.USER, Role.ADMIN, Role.GAME_MASTER) // only when registrated
+					.antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
 
-            @Override
-            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                                Authentication authentication) throws IOException {
-                response.setStatus(HttpServletResponse.SC_OK);
-                List<String> roles = authentication.getAuthorities().stream()
-                        .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
+					.and().formLogin().successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login")
+					.and().logout().and().headers().frameOptions().disable().and().csrf().disable();
+		}
 
-                boolean isWithControlRole = roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER);
+		private class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
-                if (isWithControlRole) {
-                    response.sendRedirect("/control");
-                } else if (roles.contains(Role.USER)) {
-                    teamDetailsService.initTeam(authentication.getName());
-                    response.sendRedirect("/");
-                } else {
-                    response.sendRedirect("/");
-                }
-            }
-        }
-    }
+			@Override
+			public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+					Authentication authentication) throws IOException {
+				response.setStatus(HttpServletResponse.SC_OK);
+				List<String> roles = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+						.collect(Collectors.toList());
+
+				boolean isWithControlRole = roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER);
+
+				if (isWithControlRole) {
+					response.sendRedirect("/control");
+				} else if (roles.contains(Role.USER)) {
+					teamDetailsService.initTeam(authentication.getName());
+					response.sendRedirect("/");
+				} else {
+					response.sendRedirect("/");
+				}
+			}
+		}
+	}
 }
