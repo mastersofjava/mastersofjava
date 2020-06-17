@@ -41,7 +41,7 @@ moj:
       success-bonus: 400
 
 keycloak:
-   auth-server-url: http://https://auth.moj.first8.nl/auth
+   auth-server-url: https://auth.moj.first8.nl/auth
    realm: Masters-of-java-dev
    resource: moj
    public-client: true
