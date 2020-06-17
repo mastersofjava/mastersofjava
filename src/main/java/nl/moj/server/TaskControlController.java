@@ -267,12 +267,14 @@ public class TaskControlController {
         if (team==null) {
             return "Team already deleted.";
         }
-        UserStatusUpdate updateType = UserStatusUpdate.readUpdateType(message.getValue());
+        UserStatusUpdate updateType = UserStatusUpdate.getEnum(message.getValue());
         if (!updateType.isAllowedToPlay) {
             // anonymous users cannot login anymore, via import files one can be activated again.
             team.setRole(Role.ANONYMOUS);
+            team.setIndication(message.value);
+        } else {
+            team.setCompany(message.value);
         }
-        team.setTeamStatus(message.value);
         teamRepository.save(team);
         return updateType.value + " team '"+team.getName()+"'";
     }
@@ -287,13 +289,10 @@ public class TaskControlController {
             this.value = value;
             this.isAllowedToPlay = isAllowedToPlay;
         }
-        public static UserStatusUpdate readUpdateType(String value) {
+        public static UserStatusUpdate getEnum(String value) {
             UserStatusUpdate type = DEFAULT;
-            if (DISQUALIFY.name().equals(value)) {
-                type = DISQUALIFY;
-            } else
-            if (ARCHIVE.name().equals(value)) {
-                type = ARCHIVE;
+            if (DISQUALIFY.name().equals(value) ||ARCHIVE.name().equals(value)  ) {
+                type = UserStatusUpdate.valueOf(value);
             }
             return type;
         }

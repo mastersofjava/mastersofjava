@@ -15,7 +15,6 @@ import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.rankings.model.Ranking;
-import nl.moj.server.rankings.service.RankingsService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.teams.model.Role;
@@ -79,33 +78,33 @@ public class GamemasterTableComponents {
         }
         List<DtoAssignmentState> result = new ArrayList<>();
 
-        List<OrderedAssignment> completedList = competition.getCompetitionState().getCompletedAssignments();
         for (OrderedAssignment orderedAssignment: orderedList) {
-            boolean isCompleted = false;
-            boolean isSelectedAndNotCompleted = orderedAssignment.equals(competition.getCurrentAssignment())
-                    &&  competition.getActiveAssignment().getTimeRemaining()>0;
-
-            for (OrderedAssignment completedAssignment: completedList) {
-                if (completedAssignment.getAssignment().getName().equals(orderedAssignment.getAssignment().getName())) {
-                    isCompleted = true;
-                }
-            }
-
-            String status = "-";
-            if (isSelectedAndNotCompleted ) {
-                status = "CURRENT";
-            } else
-            if (isCompleted) {
-                status = "COMPLETED";
-            }
-
             DtoAssignmentState state = new DtoAssignmentState();
             state.name = orderedAssignment.getAssignment().getName();
-            state.state = status;
+            state.state = toViewStatus(orderedAssignment);
             state.order = orderedAssignment.getOrder();
             result.add(state);
         }
         return result;
+    }
+    private String toViewStatus(OrderedAssignment orderedAssignment) {
+        boolean isCompleted = false;
+        boolean isSelectedAndNotCompleted = orderedAssignment.equals(competition.getCurrentAssignment())
+                &&  competition.getActiveAssignment().getTimeRemaining()>0;
+        List<OrderedAssignment> completedList = competition.getCompetitionState().getCompletedAssignments();
+        for (OrderedAssignment completedAssignment: completedList) {
+            if (completedAssignment.getAssignment().getName().equals(orderedAssignment.getAssignment().getName())) {
+                isCompleted = true;
+            }
+        }
+        String status = "-";
+        if (isSelectedAndNotCompleted ) {
+            status = "CURRENT";
+        } else
+        if (isCompleted) {
+            status = "COMPLETED";
+        }
+        return status;
     }
     public void deleteCurrentSessionResources() {
         String uuid = competition.getCompetitionSession().getUuid().toString();
@@ -283,18 +282,11 @@ public class GamemasterTableComponents {
             }
         }
 
-        private boolean isUserInCompetition(Team team) {
-            boolean result = true;
-            if (team == null|| "ARCHIVE".equals(team.getCompany()) || "DISQUALIFY".equals(team.getCompany())) {
-                result = false;
-            }
-            return result;
-        }
         public String createHtmlTableRows() {
             StringBuilder sb = new StringBuilder();
             for (String name: orderedList) {
                 Team team = teamStore.get(name);
-                if (!isUserInCompetition(team)) {
+                if (!team.isDisabled()) {
                     continue;
                 }
                 sb.append(new TableComponentForTeam(team).createHtml());

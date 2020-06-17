@@ -60,7 +60,7 @@ public class Competition {
         }
         String collectionName = name.split("\\|")[1];
         return assignments.stream()
-                .filter(a -> a.getAssignment().getAssignmentDescriptor().contains(collectionName))
+                .filter(orderedAssignment-> orderedAssignment.getAssignment().getAssignmentDescriptor().contains(collectionName))
                 .collect(Collectors.toList());
     }
 }
