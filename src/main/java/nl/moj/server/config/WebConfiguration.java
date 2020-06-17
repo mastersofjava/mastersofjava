@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
+import org.keycloak.adapters.springsecurity.KeycloakConfiguration;
 import org.keycloak.adapters.springsecurity.KeycloakSecurityComponents;
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
 import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
@@ -75,10 +76,8 @@ public class WebConfiguration {
 		}
 	}
 
-	@EnableWebSecurity
-	@ComponentScan(basePackageClasses = KeycloakSecurityComponents.class)
+	@KeycloakConfiguration
 	@EnableGlobalMethodSecurity(jsr250Enabled = true)
-	@Configuration
 	public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 
 		private TeamDetailsService teamDetailsService;
@@ -87,9 +86,9 @@ public class WebConfiguration {
 			this.teamDetailsService = teamDetailsService;
 		}
 
+		// Submits the KeycloakAuthenticationProvider to the AuthenticationManager
 		@Autowired
 		public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-
 			KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
 			keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
 			auth.authenticationProvider(keycloakAuthenticationProvider);
@@ -105,6 +104,7 @@ public class WebConfiguration {
 		protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
 			return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
 		}
+		
 		private DaoAuthenticationProvider authProvider() {
             DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
             authProvider.setUserDetailsService(teamDetailsService);
