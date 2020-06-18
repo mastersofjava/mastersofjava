@@ -245,6 +245,28 @@ function doViewDeltaSolution(assignmentId,node) {
     var title= node.title.split('-')[0];
     $('#deltaSolution-modal .modal-title').html(title);
     $('#deltaSolution-modal button').attr('title', assignmentId);
-    var code = $(node).find('textarea').val().replace(/</g,'&lt;').replace(/>/g,'&gt;');//small encoding into valid html
-    $('#deltaSolution-modal pre').html(code);
+    var codeTxt = $(node).find('textarea').val().replace(/</g,'&lt;').replace(/>/g,'&gt;');//small encoding into valid html
+
+    $('#deltaSolution-modal pre.code').removeClass('hide').html(codeTxt);
+    var reviewTxt = 'Plaats de review comments in de readme.md bij deze opdracht.';
+    var isWithReview = $(node).find('pre.review').length !== 0;
+    var toggleButton = $('button.reviewButton');
+    var startText = toggleButton.attr('text').split(',')[0];
+    if (isWithReview) {
+        reviewTxt = $(node).find('pre.review').html();
+
+        toggleButton.removeAttr('disabled');
+    } else {
+        toggleButton.attr('disabled', 'disabled').attr('title', reviewTxt);
+    }
+    toggleButton.html(startText);
+    $('#deltaSolution-modal pre.review').addClass('hide').html(reviewTxt);
+}
+function doShowReviewDialog(assignmentId, node) {
+    $('#deltaSolution-modal pre').toggleClass('hide');
+    var toggleButton = $('button.reviewButton');
+    var oldText = toggleButton.html();
+    var toggleValues = toggleButton.attr('text').split(',');
+    var newText = oldText===toggleValues[1]?toggleValues[0]:toggleValues[1];
+    toggleButton.html(newText);
 }

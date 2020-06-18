@@ -23,12 +23,14 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -509,10 +511,22 @@ public class GamemasterTableComponents {
                 AssignmentModel model = new AssignmentModel();
                 model.solutionFile = new File(directory, "assets/" +list.get(0).toFile().getName());
                 model.problemFile = new File(directory, "src/main/java/" +descriptor.getAssignmentFiles().getSources().getEditable().get(0).toFile().getName());
-
+                model.readmeFile = new File(directory, "readme.md");
+                if (!model.readmeFile.exists()) {
+                    model.readmeFile = new File(directory.getParentFile(), directory.getName()+"_readme.md");
+                }
                 sb.append("<tr title=\""+title+"\"  class='cursorPointer' onclick=\"doViewDeltaSolution('"+descriptor.getName()+"',this)\"><td>");
-                sb.append(descriptor.getName()+" <i>"+postfix+"</i></td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td><td>"+selectionBox);
+                sb.append(descriptor.getName()+" <i>"+postfix+"</i></td><td>");
+                sb.append(author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>");
+                sb.append(descriptor.getJavaVersion()+"</td><td>");
+                if (model.readmeFile.exists()) {
+                    sb.append("<b title='Click hier om de gevonden assignment review te bekijken.' >"+descriptor.getDifficulty()+"</b>");
+                    sb.append("<pre class='review hide'>"+model.getContentReadmeFile()+"</pre>");
+                } else {
+                    sb.append(descriptor.getDifficulty());
+                }
 
+                sb.append("</td><td>"+selectionBox);
                 sb.append("<textarea class='hide'>"+model.createDiffString()+"</textarea>");
                 sb.append("</td></tr>");
             }
@@ -582,12 +596,20 @@ public class GamemasterTableComponents {
         private class AssignmentModel {
             private File problemFile;
             private File solutionFile;
-
+            private File readmeFile;
+            private String getContentReadmeFile() {
+                try {
+                    return FileUtils.readFileToString(readmeFile, Charset.defaultCharset());
+                } catch (Exception ex) {
+                    log.error(ex.getMessage(), ex);
+                    return "ERROR during Readme";
+                }
+            }
             private String createDiffString() {
                 StringBuilder html = new StringBuilder();
                 try {
-                    List<String> original = FileUtils.readLines(problemFile, Charset.defaultCharset());
-                    List<String> revised = FileUtils.readLines(solutionFile, Charset.defaultCharset());
+                    List<String> original = getLinesWithoutLicenseInHeader(problemFile);
+                    List<String> revised = getLinesWithoutLicenseInHeader(solutionFile);
                     String label = getProblemFile().getName();
                     for (String line: UnifiedDiffUtils.generateUnifiedDiff(label, label, original, DiffUtils.diff(original, revised), 10)) {
                         html.append(line + "\n");
@@ -597,6 +619,17 @@ public class GamemasterTableComponents {
                     log.error(ex.getMessage(), ex);
                 }
                 return html.toString();
+            }
+
+            private List<String> getLinesWithoutLicenseInHeader(File file) throws IOException {
+                String content = FileUtils.readFileToString(file, Charset.defaultCharset());
+                List<String> result = new ArrayList<>();
+                if (content.indexOf("import ")>0) {
+                    // pre import statements is never needed in diff (avoids license in header).
+                    content = content.substring(content.indexOf("import "));
+                }
+                result.addAll(Arrays.asList(content.split("\n")));
+                return result;
             }
         }
     }

@@ -57,14 +57,8 @@
             <div class="tab-pane fade  adminRole role" id="pills-uitleg" role="tabpanel" aria-labelledby="pills-uitleg-tab" th:if="${isWithAdminRole}">
                 <h6>Belangrijke tips bij het maken van een opdracht:</h6>
                 <br/>
-                <div style="white-space: pre">
-                1. Voeg labels toe. Indien geen labels, dan staan de opdrachten op status 'not-ready'.
-                2. Met labels kun je opdrachten:
-                    - een rating geven op basis van fun, quality en difficulty.
-                    - een category geven.
-                    - een indeling geven van de bonus per individuele test.
-                3. Emoticons en Icons kun je toevoegen via Unicode, zoals deze 🏠 (&#8962 heeft code 8962) of via <i class="fas fa-apple-alt"></i> font-awesome.
-                </div>
+                <div th:replace="fragments/authortips :: authortips"></div>
+                <br/>
             </div>
             <div class="tab-pane fade" id="pills-wedstrijdverloop" role="tabpanel" aria-labelledby="pills-wedstrijdverloop-tab">
                 <h6>De uitslag van elke opdracht [[${selectedYearLabel}]]</h6>
@@ -417,9 +411,10 @@
                 <div >
                 <h5 class="modal-title">Toon oplossing</h5>
                 </div>
-                <div class="minWidth300 text-center">
+                <div class="minWidth300 text-center font10px">
                     <button class="cursorPointer" onclick="doValidateAssignment(this.title, false)">validate start situation</button>
                     <button class="cursorPointer" onclick="doValidateAssignment(this.title, true)">validate solution</button>
+                    <button class="cursorPointer reviewButton toggle" text="review panel,diff panel" onclick="doShowReviewDialog(this.title, this)">review panel</button>
                 </div>
                 <div >
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -428,7 +423,8 @@
                 </div>
             </div>
             <div class="modal-body font10px">
-                <pre>code</pre>
+                <pre class="code"></pre>
+                <pre class="hide review" contenteditable="true"></pre>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Terug</button>
