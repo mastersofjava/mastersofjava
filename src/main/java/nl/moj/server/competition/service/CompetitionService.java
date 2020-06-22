@@ -72,6 +72,7 @@ public class CompetitionService {
 
     private final CompetitionRuntime competitionRuntime;
 
+    // TODO maybe remove this
     public PasswordEncoder getEncoder() {
         return encoder;
     }
@@ -81,6 +82,7 @@ public class CompetitionService {
     }
     public void createNewTeam(SignupForm form, String role) {
         SecurityContext context = SecurityContextHolder.getContext();
+        // TODO MOJ-165 verwijderen
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(form.getName(), form
                 .getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.USER)));
 

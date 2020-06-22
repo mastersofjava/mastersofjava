@@ -99,6 +99,7 @@ public class BootstrapService {
         }
     }
 
+    // TODO maybe remove this
     private void createAdminUser(String username, String password) {
         log.info("Creating administrator.");
         // create a new admin user

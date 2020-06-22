@@ -474,6 +474,7 @@ public class TaskControlController {
         return "redirect:/control";
     }
 
+    // TODO maybe remove this
     @PostMapping("/control/resetPassword")
     public String resetPassword(RedirectAttributes redirectAttributes,
                                 @ModelAttribute("newPasswordRequest") NewPasswordRequest passwordChangeRequest) {

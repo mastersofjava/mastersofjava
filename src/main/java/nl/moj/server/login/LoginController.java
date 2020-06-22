@@ -61,7 +61,7 @@ public class LoginController {
             return "redirect:/logout";
         }
 
-        if (StringUtils.isBlank(form.getName()) || StringUtils.isBlank(form.getPassword()) || StringUtils.isBlank(form.getPasswordCheck())) {
+        if (StringUtils.isBlank(form.getName())) {
             model.addAttribute("errors", "Not all fields are filled in");
             return "register";
         }
@@ -71,10 +71,6 @@ public class LoginController {
         }
         if (teamRepository.findByName(form.getName()) != null) {
             model.addAttribute("errors", "Name already in use");
-            return "register";
-        }
-        if (!form.getPasswordCheck().equals(form.getPassword())) {
-            model.addAttribute("errors", "Passwords don't match");
             return "register";
         }
         String role = Role.USER;

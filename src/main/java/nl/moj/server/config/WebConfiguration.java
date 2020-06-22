@@ -104,19 +104,7 @@ public class WebConfiguration {
 		protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
 			return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
 		}
-		
-		private DaoAuthenticationProvider authProvider() {
-            DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-            authProvider.setUserDetailsService(teamDetailsService);
-            authProvider.setPasswordEncoder(passwordEncoder());
-            return authProvider;
-        }
-
-        @Override
-        protected void configure(AuthenticationManagerBuilder auth) {
-            auth.authenticationProvider(authProvider());
-        }
-        
+		     
 		@Bean
 		public PasswordEncoder passwordEncoder() {
 			return new BCryptPasswordEncoder();
@@ -124,13 +112,13 @@ public class WebConfiguration {
 
 		@Override
 		protected void configure(HttpSecurity http) throws Exception {
+			super.configure(http);
 			http.authorizeRequests()
-					.antMatchers("/login", "/register", "/feedback", "/bootstrap").permitAll() // always access
+					.antMatchers("/register", "/feedback", "/bootstrap").authenticated() // always access
 					.antMatchers("/").hasAnyAuthority(Role.USER, Role.ADMIN, Role.GAME_MASTER) // only when registrated
 					.antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
-
-					.and().formLogin().successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login")
-					.and().logout().and().headers().frameOptions().disable().and().csrf().disable();
+					.anyRequest().permitAll()
+					.and().formLogin().successHandler(new CustomAuthenticationSuccessHandler());
 		}
 
 		private class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {

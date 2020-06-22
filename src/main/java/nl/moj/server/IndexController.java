@@ -60,7 +60,10 @@ public class IndexController {
     private AssignmentRepository assignmentRepository;
 
     @GetMapping("/")
-    public String index(Model model, @AuthenticationPrincipal Principal user) {
+    public String index(Model model, Principal user, HttpServletRequest request) {
+    	if (user==null) {
+    		return "login";
+    	}
         if (competition.getCurrentAssignment() == null) {
             model.addAttribute("team", user.getName());
             return "index";
