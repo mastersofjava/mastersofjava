@@ -27,6 +27,8 @@ import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.service.CompetitionService;
+import nl.moj.server.login.SignupForm;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.JavaAssignmentFileResolver;
 import nl.moj.server.runtime.model.ActiveAssignment;
@@ -58,11 +60,20 @@ public class IndexController {
     private TeamService teamService;
     private AssignmentStatusRepository assignmentStatusRepository;
     private AssignmentRepository assignmentRepository;
+    private CompetitionService competitionService;
 
     @GetMapping("/")
     public String index(Model model, Principal user, HttpServletRequest request) {
+    	// TODO refactor into methods
     	if (user==null) {
     		return "login";
+    	}
+    	if (user != null && teamRepository.findByName(user.getName()) == null) {
+    		SignupForm form = new SignupForm();
+    		form.setCompany("None");
+    		form.setCountry("NL");
+    		form.setName(user.getName());
+    		competitionService.createNewTeam(form, Role.USER);
     	}
         if (competition.getCurrentAssignment() == null) {
             model.addAttribute("team", user.getName());

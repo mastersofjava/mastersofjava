@@ -77,6 +77,7 @@ public class CompetitionService {
         return encoder;
     }
 
+    @Deprecated
     public void createNewTeam(SignupForm form) {
         createNewTeam(form, Role.USER);
     }
