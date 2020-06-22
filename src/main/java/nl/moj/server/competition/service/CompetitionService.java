@@ -90,7 +90,7 @@ public class CompetitionService {
                 .company(form.getCompany())
                 .country(form.getCountry())
                 .name(form.getName())
-                .password(encoder.encode(form.getPassword()))
+//                .password(encoder.encode(form.getPassword()))
                 .role(role)
                 .uuid(UUID.randomUUID())
                 .build();

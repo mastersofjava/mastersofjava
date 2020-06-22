@@ -44,10 +44,12 @@ public class Team {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
+    @Deprecated
     @Column(name = "password")
     @JsonIgnore
     private String password;
 
+    @Deprecated
     @Column(name = "role")
     private String role;
 

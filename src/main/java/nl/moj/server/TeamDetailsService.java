@@ -46,6 +46,7 @@ public class TeamDetailsService implements UserDetailsService {
     private final MojServerProperties mojServerProperties;
     private final TeamRepository teamRepository;
 
+    @Deprecated
     @Override
     public UserDetails loadUserByUsername(String teamname) throws UsernameNotFoundException {
         Team team = teamRepository.findByName(teamname);
