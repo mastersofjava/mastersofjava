@@ -85,7 +85,7 @@ public abstract class BaseRuntimeTest {
     @Before
     public void init() throws Exception {
         try {
-            bootstrapService.bootstrap("admin", "admin");
+            bootstrapService.bootstrap("admin");
             dbUtil.cleanup();
             competition = createCompetition();
             competitionRuntime.startSession(competition);

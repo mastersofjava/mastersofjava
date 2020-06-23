@@ -49,7 +49,6 @@ public class Team {
     @JsonIgnore
     private String password;
 
-    @Deprecated
     @Column(name = "role")
     private String role;
 

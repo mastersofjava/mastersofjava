@@ -114,9 +114,9 @@ public class WebConfiguration {
 		protected void configure(HttpSecurity http) throws Exception {
 			super.configure(http);
 			http.authorizeRequests()
-					.antMatchers("/feedback", "/bootstrap").authenticated() // always access
+					.antMatchers("/feedback").authenticated() // always access
 					.antMatchers("/").hasAnyAuthority(Role.USER, Role.ADMIN, Role.GAME_MASTER) // only when registrated
-					.antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
+					.antMatchers("/control", "/bootstrap").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
 					.anyRequest().permitAll()
 					.and().formLogin().successHandler(new CustomAuthenticationSuccessHandler());
 		}

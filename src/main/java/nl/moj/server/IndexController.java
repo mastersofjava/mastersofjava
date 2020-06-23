@@ -68,7 +68,7 @@ public class IndexController {
     	if (user==null) {
     		return "login";
     	}
-    	if (user != null && teamRepository.findByName(user.getName()) == null) {
+    	if (user != null && !user.getName().equals("admin") && teamRepository.findByName(user.getName()) == null) {
     		SignupForm form = new SignupForm();
     		form.setCompany("None");
     		form.setCountry("NL");

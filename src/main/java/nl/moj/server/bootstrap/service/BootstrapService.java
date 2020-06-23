@@ -64,9 +64,9 @@ public class BootstrapService {
         return !adminExists() || !dataValid();
     }
 
-    public void bootstrap(String adminUser, String adminPassword) throws IOException {
+    public void bootstrap(String adminUser) throws IOException {
         updateData();
-        createAdminUser(adminUser, adminPassword);
+        createAdminUser(adminUser);
     }
 
     private void updateData() throws IOException {
@@ -100,7 +100,7 @@ public class BootstrapService {
     }
 
     // TODO maybe remove this
-    private void createAdminUser(String username, String password) {
+    private void createAdminUser(String username) {
         log.info("Creating administrator.");
         // create a new admin user
         List<Team> admins = teamRepository.findAllByRole(Role.ADMIN);
@@ -113,7 +113,6 @@ public class BootstrapService {
                 .uuid(UUID.randomUUID())
                 .country("NL")
                 .role(Role.ADMIN)
-                .password(passwordEncoder.encode(password))
                 .build();
 
         teamRepository.save(admin);

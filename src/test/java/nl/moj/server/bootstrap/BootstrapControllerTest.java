@@ -84,7 +84,7 @@ public class BootstrapControllerTest {
     @Test
     public void shouldRedirectToFailOnBootstrapFailure() throws Exception {
         when(bootstrapService.isBootstrapNeeded()).thenReturn(true);
-        doAnswer( i -> { throw new IOException(); } ).when(bootstrapService).bootstrap(any(),any());
+        doAnswer( i -> { throw new IOException(); } ).when(bootstrapService).bootstrap(any());
 
         mockMvc.perform(MockMvcRequestBuilders.post("/bootstrap")
                 .param("username", "admin")
