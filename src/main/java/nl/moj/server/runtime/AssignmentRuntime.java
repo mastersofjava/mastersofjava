@@ -269,6 +269,7 @@ public class AssignmentRuntime {
 
     private AssignmentStatus initAssignmentStatus(Team team) {
         Duration assignmentDuration = assignmentDescriptor.getDuration();
+
         AssignmentStatus as = AssignmentStatus.builder()
                 .assignment(assignment)
                 .competitionSession(competitionSession)

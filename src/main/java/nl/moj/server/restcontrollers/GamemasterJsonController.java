@@ -7,6 +7,7 @@ import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.teams.model.Role;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -28,6 +29,8 @@ public class GamemasterJsonController {
 
     private final GamemasterTableComponents gamemasterTableComponents;
 
+    private final SessionRegistry sessionRegistry;
+
     @GetMapping(value = "/getGameMasterState", produces = MediaType.APPLICATION_JSON_VALUE)
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     public @ResponseBody
@@ -45,6 +48,8 @@ public class GamemasterJsonController {
             response.put("currentAssignment", activeAssignment.getAssignment());
             response.put("assignmentMetadata", activeAssignment.getAssignmentDescriptor());
         }
+        response.put("principals", sessionRegistry.getAllPrincipals());
+
         return response;
     }
 

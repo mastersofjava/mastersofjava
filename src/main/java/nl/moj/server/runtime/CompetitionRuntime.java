@@ -16,6 +16,8 @@
 */
 package nl.moj.server.runtime;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -78,20 +80,25 @@ public class CompetitionRuntime {
                 })
                 .collect(Collectors.toList());
     }
-    public void loadSession(Competition competition, UUID session) {
-        log.info("Loading session {} for competition {}", session, competition.getName());
-        this.competition = competition;
+    public void loadSession(UUID session) {
         this.competitionSession = competitionSessionRepository.findByUuid(session);
+        this.competition = competitionSession.getCompetition();
+        log.info("Loading session {} for competition {}", session, competition.getName());
+
         restoreSession();
     }
 
     private void restoreSession() {
         stopCurrentAssignment();
         this.completedAssignments = new ArrayList<>();
-
+        Instant nowTime = Instant.now();
+        int hour = nowTime.atZone(ZoneOffset.UTC).getHour();
+        Instant maxTime = nowTime.atZone(ZoneOffset.UTC).withHour(hour-1).toInstant();
         // get the completed assignment uuids
         List<UUID> completedAssignmentList = assignmentResultRepository.findByCompetitionSession(competitionSession).stream()
-                .filter(ar -> ar.getAssignmentStatus().getDateTimeEnd() != null)
+                .filter(ar ->
+                    ar.isAssignmentEnded(maxTime)
+                )
                 .map(ar -> ar.getAssignmentStatus().getAssignment().getUuid())
                 .distinct().collect(Collectors.toList());
 
@@ -212,7 +219,7 @@ public class CompetitionRuntime {
         if (session == null) {
             startSession(competition);
         } else {
-            loadSession(competition, session.getUuid());
+            loadSession(session.getUuid());
         }
     }
 }

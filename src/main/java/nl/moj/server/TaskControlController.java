@@ -346,9 +346,9 @@ public class TaskControlController {
                 .stream()
                 .map(competitionService.createOrderedAssignments(startCompetition))
                 .collect(Collectors.toList()));
-        startCompetition= competitionRepository.save(startCompetition);
+        competitionRepository.save(startCompetition);
 
-        competition.loadSession(startCompetition, competition.getCompetitionSession().getUuid());
+        competition.loadSession(competition.getCompetitionSession().getUuid());
     }
 
     private class AdminPageStatus {
@@ -426,7 +426,7 @@ public class TaskControlController {
                 model.addAttribute("repositoryLocation", competitionService.getSelectedLocation());
                 model.addAttribute("selectedYearLabel", this.selectedYearLabel);
             }
-            List<CompetitionSession> sessions = competition.getSessions();
+            List<CompetitionSession> sessions = competitionSessionRepository.findAll();
 
             model.addAttribute("sessions", sessions);
             model.addAttribute("setting_registration_disabled", competitionService.isRegistrationFormDisabled());
@@ -455,7 +455,7 @@ public class TaskControlController {
 
     @PostMapping("/control/select-session")
     public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
-        competition.loadSession(competition.getCompetition(), ssf.getSession());
+        competition.loadSession(ssf.getSession());
         return "redirect:/control";
     }
 

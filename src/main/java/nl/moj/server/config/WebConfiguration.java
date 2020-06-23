@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.TeamDetailsService;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.teams.model.Role;
+import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -39,9 +40,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -66,16 +70,21 @@ public class WebConfiguration {
                     .addResourceLocations(path.toAbsolutePath().toUri().toString());
         }
     }
-
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
     @EnableWebSecurity
     @EnableGlobalMethodSecurity(jsr250Enabled = true)
     @Configuration
     public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
         private TeamDetailsService teamDetailsService;
+        private SessionRegistry sessionRegistry;
 
-        public SecurityConfig(TeamDetailsService teamDetailsService) {
+        public SecurityConfig(TeamDetailsService teamDetailsService,SessionRegistry sessionRegistry) {
             this.teamDetailsService = teamDetailsService;
+            this.sessionRegistry = sessionRegistry;
         }
 
         @Bean
@@ -89,6 +98,13 @@ public class WebConfiguration {
             authProvider.setPasswordEncoder(passwordEncoder());
             return authProvider;
         }
+
+        @Bean
+        public ServletListenerRegistrationBean<HttpSessionEventPublisher> httpSessionEventPublisher() {
+            return new ServletListenerRegistrationBean<HttpSessionEventPublisher>(new HttpSessionEventPublisher());
+        }
+
+
 
         @Override
         protected void configure(AuthenticationManagerBuilder auth) {
@@ -104,6 +120,8 @@ public class WebConfiguration {
 
                     .and().formLogin().successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login")
                     .and().logout().and().headers().frameOptions().disable().and().csrf().disable();
+
+            http.sessionManagement().maximumSessions(1).sessionRegistry(sessionRegistry);
         }
 
         private class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {

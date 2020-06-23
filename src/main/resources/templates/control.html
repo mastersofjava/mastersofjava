@@ -132,12 +132,11 @@
                 <h6>Het beheren van sessies</h6><br/>
 
                 <div class="row">
-
-                        <div class="p-2 col-9" th:if="${sessions.size()>1}">
+                        <div class="p-2 col-9 hide" th:if="${sessions.size()>1}">
                             <form class="form" method="post" th:action="@{/control/select-session}" th:object="${selectSessionForm}">
                                 <div >
                                     <label for="sessions" class="inlineBlock">Speelbare sessies: </label>
-                                    <select class="form-control inlineBlock maxWidth300 font10px" id="sessions" onchange="$('#loadSession').removeClass('hide')" th:field="*{session}">
+                                    <select class="form-control inlineBlock maxWidth300 font10px" id="sessions" onchange="$(this).closest('form').submit()" th:field="*{session}">
                                         <option th:each="s : ${sessions}" th:value="${s.uuid}" th:text="${'Session '+(sStat.index +1)+ ' (' + s.getCompetition().getName()+ ')'}">
                                         </option>
                                     </select>
@@ -151,6 +150,7 @@
                     </div>
                 </div>
                 <div class="p-2 col-12">
+                    <i>NB: slechts 1 actieve sessie tegelijkertijd, verander hieronder eventueel van actieve sessie: </i><br/>
                     <div th:remove="tag" th:utext="${sessionDetailCanvas}"></div>
                 </div>
         </div>

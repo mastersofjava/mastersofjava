@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.descriptor.AssignmentFiles;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
@@ -45,7 +47,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class GamemasterTableComponents {
-    private final CompetitionRuntime competition;
+    private final CompetitionRuntime competitionRuntime;
 
     private final MojServerProperties mojServerProperties;
 
@@ -54,11 +56,15 @@ public class GamemasterTableComponents {
     private final CompetitionSessionRepository competitionSessionRepository;
 
     private final AssignmentStatusRepository assignmentStatusRepository;
+
+    private final AssignmentService assignmentService;
     @JsonSerialize
     public static class DtoAssignmentState implements Serializable {
         private long order;
         private String name;
         private String state;
+        private Assignment assignment;
+        private AssignmentDescriptor assignmentDescriptor;
 
         public long getOrder() {
             return order;
@@ -74,7 +80,7 @@ public class GamemasterTableComponents {
     }
 
     public List<DtoAssignmentState> createAssignmentStatusMap() {
-        List<OrderedAssignment> orderedList = competition.getCompetition().getAssignmentsInOrder();
+        List<OrderedAssignment> orderedList = competitionRuntime.getCompetition().getAssignmentsInOrder();
         if (orderedList.isEmpty()) {
             return Collections.emptyList();
         }
@@ -85,15 +91,17 @@ public class GamemasterTableComponents {
             state.name = orderedAssignment.getAssignment().getName();
             state.state = toViewStatus(orderedAssignment);
             state.order = orderedAssignment.getOrder();
+            state.assignment = orderedAssignment.getAssignment();
+            state.assignmentDescriptor = assignmentService.getAssignmentDescriptor(orderedAssignment.getAssignment());
             result.add(state);
         }
         return result;
     }
     private String toViewStatus(OrderedAssignment orderedAssignment) {
         boolean isCompleted = false;
-        boolean isSelectedAndNotCompleted = orderedAssignment.equals(competition.getCurrentAssignment())
-                &&  competition.getActiveAssignment().getTimeRemaining()>0;
-        List<OrderedAssignment> completedList = competition.getCompetitionState().getCompletedAssignments();
+        boolean isSelectedAndNotCompleted = orderedAssignment.equals(competitionRuntime.getCurrentAssignment())
+                &&  competitionRuntime.getActiveAssignment().getTimeRemaining()>0;
+        List<OrderedAssignment> completedList = competitionRuntime.getCompetitionState().getCompletedAssignments();
         for (OrderedAssignment completedAssignment: completedList) {
             if (completedAssignment.getAssignment().getName().equals(orderedAssignment.getAssignment().getName())) {
                 isCompleted = true;
@@ -109,7 +117,7 @@ public class GamemasterTableComponents {
         return status;
     }
     public void deleteCurrentSessionResources() {
-        String uuid = competition.getCompetitionSession().getUuid().toString();
+        String uuid = competitionRuntime.getCompetitionSession().getUuid().toString();
         File rootFile = new File(mojServerProperties.getDirectories().getBaseDirectory().toFile(), "sessions\\"+uuid+"\\teams");
         try {
             File directory = mojServerProperties.getDirectories().getBaseDirectory().toFile();
@@ -130,13 +138,17 @@ public class GamemasterTableComponents {
         }
     }
     public String toSimpleBootstrapTableForSessions() {
-        return new BootstrapTableForSessions().createHtml();
+        return new BootstrapTableForAllCompetitions().createHtml();
     }
-    public class BootstrapTableForSessions {
-        String selectedSession = competition.getCompetitionSession().getUuid().toString();
-        String selectedCompetition = competition.getCompetition().getName();
-        int competitionCounter = 1;
-        List<Competition> competitionList = competitionRepository.findAll();
+    public class BootstrapTableForAllCompetitions {
+        private final String selectedSession = competitionRuntime.getCompetitionSession().getUuid().toString();
+        private final String selectedCompetitionName = competitionRuntime.getCompetition().getName();
+        private final String defaultCollectionName = mojServerProperties.getAssignmentRepo().toFile().getName();;
+        private int competitionCounter = 1;
+        private final List<Competition> competitionList = competitionRepository.findAll();
+        private final String actionsAdd = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#createNewSessionForm').submit()\">toevoegen sessie</button>";
+        private final String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
+
         public String createHtmlFooterRow() {
             StringBuilder html = new StringBuilder();
             html.append("<tr><th colspan=4></th><th><button class='btn btn-secondary' data-toggle='modal' data-target='#createNewCompetition-modal'>Nieuwe competitie</button></th></tr>");
@@ -147,34 +159,58 @@ public class GamemasterTableComponents {
             html.append("<tr><th></th><th>Competities</th><th></th><th>Aantal sessies</th><th>Acties</th></tr>");
             return html.toString();
         }
-        public String createHtmlTableBody() {
-            StringBuilder html = new StringBuilder();
-            for (Competition competition:competitionList) {
-                List<CompetitionSession> sessionList = competitionSessionRepository.findByCompetition(competition);
+        public class BootstrapTableForCompetition {
+            private final Competition competition;
+            private final List<CompetitionSession> sessionList;
+            private final boolean isSelectedCompetition;
+            public BootstrapTableForCompetition(Competition competition, List<CompetitionSession> sessionList) {
+                this.competition = competition;
+                this.sessionList = sessionList;
+                isSelectedCompetition = competition.getName().equals(selectedCompetitionName);
+            }
+
+            public String createHtml() {
+                StringBuilder html = new StringBuilder();
                 String[] parts = competition.getName().split("\\|");
                 String name = parts[0];
-                String collection = mojServerProperties.getAssignmentRepo().toFile().getName();
+                String collection = defaultCollectionName;
                 if (parts.length>=2) {
                     collection = parts[1];
                 }
-                String actionsAdd = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#createNewSessionForm').submit()\">toevoegen sessie</button>";
-                String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
-                String styleCompetition = competition.getName().equals(selectedCompetition) ? " italic " :"";
-                html.append("<tbody title='sessiepanel van competitie "+competition.getId()+"' ><tr class='"+ styleCompetition+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;"+competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td >"+actionsAdd+"</td><td>"+actionsDelete+"</td></tr>");
+
+                String styleCompetitionText = isSelectedCompetition ? " italic underline selected " :"";
+                String styleCompetitionContent = isSelectedCompetition ? "" :" hide ";
+
+                html.append("<tbody title='sessiepanel van competitie "+competitionCounter+"' ><tr class='");
+                html.append(styleCompetitionText+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;");
+                html.append(competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td >");
+                html.append(actionsAdd+"</td><td>"+actionsDelete+"</td></tr>");
 
                 int sessionCounter = 1;
 
                 for (CompetitionSession session: sessionList) {
-                    String styleCompetitionSession = selectedSession.equals(session.getUuid().toString())?" bold ":"";
-                    String status = "-";
-                    if (sessionCounter==sessionList.size()) {
-                        status = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"confirm('start sessie')\">start</button>";
+                    boolean isSelectedSession = selectedSession.equals(session.getUuid().toString());
+                    String styleCompetitionSession = isSelectedSession?" bold ":"";
+                    String sessionIndicator = isSelectedSession? " (actief) " :"";
+
+                    String status = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#sessions').val('"+session.getUuid().toString()+"').change()\">activeer sessie</button>";;
+                    if (selectedSession.equals(session.getUuid().toString())) {
+                        status = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#pills-wedstrijdverloop-tab').click()\">bekijk status</button>";
                     }
-                    html.append("<tr class='"+styleCompetitionSession+" subrows hide'><td colspan=2></td><td>- Sessie "+sessionCounter+"</td><td>"+status+"</td><td></td></tr>");
+                    html.append("<tr class='"+styleCompetitionSession+" subrows "+styleCompetitionContent+"'><td colspan=2></td><td>- Sessie "+sessionCounter+sessionIndicator+"</td><td>"+status+"</td><td></td></tr>");
                     sessionCounter ++;
                 }
                 html.append("</tbody>");
+                return html.toString();
+            }
+        }
 
+        public String createHtmlTableBody() {
+            StringBuilder html = new StringBuilder();
+            for (Competition competition:competitionList) {
+                List<CompetitionSession> sessionList = competitionSessionRepository.findByCompetition(competition);
+                BootstrapTableForCompetition tableForCompetition = new BootstrapTableForCompetition(competition, sessionList);
+                html.append(tableForCompetition.createHtml());
                 competitionCounter++;
             }
             return html.toString();
@@ -218,7 +254,7 @@ public class GamemasterTableComponents {
             }
         }
         private void registerTeamWorkspaces() {
-            String uuid = competition.getCompetitionSession().getUuid().toString();
+            String uuid = competitionRuntime.getCompetitionSession().getUuid().toString();
 
             rootFile = new File(mojServerProperties.getDirectories().getBaseDirectory().toFile(), "sessions\\"+uuid+"\\teams");
             if (rootFile.exists()) {
@@ -329,15 +365,15 @@ public class GamemasterTableComponents {
         if (list.isEmpty()) {
             return "";
         }
+
         sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Opdracht</th><th>Status</th><th>Starttijd</th><th>Highscore</th></tr></thead>");
 
-        List<String[]> highscoreList = assignmentStatusRepository.getHighscoreList();
+        List<String[]> highscoreList = assignmentStatusRepository.getHighscoreListForCompetitionSession(competitionRuntime.getCompetitionSession().getId());
         Map<String, String[]> highscoreMap = new LinkedHashMap<>();
 
         for (String[] item : highscoreList) {
             highscoreMap.put(item[0],item);
         }
-
         int counter = 1;
         for (DtoAssignmentState orderedAssignment: list) {
             boolean isStateCurrent = orderedAssignment.state.contains("CURRENT");
@@ -354,7 +390,8 @@ public class GamemasterTableComponents {
                 viewScore = highscoreMap.get(orderedAssignment.name)[2];
             }
 
-            sb.append("<tr><td>"+viewOrder+"</td><td>"+viewName+"</td><td>"+viewState + "</td><td>"+viewTime+"</td><td>"+viewScore+"</td></tr>");
+            String title = "duration "  + orderedAssignment.assignmentDescriptor.getDuration().toSeconds()/60*1000;
+            sb.append("<tr title='"+title+"' ><td>"+viewOrder+"</td><td>"+viewName+"</td><td>"+viewState + "</td><td>"+viewTime+"</td><td>"+viewScore+"</td></tr>");
             counter++;
         }
         sb.append("</table>");

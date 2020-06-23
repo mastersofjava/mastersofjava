@@ -151,7 +151,9 @@ select.disabled {
     display: block;
     overflow-x: hidden;
 }
-
+.underline {
+    text-decoration: underline;
+}
 .selected .fa-angle-double-right:before {
     content: "\f103";
 }
@@ -163,4 +165,7 @@ select.disabled {
 }
 input[file] {
     color:black;
+}
+.pre_wrap {
+    white-space: pre-wrap;
 }
