@@ -597,10 +597,7 @@ public class GamemasterTableComponents {
                 AssignmentModel model = new AssignmentModel();
                 model.solutionFile = new File(directory, "assets/" +list.get(0).toFile().getName());
                 model.problemFile = new File(directory, "src/main/java/" +descriptor.getAssignmentFiles().getSources().getEditable().get(0).toFile().getName());
-                model.readmeFile = new File(directory, "readme.md");
-                if (!model.readmeFile.exists()) {
-                    model.readmeFile = new File(directory.getParentFile(), directory.getName()+"_readme.md");
-                }
+                model.readmeFile = new File(directory, "README.md");
                 sb.append("<tr title=\""+title+"\"  class='cursorPointer' onclick=\"doViewDeltaSolution('"+descriptor.getName()+"',this)\"><td>");
                 sb.append(descriptor.getName()+" <i>"+postfix+"</i></td><td>");
                 sb.append(author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>");
