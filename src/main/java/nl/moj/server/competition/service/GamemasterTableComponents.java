@@ -39,6 +39,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * the html creation will be moved towards the angular client in the future.
@@ -143,18 +144,35 @@ public class GamemasterTableComponents {
     public class BootstrapTableForAllCompetitions {
         private final String selectedSession = competitionRuntime.getCompetitionSession().getUuid().toString();
         private final String selectedCompetitionName = competitionRuntime.getCompetition().getName();
-        private final String defaultCollectionName = mojServerProperties.getAssignmentRepo().toFile().getName();;
+        private final String defaultCollectionName = mojServerProperties.getAssignmentRepo().toFile().getName();
         private int competitionCounter = 1;
         private final List<Competition> competitionList = competitionRepository.findAll();
         private final String actionsAdd = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#createNewSessionForm').submit()\">toevoegen sessie</button>";
         private final String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
+        private Map<Long, Integer> sessionAssignmentAmount = new TreeMap<>();
 
-        public String createHtmlFooterRow() {
+        public BootstrapTableForAllCompetitions() {
+            List<String[]> highscoreList = assignmentStatusRepository.getHighscoreList();
+
+            for (String[] item : highscoreList) {
+                HighscoreDataWrapper result = new HighscoreDataWrapper(item);
+                Long sessionId = result.getSessionId();
+                int count = sessionAssignmentAmount.getOrDefault(sessionId,0)+1;
+                sessionAssignmentAmount.put(sessionId,count);
+            }
+        }
+        private boolean isSessionUsed(Long sessionId) {
+            return sessionAssignmentAmount.getOrDefault(sessionId,0)!=0;
+        }
+        private int computeAmountOfAssignmentsDone(Long sessionId) {
+            return 0;
+        }
+        private String createHtmlFooterRow() {
             StringBuilder html = new StringBuilder();
             html.append("<tr><th colspan=4></th><th><button class='btn btn-secondary' data-toggle='modal' data-target='#createNewCompetition-modal'>Nieuwe competitie</button></th></tr>");
             return html.toString();
         }
-        public String createHtmlHeaderRow() {
+        private String createHtmlHeaderRow() {
             StringBuilder html = new StringBuilder();
             html.append("<tr><th></th><th>Competities</th><th></th><th>Aantal sessies</th><th>Acties</th></tr>");
             return html.toString();
@@ -181,7 +199,7 @@ public class GamemasterTableComponents {
                 String styleCompetitionText = isSelectedCompetition ? " italic underline selected " :"";
                 String styleCompetitionContent = isSelectedCompetition ? "" :" hide ";
 
-                html.append("<tbody title='sessiepanel van competitie "+competitionCounter+"' ><tr class='");
+                html.append("<tbody title='sessiepanel van competitie "+competitionCounter + " " +sessionAssignmentAmount +"' ><tr class='");
                 html.append(styleCompetitionText+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;");
                 html.append(competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td >");
                 html.append(actionsAdd+"</td><td>"+actionsDelete+"</td></tr>");
@@ -193,11 +211,20 @@ public class GamemasterTableComponents {
                     String styleCompetitionSession = isSelectedSession?" bold ":"";
                     String sessionIndicator = isSelectedSession? " (actief) " :"";
 
-                    String status = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#sessions').val('"+session.getUuid().toString()+"').change()\">activeer sessie</button>";;
-                    if (selectedSession.equals(session.getUuid().toString())) {
-                        status = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#pills-wedstrijdverloop-tab').click()\">bekijk status</button>";
+                    String statusButton = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#sessions').val('"+session.getUuid().toString()+"').change()\">activeer sessie</button>";;
+                    if (isSelectedSession) {
+                        statusButton = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#pills-wedstrijdverloop-tab').click()\">bekijk status</button>";
                     }
-                    html.append("<tr class='"+styleCompetitionSession+" subrows "+styleCompetitionContent+"'><td colspan=2></td><td>- Sessie "+sessionCounter+sessionIndicator+"</td><td>"+status+"</td><td></td></tr>");
+                    String competitieSessieStatus = "(nog ongebruikt)";
+                    if (isSessionUsed(session.getId())) {
+                        int amount = computeAmountOfAssignmentsDone(session.getId());
+                        competitieSessieStatus = "";
+                        if (amount!=0) {
+                            competitieSessieStatus = " reeds " + amount+ " opdrachten gedaan.";
+                        }
+                    }
+
+                    html.append("<tr class='"+styleCompetitionSession+" subrows "+styleCompetitionContent+"'><td colspan=2></td><td>- Sessie "+sessionCounter+sessionIndicator+"</td><td>"+statusButton+"</td><td>"+competitieSessieStatus+"</td></tr>");
                     sessionCounter ++;
                 }
                 html.append("</tbody>");
@@ -205,7 +232,7 @@ public class GamemasterTableComponents {
             }
         }
 
-        public String createHtmlTableBody() {
+        private String createHtmlTableBody() {
             StringBuilder html = new StringBuilder();
             for (Competition competition:competitionList) {
                 List<CompetitionSession> sessionList = competitionSessionRepository.findByCompetition(competition);
@@ -215,7 +242,7 @@ public class GamemasterTableComponents {
             }
             return html.toString();
         }
-        public String createHtml() {
+        private String createHtml() {
             StringBuilder html = new StringBuilder();
             html.append("<table class='roundGrayBorder table sessionTable' ><thead>"+createHtmlHeaderRow()+"</thead>"+createHtmlTableBody());
             html.append("<tfoot>" +createHtmlFooterRow());
@@ -359,6 +386,28 @@ public class GamemasterTableComponents {
         return new BootstrapTableForTeams(teams, isShowAllUsers, rankings).createHtml();
     }
 
+    private class HighscoreDataWrapper {
+        private final String[] data;
+        public HighscoreDataWrapper(String[] data) {
+            this.data = data;
+        }
+        private String getAssignmentName() {
+            return data[0];
+        }
+        private String getFinalScore() {
+            return data[2];
+        }
+        private String getStartTime() {
+            return data[3].split("\\.")[0];
+        }
+        private Long getSessionId() {
+            return Long.parseLong(data[4]);
+        }
+        private Long getDurationInMilisecondsFromDb() {
+            return Long.parseLong(data[5])/(1000*1000);
+        }
+    }
+
     public String toSimpleBootstrapTableForAssignmentStatus() {
         StringBuilder sb = new StringBuilder();
         List<DtoAssignmentState> list = createAssignmentStatusMap();
@@ -369,10 +418,11 @@ public class GamemasterTableComponents {
         sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Opdracht</th><th>Status</th><th>Starttijd</th><th>Highscore</th></tr></thead>");
 
         List<String[]> highscoreList = assignmentStatusRepository.getHighscoreListForCompetitionSession(competitionRuntime.getCompetitionSession().getId());
-        Map<String, String[]> highscoreMap = new LinkedHashMap<>();
+        Map<String, HighscoreDataWrapper> highscoreMap = new LinkedHashMap<>();
 
-        for (String[] item : highscoreList) {
-            highscoreMap.put(item[0],item);
+        for (String[] dbItem : highscoreList) {
+            HighscoreDataWrapper item = new HighscoreDataWrapper(dbItem);
+            highscoreMap.put(item.getAssignmentName(),item);
         }
         int counter = 1;
         for (DtoAssignmentState orderedAssignment: list) {
@@ -384,13 +434,12 @@ public class GamemasterTableComponents {
             String viewName = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"' title='view assignment'>"+orderedAssignment.name+"</a>";
             String viewOrder = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"&solution' title='view solution'>"+counter+"</a>";
             String viewTime = "";
-            String viewScore = "0";
+            String viewScore = "";
             if (highscoreMap.containsKey(orderedAssignment.name)) {
-                viewTime = highscoreMap.get(orderedAssignment.name)[3].split("\\.")[0];
-                viewScore = highscoreMap.get(orderedAssignment.name)[2];
+                viewTime = highscoreMap.get(orderedAssignment.name).getStartTime();
+                viewScore = highscoreMap.get(orderedAssignment.name).getFinalScore();
             }
-
-            String title = "duration "  + orderedAssignment.assignmentDescriptor.getDuration().toSeconds()/60*1000;
+            String title = "duration "  + orderedAssignment.assignmentDescriptor.getDuration().toMinutes();
             sb.append("<tr title='"+title+"' ><td>"+viewOrder+"</td><td>"+viewName+"</td><td>"+viewState + "</td><td>"+viewTime+"</td><td>"+viewScore+"</td></tr>");
             counter++;
         }

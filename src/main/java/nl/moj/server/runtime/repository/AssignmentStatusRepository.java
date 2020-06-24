@@ -35,9 +35,9 @@ public interface AssignmentStatusRepository extends JpaRepository<AssignmentStat
 
     List<AssignmentStatus> findByCompetitionSessionAndTeam(CompetitionSession competitionSession, Team team);
 
-    @Query(value = "select NAME,ASSIGNMENT_ID, max(FINAL_SCORE),min(DATE_TIME_START) from ASSIGNMENT_RESULTS a_r ,ASSIGNMENT_STATUSES a_s,ASSIGNMENTS a where a_s.ID=a_r.ASSIGNMENT_STATUS_ID and a.ID=a_s.ASSIGNMENT_ID group by a.ID", nativeQuery = true)
+    @Query(value = "select NAME,ASSIGNMENT_ID, max(FINAL_SCORE),min(DATE_TIME_START),a_s.COMPETITION_SESSION_ID from ASSIGNMENT_RESULTS a_r ,ASSIGNMENT_STATUSES a_s,ASSIGNMENTS a where a_s.ID=a_r.ASSIGNMENT_STATUS_ID and a.ID=a_s.ASSIGNMENT_ID group by a.ID,a_s.COMPETITION_SESSION_ID", nativeQuery = true)
     List<String[]> getHighscoreList();
 
-    @Query(value = "select NAME,ASSIGNMENT_ID, max(FINAL_SCORE),min(DATE_TIME_START) from ASSIGNMENT_RESULTS a_r ,ASSIGNMENT_STATUSES a_s,ASSIGNMENTS a where a_s.ID=a_r.ASSIGNMENT_STATUS_ID and a.ID=a_s.ASSIGNMENT_ID and a_s.COMPETITION_SESSION_ID = ?1 group by a.ID", nativeQuery = true)
+    @Query(value = "select NAME,ASSIGNMENT_ID, max(FINAL_SCORE),min(DATE_TIME_START),a_s.COMPETITION_SESSION_ID from ASSIGNMENT_RESULTS a_r ,ASSIGNMENT_STATUSES a_s,ASSIGNMENTS a where a_s.ID=a_r.ASSIGNMENT_STATUS_ID and a.ID=a_s.ASSIGNMENT_ID and a_s.COMPETITION_SESSION_ID = ?1 group by a.ID,a_s.COMPETITION_SESSION_ID", nativeQuery = true)
     List<String[]> getHighscoreListForCompetitionSession(long sessionId);
 }

@@ -11,8 +11,13 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.security.RolesAllowed;
+import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -49,9 +54,21 @@ public class GamemasterJsonController {
             response.put("assignmentMetadata", activeAssignment.getAssignmentDescriptor());
         }
         response.put("principals", sessionRegistry.getAllPrincipals());
+        HttpServletRequest request = getCurrentHttpRequest();
+        response.put("session", Collections.list(request.getSession().getAttributeNames()));
 
         return response;
     }
-
+    public static String getParam(String param) {
+        HttpServletRequest req = getCurrentHttpRequest();
+        return req==null?null: req.getParameter(param);
+    }
+    public static HttpServletRequest getCurrentHttpRequest() {
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes instanceof ServletRequestAttributes) {
+            return ((ServletRequestAttributes) requestAttributes).getRequest();
+        }
+        return null;
+    }
 
 }

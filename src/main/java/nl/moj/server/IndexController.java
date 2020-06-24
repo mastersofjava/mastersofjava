@@ -16,11 +16,6 @@
 */
 package nl.moj.server;
 
-import java.io.File;
-import java.security.Principal;
-import java.util.ArrayList;
-import java.util.List;
-
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
@@ -39,6 +34,8 @@ import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -47,6 +44,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.File;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Controller
@@ -63,14 +64,29 @@ public class IndexController {
     public String index(Model model, @AuthenticationPrincipal Principal user) {
         if (competition.getCurrentAssignment() == null) {
             model.addAttribute("team", user.getName());
+            model.addAttribute("isWithValidation", false);
             return "index";
         }
         addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment());
         return "index";
     }
 
-    private boolean isAuthorized(Principal user, HttpServletRequest request) {
-        return user!=null &&  user.getName().equalsIgnoreCase("admin") && request.getParameterMap().containsKey("assignment");
+    private boolean isAuthorizedForAssignmentEditing(Principal user, HttpServletRequest request) {
+        if (!(user instanceof UsernamePasswordAuthenticationToken)) {
+            return false;
+        }
+
+        UsernamePasswordAuthenticationToken authenticationToken =
+                (UsernamePasswordAuthenticationToken)user;
+        boolean isEmpty = authenticationToken.getAuthorities().isEmpty();
+        if (isEmpty) {
+            return false;
+        }
+        GrantedAuthority authority = authenticationToken.getAuthorities().iterator().next();
+
+        boolean isWithAdminRole = Role.ADMIN.equals(authority.getAuthority())
+                ||Role.GAME_MASTER.equals(authority.getAuthority());
+        return isWithAdminRole && request.getParameterMap().containsKey("assignment");
     }
     private boolean isUsingCurrentCompetitionAssignment(Assignment assignment) {
         return competition.getCurrentAssignment()!=null && assignment.equals(competition.getActiveAssignment().getAssignment());
@@ -79,7 +95,7 @@ public class IndexController {
     public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user,
                               HttpServletRequest request,@RequestParam("assignment") String assignmentInput,
                               @RequestParam(required = false, name = "solution") String solutionInputFileName) {
-        if (!isAuthorized(user, request)) {
+        if (!isAuthorizedForAssignmentEditing(user, request)) {
             return "login";
         }
         boolean isWithAdminValidation = request.getParameterMap().containsKey("validate");

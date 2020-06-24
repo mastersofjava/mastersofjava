@@ -61,7 +61,7 @@
                 <br/>
             </div>
             <div class="tab-pane fade" id="pills-wedstrijdverloop" role="tabpanel" aria-labelledby="pills-wedstrijdverloop-tab">
-                <h6>De uitslag van elke opdracht [[${selectedYearLabel}]]</h6>
+                <h6>De uitslag van elke opdracht [[${selectedYearLabel}]]. <span th:if="${isWithAssignmentsLoaded}" class="adminRole role">Als admin kunt u hier ook de oplossingen inzien.</span></h6>
 
                 <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
             </div>
@@ -150,7 +150,7 @@
                     </div>
                 </div>
                 <div class="p-2 col-12">
-                    <i>NB: slechts 1 actieve sessie tegelijkertijd, verander hieronder eventueel van actieve sessie: </i><br/>
+                    <i th:if="${sessions.size()>1}">NB: slechts 1 actieve sessie tegelijkertijd, verander hieronder eventueel van actieve sessie: </i><br/>
                     <div th:remove="tag" th:utext="${sessionDetailCanvas}"></div>
                 </div>
         </div>
@@ -206,7 +206,7 @@
 
                 </div>
                 <div class="tab-pane fade show active" id="pills-configuratie" role="tabpanel" aria-labelledby="pills-configuratie-tab">
-                    <h6>Voor configuratie kun je met dit tabblad bestanden inladen en exporteren.</h6><br/>
+                    <h6>Voor configuratie kunt u met dit tabblad bestanden inladen en exporteren.</h6><br/>
 
                     <div class="row">
                         <div class="p-2 col-12" th:if="${locationList.size()==0}">
