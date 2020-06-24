@@ -27,18 +27,14 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
 import org.keycloak.adapters.springsecurity.KeycloakConfiguration;
-import org.keycloak.adapters.springsecurity.KeycloakSecurityComponents;
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
 import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
@@ -118,7 +114,9 @@ public class WebConfiguration {
 					.antMatchers("/").hasAnyAuthority(Role.USER, Role.ADMIN, Role.GAME_MASTER) // only when registrated
 					.antMatchers("/control", "/bootstrap").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
 					.anyRequest().permitAll()
-					.and().formLogin().successHandler(new CustomAuthenticationSuccessHandler());
+					.and().formLogin().successHandler(new CustomAuthenticationSuccessHandler())
+                    .and().headers().frameOptions().disable()
+                    .and().csrf().disable();
 		}
 
 		private class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
