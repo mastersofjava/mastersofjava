@@ -56,11 +56,12 @@ public class RankingsService {
             final List<AssignmentResult> assignmentResultsPerYear = new ArrayList<>();
 
             for (AssignmentResult result: sessionList) {
-                if (result.getAssignmentStatus().getAssignment().getAssignmentDescriptor().contains(selectedYearFilter)) {
+                boolean isInsertAssignment = selectedYearFilter==null || result.getAssignmentStatus().getAssignment().getAssignmentDescriptor().contains(selectedYearFilter);
+
+                if (isInsertAssignment) {
                     assignmentResultsPerYear.add(result);
                 }
             }
-
             teamRepository.findAllByRole(Role.USER).forEach(team -> {
                 Ranking rank = Ranking.builder()
                         .team(team.getName())
