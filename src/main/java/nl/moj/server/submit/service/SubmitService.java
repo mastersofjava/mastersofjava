@@ -69,7 +69,6 @@ public class SubmitService {
         return compileInternal(team, message, assignment).thenApply(r -> {
             log.info("DONE with compile request team {}, cleaning workspace afterwards " , team.getName());
             messageService.sendComplilingEnded(team, r.isSuccess());
-            executionService.cleanTeamAssignmentWorkspace(team, assignment);
             return r;
         });
     }
@@ -100,7 +99,6 @@ public class SubmitService {
         return testInternal(team, message, submit, assignment).thenApply(r -> {
             log.info("DONE with test request team {}, cleaning workspace afterwards " , team.getName());
             messageService.sendTestingEnded(team, r.isSuccess());
-            executionService.cleanTeamAssignmentWorkspace(team, assignment);
             return r;
         });
     }
