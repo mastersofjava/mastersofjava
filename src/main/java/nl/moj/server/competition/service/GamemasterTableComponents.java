@@ -513,7 +513,7 @@ public class GamemasterTableComponents {
 
             StringBuffer header = new StringBuffer();
             header.append("<table class='roundGrayBorder table noBottomMargin' ><thead class='cursorPointer' onclick=\"$(this).closest('.top').find('.extra').addClass('hide');$(this).parent().find('.extra').toggleClass('hide')\"><tr><th class='minWidth300'>Files - Assignment '");
-            header.append(assignmentName+"' - files:"+fileList.size());
+            header.append(assignmentName+"' - files: "+fileList.size());
             header.append("<div  class='extra hide'></div></th><th class='extra hide'>Type</th><th class='extra hide'>Size</th><th class='extra hide'>Last Modified</th></tr>");
             if (!errorList.isEmpty()) {
                 header.append("<tr><td colspan=4 class='error'><center>ERROR</center></td></tr>");
