@@ -80,11 +80,16 @@ public class CompetitionRuntime {
                 })
                 .collect(Collectors.toList());
     }
-    public void loadSession(UUID session) {
-        this.competitionSession = competitionSessionRepository.findByUuid(session);
-        this.competition = competitionSession.getCompetition();
-        log.info("Loading session {} for competition {}", session, competition.getName());
 
+    /**
+     * load competition session, this also restores the competition assignments and the completed competition assignments
+     * @param competition
+     * @param session
+     */
+    public void loadSession(Competition competition, UUID session) {
+        log.info("Loading session {} for competition {}", session, competition.getName());
+        this.competition = competition;
+        this.competitionSession = competitionSessionRepository.findByUuid(session);
         restoreSession();
     }
 
@@ -102,6 +107,7 @@ public class CompetitionRuntime {
                 .map(ar -> ar.getAssignmentStatus().getAssignment().getUuid())
                 .distinct().collect(Collectors.toList());
 
+        // this also eagerly loads the assignments in the competition object (needed for hibernate)
         this.competition.getAssignments().forEach(oa -> {
             if (completedAssignmentList.contains(oa.getAssignment().getUuid())) {
                 this.completedAssignments.add(oa);
@@ -219,7 +225,7 @@ public class CompetitionRuntime {
         if (session == null) {
             startSession(competition);
         } else {
-            loadSession(session.getUuid());
+            loadSession(competition, session.getUuid());
         }
     }
 }

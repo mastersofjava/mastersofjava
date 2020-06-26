@@ -346,9 +346,9 @@ public class TaskControlController {
                 .stream()
                 .map(competitionService.createOrderedAssignments(startCompetition))
                 .collect(Collectors.toList()));
-        competitionRepository.save(startCompetition);
+        startCompetition= competitionRepository.save(startCompetition);
 
-        competition.loadSession(competition.getCompetitionSession().getUuid());
+        competition.loadSession(startCompetition, competition.getCompetitionSession().getUuid());
     }
 
     private class AdminPageStatus {
@@ -455,7 +455,7 @@ public class TaskControlController {
 
     @PostMapping("/control/select-session")
     public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
-        competition.loadSession(ssf.getSession());
+        competition.loadSession(competition.getCompetition(), ssf.getSession());
         return "redirect:/control";
     }
 
