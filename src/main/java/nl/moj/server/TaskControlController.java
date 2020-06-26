@@ -322,7 +322,7 @@ public class TaskControlController {
             log.info("assignmentList size {} ",assignmentList.size()) ;
 
             String name = competition.getCompetition().getName().split("\\|")[0]+ "|" + path.toFile().getName();
-
+            assignmentRuntime.reloadOriginalAssignmentFiles();
             startCompetitionWithFreshAssignments(name);
 
             return "Assignments scanned from location "+path+" ("+assignmentList.size()+"), reloading to show them.";

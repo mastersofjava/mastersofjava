@@ -40,6 +40,7 @@ import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.runtime.model.AssignmentResult;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
@@ -230,6 +231,10 @@ public class AssignmentRuntime {
             throw new RuntimeException(e);
         }
     }
+    public void reloadOriginalAssignmentFiles() {
+        assignmentService.clearSmallFileStorageInMemory();
+        initOriginalAssignmentFiles();
+    }
 
     private void initTeamsForAssignment() {
         cleanupAssignmentStatuses();
@@ -345,7 +350,7 @@ public class AssignmentRuntime {
 
     @Async
     public Future<?> scheduleStop() {
-        AssignmentRuntime ar = getSelfReference();
+        final AssignmentRuntime ar = this;
         return taskScheduler.schedule(ar::stop, inSeconds(assignmentDescriptor.getDuration().getSeconds()));
     }
 
@@ -363,7 +368,7 @@ public class AssignmentRuntime {
     private Date inSeconds(long sec) {
         return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
     }
-
+    @Deprecated
     private AssignmentRuntime getSelfReference() {
         return ctx.getBean(AssignmentRuntime.class);
     }

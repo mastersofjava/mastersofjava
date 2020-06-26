@@ -61,7 +61,7 @@
                 <br/>
             </div>
             <div class="tab-pane fade" id="pills-wedstrijdverloop" role="tabpanel" aria-labelledby="pills-wedstrijdverloop-tab">
-                <h6>De uitslag van elke opdracht [[${selectedYearLabel}]]. <span th:if="${isWithAssignmentsLoaded}" class="adminRole role">Als admin kunt u hier ook de oplossingen inzien.</span></h6>
+                <h6>De uitslag van elke opdracht [[${selectedYearLabel}]]. <span th:if="${isWithAssignmentsLoaded}" class="adminRole role">Als admin kunt u ook de oplossingen inzien (click hiervoor op het opdrachtnummer).</span></h6>
 
                 <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
             </div>
