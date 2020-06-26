@@ -223,7 +223,9 @@ public class AssignmentRuntime {
 
     private void initOriginalAssignmentFiles() {
         try {
-            originalAssignmentFiles = assignmentService.getAssignmentFiles(assignment);
+            if (assignment!=null) {
+                originalAssignmentFiles = assignmentService.getAssignmentFiles(assignment);
+            }
         } catch (Exception e) {
             // log exception here since it may get swallowed by async calls
             log.error("Unable to parse assignment files for assignment {}: {}", assignmentDescriptor.getDisplayName(), e
