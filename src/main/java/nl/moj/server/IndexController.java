@@ -41,6 +41,8 @@ import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
+
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationEntryPoint;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -63,17 +65,13 @@ public class IndexController {
     private CompetitionService competitionService;
 
     @GetMapping("/")
-    public String index(Model model, Principal user, HttpServletRequest request) {
-    	// TODO refactor into methods
+    public String index(Model model, @AuthenticationPrincipal Principal user, HttpServletRequest request) {
     	if (user==null) {
-    		return "login";
+    		return "redirect:"+ KeycloakAuthenticationEntryPoint.DEFAULT_LOGIN_URI;
     	}
-    	if (user != null && !user.getName().equals("admin") && teamRepository.findByName(user.getName()) == null) {
-    		SignupForm form = new SignupForm();
-    		form.setCompany("None");
-    		form.setCountry("NL");
-    		form.setName(user.getName());
-    		competitionService.createNewTeam(form, Role.USER);
+    	// The admin user should be created with the bootstrap
+    	if (doesUserExistAndIsNotAdmin(user)) {
+    		createNewTeam(user);
     	}
         if (competition.getCurrentAssignment() == null) {
             model.addAttribute("team", user.getName());
@@ -83,8 +81,25 @@ public class IndexController {
         return "index";
     }
 
-    private boolean isAuthorized(Principal user, HttpServletRequest request) {
-        return user!=null &&  user.getName().equalsIgnoreCase("admin") && request.getParameterMap().containsKey("assignment");
+	private void createNewTeam(Principal user) {
+		SignupForm form = SignupForm.builder()
+				.company("None")
+				.country("NL")
+				.name(user.getName())
+				.build();
+		competitionService.createNewTeam(form, Role.USER);
+	}
+
+	private boolean doesUserExistAndIsNotAdmin(Principal user) {
+		return user != null && teamRepository.findByName(user.getName()) == null && !isAdminUser(user);
+	}
+
+	private boolean isAdminUser(Principal user) {
+		return teamRepository.findByName(user.getName()).getRole().equals(Role.ADMIN);
+	}
+
+    private boolean isAdminAuthorized(Principal user, HttpServletRequest request) {
+        return user!=null &&  isAdminUser(user) && request.getParameterMap().containsKey("assignment");
     }
     private boolean isUsingCurrentCompetitionAssignment(Assignment assignment) {
         return competition.getCurrentAssignment()!=null && assignment.equals(competition.getActiveAssignment().getAssignment());
@@ -93,7 +108,7 @@ public class IndexController {
     public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user,
                               HttpServletRequest request,@RequestParam("assignment") String assignmentInput,
                               @RequestParam(required = false, name = "solution") String solutionInputFileName) {
-        if (!isAuthorized(user, request)) {
+        if (!isAdminAuthorized(user, request)) {
             return "login";
         }
         boolean isWithAdminValidation = request.getParameterMap().containsKey("validate");

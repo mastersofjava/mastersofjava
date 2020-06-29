@@ -72,31 +72,15 @@ public class CompetitionService {
 
     private final CompetitionRuntime competitionRuntime;
 
-    // TODO maybe remove this
-    public PasswordEncoder getEncoder() {
-        return encoder;
-    }
-
-    @Deprecated
-    public void createNewTeam(SignupForm form) {
-        createNewTeam(form, Role.USER);
-    }
     public void createNewTeam(SignupForm form, String role) {
-        SecurityContext context = SecurityContextHolder.getContext();
-        // TODO MOJ-165 verwijderen
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(form.getName(), form
-                .getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.USER)));
-
         Team team = Team.builder()
                 .company(form.getCompany())
                 .country(form.getCountry())
                 .name(form.getName())
-//                .password(encoder.encode(form.getPassword()))
                 .role(role)
                 .uuid(UUID.randomUUID())
                 .build();
 
-        context.setAuthentication(authentication);
         saveNewTeam(team);
     }
 
@@ -211,18 +195,6 @@ public class CompetitionService {
     public void importTeams(List<String> lines) {
         UserImporter importer = new UserImporter( lines);
         importer.addOrUpdateAllImportableTeams();
-    }
-    public boolean isRegistrationFormDisabled() {
-        return teamRepository.findByName("admin").getCompany().contains("HIDE_REGISTRATION");
-    }
-    public void setRegistrationFormDisabled(boolean isDisabled) {
-        String setting = "HIDE_REGISTRATION";
-        if (!isDisabled) {
-            setting = "";
-        }
-        Team team = teamRepository.findByName("admin");//
-        team.setCompany(setting);
-        teamRepository.save(team);
     }
 
     public String getSelectedYearLabel() {

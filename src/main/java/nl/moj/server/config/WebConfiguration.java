@@ -110,8 +110,7 @@ public class WebConfiguration {
 		protected void configure(HttpSecurity http) throws Exception {
 			super.configure(http);
 			http.authorizeRequests()
-					.antMatchers("/feedback").authenticated() // always access
-					.antMatchers("/").hasAnyAuthority(Role.USER, Role.ADMIN, Role.GAME_MASTER) // only when registrated
+					.antMatchers("/", "/feedback").hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
 					.antMatchers("/control", "/bootstrap").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
 					.anyRequest().permitAll()
 					.and().formLogin().successHandler(new CustomAuthenticationSuccessHandler())
@@ -128,9 +127,7 @@ public class WebConfiguration {
 				List<String> roles = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
 						.collect(Collectors.toList());
 
-				boolean isWithControlRole = roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER);
-
-				if (isWithControlRole) {
+				if (Role.isWithControleRole(roles)) {
 					response.sendRedirect("/control");
 				} else if (roles.contains(Role.USER)) {
 					teamDetailsService.initTeam(authentication.getName());
