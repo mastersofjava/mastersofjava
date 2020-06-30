@@ -128,7 +128,6 @@ public class CompetitionService {
                         .company(parts[1])
                         .country("Nederland")
                         .name(name)
-                        .password("Welkom2020_"+name)// simple default,changeable password for new users
                         .role(role)
                         .uuid(UUID.randomUUID())
                         .build();
