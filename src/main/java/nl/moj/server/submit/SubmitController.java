@@ -50,8 +50,11 @@ public class SubmitController {
     public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
             throws Exception {
         Team team = teamRepository.findByName(user.getName());
-        submitService.test(team, message);
-
+        try {
+            submitService.test(team, message);
+        } catch (Exception ex) {
+            log.error(ex.getMessage(),ex);
+        }
     }
 
     /**

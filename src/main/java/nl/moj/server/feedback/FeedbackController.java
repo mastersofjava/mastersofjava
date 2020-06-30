@@ -92,6 +92,7 @@ public class FeedbackController {
                                 .uuid(f.getUuid())
                                 .filename(f.getShortName())
                                 .content(f.getContentAsString())
+                                .location(f.getAbsoluteFile().toString())
                                 .build())
                         .collect(Collectors.toList()))
                 .build();
@@ -109,6 +110,7 @@ public class FeedbackController {
                                 .uuid(f.getUuid())
                                 .filename(f.getShortName())
                                 .content(f.getContentAsString())
+                                .location(f.getAbsoluteFile().toString())
                                 .build())
                         .collect(Collectors.toList()))
                 .build();

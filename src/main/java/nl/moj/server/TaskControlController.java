@@ -106,8 +106,7 @@ public class TaskControlController {
         return competitionService.locationList();
     }
 
-    @ModelAttribute(name = "teams")
-    public List<Team> team() {
+    private List<Team> getAllTeams() {
         return teamRepository.findAll();
     }
 
@@ -236,11 +235,17 @@ public class TaskControlController {
         return "Deleted competition, now reloading page";
     }
 
+    @MessageMapping("/control/competitionToggleAvailability")
+    public void doCompetitionToggleAvailability(TaskMessage message)  throws JsonProcessingException {
+        CompetitionSession item = competitionSessionRepository.findByUuid(UUID.fromString(message.getUuid()));
+        item.setActive(Boolean.valueOf(message.value));
+        competitionSessionRepository.save(item);
+    }
     @MessageMapping("/control/competitionCreateNew")
     @SendToUser("/queue/controlfeedback")
-    public String doCompetitionCreateNew(TaskControlController.TaskMessage message)  throws JsonProcessingException {
+    public String doCompetitionCreateNew(TaskMessage message)  throws JsonProcessingException {
         log.info("doCompetitionCreateNew value {} " , message.getValue() );
-        if (StringUtils.isBlank(message.value)) {
+        if (StringUtils.isBlank(message.value)|| !message.value.contains("|")) {
             return "Please provide a valid name. ";
         }
         Competition newCompetition = new Competition();
@@ -322,8 +327,9 @@ public class TaskControlController {
             log.info("assignmentList size {} ",assignmentList.size()) ;
 
             String name = competition.getCompetition().getName().split("\\|")[0]+ "|" + path.toFile().getName();
-            assignmentRuntime.reloadOriginalAssignmentFiles();
             startCompetitionWithFreshAssignments(name);
+            assignmentRuntime.reloadOriginalAssignmentFiles();
+
 
             return "Assignments scanned from location "+path+" ("+assignmentList.size()+"), reloading to show them.";
         } catch (AssignmentServiceException ase) {
@@ -380,6 +386,9 @@ public class TaskControlController {
             model.addAttribute("teamDetailCanvas", "(U moet eerst de gebruikers aanmaken)");
             model.addAttribute("repositoryLocation", mojServerProperties.getAssignmentRepo().toFile());
             model.addAttribute("selectedYearLabel", "");
+            model.addAttribute("competitionName", competition.getCompetition().getName().split("\\|")[0]);
+            model.addAttribute("isWithCompetitionStarted",false);
+
         }
         private void insertGamestatus(Model model) {
             ActiveAssignment state = competition.getActiveAssignment();
@@ -396,11 +405,12 @@ public class TaskControlController {
 
             if (isWithAssignmentsLoaded) {
                 String assignmentDetailCanvas = gamemasterTableComponents.toSimpleBootstrapTable(assignmentDescriptorList);
-
+                String gameDetailCanvas = gamemasterTableComponents.toSimpleBootstrapTableForAssignmentStatus();
+                model.addAttribute("isWithCompetitionStarted",gameDetailCanvas.contains("STARTED"));
                 model.addAttribute("isWithConfigurableTestScore",assignmentDetailCanvas.contains("(*2)"));
                 model.addAttribute("isWithHiddenTests",assignmentDetailCanvas.contains("(*1)"));
                 model.addAttribute("assignmentDetailCanvas",  assignmentDetailCanvas);
-                model.addAttribute("gameDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForAssignmentStatus());
+                model.addAttribute("gameDetailCanvas", gameDetailCanvas);
                 model.addAttribute("opdrachtConfiguraties", gamemasterTableComponents.toSimpleBootstrapTablesForFileDetails(assignmentDescriptorList));
             }
             model.addAttribute("assignments",assignmentDescriptorList);
@@ -416,12 +426,13 @@ public class TaskControlController {
         }
         private void insertCompetitionInfo(Model model) {
 
-            List<Team> teams = team();
+            List<Team> teams = getAllTeams();
             if (!teams.isEmpty() && this.isWithAdminRole) {
                 List<Ranking> rankings = rankingsService.getRankings(competition.getCompetitionSession(), competitionService.getSelectedYearValue());
                 model.addAttribute("teamDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, true, rankings));
                 model.addAttribute("activeTeamDetailCanvas",  gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, false, rankings));
             }
+            model.addAttribute("teams", teams);
             if (this.isWithAdminRole) {
                 model.addAttribute("repositoryLocation", competitionService.getSelectedLocation());
                 model.addAttribute("selectedYearLabel", this.selectedYearLabel);
@@ -455,7 +466,7 @@ public class TaskControlController {
 
     @PostMapping("/control/select-session")
     public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
-        competition.loadSession(competition.getCompetition(), ssf.getSession());
+        competition.changeSession(ssf.getSession());
         return "redirect:/control";
     }
 

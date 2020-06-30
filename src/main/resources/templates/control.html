@@ -61,7 +61,7 @@
                 <br/>
             </div>
             <div class="tab-pane fade" id="pills-wedstrijdverloop" role="tabpanel" aria-labelledby="pills-wedstrijdverloop-tab">
-                <h6>De uitslag van elke opdracht [[${selectedYearLabel}]]. <span th:if="${isWithAssignmentsLoaded}" class="adminRole role">Als admin kunt u ook de oplossingen inzien (click hiervoor op het opdrachtnummer).</span></h6>
+                <h6>De uitslag van elke opdracht [[${selectedYearLabel}]]. <span th:if="${isWithAssignmentsLoaded}" class="adminRole role">U kunt ook de oplossingen inzien (click hiervoor op het opdrachtnummer).</span></h6>
 
                 <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
             </div>
@@ -73,7 +73,7 @@
                     <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
                 </div>
                 <div th:if="${running}" >
-                    <h6>Met dit scherm kan de admin de competitie opdrachten pauzeren, stoppen en herstarten.</h6>
+                    <h6>Met dit venster kunt u de competitie opdrachten pauzeren, stoppen en herstarten.</h6>
                 </div>
                 <br/>
                 <div class="row" th:if="${isWithAssignmentsLoaded}">
@@ -110,14 +110,14 @@
 
                     <div class="form-group col-4">
                         <div class="row">
-                            <div class="btn-group-vertical col-4" th:if="${running}">
-                                <div class="p-2 text-center">
+                            <div class="btn-group-vertical col-4" >
+                                <div class="p-2 text-center" th:if="${running}">
                                     <button id="stop" class="btn btn-warning minWidth150" onclick="stopTask();" data-container="body" data-toggle="popover" data-placement="left">Finish Assignment</button>
                                 </div>
-                                <div class="p-2 text-center">
+                                <div class="p-2 text-center" th:if="${running}">
                                     <button id="restart" class="btn btn-warning minWidth150" onclick="restartAssignment();" >Reset Assignment</button>
                                 </div>
-                                <div class="p-2 text-center">
+                                <div class="p-2 text-center" th:if="${running||isWithCompetitionStarted}">
                                     <button id="clear" class="btn btn-warning minWidth150" onclick="clearAssignments();" data-container="body" data-toggle="popover" data-placement="right">Reset Competition</button>
                                 </div>
                             </div>
@@ -150,7 +150,7 @@
                     </div>
                 </div>
                 <div class="p-2 col-12">
-                    <i th:if="${sessions.size()>1}">NB: slechts 1 actieve sessie tegelijkertijd, verander hieronder eventueel van actieve sessie: </i><br/>
+                    <i th:if="${sessions.size()>1}">Hieronder staan de beschikbare competities, selecteer een sessie voor beheer:</i><br/>
                     <div th:remove="tag" th:utext="${sessionDetailCanvas}"></div>
                 </div>
         </div>
@@ -336,6 +336,7 @@
 </div>
 <div style="position: absolute; left:120px; top:100px;">
     <div class="text-center"   >
+        <h4>[[${competitionName}]]</h4>
         <h4><span th:if="${running}">'[[${currentAssignment}]]'</span><span th:if="${clockStyle=='disabled'}" class="italic">&nbsp;PAUSED</span></h4>
         <b>Beschikbare tijd:</b>
     </div>

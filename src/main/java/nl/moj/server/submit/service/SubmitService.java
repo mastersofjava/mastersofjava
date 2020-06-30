@@ -74,7 +74,7 @@ public class SubmitService {
     }
 
     private CompletableFuture<SubmitResult> compileInternal(Team team, SourceMessage message, Assignment assignment) {
-        return executionService.compile(team, message, assignment)
+        return executionService.compile(team, message, assignment, getActiveAssignment())
                 .thenApply(r -> {
                     log.info("DONE with compile execution team {}", team.getName());
                     messageService.sendCompileFeedback(team, r);
@@ -102,8 +102,11 @@ public class SubmitService {
             return r;
         });
     }
+    private ActiveAssignment getActiveAssignment() {
+        return competition.getActiveAssignment();
+    }
     private Assignment determineAssignment(Team team, SourceMessage message) {
-        ActiveAssignment activeAssignment = competition.getActiveAssignment();
+        ActiveAssignment activeAssignment = getActiveAssignment();
         Assignment result = activeAssignment.getAssignment();
         if (!team.getRole().equals(Role.ADMIN)) {
             return result;
@@ -121,14 +124,14 @@ public class SubmitService {
         return compileInternal(team, message, assignment)
                 .thenCompose(submitResult -> {
                     log.info("testInternal.after compile ( assignent {}, compile {}) ", message.getAssignmentName(),  submitResult.isSuccess() );
-                    ActiveAssignment activeAssignment = competition.getActiveAssignment();
+                    ActiveAssignment activeAssignment = getActiveAssignment();
                     try {
                         boolean isAssignmentNull = activeAssignment.getAssignment()==null;
                         boolean isOverride = !isAssignmentNull && message.getAssignmentName()!=null && !message.getAssignmentName().equals(activeAssignment.getAssignment().getName());
                         if (isAssignmentNull  || isOverride) {
                             List<AssignmentFile> fileList   = assignmentService.getAssignmentFiles(assignment);
                             AssignmentDescriptor assignmentDescriptor =assignmentService.getAssignmentDescriptor(assignment);
-                            activeAssignment  = ActiveAssignment.builder().assignment(assignment).assignmentDescriptor(assignmentDescriptor).assignmentFiles(fileList).build();
+                            activeAssignment  = ActiveAssignment.builder().competitionSession(competition.getActiveAssignment().getCompetitionSession()).assignment(assignment).assignmentDescriptor(assignmentDescriptor).assignmentFiles(fileList).build();
                         }
                     } catch (Exception ex) {
                         log.info("ERROR ", ex);
@@ -144,7 +147,7 @@ public class SubmitService {
                         if (submit || team.getRole().equals(Role.ADMIN)) {
                             testCases = activeAssignment.getSubmitTestFiles();
                         }
-                        log.info("testCases (size {}, compile {}) " , testCases.size(), submitResult.isSuccess());
+                        log.info("testCases (size {}, compile {}, assignment {}, session {}) " , testCases.size(), submitResult.isSuccess(), activeAssignment.getAssignment().getName(), activeAssignment.getCompetitionSession());
 
                         // run selected testcases
                         return executionService.test(team, testCases, activeAssignment).thenApply(r -> {
@@ -165,7 +168,7 @@ public class SubmitService {
 
     @Transactional
     public CompletableFuture<SubmitResult> submit(Team team, SourceMessage message) {
-        final ActiveAssignment activeAssignment = competition.getActiveAssignment();
+        final ActiveAssignment activeAssignment = getActiveAssignment();
         final AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment
                 .getAssignment(), activeAssignment.getCompetitionSession(), team);
 
@@ -220,7 +223,7 @@ public class SubmitService {
     }
 
     private int getRemainingSubmits(AssignmentStatus as) {
-        ActiveAssignment activeAssignment = competition.getActiveAssignment();
+        ActiveAssignment activeAssignment = getActiveAssignment();
         int maxSubmits = activeAssignment.getAssignmentDescriptor().getScoringRules().getMaximumResubmits() + 1;
         return maxSubmits - as.getSubmitAttempts().size();
     }

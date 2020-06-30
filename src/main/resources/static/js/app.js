@@ -79,24 +79,32 @@ function connectCompetition() {
     competitionHandlers = {};
     competitionHandlers['TIMER_SYNC'] = function (msg) {
         lastMessage = msg;
-        if (clock) {
+        if (clock && isSessionValid(msg)) {
             clock.sync(msg.remainingTime, msg.totalTime);
+            clock.isPaused = !msg.running;
         }
     };
     competitionHandlers['START_ASSIGNMENT'] = function (msg) {
         window.setTimeout(function () {
-            window.location.reload()
+            if (isSessionValid(msg)) {
+                window.location.reload()
+            }
         }, 10);
     };
     competitionHandlers['STOP_ASSIGNMENT'] = function (msg) {
-        disable();
-        if (clock) {
-            clock.stop();
+        if (isSessionValid(msg)) {
+            disable();
+            if (clock) {
+                clock.stop();
+            }
         }
-    }
+    };
     if (window.isWithValidation) {
         window.setTimeout('doUserActionTest();',1000);
     }
+}
+function isSessionValid(msg) {
+    return sg.sessionId!=null || $('#sessions').val()===sg.sessionId;
 }
 
 function connectButtons() {

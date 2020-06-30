@@ -63,4 +63,7 @@ public class Competition {
                 .filter(orderedAssignment-> orderedAssignment.getAssignment().getAssignmentDescriptor().contains(collectionName))
                 .collect(Collectors.toList());
     }
+    public String getShortName() {
+        return name.split("\\|")[0];
+    }
 }

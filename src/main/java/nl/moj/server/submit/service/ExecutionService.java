@@ -54,18 +54,15 @@ public class ExecutionService {
         this.testService = testService;
     }
 
-    public CompletableFuture<CompileResult> compile(Team team, SourceMessage message, Assignment assignment) {
-        return compileService.scheduleCompile(team, message, getExecutor());
+    public CompletableFuture<CompileResult> compile(Team team, SourceMessage message, Assignment assignment, ActiveAssignment activeAssignment) {
+        return compileService.scheduleCompile(team, message, getExecutor(activeAssignment), activeAssignment);
     }
 
     public CompletableFuture<TestResults> test(Team team, List<AssignmentFile> tests, ActiveAssignment activeAssignment) {
-        return testService.scheduleTests(team, tests, getExecutor(), activeAssignment);
+        return testService.scheduleTests(team, tests, getExecutor(activeAssignment), activeAssignment);
     }
-    public void cleanTeamAssignmentWorkspace(Team team, Assignment assignment) {
-        compileService.createTeamProjectPathModel(team, assignment).cleanCompileLocationForTeam();
-    }
-    private Executor getExecutor() {
-        ActiveAssignment activeAssignment = competition.getActiveAssignment();
+
+    private Executor getExecutor(ActiveAssignment activeAssignment) {
         if (activeAssignment == null) {
             log.debug("Executing assignment in sequentially, can slow down client response (only used by admin)");
             return sequential;

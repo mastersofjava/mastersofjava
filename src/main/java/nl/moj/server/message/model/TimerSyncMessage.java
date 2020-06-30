@@ -26,4 +26,5 @@ public class TimerSyncMessage {
     private final MessageType messageType = MessageType.TIMER_SYNC;
     private final long remainingTime;
     private final long totalTime;
+    private final boolean isRunning;
 }

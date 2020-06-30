@@ -29,4 +29,6 @@ public class StartAssignmentMessage {
 
     private final String assignment;
 
+    private final String sessionId;
+
 }

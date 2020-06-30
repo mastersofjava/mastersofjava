@@ -84,22 +84,23 @@ public class MessageService {
         template.convertAndSendToUser(msg.getTeam(), DEST_COMPETITION, msg);
     }
 
-    public void sendStartToTeams(String taskname) {
+    public void sendStartToTeams(String taskname, String sessionId) {
         template.convertAndSend(DEST_START, taskname);
-        template.convertAndSend(DEST_COMPETITION, StartAssignmentMessage.builder().assignment(taskname).build());
+        template.convertAndSend(DEST_COMPETITION, StartAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
     }
 
-    public void sendStopToTeams(String taskname) {
+    public void sendStopToTeams(String taskname, String sessionId) {
         template.convertAndSend(DEST_STOP, new TaskMessage(taskname));
-        template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder().assignment(taskname).build());
+        template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
     }
 
-    public void sendRemainingTime(Long remainingTime, Long totalTime) {
+    public void sendRemainingTime(Long remainingTime, Long totalTime, boolean isPaused) {
         try {
             log.info("Sending remaining time: r={}, t={}", remainingTime, totalTime);
             TimerSyncMessage msg = TimerSyncMessage.builder()
                     .remainingTime(remainingTime)
                     .totalTime(totalTime)
+                    .isRunning(!isPaused)
                     .build();
             template.convertAndSend(DEST_COMPETITION, msg);
             template.convertAndSend("/queue/time", msg);

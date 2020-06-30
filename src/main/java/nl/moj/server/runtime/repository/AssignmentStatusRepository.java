@@ -31,6 +31,8 @@ public interface AssignmentStatusRepository extends JpaRepository<AssignmentStat
 
     List<AssignmentStatus> findByAssignmentAndCompetitionSession(Assignment assignment, CompetitionSession competitionSession);
 
+    List<AssignmentStatus> findByCompetitionSession(CompetitionSession competitionSession);
+
     AssignmentStatus findByAssignmentAndCompetitionSessionAndTeam(Assignment assignment, CompetitionSession competitionSession, Team team);
 
     List<AssignmentStatus> findByCompetitionSessionAndTeam(CompetitionSession competitionSession, Team team);

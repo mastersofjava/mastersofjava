@@ -28,4 +28,5 @@ public class FileSubmission {
     private UUID uuid;
     private String filename;
     private String content;
+    private String location;
 }

@@ -17,11 +17,14 @@
 package nl.moj.server;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
+import nl.moj.server.restcontrollers.GamemasterJsonController;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.JavaAssignmentFileResolver;
 import nl.moj.server.runtime.model.ActiveAssignment;
@@ -41,6 +44,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,27 +53,58 @@ import java.io.File;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Controller
 @AllArgsConstructor
 public class IndexController {
 
-    private CompetitionRuntime competition;
+    private CompetitionRuntime competitionRuntime;
     private TeamRepository teamRepository;
     private TeamService teamService;
     private AssignmentStatusRepository assignmentStatusRepository;
     private AssignmentRepository assignmentRepository;
+    private CompetitionSessionRepository competitionSessionRepository;
+
+    public CompetitionRuntime getCompetitionRuntimeForGameStart() {
+        Assert.isTrue(competitionRuntime!=null,"runtime not ready");
+        Assert.isTrue(competitionRuntime.getCompetitionSession()!=null,"runtime.session not ready");
+        UUID currentUUID = competitionRuntime.getCompetitionSession().getUuid();
+        UUID uuid = GamemasterJsonController.getSelectedUserSession(currentUUID);
+        if (competitionRuntime.getCompetitionSession().getUuid().equals(uuid)) {
+            return competitionRuntime;
+        } else {
+            return competitionRuntime.createCompetitionRuntimeForGameStart(competitionSessionRepository.findByUuid(uuid).getCompetition());
+        }
+    }
 
     @GetMapping("/")
-    public String index(Model model, @AuthenticationPrincipal Principal user) {
-        if (competition.getCurrentAssignment() == null) {
+    public String index(Model model, @AuthenticationPrincipal Principal user,@ModelAttribute("selectSessionForm") SelectSessionForm ssf) {
+        CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
+        insertCompetitionSelector(model, ssf, runtime.getCompetitionSession().getUuid());
+        if (runtime.getCurrentAssignment() == null) {
             model.addAttribute("team", user.getName());
             model.addAttribute("isWithValidation", false);
             return "index";
         }
-        addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment());
+        addModelDataForUserWithAssignment(model, user, runtime.getActiveAssignment());
         return "index";
+    }
+    private void insertCompetitionSelector(Model model, SelectSessionForm ssf,UUID sessionUUID) {
+        List<CompetitionSession> sessions = competitionSessionRepository.findAll();
+        List<CompetitionSession> activeSessions = new ArrayList<>();
+        for (CompetitionSession session: sessions) {
+            if (session.isActive()) {
+                activeSessions.add(session);
+            }
+        }
+        model.addAttribute("sessions", activeSessions);
+        UUID input = GamemasterJsonController.getSelectedUserSession( sessionUUID);
+        log.info("input " + input + " activeSessions " +activeSessions.size());
+        if (ssf!=null) {
+            ssf.setSession(input);
+        }
     }
 
     private boolean isAuthorizedForAssignmentEditing(Principal user, HttpServletRequest request) {
@@ -88,33 +124,36 @@ public class IndexController {
                 ||Role.GAME_MASTER.equals(authority.getAuthority());
         return isWithAdminRole && request.getParameterMap().containsKey("assignment");
     }
-    private boolean isUsingCurrentCompetitionAssignment(Assignment assignment) {
-        return competition.getCurrentAssignment()!=null && assignment.equals(competition.getActiveAssignment().getAssignment());
+    private boolean isUsingCurrentCompetitionAssignment(Assignment assignment,CompetitionRuntime runtime) {
+        return runtime.getCurrentAssignment()!=null && assignment.equals(runtime.getActiveAssignment().getAssignment());
     }
     @GetMapping("/assignmentAdmin")
     public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user,
                               HttpServletRequest request,@RequestParam("assignment") String assignmentInput,
-                              @RequestParam(required = false, name = "solution") String solutionInputFileName) {
+                              @RequestParam(required = false, name = "solution") String solutionInputFileName,@ModelAttribute("selectSessionForm") SelectSessionForm ssf) {
         if (!isAuthorizedForAssignmentEditing(user, request)) {
             return "login";
         }
+        CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
+
         boolean isWithAdminValidation = request.getParameterMap().containsKey("validate");
         Assignment assignment = assignmentRepository.findByName(assignmentInput);
         Assert.isTrue(assignment!=null,"unauthorized");
         log.info("viewAsAdmin.solution {}, assignment {}", solutionInputFileName, assignmentInput);
-        if (isUsingCurrentCompetitionAssignment(assignment)) {
+        if (isUsingCurrentCompetitionAssignment(assignment,runtime)) {
 
-            addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment(), solutionInputFileName, isWithAdminValidation);
+            addModelDataForUserWithAssignment(model, user, runtime.getActiveAssignment(), solutionInputFileName, isWithAdminValidation);
         } else {
             addModelDataForAdmin(model, user, assignment, solutionInputFileName, isWithAdminValidation);
         }
+        insertCompetitionSelector(model, ssf, runtime.getCompetitionSession().getUuid());
         return "index";
     }
 
     private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String solutionInputFileName, boolean isWithValidation) {
         Team team = teamRepository.findByName(user.getName());
         CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, solutionInputFileName, isWithValidation);
-        codePage.saveFiles(competition.getCompetitionSession(), assignment, team);
+        codePage.saveFiles(getCompetitionRuntimeForGameStart().getCompetitionSession(), assignment, team);
         codePage.saveAdminState(assignment);
     }
 
@@ -127,19 +166,25 @@ public class IndexController {
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(), state
                 .getCompetitionSession(), team);
 
+
         //late signup
         if (as == null) {
-            as = competition.handleLateSignup(team);
+            CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
+            as = runtime.handleLateSignup(team);
         }
 
         AssignmentStatusHelper ash = new AssignmentStatusHelper(as, state.getAssignmentDescriptor());
 
         CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, solutionInputFileName, isWithAdminValidation && team.getRole().equals(Role.ADMIN));
-        codePage.saveFiles(competition.getCompetitionSession(), state.getAssignment(), team);
+        codePage.saveFiles(state.getCompetitionSession(), state.getAssignment(), team);
         codePage.saveAssignmentDetails(state);
         codePage.saveTeamState(ash);
     }
-
+    @PostMapping("/index/select-session")
+    public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
+        GamemasterJsonController.setSelectedUserSession(ssf.getSession());
+        return "redirect:/";
+    }
     private class CodePageModelWrapper {
         private Model model;
         private List<AssignmentFile> inputFiles;
@@ -279,5 +324,9 @@ public class IndexController {
         public long getScore() {
             return assignmentStatus.getAssignmentResult().getFinalScore();
         }
+    }
+    @Data
+    public static class SelectSessionForm {
+        private UUID session;
     }
 }

@@ -178,6 +178,20 @@
                    th:href="@{/rankings}"
                    target="_blank"><span class="fa fa-trophy pr-1"></span>Rankings</a>
             </div>
+            <div class="p-2  inlineBlock minWidth100 " th:if="${sessions!=null && sessions.size()>=1}">
+                <form class="form" method="post" th:action="@{/index/select-session}" th:object="${selectSessionForm}">
+                    <div >
+                        <select class="form-control inlineBlock maxWidth300 font10px" th:classappend="${sessions.size()==1?'hide':''}"
+                                id="sessions"  onchange="if (this.value) $(this).closest('form').submit()" th:field="*{session}">
+                            <option value="">Speelbare competities: </option>
+                            <option th:each="s : ${sessions}" th:value="${s.uuid}" th:text="${'Session '+(sStat.index +1)+ ' (' + s.getCompetition().getShortName()+ ')'}">
+                            </option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+
         </div>
         <div class="mr-auto p-2">&nbsp;
             <i>[[${bonus}]]<span th:if="${labels!=null && labels.size()>0}">. Points for each individual test: [[${labels.toString().replace("_","=")}]]</span></i>

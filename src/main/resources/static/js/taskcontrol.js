@@ -119,8 +119,15 @@ function doCompetitionSaveName(name, uuid) {
         clientSend("/app/control/competitionSaveName", { taskName: 'competitionSaveName', uuid: uuid, value:name });
     }
 }
+function doCompetitionToggleState(uuid, value) {
+    console.log('competitionToggleAvailability ' + value + " " + uuid);
+    clientSend("/app/control/competitionToggleAvailability", { taskName: 'competitionToggleAvailability', uuid: uuid, value:value });
+}
 function doCompetitionCreateNew(name) {
     if (name) {
+        if (name.indexOf('|')===-1) {
+            name += '|'+ $('#selectedYear').val();
+        }
         clientSend("/app/control/competitionCreateNew", { taskName: 'competitionCreateNew', value:name });
     }
     return name;

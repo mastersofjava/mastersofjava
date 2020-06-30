@@ -49,6 +49,7 @@ create table competition_sessions
   id             bigint not null,
   uuid           uuid   not null,
   competition_id bigint not null,
+  active         boolean not null,
   primary key (id)
 );
 

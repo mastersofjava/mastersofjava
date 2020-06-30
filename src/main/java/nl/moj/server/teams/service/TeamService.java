@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession;
@@ -35,6 +36,7 @@ import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TeamService {
@@ -67,6 +69,7 @@ public class TeamService {
                 .filter(f -> f.getFileType().isVisible())
                 .forEach(f -> {
                     Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
+                    log.info("resolvedFile " +resolvedFile.toFile().getAbsoluteFile());
                     if (resolvedFile.toFile().exists() && Files.isReadable(resolvedFile)) {
                         teamFiles.add(f.toBuilder()
                                 .content(readPathContent(resolvedFile))

@@ -19,6 +19,7 @@ package nl.moj.server.competition.model;
 import javax.persistence.*;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -53,6 +54,7 @@ public class OrderedAssignment {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "competition_id", nullable = false)
+    @JsonIgnore
     private Competition competition;
 
 }

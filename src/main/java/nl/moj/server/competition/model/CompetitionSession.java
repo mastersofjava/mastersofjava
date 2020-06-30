@@ -38,6 +38,9 @@ public class CompetitionSession {
     @Column(name = "uuid", unique = true, nullable = false)
     private UUID uuid;
 
+    @Column(name = "active")
+    private boolean active;
+
     @ManyToOne
     @JoinColumn(name = "competition_id", nullable = false)
     private Competition competition;

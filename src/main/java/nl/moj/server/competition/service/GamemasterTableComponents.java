@@ -131,9 +131,12 @@ public class GamemasterTableComponents {
                     FileUtils.deleteQuietly(project);
                 }
             }
-            log.info("deleteCurrentSessionResources.before {}, {}", rootFile , rootFile.exists() );
-            FileUtils.deleteQuietly(rootFile);
-            log.info("deleteCurrentSessionResources.after {}, {}", rootFile , rootFile.exists() );
+            if (rootFile.exists()) {
+                log.info("deleteCurrentSessionResources.before {}, exists {}", rootFile , rootFile.exists() );
+                FileUtils.deleteQuietly(rootFile);
+            }
+            log.info("deleteCurrentSessionResources.after {}, success {}", rootFile , !rootFile.exists() );
+
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
@@ -151,7 +154,7 @@ public class GamemasterTableComponents {
         private final String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
         private Map<Long, Integer> sessionAssignmentAmount = new TreeMap<>();
 
-        public BootstrapTableForAllCompetitions() {
+        private BootstrapTableForAllCompetitions() {
             List<String[]> highscoreList = assignmentStatusRepository.getHighscoreList();
 
             for (String[] item : highscoreList) {
@@ -174,17 +177,48 @@ public class GamemasterTableComponents {
         }
         private String createHtmlHeaderRow() {
             StringBuilder html = new StringBuilder();
-            html.append("<tr><th></th><th>Competities</th><th></th><th>Aantal sessies</th><th>Acties</th></tr>");
+            html.append("<tr><th></th><th>Competities</th><th></th><th>Beschikbaarheid</th><th>Acties</th></tr>");
             return html.toString();
         }
-        public class BootstrapTableForCompetition {
+
+
+
+        private class BootstrapTableForCompetition {
             private final Competition competition;
             private final List<CompetitionSession> sessionList;
             private final boolean isSelectedCompetition;
+            private final boolean isWithCleanSession;
+            private final boolean isWithActiveSession;
+            private final String mostRecentSessionUuid;
+            private String createActivationToggle(boolean isActive) {
+                String check1 = isActive? "checked active":"";
+                String check2 = isActive? "":"checked active";
+
+                StringBuilder html = new StringBuilder();
+                html.append("<div class=\"btn-group btn-group-toggle notextdecoration\" data-toggle=\"buttons\">");
+                html.append("<label class=\"btn btn-secondary notextdecoration "+check1+"\" >");
+                html.append("<input type=\"radio\" name=\"options\" id=\"active\" "+check1+" onchange=\"doCompetitionToggleState('"+mostRecentSessionUuid+"', true)\" >aan</label>");
+                html.append("<label class=\"btn btn-secondary notextdecoration "+check2+"\" >");
+                html.append("<input type=\"radio\" name=\"options\" id=\"unavailable\" "+check2+" onchange=\"doCompetitionToggleState('"+mostRecentSessionUuid+"', false)\" >uit</label></div>");
+                return html.toString();
+            }
             public BootstrapTableForCompetition(Competition competition, List<CompetitionSession> sessionList) {
                 this.competition = competition;
                 this.sessionList = sessionList;
                 isSelectedCompetition = competition.getName().equals(selectedCompetitionName);
+                boolean isAllSessionsUsed = true;
+                boolean isNoSessionActive = true;
+                for (CompetitionSession session: sessionList) {
+                    if (!isSessionUsed(session.getId())) {
+                        isAllSessionsUsed = false;
+                    }
+                    if (session.isActive()) {
+                        isNoSessionActive = false;
+                    }
+                }
+                isWithCleanSession = !isAllSessionsUsed;
+                isWithActiveSession = !isNoSessionActive;
+                mostRecentSessionUuid = sessionList.get(sessionList.size()-1).getUuid().toString();
             }
 
             public String createHtml() {
@@ -195,23 +229,28 @@ public class GamemasterTableComponents {
                 if (parts.length>=2) {
                     collection = parts[1];
                 }
-
+                collection = collection.split("-")[0];
                 String styleCompetitionText = isSelectedCompetition ? " italic underline selected " :"";
                 String styleCompetitionContent = isSelectedCompetition ? "" :" hide ";
-
+                StringBuilder htmlButtonsUpdate = new StringBuilder();
+                if (!isWithCleanSession) {
+                    htmlButtonsUpdate.append(actionsAdd);
+                }
+                htmlButtonsUpdate.append(createActivationToggle(isWithActiveSession));
                 html.append("<tbody title='sessiepanel van competitie "+competitionCounter + " " +sessionAssignmentAmount +"' ><tr class='");
                 html.append(styleCompetitionText+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;");
-                html.append(competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td >");
-                html.append(actionsAdd+"</td><td>"+actionsDelete+"</td></tr>");
+                html.append(competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td class='notextdecoration'>");
+                html.append(htmlButtonsUpdate+"</td><td>"+actionsDelete+"</td></tr>");
 
                 int sessionCounter = 1;
 
                 for (CompetitionSession session: sessionList) {
                     boolean isSelectedSession = selectedSession.equals(session.getUuid().toString());
                     String styleCompetitionSession = isSelectedSession?" bold ":"";
-                    String sessionIndicator = isSelectedSession? " (actief) " :"";
 
-                    String statusButton = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#sessions').val('"+session.getUuid().toString()+"').change()\">activeer sessie</button>";;
+                    String sessionIndicator = isSelectedSession? " (huidige) " :"";
+
+                    String statusButton = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#sessions').val('"+session.getUuid().toString()+"').change()\">selecteer sessie</button>";;
                     if (isSelectedSession) {
                         statusButton = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#pills-wedstrijdverloop-tab').click()\">bekijk status</button>";
                     }
@@ -224,7 +263,7 @@ public class GamemasterTableComponents {
                         }
                     }
 
-                    html.append("<tr class='"+styleCompetitionSession+" subrows "+styleCompetitionContent+"'><td colspan=2></td><td>- Sessie "+sessionCounter+sessionIndicator+"</td><td>"+statusButton+"</td><td>"+competitieSessieStatus+"</td></tr>");
+                    html.append("<tr class='"+styleCompetitionSession+" subrows "+styleCompetitionContent+"'><td ></td><td colspan=2>- Sessie "+sessionCounter+sessionIndicator+"</td><td>"+statusButton+"</td><td>"+competitieSessieStatus+"</td></tr>");
                     sessionCounter ++;
                 }
                 html.append("</tbody>");
@@ -436,7 +475,7 @@ public class GamemasterTableComponents {
             String viewTime = "";
             String viewScore = "";
             if (highscoreMap.containsKey(orderedAssignment.name)) {
-                viewTime = highscoreMap.get(orderedAssignment.name).getStartTime();
+                viewTime = "<span class='hide'>STARTED</span>" + highscoreMap.get(orderedAssignment.name).getStartTime();
                 viewScore = highscoreMap.get(orderedAssignment.name).getFinalScore();
             }
             String title = "duration "  + orderedAssignment.assignmentDescriptor.getDuration().toMinutes();

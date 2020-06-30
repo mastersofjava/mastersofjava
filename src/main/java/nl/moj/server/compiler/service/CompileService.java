@@ -70,14 +70,13 @@ public class CompileService {
     private AssignmentRepository assignmentRepository;
     private AssignmentService assignmentService;
 
-    private CompetitionRuntime competition;
+    //private CompetitionRuntime competition;
     private MojServerProperties mojServerProperties;
     private TeamService teamService;
 
-    public CompileService(CompetitionRuntime competition, MojServerProperties mojServerProperties,
+    public CompileService(MojServerProperties mojServerProperties,
                           CompileAttemptRepository compileAttemptRepository, AssignmentStatusRepository assignmentStatusRepository,
                           TeamService teamService,AssignmentService assignmentService, AssignmentRepository assignmentRepository) {
-        this.competition = competition;
         this.mojServerProperties = mojServerProperties;
         this.compileAttemptRepository = compileAttemptRepository;
         this.assignmentStatusRepository = assignmentStatusRepository;
@@ -86,9 +85,8 @@ public class CompileService {
         this.assignmentService = assignmentService;
     }
 
-    public CompletableFuture<CompileResult> scheduleCompile(Team team, SourceMessage message, Executor executor) {
+    public CompletableFuture<CompileResult> scheduleCompile(Team team, SourceMessage message, Executor executor, ActiveAssignment state) {
         // determine compiler version to use.
-        ActiveAssignment state = competition.getActiveAssignment();
         Assert.isTrue(state!=null,"Active Assignment is missing.");
         AssignmentDescriptor input = state.getAssignmentDescriptor();
         final CompileInputWrapper compileInputWrapper;
@@ -97,6 +95,7 @@ public class CompileService {
             log.info("input.sources " + message.getSources().size() + " " + message.getTests().size() + " " + message.getSources().keySet() + " " +message.getAssignmentName());
             compileInputWrapper = new CompileInputWrapper(message.getAssignmentName());
             input = compileInputWrapper.assignmentDescriptor;
+            compileInputWrapper.state = state;
         } else {
             compileInputWrapper = new CompileInputWrapper(state);
         }
@@ -118,6 +117,7 @@ public class CompileService {
         AssignmentDescriptor assignmentDescriptor;
         Instant startTimeSinceQueue;
         private UUID compileAttemptId;
+        private ActiveAssignment state;
         CompileInputWrapper(String assignmentName) {
             assignment = assignmentRepository.findByName(assignmentName);
             assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
@@ -127,6 +127,7 @@ public class CompileService {
             allAssignmentFiles = fileList;
         }
         CompileInputWrapper(ActiveAssignment state) {
+            this.state = state;
             //AssignmentFileType: RESOURCE, TEST_RESOURCE, HIDDEN_TEST_RESOURCE
             resources = getResourcesToCopy(state);
             //AssignmentFileType: READONLY, TEST, HIDDEN_TEST, HIDDEN
@@ -185,8 +186,8 @@ public class CompileService {
         private Path classesDir;
         private String errorMessage;
 
-        public TeamProjectPathModel(Team team, Assignment assignment) {
-            teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(), team, assignment);
+        public TeamProjectPathModel(Team team, Assignment assignment, ActiveAssignment state) {
+            teamAssignmentDir = teamService.getTeamAssignmentDirectory(state.getCompetitionSession(), team, assignment);
             sourcesDir = teamAssignmentDir.resolve("sources");
             classesDir = teamAssignmentDir.resolve("classes");
         }
@@ -273,15 +274,11 @@ public class CompileService {
         }
         return safePathForEarchOperatingSystem;
     }
-    public TeamProjectPathModel createTeamProjectPathModel(Team team, Assignment assignment) {
-        return new TeamProjectPathModel(team, assignment);
-    }
 
     private CompileResult javaCompile(Languages.JavaVersion javaVersion, Team team, SourceMessage message, CompileInputWrapper compileInputWrapper) {
         compileInputWrapper.startTimeSinceQueue = Instant.now();
         // TODO should not be here.
-        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(compileInputWrapper.assignment, competition
-                .getCompetitionSession(), team);
+        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(compileInputWrapper.assignment, compileInputWrapper.state.getCompetitionSession(), team);
         log.info("javaCompile: {} for team {} ", compileInputWrapper.assignment.getName() , team.getName());
         compileInputWrapper.compileAttemptId = UUID.randomUUID();
         CompileAttempt compileAttempt = CompileAttempt.builder()
@@ -294,7 +291,7 @@ public class CompileService {
         log.info("resources: {}, assignmentFiles: {}" ,resources.size(), assignmentFiles.size());
 
         // TODO this should be somewhere else
-        TeamProjectPathModel pathModel = createTeamProjectPathModel(team, compileInputWrapper.assignment);
+        TeamProjectPathModel pathModel = new TeamProjectPathModel(team, compileInputWrapper.assignment, compileInputWrapper.state);
         pathModel.cleanCompileLocationForTeam();
         // copy resources
         pathModel.prepareResources(compileInputWrapper.resources);
