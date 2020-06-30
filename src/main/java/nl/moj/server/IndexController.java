@@ -37,6 +37,7 @@ import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
+import nl.moj.server.util.HttpUtil;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -71,7 +72,7 @@ public class IndexController {
         Assert.isTrue(competitionRuntime!=null,"runtime not ready");
         Assert.isTrue(competitionRuntime.getCompetitionSession()!=null,"runtime.session not ready");
         UUID currentUUID = competitionRuntime.getCompetitionSession().getUuid();
-        UUID uuid = GamemasterJsonController.getSelectedUserSession(currentUUID);
+        UUID uuid = HttpUtil.getSelectedUserSession(currentUUID);
         if (competitionRuntime.getCompetitionSession().getUuid().equals(uuid)) {
             return competitionRuntime;
         } else {
@@ -100,7 +101,7 @@ public class IndexController {
             }
         }
         model.addAttribute("sessions", activeSessions);
-        UUID input = GamemasterJsonController.getSelectedUserSession( sessionUUID);
+        UUID input = HttpUtil.getSelectedUserSession( sessionUUID);
         log.info("input " + input + " activeSessions " +activeSessions.size());
         if (ssf!=null) {
             ssf.setSession(input);
@@ -182,7 +183,7 @@ public class IndexController {
     }
     @PostMapping("/index/select-session")
     public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
-        GamemasterJsonController.setSelectedUserSession(ssf.getSession());
+        HttpUtil.setSelectedUserSession(ssf.getSession());
         return "redirect:/";
     }
     private class CodePageModelWrapper {

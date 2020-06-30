@@ -85,26 +85,32 @@ public class TestService {
     }
 
     public CompletableFuture<TestResults> scheduleTests(Team team, List<AssignmentFile> tests, Executor executor, ActiveAssignment activeAssignment) {
-        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
-                activeAssignment.getCompetitionSession(), team);
-
-        log.info("as1 " + as);
-        TestAttempt ta = registerIfNeeded(TestAttempt.builder()
-                .assignmentStatus(as)
-                .dateTimeStart(Instant.now())
-                .uuid(UUID.randomUUID())
-                .build());
-        log.info("ta2 " + ta );
-
+        log.info("activeAssignment " + activeAssignment);
         List<CompletableFuture<TestResult>> testFutures = new ArrayList<>();
-        Assert.isTrue(activeAssignment.getCompetitionSession()!=null,"CompetitionSession is not ready");
 
-        tests.forEach(t -> testFutures.add(scheduleTest(team, ta, t, executor, activeAssignment)));
-        log.info("testFutures " + testFutures.size());
+        TestAttempt ta = null;
+        try {
+            AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
+                    activeAssignment.getCompetitionSession(), team);
+            log.info("as.id " + as.getId());
+            ta = registerIfNeeded(TestAttempt.builder()
+                    .assignmentStatus(as)
+                    .dateTimeStart(Instant.now())
+                    .uuid(UUID.randomUUID())
+                    .build());
+            log.info("ta.id " + ta.getId() );
+            Assert.isTrue(activeAssignment.getCompetitionSession()!=null,"CompetitionSession is not ready");
+            log.info("testFutures " + testFutures.size());
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
+            throw new RuntimeException(ex);
+        }
+        final TestAttempt testAttempt = ta;
+        tests.forEach(t -> testFutures.add(scheduleTest(team, testAttempt, t, executor, activeAssignment)));
 
         return CompletableFutures.allOf(testFutures).thenApply(r -> {
-            ta.setDateTimeEnd(Instant.now());
-            TestAttempt updatedTa = registerIfNeeded(ta);
+            testAttempt.setDateTimeEnd(Instant.now());
+            TestAttempt updatedTa = registerIfNeeded(testAttempt);
             return TestResults.builder()
                     .dateTimeStart(updatedTa.getDateTimeStart())
                     .dateTimeEnd(updatedTa.getDateTimeEnd())
@@ -123,13 +129,8 @@ public class TestService {
     }
 
     private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, ActiveAssignment activeAssignment) {
-        try {
-            log.info("executeTest " + team.getName() + " " +activeAssignment.getCompetitionSession());
-            Assert.isTrue(activeAssignment.getCompetitionSession()!=null,"CompetitionSession is not ready");
-        } catch (Exception ex) {
-            log.error(ex.getMessage(), ex);
-            throw new RuntimeException(ex);
-        }
+
+        Assert.isTrue(activeAssignment.getCompetitionSession()!=null,"CompetitionSession is not ready");
         Assert.isTrue(activeAssignment.getAssignment().getName()!=null,"assignmentcontext is not ready");
         TestCase testCase = TestCase.builder()
                 .testAttempt(testAttempt)
@@ -137,15 +138,13 @@ public class TestService {
                 .uuid(UUID.randomUUID())
                 .dateTimeStart(Instant.now())
                 .build();
-        log.info("executeTest1 " );
+
 
         AssignmentDescriptor ad = activeAssignment.getAssignmentDescriptor();
-        log.info("executeTest1 " +activeAssignment.getAssignmentDescriptor());
         Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(activeAssignment.getCompetitionSession(), team, activeAssignment
                 .getAssignment());
 
 
-        log.info("executeTest2 " +teamAssignmentDir);
 
         Path policy = ad.getAssignmentFiles().getSecurityPolicy();
         if (policy != null) {
@@ -155,7 +154,6 @@ public class TestService {
                     .resolve(mojServerProperties.getDirectories().getLibDirectory())
                     .resolve(SECURITY_POLICY_FOR_UNIT_TESTS);
         }
-        log.info("executeTest3 ");
 
         Duration timeout = ad.getTestTimeout() != null ? ad.getTestTimeout() :
                 mojServerProperties.getLimits().getTestTimeout();
@@ -164,7 +162,7 @@ public class TestService {
             log.error("No security policy other than default JVM version installed, refusing to execute tests. Please configure a default security policy.");
             throw new RuntimeException("security policy file not found");
         }
-        log.info("executeTest4 ");
+        log.info("starting commandExecutor {} ", teamAssignmentDir);
 
         try (final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
                 .getTestOutputLimits());

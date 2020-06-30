@@ -276,22 +276,26 @@
                     <br>
                     <div class="row">
                         <div class="p-2 col-12">
-                            <div class="roundGrayBorder maxWidth300 p-2">
-                            <div class="form-check input-group radio maxWidth300" >
+                            <div class="roundGrayBorder maxWidth300 p-2 inlineBlock">
+                                <div class="form-check input-group radio maxWidth300" >
+                                    <label class="form-check-label">
+                                        <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(true)" type="radio" name="setting_registration_disabled" th:checked="${setting_registration_disabled}"
+                                               value="true"
+                                                /> registratie pagina disabled
+                                    </label>
+                                </div>
+                                <br/>
+                                <div class="form-check input-group radio maxWidth300" >
                                 <label class="form-check-label">
-                                    <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(true)" type="radio" name="setting_registration_disabled" th:checked="${setting_registration_disabled}"
-                                           value="true"
-                                            /> registration page disabled
+                                    <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(false)" type="radio" name="setting_registration_disabled" th:checked="${!setting_registration_disabled}"
+                                           value="false"
+                                    /> registratie pagina enabled
                                 </label>
+                                </div>
                             </div>
-                            <br/>
-                            <div class="form-check input-group radio maxWidth300" >
-                            <label class="form-check-label">
-                                <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(false)" type="radio" name="setting_registration_disabled" th:checked="${!setting_registration_disabled}"
-                                       value="false"
-                                /> registration page enabled
-                            </label>
-                            </div>
+                            <div class="roundGrayBorder maxWidth300 p-2 inlineBlock">
+                                Aantal gebruikers nu online: [[${nrOfUsersOnline}]].
+                                <br/><br/><br/>
                             </div>
                         </div>
                     </div>

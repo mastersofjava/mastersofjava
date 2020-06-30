@@ -103,6 +103,7 @@ public class AssignmentRuntime {
         @Getter
         private boolean paused;
         private CompetitionSession competitionSession;
+        private Instant startTime;
 
         public ActiveAssignment getState() {
             return ActiveAssignment.builder()
@@ -174,6 +175,7 @@ public class AssignmentRuntime {
     @Transactional
     public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) throws AssignmentStartException {
         clearHandlers();
+        model.startTime = Instant.now();
         model.competitionSession = competitionSession;
         model.orderedAssignment = orderedAssignment;
         model.assignment = orderedAssignment.getAssignment();

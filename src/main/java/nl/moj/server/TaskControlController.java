@@ -53,6 +53,7 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -100,6 +101,8 @@ public class TaskControlController {
     private final RankingsService rankingsService;
 
     private final CompetitionService competitionService;
+
+    private final SessionRegistry sessionRegistry;
 
     @ModelAttribute(name = "locationList")
     public List<File> locationList() {
@@ -388,7 +391,7 @@ public class TaskControlController {
             model.addAttribute("selectedYearLabel", "");
             model.addAttribute("competitionName", competition.getCompetition().getName().split("\\|")[0]);
             model.addAttribute("isWithCompetitionStarted",false);
-
+            model.addAttribute("nrOfUsersOnline", sessionRegistry.getAllPrincipals().size());
         }
         private void insertGamestatus(Model model) {
             ActiveAssignment state = competition.getActiveAssignment();

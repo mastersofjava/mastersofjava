@@ -62,7 +62,7 @@ public class CompetitionRuntime {
 
         @Getter
         private CompetitionSession competitionSession;
-
+        @JsonIgnore
         private List<OrderedAssignment> completedAssignments = new ArrayList<>();
 
         @JsonIgnore
@@ -70,6 +70,10 @@ public class CompetitionRuntime {
 
         public void setAssignmentExecutionModel(AssignmentRuntime.AssignmentExecutionModel assignmentExecutionModel) {
             this.assignmentExecutionModel = assignmentExecutionModel;
+        }
+
+        public AssignmentRuntime.AssignmentExecutionModel getAssignmentExecutionModel() {
+            return assignmentExecutionModel;
         }
     }
     private Map<Long, CompetitionExecutionModel> activeCompetitionsMap = new TreeMap<>();

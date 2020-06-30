@@ -131,7 +131,7 @@ public class SubmitService {
                         if (isAssignmentNull  || isOverride) {
                             List<AssignmentFile> fileList   = assignmentService.getAssignmentFiles(assignment);
                             AssignmentDescriptor assignmentDescriptor =assignmentService.getAssignmentDescriptor(assignment);
-                            activeAssignment  = ActiveAssignment.builder().competitionSession(competition.getActiveAssignment().getCompetitionSession()).assignment(assignment).assignmentDescriptor(assignmentDescriptor).assignmentFiles(fileList).build();
+                            activeAssignment  = ActiveAssignment.builder().competitionSession(getActiveAssignment().getCompetitionSession()).assignment(assignment).assignmentDescriptor(assignmentDescriptor).assignmentFiles(fileList).build();
                         }
                     } catch (Exception ex) {
                         log.info("ERROR ", ex);
@@ -147,7 +147,7 @@ public class SubmitService {
                         if (submit || team.getRole().equals(Role.ADMIN)) {
                             testCases = activeAssignment.getSubmitTestFiles();
                         }
-                        log.info("testCases (size {}, compile {}, assignment {}, session {}) " , testCases.size(), submitResult.isSuccess(), activeAssignment.getAssignment().getName(), activeAssignment.getCompetitionSession());
+                        log.info("testCases (size {}, compile {}, assignment {}, session {}) " , testCases.size(), submitResult.isSuccess(), activeAssignment.getAssignment().getName(), activeAssignment.getCompetitionSession().getUuid());
 
                         // run selected testcases
                         return executionService.test(team, testCases, activeAssignment).thenApply(r -> {

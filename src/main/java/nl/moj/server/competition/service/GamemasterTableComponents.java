@@ -17,6 +17,7 @@ import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.rankings.model.Ranking;
+import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.teams.model.Role;
@@ -31,8 +32,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.temporal.TemporalField;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -152,23 +156,25 @@ public class GamemasterTableComponents {
         private final List<Competition> competitionList = competitionRepository.findAll();
         private final String actionsAdd = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#createNewSessionForm').submit()\">toevoegen sessie</button>";
         private final String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
-        private Map<Long, Integer> sessionAssignmentAmount = new TreeMap<>();
+        private Map<Long, List<String>> sessionAssignmentAmount = new TreeMap<>();
 
         private BootstrapTableForAllCompetitions() {
             List<String[]> highscoreList = assignmentStatusRepository.getHighscoreList();
 
             for (String[] item : highscoreList) {
                 HighscoreDataWrapper result = new HighscoreDataWrapper(item);
+                result.getAssignmentName();
                 Long sessionId = result.getSessionId();
-                int count = sessionAssignmentAmount.getOrDefault(sessionId,0)+1;
-                sessionAssignmentAmount.put(sessionId,count);
+                List<String> stateList = sessionAssignmentAmount.getOrDefault(sessionId,new ArrayList<>());
+                stateList.add(result.getAssignmentName());
+                sessionAssignmentAmount.put(sessionId,stateList);
             }
         }
         private boolean isSessionUsed(Long sessionId) {
-            return sessionAssignmentAmount.getOrDefault(sessionId,0)!=0;
+            return sessionAssignmentAmount.containsKey(sessionId);
         }
         private int computeAmountOfAssignmentsDone(Long sessionId) {
-            return 0;
+            return sessionAssignmentAmount.get(sessionId).size();
         }
         private String createHtmlFooterRow() {
             StringBuilder html = new StringBuilder();
@@ -233,10 +239,11 @@ public class GamemasterTableComponents {
                 String styleCompetitionText = isSelectedCompetition ? " italic underline selected " :"";
                 String styleCompetitionContent = isSelectedCompetition ? "" :" hide ";
                 StringBuilder htmlButtonsUpdate = new StringBuilder();
-                if (!isWithCleanSession) {
-                    htmlButtonsUpdate.append(actionsAdd);
-                }
+
                 htmlButtonsUpdate.append(createActivationToggle(isWithActiveSession));
+                if (!isWithCleanSession) {
+                    htmlButtonsUpdate.append("&nbsp;&nbsp;&nbsp;&nbsp;" + actionsAdd);
+                }
                 html.append("<tbody title='sessiepanel van competitie "+competitionCounter + " " +sessionAssignmentAmount +"' ><tr class='");
                 html.append(styleCompetitionText+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;");
                 html.append(competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td class='notextdecoration'>");
@@ -254,13 +261,26 @@ public class GamemasterTableComponents {
                     if (isSelectedSession) {
                         statusButton = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#pills-wedstrijdverloop-tab').click()\">bekijk status</button>";
                     }
-                    String competitieSessieStatus = "(nog ongebruikt)";
+                    StringBuilder competitieSessieStatus = new StringBuilder();
                     if (isSessionUsed(session.getId())) {
                         int amount = computeAmountOfAssignmentsDone(session.getId());
-                        competitieSessieStatus = "";
-                        if (amount!=0) {
-                            competitieSessieStatus = " reeds " + amount+ " opdrachten gedaan.";
+
+                        competitieSessieStatus.append("<span title='"+sessionAssignmentAmount.get(session.getId())+"'>#opdrachten gedaan: "+ amount + "</span>");
+
+                        CompetitionRuntime miniRuntime = competitionRuntime.createCompetitionRuntimeForGameStart(competition);
+                        AssignmentRuntime.AssignmentExecutionModel aem = miniRuntime.getCompetitionModel().getAssignmentExecutionModel();
+
+                        boolean isRunning = aem.isRunning();
+                        if (isRunning) {
+                            competitieSessieStatus.append(", actieve opdracht: "+ aem.getOrderedAssignment().getAssignment().getName());
+                        } else {
+                            if (aem.getOrderedAssignment()!=null && amount>0) {
+                                competitieSessieStatus.append(", meest recent: "+ aem.getOrderedAssignment().getAssignment().getName());
+                            }
                         }
+
+                    } else {
+                        competitieSessieStatus.append("(nog ongebruikt)");
                     }
 
                     html.append("<tr class='"+styleCompetitionSession+" subrows "+styleCompetitionContent+"'><td ></td><td colspan=2>- Sessie "+sessionCounter+sessionIndicator+"</td><td>"+statusButton+"</td><td>"+competitieSessieStatus+"</td></tr>");
@@ -437,7 +457,10 @@ public class GamemasterTableComponents {
             return data[2];
         }
         private String getStartTime() {
-            return data[3].split("\\.")[0];
+            int year = Calendar.getInstance().get(Calendar.YEAR);
+            String time = data[3].split("\\.")[0].replace(year+"-","");
+            time = time.substring(0, time.lastIndexOf(":"));
+            return time;
         }
         private Long getSessionId() {
             return Long.parseLong(data[4]);
@@ -465,6 +488,9 @@ public class GamemasterTableComponents {
         }
         int counter = 1;
         for (DtoAssignmentState orderedAssignment: list) {
+            String viewTime = "";
+            String viewScore = "";
+
             boolean isStateCurrent = orderedAssignment.state.contains("CURRENT");
             String viewState = orderedAssignment.state;
             if (isStateCurrent) {
@@ -472,8 +498,7 @@ public class GamemasterTableComponents {
             }
             String viewName = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"' title='view assignment'>"+orderedAssignment.name+"</a>";
             String viewOrder = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"&solution' title='view solution'>"+counter+"</a>";
-            String viewTime = "";
-            String viewScore = "";
+
             if (highscoreMap.containsKey(orderedAssignment.name)) {
                 viewTime = "<span class='hide'>STARTED</span>" + highscoreMap.get(orderedAssignment.name).getStartTime();
                 viewScore = highscoreMap.get(orderedAssignment.name).getFinalScore();
