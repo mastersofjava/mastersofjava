@@ -466,10 +466,6 @@ public class TaskControlController {
         }
         pageStatus.insertAssignmentInfo(model);
         pageStatus.insertCompetitionInfo(model);
-        log.info("taskControl.c() " + competition.getCompetition());
-        log.info("taskControl.cs() " + competition.getCompetitionSession());
-        log.info("taskControl.cs.getUuid() " + competition.getCompetitionSession().getUuid());
-        log.info("taskControl.ssf " + ssf);
         ssf.setSession(competition.getCompetitionSession().getUuid());
         return "control";
     }
