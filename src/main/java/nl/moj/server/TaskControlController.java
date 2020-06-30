@@ -67,6 +67,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -374,6 +375,8 @@ public class TaskControlController {
 
         }
         private void insertPageDefaults(Model model) {
+            Map<Long,String> activeCompetitions = competition.getActiveCompetitionsQuickviewMap();
+
             model.addAttribute("isWithAdminRole", this.isWithAdminRole);
             model.addAttribute("timeLeft", 0);
             model.addAttribute("time", 0);
@@ -392,6 +395,7 @@ public class TaskControlController {
             model.addAttribute("competitionName", competition.getCompetition().getName().split("\\|")[0]);
             model.addAttribute("isWithCompetitionStarted",false);
             model.addAttribute("nrOfUsersOnline", sessionRegistry.getAllPrincipals().size());
+            model.addAttribute("nrOfRunningCompetitions", activeCompetitions.size());
         }
         private void insertGamestatus(Model model) {
             ActiveAssignment state = competition.getActiveAssignment();
@@ -462,6 +466,10 @@ public class TaskControlController {
         }
         pageStatus.insertAssignmentInfo(model);
         pageStatus.insertCompetitionInfo(model);
+        log.info("taskControl.c() " + competition.getCompetition());
+        log.info("taskControl.cs() " + competition.getCompetitionSession());
+        log.info("taskControl.cs.getUuid() " + competition.getCompetitionSession().getUuid());
+        log.info("taskControl.ssf " + ssf);
         ssf.setSession(competition.getCompetitionSession().getUuid());
         return "control";
     }

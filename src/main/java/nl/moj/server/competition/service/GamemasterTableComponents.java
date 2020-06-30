@@ -32,8 +32,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.temporal.TemporalField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -244,7 +242,7 @@ public class GamemasterTableComponents {
                 if (!isWithCleanSession) {
                     htmlButtonsUpdate.append("&nbsp;&nbsp;&nbsp;&nbsp;" + actionsAdd);
                 }
-                html.append("<tbody title='sessiepanel van competitie "+competitionCounter + " " +sessionAssignmentAmount +"' ><tr class='");
+                html.append("<tbody title='sessiepanel van competitie "+competitionCounter +"' ><tr class='");
                 html.append(styleCompetitionText+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;");
                 html.append(competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td class='notextdecoration'>");
                 html.append(htmlButtonsUpdate+"</td><td>"+actionsDelete+"</td></tr>");
@@ -265,9 +263,14 @@ public class GamemasterTableComponents {
                     if (isSessionUsed(session.getId())) {
                         int amount = computeAmountOfAssignmentsDone(session.getId());
 
-                        competitieSessieStatus.append("<span title='"+sessionAssignmentAmount.get(session.getId())+"'>#opdrachten gedaan: "+ amount + "</span>");
+                        competitieSessieStatus.append("<span title='"+sessionAssignmentAmount.get(session.getId())+"'>#opdrachten gedaan: "+ amount);
+                        if (amount>0) {
+                            competitieSessieStatus.append("<a href='/rankings?competition="+competition.getId()+"'>(rankings)</a>");
+                        }
+                        competitieSessieStatus.append("</span>");
 
-                        CompetitionRuntime miniRuntime = competitionRuntime.createCompetitionRuntimeForGameStart(competition);
+                        CompetitionRuntime miniRuntime = competitionRuntime.selectCompetitionRuntimeForGameStart(competition);
+
                         AssignmentRuntime.AssignmentExecutionModel aem = miniRuntime.getCompetitionModel().getAssignmentExecutionModel();
 
                         boolean isRunning = aem.isRunning();

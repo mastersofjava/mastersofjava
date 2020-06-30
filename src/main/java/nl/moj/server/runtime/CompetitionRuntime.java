@@ -38,6 +38,7 @@ import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 @Service
 @RequiredArgsConstructor
@@ -66,7 +67,7 @@ public class CompetitionRuntime {
         private List<OrderedAssignment> completedAssignments = new ArrayList<>();
 
         @JsonIgnore
-        private AssignmentRuntime.AssignmentExecutionModel assignmentExecutionModel;
+        private AssignmentRuntime.AssignmentExecutionModel assignmentExecutionModel = new AssignmentRuntime.AssignmentExecutionModel();
 
         public void setAssignmentExecutionModel(AssignmentRuntime.AssignmentExecutionModel assignmentExecutionModel) {
             this.assignmentExecutionModel = assignmentExecutionModel;
@@ -81,6 +82,15 @@ public class CompetitionRuntime {
     public Map<Long, CompetitionExecutionModel> getActiveCompetitionsMap() {
         return activeCompetitionsMap;
     }
+    public Map<Long, String> getActiveCompetitionsQuickviewMap() {
+        Map<Long, String> result = new TreeMap<>();
+        for (CompetitionExecutionModel model : activeCompetitionsMap.values()) {
+            if (model.getAssignmentExecutionModel().isRunning()) {
+                result.put(model.competition.getId(), model.competition.getDisplayName());
+            }
+        }
+        return result;
+    }
 
     @Getter
     private CompetitionExecutionModel competitionModel = new CompetitionExecutionModel();
@@ -93,14 +103,16 @@ public class CompetitionRuntime {
     }
 
     private void registerCompetition(Competition competition) {
-
         competitionModel = new CompetitionExecutionModel();
         competitionModel.competition = competition;
         activeCompetitionsMap.put(competition.getId(), competitionModel);
     }
 
-    public CompetitionRuntime createCompetitionRuntimeForGameStart(Competition competition) {
+    public CompetitionRuntime selectCompetitionRuntimeForGameStart(Competition competition) {
         CompetitionRuntime result = new CompetitionRuntime(assignmentRuntime, assignmentService,teamService, competitionSessionRepository,assignmentResultRepository,messageService);
+        if (!activeCompetitionsMap.containsKey(competition.getId())) {
+            return this;
+        }
         result.competitionModel = activeCompetitionsMap.get(competition.getId());
         return result;
     }

@@ -66,4 +66,11 @@ public class Competition {
     public String getShortName() {
         return name.split("\\|")[0];
     }
+    public String getDisplayName() {
+        if (name.contains("|20")) {
+            return name;
+        }
+        String[] parts = name.split("\\|");
+        return parts[0] + " (" + parts[1] + ")";
+    }
 }

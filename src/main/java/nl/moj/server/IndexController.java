@@ -24,7 +24,6 @@ import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.restcontrollers.GamemasterJsonController;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.JavaAssignmentFileResolver;
 import nl.moj.server.runtime.model.ActiveAssignment;
@@ -76,7 +75,7 @@ public class IndexController {
         if (competitionRuntime.getCompetitionSession().getUuid().equals(uuid)) {
             return competitionRuntime;
         } else {
-            return competitionRuntime.createCompetitionRuntimeForGameStart(competitionSessionRepository.findByUuid(uuid).getCompetition());
+            return competitionRuntime.selectCompetitionRuntimeForGameStart(competitionSessionRepository.findByUuid(uuid).getCompetition());
         }
     }
 

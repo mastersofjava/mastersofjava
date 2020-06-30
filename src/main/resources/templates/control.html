@@ -150,7 +150,12 @@
                     </div>
                 </div>
                 <div class="p-2 col-12">
-                    <i th:if="${sessions.size()>1}">Hieronder staan de beschikbare competities, selecteer een sessie voor beheer:</i><br/>
+                    <i th:if="${sessions.size()>1}">
+                        Hieronder staan de beschikbare competities, met selecteerbare sessies voor beheer
+                        <i th:if="${nrOfRunningCompetitions}">
+                            (waarvan [[${nrOfRunningCompetitions}]] met nu actieve gebruikers).
+                        </i>
+                    </i><br/>
                     <div th:remove="tag" th:utext="${sessionDetailCanvas}"></div>
                 </div>
         </div>

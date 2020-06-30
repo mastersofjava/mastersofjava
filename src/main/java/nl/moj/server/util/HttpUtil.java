@@ -10,8 +10,15 @@ import java.util.UUID;
 
 public class HttpUtil {
     public static String getParam(String param) {
+        return getParam(param, null);
+    }
+    public static String getParam(String param, String defaultVal) {
         HttpServletRequest req = getCurrentHttpRequest();
-        return req==null?null: req.getParameter(param);
+        return req==null?defaultVal: req.getParameter(param);
+    }
+    public static boolean hasParam(String param) {
+        HttpServletRequest req = getCurrentHttpRequest();
+        return req==null?false: req.getParameterMap().containsKey(param);
     }
     public static String getCurrentHttpRequestUserName() {
         SecurityContextImpl context = (SecurityContextImpl)getCurrentHttpRequest().getSession().getAttribute("SPRING_SECURITY_CONTEXT");
