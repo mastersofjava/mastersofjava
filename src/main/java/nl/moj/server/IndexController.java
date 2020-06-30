@@ -20,6 +20,7 @@ import java.io.File;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,7 @@ import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationEntryPoint;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -70,9 +72,13 @@ public class IndexController {
     		return "redirect:"+ KeycloakAuthenticationEntryPoint.DEFAULT_LOGIN_URI;
     	}
     	// The admin user should be created with the bootstrap
-    	if (doesUserExistAndIsNotAdmin(user)) {
+    	if (!doesUserExistAndIsNotAdmin(user)) {
     		createNewTeam(user);
     	}
+		model.addAttribute("isControlRole", Role.isWithControleRole(((org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken) user)
+    			.getAuthorities().stream()
+    			.map(GrantedAuthority::getAuthority)
+    			.collect(Collectors.toList())));
         if (competition.getCurrentAssignment() == null) {
             model.addAttribute("team", user.getName());
             return "index";
@@ -91,7 +97,7 @@ public class IndexController {
 	}
 
 	private boolean doesUserExistAndIsNotAdmin(Principal user) {
-		return user != null && teamRepository.findByName(user.getName()) == null && !isAdminUser(user);
+		return teamRepository.findByName(user.getName()) != null && isAdminUser(user);
 	}
 
 	private boolean isAdminUser(Principal user) {
