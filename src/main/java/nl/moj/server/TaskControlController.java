@@ -54,7 +54,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
@@ -375,7 +374,7 @@ public class TaskControlController {
 
         }
         private void insertPageDefaults(Model model) {
-            Map<Long,String> activeCompetitions = competition.getActiveCompetitionsQuickviewMap();
+            Map<Long,String> activeCompetitions = competition.getRunningCompetitionsQuickviewMap();
 
             model.addAttribute("isWithAdminRole", this.isWithAdminRole);
             model.addAttribute("timeLeft", 0);

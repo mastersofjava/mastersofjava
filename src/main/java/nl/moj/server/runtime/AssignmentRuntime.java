@@ -401,7 +401,7 @@ public class AssignmentRuntime {
     @Async
     public Future<?> scheduleTimeSync() {
         return taskScheduler.scheduleAtFixedRate(() -> messageService.sendRemainingTime(model.getTimeRemaining(),
-                model.assignmentDescriptor.getDuration().getSeconds(), model.isPaused()), TIMESYNC_FREQUENCY);
+                model.assignmentDescriptor.getDuration().getSeconds(), model.isPaused(), model.competitionSession.getUuid().toString()), TIMESYNC_FREQUENCY);
     }
 
     private Date inSeconds(long sec) {

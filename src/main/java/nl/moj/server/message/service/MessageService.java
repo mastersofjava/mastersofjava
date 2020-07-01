@@ -94,12 +94,13 @@ public class MessageService {
         template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
     }
 
-    public void sendRemainingTime(Long remainingTime, Long totalTime, boolean isPaused) {
+    public void sendRemainingTime(Long remainingTime, Long totalTime, boolean isPaused, String sessionId) {
         try {
             log.info("Sending remaining time: r={}, t={}", remainingTime, totalTime);
             TimerSyncMessage msg = TimerSyncMessage.builder()
                     .remainingTime(remainingTime)
                     .totalTime(totalTime)
+                    .sessionId(sessionId)
                     .isRunning(!isPaused)
                     .build();
             template.convertAndSend(DEST_COMPETITION, msg);

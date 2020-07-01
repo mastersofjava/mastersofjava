@@ -82,7 +82,7 @@ public class CompetitionRuntime {
     public Map<Long, CompetitionExecutionModel> getActiveCompetitionsMap() {
         return activeCompetitionsMap;
     }
-    public Map<Long, String> getActiveCompetitionsQuickviewMap() {
+    public Map<Long, String> getRunningCompetitionsQuickviewMap() {
         Map<Long, String> result = new TreeMap<>();
         for (CompetitionExecutionModel model : activeCompetitionsMap.values()) {
             if (model.getAssignmentExecutionModel().isRunning()) {

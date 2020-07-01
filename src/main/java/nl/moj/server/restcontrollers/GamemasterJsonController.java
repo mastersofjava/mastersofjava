@@ -1,6 +1,10 @@
 package nl.moj.server.restcontrollers;
 
 import lombok.RequiredArgsConstructor;
+import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.repository.CompetitionRepository;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.GamemasterTableComponents;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
@@ -16,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +36,10 @@ public class GamemasterJsonController {
     private final MojServerProperties mojServerProperties;
 
     private final CompetitionRuntime competitionRuntime;
+
+    private final CompetitionRepository competitionRepository;
+
+    private final CompetitionSessionRepository competitionSessionRepository;
 
     private final GamemasterTableComponents gamemasterTableComponents;
 
@@ -78,5 +87,30 @@ public class GamemasterJsonController {
 
         return response;
     }
+    @GetMapping(value = "/availableCompetitions", produces = MediaType.APPLICATION_JSON_VALUE)
+    public @ResponseBody
+    List<Competition> getAvailableCompetitions() {
+        List<Competition> listAll = competitionRepository.findAll();
+        List<Competition> result = new ArrayList<>();
+        for (Competition competition : listAll) {
+            List<CompetitionSession>  sessions = competitionSessionRepository.findByCompetition(competition);
 
+            for (CompetitionSession session: sessions) {
+                if (session.isActive()) {
+                    result.add(competition);
+                }
+            }
+        }
+        return result;
+    }
+    @GetMapping(value = "/runningCompetitions", produces = MediaType.APPLICATION_JSON_VALUE)
+    public @ResponseBody
+    Map<Long,String> getRunningCompetitions() {
+        return competitionRuntime.getRunningCompetitionsQuickviewMap();
+    }
+    @GetMapping(value = "/systemState", produces = MediaType.APPLICATION_JSON_VALUE)
+    public @ResponseBody
+    Map<Long, CompetitionRuntime.CompetitionExecutionModel> getSystemState() {
+        return competitionRuntime.getActiveCompetitionsMap();
+    }
 }
