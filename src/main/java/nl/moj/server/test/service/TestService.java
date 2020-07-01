@@ -90,11 +90,10 @@ public class TestService {
 
         TestAttempt ta = null;
         try {
-            AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
+            AssignmentStatus optionalStatus = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
                     activeAssignment.getCompetitionSession(), team);
-            log.info("as.id " + as.getId());
             ta = registerIfNeeded(TestAttempt.builder()
-                    .assignmentStatus(as)
+                    .assignmentStatus(optionalStatus)
                     .dateTimeStart(Instant.now())
                     .uuid(UUID.randomUUID())
                     .build());
@@ -288,10 +287,12 @@ public class TestService {
             }
         }
         StringBuilder sb = new StringBuilder();
+        sb.append("\""); // note: classpath is surrounded with '"' for correct execution on each OS.
         for (File file : classPath) {
             sb.append(file.getAbsolutePath());
-            sb.append(System.getProperty("path.separator"));
+            sb.append(File.pathSeparator);
         }
+        sb.append("\"");
         return sb.toString();
     }
 

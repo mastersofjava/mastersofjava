@@ -44,7 +44,6 @@ import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.config.properties.Languages;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
@@ -266,7 +265,7 @@ public class CompileService {
         }
     }
 
-    private String toSafeClasspathInputForEachOperatingSystem(File file) {
+    private String toSafeFilePathInputForEachOperatingSystem(File file) {
         String safePathForEarchOperatingSystem = file.toString();
         if (safePathForEarchOperatingSystem.contains(" ")) {
             // if with space then make safe for javac execution (otherwise windows execution would go wrong)
@@ -274,7 +273,14 @@ public class CompileService {
         }
         return safePathForEarchOperatingSystem;
     }
-
+    private String toSafeClasspathInputForEachOperatingSystem(String input) {
+        String safePathForEarchOperatingSystem = input;
+        if (safePathForEarchOperatingSystem.contains(" ")) {
+            // if with space then make safe for javac execution (otherwise linux execution would go wrong)
+            safePathForEarchOperatingSystem = "\"" +safePathForEarchOperatingSystem + "\"";
+        }
+        return safePathForEarchOperatingSystem;
+    }
     private CompileResult javaCompile(Languages.JavaVersion javaVersion, Team team, SourceMessage message, CompileInputWrapper compileInputWrapper) {
         compileInputWrapper.startTimeSinceQueue = Instant.now();
         // TODO should not be here.
@@ -327,14 +333,14 @@ public class CompileService {
                 cmd.add("UTF8");
                 cmd.add("-g:source,lines,vars");
                 cmd.add("-cp");
-                cmd.add(makeClasspath(pathModel.classesDir).stream()
+                cmd.add(toSafeClasspathInputForEachOperatingSystem(makeClasspath(pathModel.classesDir).stream()
                         .map(f -> f.getAbsoluteFile().toString())
-                        .collect(Collectors.joining(File.pathSeparator)));
+                        .collect(Collectors.joining(File.pathSeparator))));
                 cmd.add("-d");
-                cmd.add(toSafeClasspathInputForEachOperatingSystem(pathModel.classesDir.toAbsolutePath().toFile()));
+                cmd.add(toSafeFilePathInputForEachOperatingSystem(pathModel.classesDir.toAbsolutePath().toFile()));
                 assignmentFiles.forEach(a -> {
                     Assert.isTrue(a.getAbsoluteFile().toFile().exists(),"file does not exist: " +a.getAbsoluteFile().toFile());
-                    cmd.add(toSafeClasspathInputForEachOperatingSystem(a.getAbsoluteFile().toFile()));
+                    cmd.add(toSafeFilePathInputForEachOperatingSystem(a.getAbsoluteFile().toFile()));
                 });
 
                 long closeTimeout = timeout.toSeconds() + 4;
