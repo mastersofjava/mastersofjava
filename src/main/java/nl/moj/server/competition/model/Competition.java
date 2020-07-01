@@ -44,7 +44,7 @@ public class Competition {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @OneToMany(mappedBy = "competition", orphanRemoval = true, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "competition", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<OrderedAssignment> assignments = new ArrayList<>();
 
     public List<OrderedAssignment> getAssignmentsInOrder() {
@@ -67,7 +67,7 @@ public class Competition {
         return name.split("\\|")[0];
     }
     public String getDisplayName() {
-        if (name.contains("|20")) {
+        if (!name.contains("|20")) {
             return name;
         }
         String[] parts = name.split("\\|");

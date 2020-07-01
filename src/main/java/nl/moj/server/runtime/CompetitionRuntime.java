@@ -38,6 +38,7 @@ import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 @Service
@@ -76,6 +77,26 @@ public class CompetitionRuntime {
         public AssignmentRuntime.AssignmentExecutionModel getAssignmentExecutionModel() {
             return assignmentExecutionModel;
         }
+
+        public boolean isRunning() {
+            return assignmentExecutionModel.isRunning();
+        }
+        public int getAmountOfComplemetedAssignments() {
+            return completedAssignments.size();
+        }
+
+        public String getRunningAssignmentName() {
+            if (assignmentExecutionModel.getOrderedAssignment()==null||assignmentExecutionModel.getOrderedAssignment().getAssignment()==null) {
+                return "none";
+            }
+            return assignmentExecutionModel.getOrderedAssignment().getAssignment().getName();
+        }
+        public String getTimer() {
+            if (assignmentExecutionModel.getTimer()==null) {
+                return "-";
+            }
+            return new Date(assignmentExecutionModel.getTimer().getStartTime()) + " - " + new Date(assignmentExecutionModel.getTimer().getTime());
+        }
     }
     private Map<Long, CompetitionExecutionModel> activeCompetitionsMap = new TreeMap<>();
 
@@ -110,7 +131,7 @@ public class CompetitionRuntime {
 
     public CompetitionRuntime selectCompetitionRuntimeForGameStart(Competition competition) {
         CompetitionRuntime result = new CompetitionRuntime(assignmentRuntime, assignmentService,teamService, competitionSessionRepository,assignmentResultRepository,messageService);
-        if (!activeCompetitionsMap.containsKey(competition.getId())) {
+        if (activeCompetitionsMap.get(competition.getId())==null) {
             return this;
         }
         result.competitionModel = activeCompetitionsMap.get(competition.getId());
@@ -151,7 +172,8 @@ public class CompetitionRuntime {
         competitionModel.competitionSession = competitionSession;
         restoreSession();
     }
-    private void restoreSession() {
+    @Transactional
+    public void restoreSession() {
         stopCurrentAssignment();
         Instant nowTime = Instant.now();
         competitionModel.competitionSession.setActive(true);
@@ -209,6 +231,17 @@ public class CompetitionRuntime {
     public ActiveAssignment getActiveAssignment() {
         competitionModel.assignmentExecutionModel.setCompetitionSession(competitionModel.competitionSession);
         return competitionModel.assignmentExecutionModel.getState();
+    }
+
+    public OrderedAssignment determineNextAssignmentIfAny() {
+        List<OrderedAssignment> orderedAssignmentList = competitionModel.competition.getAssignmentsInOrder();
+
+        for (OrderedAssignment assigment: orderedAssignmentList) {
+            if (!competitionModel.completedAssignments.contains(assigment)) {
+                return assigment;
+            }
+        }
+        return null;
     }
 
     public void startAssignment(String name) {

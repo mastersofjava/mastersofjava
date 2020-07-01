@@ -147,6 +147,10 @@ function clientSend(destinationUri, taskMap) {
     }
 
 }
+
+function doValidatePerformance() {
+    clientSend("/app/control/performanceValidation", { });
+}
 function clientSelectSubtable(node, rowIdentifierValue) {
     $(node).closest('table').find('tr').removeClass('selected');
     $(node).closest('table').find('tr.subrows').addClass('hide');

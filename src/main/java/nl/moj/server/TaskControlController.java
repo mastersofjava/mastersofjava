@@ -128,7 +128,7 @@ public class TaskControlController {
     public String clearCompetition() {
         log.warn("clearCompetition entered");
         gamemasterTableComponents.deleteCurrentSessionResources();
-        return competitionCleaningService.doCleanComplete();
+        return competitionCleaningService.doCleanComplete(competition.getCompetitionSession());
     }
 
     @MessageMapping("/control/pauseResume")
@@ -204,19 +204,19 @@ public class TaskControlController {
     @SendToUser("/queue/controlfeedback")
    // @Transactional
     public String deleteCompetition(TaskControlController.TaskMessage message) {
-        boolean isUpdateCurrentCompetition =  message.getUuid().equals(competition.getCompetition().getUuid());
+        boolean isUpdateCurrentCompetition =  message.getUuid().equals(competition.getCompetition().getUuid().toString());
         log.info("deleteCompetition isCurrentCompetition {} ", isUpdateCurrentCompetition);
 
         try {
             long startAmount = competitionRepository.count();
             Competition competitionToClean = competitionRepository.findByUuid(UUID.fromString(message.getUuid()));
             List<CompetitionSession> sessionsToDelete = competitionSessionRepository.findByCompetition(competitionToClean);
-            log.info("sessionsToDelete {} ", sessionsToDelete.size());
-            if (isUpdateCurrentCompetition) {
-                clearCompetition();
-            }
+            log.info("sessionsToDelete {}, c {}", ""+ sessionsToDelete.size(), ""+ competitionToClean.getName());
+
             for (CompetitionSession session: sessionsToDelete) {
+                competitionCleaningService.doCleanComplete(session);
                 competitionSessionRepository.delete(session);
+                competition.getActiveCompetitionsMap().remove(competitionToClean.getId());
             }
             if (startAmount>1) {
 
@@ -380,6 +380,7 @@ public class TaskControlController {
             model.addAttribute("timeLeft", 0);
             model.addAttribute("time", 0);
             model.addAttribute("running", false);
+            model.addAttribute("runningSelectedCompetition", false);
             model.addAttribute("clockStyle", "active");
             model.addAttribute("currentAssignment", "-");
             model.addAttribute("assignmentDetailCanvas", "(U moet eerst de opdrachten inladen)");
@@ -391,16 +392,21 @@ public class TaskControlController {
             model.addAttribute("teamDetailCanvas", "(U moet eerst de gebruikers aanmaken)");
             model.addAttribute("repositoryLocation", mojServerProperties.getAssignmentRepo().toFile());
             model.addAttribute("selectedYearLabel", "");
-            model.addAttribute("competitionName", competition.getCompetition().getName().split("\\|")[0]);
+            model.addAttribute("competitionName", competition.getCompetition().getShortName());
             model.addAttribute("isWithCompetitionStarted",false);
             model.addAttribute("nrOfUsersOnline", sessionRegistry.getAllPrincipals().size());
             model.addAttribute("nrOfRunningCompetitions", activeCompetitions.size());
+
+
         }
         private void insertGamestatus(Model model) {
             ActiveAssignment state = competition.getActiveAssignment();
             model.addAttribute("timeLeft", state.getTimeRemaining());
             model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addAttribute("running", state.isRunning());
+            boolean isRunningSelected = competition.selectCompetitionRuntimeForGameStart(competition.getCompetition()).getCompetitionModel().isRunning();
+
+            model.addAttribute("runningSelectedCompetition", isRunningSelected);
             model.addAttribute("clockStyle", (assignmentRuntime.isPaused()?"disabled":"active"));
             model.addAttribute("currentAssignment", state.getAssignmentDescriptor().getName());
         }

@@ -86,6 +86,7 @@ public class AssignmentRuntime {
 
 
     public static class AssignmentExecutionModel  {
+        @Getter
         private StopWatch timer;
 
         @Getter
@@ -167,6 +168,7 @@ public class AssignmentRuntime {
      * @return the {@link Future}
      */
     public Future<?> start(OrderedAssignment orderedAssignment, CompetitionRuntime.CompetitionExecutionModel competitionExecutionModel) throws AssignmentStartException {
+        model = new AssignmentExecutionModel();
         Future<?> result = start(orderedAssignment, competitionExecutionModel.getCompetitionSession());
         competitionExecutionModel.setAssignmentExecutionModel(model);
         return result;

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
@@ -40,40 +41,45 @@ public class CompetitionCleaningService {
 
     private final SubmitAttemptRepository submitAttemptRepository;
 
-    public String doCleanComplete() {
+    public String doCleanComplete(CompetitionSession competitionSession) {
         competition.getCompetitionState().getCompletedAssignments().clear();
         if (assignmentStatusRepository.count()==0) {
             return "competition not started yet";
         }
-        log.info("delete contents of session " + competition.getCompetitionSession().getId());
+        log.info("delete contents of session " + competitionSession.getId());
 
-        List<AssignmentStatus> statusList = assignmentStatusRepository.findByCompetitionSession(competition.getCompetitionSession());
-        List<AssignmentResult> resultList = assignmentResultRepository.findByCompetitionSession(competition.getCompetitionSession());
+        List<AssignmentStatus> statusList = assignmentStatusRepository.findByCompetitionSession(competitionSession);
+        List<AssignmentResult> resultList = assignmentResultRepository.findByCompetitionSession(competitionSession);
         log.info("contents of session " + statusList.size() + " " +resultList.size() );
 
-        for (AssignmentResult result: resultList) {
-            assignmentResultRepository.delete(result);
-        }
-        for (AssignmentStatus status: statusList) {
-            List<SubmitAttempt> saList = submitAttemptRepository.findByAssignmentStatus(status);
-
-            for (SubmitAttempt sa: saList) {
-                submitAttemptRepository.delete(sa);
+        try {
+            for (AssignmentResult result: resultList) {
+                assignmentResultRepository.delete(result);
             }
+            for (AssignmentStatus status: statusList) {
+                List<SubmitAttempt> saList = submitAttemptRepository.findByAssignmentStatus(status);
 
-            List<CompileAttempt> caList = compileAttemptRepository.findByAssignmentStatus(status);
-            for (CompileAttempt ca: caList) {
-                compileAttemptRepository.delete(ca);
-            }
-            List<TestAttempt> taList =  testAttemptRepository.findByAssignmentStatus(status);
-            for (TestAttempt ta: taList) {
-                List<TestCase> tcList= ta.getTestCases();
-                for (TestCase tc: tcList) {
-                    testCasesRepository.delete(tc);
+                for (SubmitAttempt sa: saList) {
+                    submitAttemptRepository.delete(sa);
                 }
-                testAttemptRepository.delete(ta);
+
+                List<CompileAttempt> caList = compileAttemptRepository.findByAssignmentStatus(status);
+                for (CompileAttempt ca: caList) {
+                    compileAttemptRepository.delete(ca);
+                }
+                List<TestAttempt> taList =  testAttemptRepository.findByAssignmentStatus(status);
+                for (TestAttempt ta: taList) {
+                    List<TestCase> tcList= ta.getTestCases();
+                    for (TestCase tc: tcList) {
+                        testCasesRepository.delete(tc);
+                    }
+                    testAttemptRepository.delete(ta);
+                }
+                assignmentStatusRepository.delete(status);
             }
-            assignmentStatusRepository.delete(status);
+
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
         }
 
        // correct cleaning: first delete all status items, afterwards delete all results

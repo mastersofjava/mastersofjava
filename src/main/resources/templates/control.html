@@ -96,10 +96,10 @@
                                 <div class="p-2 text-center" >
                                     <button id="start" class="btn btn-success minWidth150" onclick="startTask();"><span class="fa fa-gamepad pr-1" ></span>Start Opdracht</button>
                                 </div>
-                                <div class="p-2 text-center" th:if="${running}">
+                                <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
                                     <button id="pause" class="btn btn-success minWidth150" onclick="pauseResume();">Pause/Resume</button>
                                 </div>
-                                <div class="p-2 text-center" th:if="${running}">
+                                <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
                                     <button id="play" class="btn btn-success minWidth150" onclick="window.open('/','competitie');">Speel nu</button>
                                 </div>
                             </div>
@@ -111,13 +111,13 @@
                     <div class="form-group col-4">
                         <div class="row">
                             <div class="btn-group-vertical col-4" >
-                                <div class="p-2 text-center" th:if="${running}">
+                                <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
                                     <button id="stop" class="btn btn-warning minWidth150" onclick="stopTask();" data-container="body" data-toggle="popover" data-placement="left">Finish Assignment</button>
                                 </div>
-                                <div class="p-2 text-center" th:if="${running}">
+                                <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
                                     <button id="restart" class="btn btn-warning minWidth150" onclick="restartAssignment();" >Reset Assignment</button>
                                 </div>
-                                <div class="p-2 text-center" th:if="${running||isWithCompetitionStarted}">
+                                <div class="p-2 text-center" th:if="${runningSelectedCompetition||isWithCompetitionStarted}">
                                     <button id="clear" class="btn btn-warning minWidth150" onclick="clearAssignments();" data-container="body" data-toggle="popover" data-placement="right">Reset Competition</button>
                                 </div>
                             </div>
@@ -152,8 +152,11 @@
                 <div class="p-2 col-12">
                     <i th:if="${sessions.size()>1}">
                         Hieronder staan de beschikbare competities, met selecteerbare sessies voor beheer
-                        <i th:if="${nrOfRunningCompetitions}">
+                        <i th:if="${nrOfRunningCompetitions>0}">
                             (waarvan [[${nrOfRunningCompetitions}]] met nu actieve gebruikers).
+                        </i>
+                        <i th:if="${nrOfRunningCompetitions==0}">
+                            (op dit moment geen competities met actieve gebruikers).
                         </i>
                     </i><br/>
                     <div th:remove="tag" th:utext="${sessionDetailCanvas}"></div>

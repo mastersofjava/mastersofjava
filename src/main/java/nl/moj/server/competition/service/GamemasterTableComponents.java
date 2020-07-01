@@ -176,7 +176,10 @@ public class GamemasterTableComponents {
         }
         private String createHtmlFooterRow() {
             StringBuilder html = new StringBuilder();
-            html.append("<tr><th colspan=4></th><th><button class='btn btn-secondary' data-toggle='modal' data-target='#createNewCompetition-modal'>Nieuwe competitie</button></th></tr>");
+            html.append("<tr><th colspan=3></th><th>");
+            html.append("<button class='btn btn-secondary adminRole role' onclick='doValidatePerformance()'>Valideer performance</button>");
+            html.append("</th><th><button class='btn btn-secondary' data-toggle='modal' data-target='#createNewCompetition-modal'>Nieuwe competitie</button>");
+            html.append("</th></tr>");
             return html.toString();
         }
         private String createHtmlHeaderRow() {
@@ -261,24 +264,31 @@ public class GamemasterTableComponents {
                     }
                     StringBuilder competitieSessieStatus = new StringBuilder();
                     if (isSessionUsed(session.getId())) {
-                        int amount = computeAmountOfAssignmentsDone(session.getId());
-
-                        competitieSessieStatus.append("<span title='"+sessionAssignmentAmount.get(session.getId())+"'>#opdrachten gedaan: "+ amount);
-                        if (amount>0) {
-                            competitieSessieStatus.append("<a href='/rankings?competition="+competition.getId()+"'>(rankings)</a>");
-                        }
-                        competitieSessieStatus.append("</span>");
-
                         CompetitionRuntime miniRuntime = competitionRuntime.selectCompetitionRuntimeForGameStart(competition);
 
                         AssignmentRuntime.AssignmentExecutionModel aem = miniRuntime.getCompetitionModel().getAssignmentExecutionModel();
-
                         boolean isRunning = aem.isRunning();
+
+                        int amount = computeAmountOfAssignmentsDone(session.getId());
                         if (isRunning) {
-                            competitieSessieStatus.append(", actieve opdracht: "+ aem.getOrderedAssignment().getAssignment().getName());
+                            amount = amount -1;
+                        }
+                        competitieSessieStatus.append("<span title='"+sessionAssignmentAmount.get(session.getId())+"'>#opdrachten gedaan: "+ amount);
+                        if (amount>0||isRunning) {
+                            competitieSessieStatus.append(" (<a href='/rankings?competition="+competition.getId()+"'>scores</a>,<a href='/feedback?competition="+competition.getId()+"'>code</a>)");
+                        }
+                        competitieSessieStatus.append("</span>");
+
+                        if (isRunning) {
+                            if (isSelectedCompetition) {
+                                competitieSessieStatus.append("<br/>actieve opdracht: <a href='/'>"+ aem.getOrderedAssignment().getAssignment().getName() + "</a>");
+                            } else {
+                                competitieSessieStatus.append("<br/>actieve opdracht: "+ aem.getOrderedAssignment().getAssignment().getName());
+                            }
+
                         } else {
                             if (aem.getOrderedAssignment()!=null && amount>0) {
-                                competitieSessieStatus.append(", meest recent: "+ aem.getOrderedAssignment().getAssignment().getName());
+                                competitieSessieStatus.append("<br/>meest recent: "+ aem.getOrderedAssignment().getAssignment().getName());
                             }
                         }
 

@@ -72,7 +72,7 @@ public class IndexController {
         Assert.isTrue(competitionRuntime.getCompetitionSession()!=null,"runtime.session not ready");
         UUID currentUUID = competitionRuntime.getCompetitionSession().getUuid();
         UUID uuid = HttpUtil.getSelectedUserSession(currentUUID);
-        if (competitionRuntime.getCompetitionSession().getUuid().equals(uuid)) {
+        if (competitionRuntime.getCompetitionSession().getUuid().equals(uuid)||HttpUtil.hasParam("default")) {
             return competitionRuntime;
         } else {
             return competitionRuntime.selectCompetitionRuntimeForGameStart(competitionSessionRepository.findByUuid(uuid).getCompetition());

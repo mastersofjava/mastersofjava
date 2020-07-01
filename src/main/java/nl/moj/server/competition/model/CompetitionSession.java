@@ -41,6 +41,10 @@ public class CompetitionSession {
     @Column(name = "active")
     private boolean active;
 
+    public boolean isAvailable() {
+        return active;
+    }
+
     @ManyToOne
     @JoinColumn(name = "competition_id", nullable = false)
     private Competition competition;

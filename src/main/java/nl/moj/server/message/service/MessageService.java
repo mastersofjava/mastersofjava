@@ -96,7 +96,7 @@ public class MessageService {
 
     public void sendRemainingTime(Long remainingTime, Long totalTime, boolean isPaused, String sessionId) {
         try {
-            log.info("Sending remaining time: r={}, t={}", remainingTime, totalTime);
+            log.info("Sending time: r={}, t={}, s={}", remainingTime, totalTime, sessionId);
             TimerSyncMessage msg = TimerSyncMessage.builder()
                     .remainingTime(remainingTime)
                     .totalTime(totalTime)

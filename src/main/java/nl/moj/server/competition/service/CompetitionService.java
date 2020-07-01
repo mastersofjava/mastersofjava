@@ -20,7 +20,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.repository.CompetitionRepository;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.login.SignupForm;
 import nl.moj.server.runtime.CompetitionRuntime;
@@ -39,6 +42,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,6 +75,10 @@ public class CompetitionService {
     private final AssignmentStatusRepository assignmentStatusRepository;
 
     private final CompetitionRuntime competitionRuntime;
+
+    private final CompetitionRepository competitionRepository;
+
+    private final CompetitionSessionRepository competitionSessionRepository;
 
     public PasswordEncoder getEncoder() {
         return encoder;
@@ -286,4 +294,21 @@ public class CompetitionService {
         }
         return file;
     }
+
+    public @ResponseBody
+    List<Competition> getAvailableCompetitions() {
+        List<Competition> listAll = competitionRepository.findAll();
+        List<Competition> result = new ArrayList<>();
+        for (Competition competition : listAll) {
+            List<CompetitionSession> sessions = competitionSessionRepository.findByCompetition(competition);
+
+            for (CompetitionSession session : sessions) {
+                if (session.isAvailable()) {
+                    result.add(competition);
+                }
+            }
+        }
+        return result;
+    }
+
 }
