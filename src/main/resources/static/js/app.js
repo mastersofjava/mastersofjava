@@ -104,7 +104,7 @@ function connectCompetition() {
     }
 }
 function isSessionValid(msg) {
-    return sg.sessionId!=null || $('#sessions').val()===sg.sessionId;
+    return msg.sessionId!=null || $('#sessions').val()===sg.sessionId;
 }
 
 function connectButtons() {
