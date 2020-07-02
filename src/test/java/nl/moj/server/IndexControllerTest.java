@@ -88,4 +88,25 @@ class IndexControllerTest {
 
 		Mockito.verify(competitionService, never()).createNewTeam(Mockito.any(SignupForm.class), Mockito.eq(Role.USER));
 	}
+	
+	@Test
+	void testIndexAdminTeam() {
+		GrantedAuthority grantedAuthority = Mockito.mock(GrantedAuthority.class);
+		when(grantedAuthority.getAuthority()).thenReturn("ROLE_USER");
+		Collection<GrantedAuthority> grantedAuthorities = List.of(grantedAuthority);
+		
+		org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken user = Mockito.mock(org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken.class);
+		when(user.getName()).thenReturn("userName");
+		when(user.getAuthorities()).thenReturn(grantedAuthorities);
+		
+		Team team = Team.builder()
+				.name("userName")
+				.role(Role.USER)
+				.build();
+		when(teamRepository.findByName(Mockito.anyString())).thenReturn(team );
+		
+		assertEquals("index", indexController.index(Mockito.mock(Model.class), user, null));
+
+		Mockito.verify(competitionService, never()).createNewTeam(Mockito.any(SignupForm.class), Mockito.eq(Role.USER));
+	}
 }
