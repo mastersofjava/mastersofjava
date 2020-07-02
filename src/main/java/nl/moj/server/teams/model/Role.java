@@ -23,6 +23,7 @@ public final class Role {
     public static final String GAME_MASTER = "ROLE_GAME_MASTER";
     public static final String USER = "ROLE_USER";
     public static final String ANONYMOUS = "ROLE_ANONYMOUS";
+    
 	public static boolean isWithControleRole(List<String> roles) {
 		return roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER);
 	}

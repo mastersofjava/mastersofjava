@@ -68,7 +68,6 @@ spring:
 #    generate-ddl: true
 
 logging.level.nl.moj.server: DEBUG
-logging.level.org.keycloak: DEBUG
 
 logging.level.nl.moj.server.persistence: INFO
 logging.level.nl.moj.server.persistence.TeamMapper: INFO

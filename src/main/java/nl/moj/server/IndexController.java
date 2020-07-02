@@ -97,7 +97,7 @@ public class IndexController {
 	}
 
 	private boolean doesUserExistAndIsNotAdmin(Principal user) {
-		return teamRepository.findByName(user.getName()) != null && isAdminUser(user);
+		return teamRepository.findByName(user.getName()) != null && !isAdminUser(user);
 	}
 
 	private boolean isAdminUser(Principal user) {
