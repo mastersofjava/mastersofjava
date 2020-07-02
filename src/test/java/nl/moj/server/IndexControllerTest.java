@@ -33,11 +33,16 @@ class IndexControllerTest {
 
 	@Mock
 	private CompetitionRuntime competition;
-    @Mock private TeamRepository teamRepository;
-    @Mock private TeamService teamService;
-    @Mock private AssignmentStatusRepository assignmentStatusRepository;
-    @Mock private AssignmentRepository assignmentRepository;
-    @Mock private CompetitionService competitionService;
+    @Mock 
+    private TeamRepository teamRepository;
+    @Mock 
+    private TeamService teamService;
+    @Mock 
+    private AssignmentStatusRepository assignmentStatusRepository;
+    @Mock 
+    private AssignmentRepository assignmentRepository;
+    @Mock 
+    private CompetitionService competitionService;
 	
     @InjectMocks
     private IndexController indexController;
