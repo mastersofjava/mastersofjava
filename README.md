@@ -6,12 +6,13 @@ of a classical client/server Swing application, it is a completely web-based re-
 
 ## moj game server
 
-The game server uses Spring Boot, Thymeleaf, H2 database and Websockets.
+The game server uses Spring Boot,Keycloak, Thymeleaf, H2 database and Websockets.
 
 ### Requirements
 
 - Java 11+
 - Maven 3.5+
+- Keycloak
 
 ### Preparation
 
@@ -19,6 +20,7 @@ Make sure you update the application.yaml to it works for the machine that is ru
 - The resources are default located in: ./moj-data/
 - For downloading all javadocs via commandline: `mvn dependency:sources dependency:resolve -Dclassifier=javadoc`
 - Download the newest SDK documentation and extract (directory `api`) into directory: `./moj-data/javadoc/api` (now the participants have easily access to these docs via the GUI))
+- Don't forget to configure your Keycloak instance with the right realm, roles and users and use this in the keycloak configuration in the game server
 
 #### Starting
 - From any IDE you can just run the `MojServerApplication.class`
@@ -29,7 +31,7 @@ Make sure you update the application.yaml to it works for the machine that is ru
 #### Gamemaster Dashboard
 
 The Gamemaster dashboard can be found on [http://localhost:8080/control](http://localhost:8080/control). The first time
-you start the application you will be asked to setup and administrator account. 
+you start the application you will be asked to setup. 
 
 
 # License
