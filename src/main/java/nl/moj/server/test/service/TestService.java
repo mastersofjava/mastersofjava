@@ -287,12 +287,10 @@ public class TestService {
             }
         }
         StringBuilder sb = new StringBuilder();
-        sb.append("\""); // note: classpath is surrounded with '"' for correct execution on each OS.
         for (File file : classPath) {
             sb.append(file.getAbsolutePath());
             sb.append(File.pathSeparator);
         }
-        sb.append("\"");
         return sb.toString();
     }
 

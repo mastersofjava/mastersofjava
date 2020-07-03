@@ -72,6 +72,7 @@ public class CompileService {
     //private CompetitionRuntime competition;
     private MojServerProperties mojServerProperties;
     private TeamService teamService;
+    private static final boolean OS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
 
     public CompileService(MojServerProperties mojServerProperties,
                           CompileAttemptRepository compileAttemptRepository, AssignmentStatusRepository assignmentStatusRepository,
@@ -267,7 +268,7 @@ public class CompileService {
 
     private String toSafeFilePathInputForEachOperatingSystem(File file) {
         String safePathForEarchOperatingSystem = file.toString();
-        if (safePathForEarchOperatingSystem.contains(" ")) {
+        if (safePathForEarchOperatingSystem.contains(" ") && OS_WINDOWS) {
             // if with space then make safe for javac execution (otherwise windows execution would go wrong)
             safePathForEarchOperatingSystem = "\"" +safePathForEarchOperatingSystem + "\"";
         }
@@ -275,8 +276,8 @@ public class CompileService {
     }
     private String toSafeClasspathInputForEachOperatingSystem(String input) {
         String safePathForEarchOperatingSystem = input;
-        if (safePathForEarchOperatingSystem.contains(" ")) {
-            // if with space then make safe for javac execution (otherwise linux execution would go wrong)
+        if (safePathForEarchOperatingSystem.contains(" ") && OS_WINDOWS) {
+            // if with space then make safe for javac execution (otherwise windows execution would go wrong)
             safePathForEarchOperatingSystem = "\"" +safePathForEarchOperatingSystem + "\"";
         }
         return safePathForEarchOperatingSystem;
