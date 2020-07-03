@@ -267,12 +267,7 @@ public class CompileService {
     }
 
     private String toSafeFilePathInputForEachOperatingSystem(File file) {
-        String safePathForEarchOperatingSystem = file.toString();
-        if (safePathForEarchOperatingSystem.contains(" ") && OS_WINDOWS) {
-            // if with space then make safe for javac execution (otherwise windows execution would go wrong)
-            safePathForEarchOperatingSystem = "\"" +safePathForEarchOperatingSystem + "\"";
-        }
-        return safePathForEarchOperatingSystem;
+        return toSafeClasspathInputForEachOperatingSystem(file.toString());
     }
     private String toSafeClasspathInputForEachOperatingSystem(String input) {
         String safePathForEarchOperatingSystem = input;
