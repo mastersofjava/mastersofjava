@@ -1,7 +1,7 @@
 # Masters of Java
 
 This project is a rebuild of the famous original Masters of Java software orginally built by Erik Hooijmeijer 
-in 2004 (see [http://www.ctrl-alt-dev.nl/mastersofjava/]. This project takes the original concept, but instead 
+in 2004 [see http://www.ctrl-alt-dev.nl/mastersofjava/](http://www.ctrl-alt-dev.nl/mastersofjava/). This project takes the original concept, but instead 
 of a classical client/server Swing application, it is a completely web-based re-implementation.
 
 ## moj game server
@@ -12,7 +12,7 @@ The game server uses Spring Boot,Keycloak, Thymeleaf, H2 database and Websockets
 
 - Java 11+
 - Maven 3.5+
-- Keycloak
+- [Keycloak](www.keycloak.org)
 
 ### Preparation
 
