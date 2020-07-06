@@ -125,6 +125,7 @@ public class IndexController {
 		} else {
 			addModelDataForAdmin(model, user, assignment, solutionInputFileName, isWithAdminValidation);
 		}
+		model.addAttribute("isControlRole", isAdminUser(user));
 		return "index";
 	}
 
