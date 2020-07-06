@@ -20,6 +20,8 @@ import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.TaskControlController.TaskMessage;
+import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.service.CompileResult;
 import nl.moj.server.message.model.*;
 import nl.moj.server.submit.SubmitResult;
@@ -38,12 +40,14 @@ public class MessageService {
     private static final String DEST_START = "/queue/start";
     private static final String DEST_STOP = "/queue/stop";
     private static final String DEST_RANKINGS = "/queue/rankings";
+    private final CompetitionSessionRepository competitionSessionRepository;
 
     private SimpMessagingTemplate template;
 
-    public MessageService(SimpMessagingTemplate template) {
+    public MessageService(SimpMessagingTemplate template,CompetitionSessionRepository competitionSessionRepository) {
         super();
         this.template = template;
+        this.competitionSessionRepository = competitionSessionRepository;
     }
 
     public void sendTestFeedback(Team team, TestResult tr) {
@@ -85,26 +89,34 @@ public class MessageService {
     }
 
     public void sendStartToTeams(String taskname, String sessionId) {
+        log.info("Sending start: t={}, s={}", taskname, sessionId);
         template.convertAndSend(DEST_START, taskname);
         template.convertAndSend(DEST_COMPETITION, StartAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
     }
 
     public void sendStopToTeams(String taskname, String sessionId) {
+        log.info("Sending stop: t={}, s={}", taskname, sessionId);
         template.convertAndSend(DEST_STOP, new TaskMessage(taskname));
         template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
     }
 
-    public void sendRemainingTime(Long remainingTime, Long totalTime, boolean isPaused, String sessionId) {
+    public void sendRemainingTime(Long remainingTime, Long totalTime, boolean isPaused, CompetitionSession session) {
         try {
-            log.info("Sending time: r={}, t={}, s={}", remainingTime, totalTime, sessionId);
+            log.info("Sending time: r={}, t={}, s={}", remainingTime, totalTime, session.getUuid().toString());
             TimerSyncMessage msg = TimerSyncMessage.builder()
                     .remainingTime(remainingTime)
                     .totalTime(totalTime)
-                    .sessionId(sessionId)
+                    .sessionId(session.getUuid().toString())
                     .isRunning(!isPaused)
                     .build();
             template.convertAndSend(DEST_COMPETITION, msg);
             template.convertAndSend("/queue/time", msg);
+            session.setTimeLeft(remainingTime);
+            if (remainingTime==0) {
+                session.setRunning(false);
+            }
+            competitionSessionRepository.save(session);
+
         } catch (Exception e) {
             log.warn("Failed to send remaining time.", e);
         }

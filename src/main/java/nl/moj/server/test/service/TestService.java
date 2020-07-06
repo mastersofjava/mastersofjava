@@ -85,7 +85,7 @@ public class TestService {
     }
 
     public CompletableFuture<TestResults> scheduleTests(Team team, List<AssignmentFile> tests, Executor executor, ActiveAssignment activeAssignment) {
-        log.info("activeAssignment " + activeAssignment);
+        log.info("activeAssignment: " + activeAssignment + " tests: " +tests.size());
         List<CompletableFuture<TestResult>> testFutures = new ArrayList<>();
 
         TestAttempt ta = null;

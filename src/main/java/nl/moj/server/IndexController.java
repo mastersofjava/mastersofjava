@@ -70,12 +70,13 @@ public class IndexController {
     public CompetitionRuntime getCompetitionRuntimeForGameStart() {
         Assert.isTrue(competitionRuntime!=null,"runtime not ready");
         Assert.isTrue(competitionRuntime.getCompetitionSession()!=null,"runtime.session not ready");
-        UUID currentUUID = competitionRuntime.getCompetitionSession().getUuid();
-        UUID uuid = HttpUtil.getSelectedUserSession(currentUUID);
-        if (competitionRuntime.getCompetitionSession().getUuid().equals(uuid)||HttpUtil.hasParam("default")) {
+        UUID globalUUID = competitionRuntime.getCompetitionSession().getUuid();
+        UUID httpUUID = HttpUtil.getSelectedUserSession(globalUUID);
+        log.info("httpUUID " + httpUUID+ " globalUUID " + globalUUID);
+        if (competitionRuntime.getCompetitionSession().getUuid().equals(httpUUID)||HttpUtil.hasParam("default")) {
             return competitionRuntime;
         } else {
-            return competitionRuntime.selectCompetitionRuntimeForGameStart(competitionSessionRepository.findByUuid(uuid).getCompetition());
+            return competitionRuntime.selectCompetitionRuntimeForGameStart(competitionSessionRepository.findByUuid(httpUUID).getCompetition());
         }
     }
 
@@ -95,7 +96,7 @@ public class IndexController {
         List<CompetitionSession> sessions = competitionSessionRepository.findAll();
         List<CompetitionSession> activeSessions = new ArrayList<>();
         for (CompetitionSession session: sessions) {
-            if (session.isActive()) {
+            if (session.isAvailable()) {
                 activeSessions.add(session);
             }
         }
@@ -107,23 +108,6 @@ public class IndexController {
         }
     }
 
-    private boolean isAuthorizedForAssignmentEditing(Principal user, HttpServletRequest request) {
-        if (!(user instanceof UsernamePasswordAuthenticationToken)) {
-            return false;
-        }
-
-        UsernamePasswordAuthenticationToken authenticationToken =
-                (UsernamePasswordAuthenticationToken)user;
-        boolean isEmpty = authenticationToken.getAuthorities().isEmpty();
-        if (isEmpty) {
-            return false;
-        }
-        GrantedAuthority authority = authenticationToken.getAuthorities().iterator().next();
-
-        boolean isWithAdminRole = Role.ADMIN.equals(authority.getAuthority())
-                ||Role.GAME_MASTER.equals(authority.getAuthority());
-        return isWithAdminRole && request.getParameterMap().containsKey("assignment");
-    }
     private boolean isUsingCurrentCompetitionAssignment(Assignment assignment,CompetitionRuntime runtime) {
         return runtime.getCurrentAssignment()!=null && assignment.equals(runtime.getActiveAssignment().getAssignment());
     }
@@ -131,7 +115,7 @@ public class IndexController {
     public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user,
                               HttpServletRequest request,@RequestParam("assignment") String assignmentInput,
                               @RequestParam(required = false, name = "solution") String solutionInputFileName,@ModelAttribute("selectSessionForm") SelectSessionForm ssf) {
-        if (!isAuthorizedForAssignmentEditing(user, request)) {
+        if (!HttpUtil.isAuthorizedForAssignmentEditing(user, request)) {
             return "login";
         }
         CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
@@ -169,8 +153,17 @@ public class IndexController {
 
         //late signup
         if (as == null) {
+            log.info("no status found for user " + team + ", " + state.getAssignment() + ", " + state
+                    .getCompetitionSession());
+            UUID currentUUID = competitionRuntime.getCompetitionSession().getUuid();
+            UUID uuid = HttpUtil.getSelectedUserSession(currentUUID);
             CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
-            as = runtime.handleLateSignup(team);
+            boolean isInAssignmentModel = runtime.isSessionInAssignmentModel(uuid, state.getAssignment().getName());
+            log.info("competition session default: "+currentUUID +", selected " +uuid + ", isInAssignmentModel " +isInAssignmentModel);
+
+            if (isInAssignmentModel ||!HttpUtil.isWithAdminRole(user)) {
+                as = runtime.handleLateSignup(team, uuid, state.getAssignment().getName() );
+            }
         }
 
         AssignmentStatusHelper ash = new AssignmentStatusHelper(as, state.getAssignmentDescriptor());

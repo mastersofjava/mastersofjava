@@ -82,6 +82,8 @@ function connectCompetition() {
         if (clock && isSessionValid(msg)) {
             clock.sync(msg.remainingTime, msg.totalTime);
             clock.isPaused = !msg.running;
+        } else {
+            console.log('timer msg retrieved:' +msg.sessionId + " " + msg.remainingTime + ' ' +$('#sessions').val());
         }
     };
     competitionHandlers['START_ASSIGNMENT'] = function (msg) {
@@ -104,7 +106,7 @@ function connectCompetition() {
     }
 }
 function isSessionValid(msg) {
-    return msg.sessionId!=null || $('#sessions').val()===sg.sessionId;
+    return msg.sessionId==null || $('#sessions').val()===msg.sessionId;
 }
 
 function connectButtons() {

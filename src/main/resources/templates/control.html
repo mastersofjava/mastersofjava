@@ -149,7 +149,13 @@
                         </form>
                     </div>
                 </div>
-                <div class="p-2 col-12">
+                <div class="p-2 col-12" th:if="${!isWithAssignmentsLoaded}" >
+                    <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
+                </div>
+                <div class="p-2 col-12" th:if="${isWithAssignmentsLoaded && teams.size()<=1}" >
+                    <div th:remove="tag" th:utext="${activeTeamDetailCanvas}"></div>
+                </div>
+                <div class="p-2 col-12" th:if="${isWithAssignmentsLoaded && teams.size()>2}">
                     <i th:if="${sessions.size()>1}">
                         Hieronder staan de beschikbare competities, met selecteerbare sessies voor beheer
                         <i th:if="${nrOfRunningCompetitions>0}">

@@ -27,7 +27,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class CompetitionCleaningService {
-    private final CompetitionRuntime competition;
+    private final CompetitionRuntime competitionRuntime;
 
     private final AssignmentStatusRepository assignmentStatusRepository;
 
@@ -41,8 +41,10 @@ public class CompetitionCleaningService {
 
     private final SubmitAttemptRepository submitAttemptRepository;
 
+    private final CompetitionSessionRepository competitionSessionRepository;
+
     public String doCleanComplete(CompetitionSession competitionSession) {
-        competition.getCompetitionState().getCompletedAssignments().clear();
+        competitionRuntime.getCompetitionState().getCompletedAssignments().clear();
         if (assignmentStatusRepository.count()==0) {
             return "competition not started yet";
         }
@@ -77,7 +79,11 @@ public class CompetitionCleaningService {
                 }
                 assignmentStatusRepository.delete(status);
             }
-
+            competitionSession.setDateTimeStart(null);
+            competitionSession.setRunning(false);
+            competitionSession.setAssignmentName(null);
+            competitionSession.setTimeLeft(null);
+            competitionSessionRepository.save(competitionSession);
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }

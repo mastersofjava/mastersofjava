@@ -1,11 +1,15 @@
 package nl.moj.server.util;
 
+import nl.moj.server.teams.model.Role;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import java.security.Principal;
 import java.util.UUID;
 
 public class HttpUtil {
@@ -23,6 +27,26 @@ public class HttpUtil {
     public static String getCurrentHttpRequestUserName() {
         SecurityContextImpl context = (SecurityContextImpl)getCurrentHttpRequest().getSession().getAttribute("SPRING_SECURITY_CONTEXT");
         return context.getAuthentication().getName();
+    }
+    public static boolean isWithAdminRole(Principal user) {
+        if (!(user instanceof UsernamePasswordAuthenticationToken)) {
+            return false;
+        }
+
+        UsernamePasswordAuthenticationToken authenticationToken =
+                (UsernamePasswordAuthenticationToken)user;
+        boolean isEmpty = authenticationToken.getAuthorities().isEmpty();
+        if (isEmpty) {
+            return false;
+        }
+        GrantedAuthority authority = authenticationToken.getAuthorities().iterator().next();
+
+        boolean isWithAdminRole = Role.ADMIN.equals(authority.getAuthority())
+                ||Role.GAME_MASTER.equals(authority.getAuthority());
+        return isWithAdminRole;
+    }
+    public static boolean isAuthorizedForAssignmentEditing(Principal user, HttpServletRequest request) {
+        return isWithAdminRole(user) && request.getParameterMap().containsKey("assignment");
     }
     public static UUID getSelectedUserSession(UUID defaultVal) {
         UUID val = (UUID)getCurrentHttpRequest().getSession().getAttribute("selectedUserSession");

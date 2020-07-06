@@ -219,7 +219,7 @@ public class GamemasterTableComponents {
                     if (!isSessionUsed(session.getId())) {
                         isAllSessionsUsed = false;
                     }
-                    if (session.isActive()) {
+                    if (session.isAvailable()) {
                         isNoSessionActive = false;
                     }
                 }

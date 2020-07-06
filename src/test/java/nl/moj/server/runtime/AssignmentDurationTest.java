@@ -51,12 +51,12 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 
         AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(oa.getAssignment());
 
-        Future<?> stopHandle = assignmentRuntime.start(oa, competitionRuntime.getCompetitionSession());
+        Future<?> mainHandle = assignmentRuntime.start(oa, competitionRuntime.getCompetitionSession());
 
         try {
-            stopHandle.get(ad.getDuration().toSeconds() + 1, TimeUnit.SECONDS);
+            mainHandle.get(ad.getDuration().toSeconds() + 1, TimeUnit.SECONDS);
         } catch (Exception e) {
-            stopHandle.cancel(true);
+            mainHandle.cancel(true);
             Assertions.fail("Caught unexpected exception.", e);
         }
     }

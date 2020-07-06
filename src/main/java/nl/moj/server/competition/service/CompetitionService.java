@@ -181,7 +181,7 @@ public class CompetitionService {
                 String id = status.getAssignment().getId().toString();
                 boolean isUserHasNewScoreImport = scoreInputMap.get(id)!=null;
 
-                if (!isUserHasNewScoreImport) {
+                if (!isUserHasNewScoreImport || status.getAssignmentResult()==null) {
                     continue;
                 }
                 long newScore = (Integer) scoreInputMap.get(id);

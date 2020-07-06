@@ -119,13 +119,16 @@ public class TaskControlController {
     }
 
     @MessageMapping("/control/stoptask")
-    public void stopTask() {
+    @SendToUser("/queue/controlfeedback")
+    public String stopTask() {
         competition.stopCurrentAssignment();
+        ActiveAssignment state = competition.getActiveAssignment();
+        return "stopped assignment '"+state.getAssignment().getName()+"' running, reloading page";
     }
 
     @MessageMapping("/control/clearCurrentAssignment")
     @SendToUser("/queue/controlfeedback")
-    public String clearCompetition() {
+    public String doClearCompetition() {
         log.warn("clearCompetition entered");
         gamemasterTableComponents.deleteCurrentSessionResources();
         return competitionCleaningService.doCleanComplete(competition.getCompetitionSession());
@@ -140,8 +143,8 @@ public class TaskControlController {
             return "no active assignment";
         }
         String name = state.getAssignment().getName();
-        assignmentRuntime.pauseResume();
-        if (assignmentRuntime.isPaused()) {
+        competition.getCompetitionModel().getAssignmentExecutionModel().pauseResume();
+        if (competition.getCompetitionModel().getAssignmentExecutionModel().isPaused()) {
             return "assignment '"+name+"' paused, reloading page";
         } else {
             return "assignment '"+name+"' running, reloading page";
@@ -203,7 +206,7 @@ public class TaskControlController {
     @MessageMapping("/control/competitionDelete")
     @SendToUser("/queue/controlfeedback")
    // @Transactional
-    public String deleteCompetition(TaskControlController.TaskMessage message) {
+    public String doDeleteCompetition(TaskControlController.TaskMessage message) {
         boolean isUpdateCurrentCompetition =  message.getUuid().equals(competition.getCompetition().getUuid().toString());
         log.info("deleteCompetition isCurrentCompetition {} ", isUpdateCurrentCompetition);
 
@@ -241,7 +244,7 @@ public class TaskControlController {
     @MessageMapping("/control/competitionToggleAvailability")
     public void doCompetitionToggleAvailability(TaskMessage message)  throws JsonProcessingException {
         CompetitionSession item = competitionSessionRepository.findByUuid(UUID.fromString(message.getUuid()));
-        item.setActive(Boolean.valueOf(message.value));
+        item.setAvailable(Boolean.valueOf(message.value));
         competitionSessionRepository.save(item);
     }
     @MessageMapping("/control/competitionCreateNew")
@@ -253,7 +256,7 @@ public class TaskControlController {
         }
         Competition newCompetition = new Competition();
         newCompetition.setUuid(UUID.randomUUID());
-        newCompetition.setName(message.getValue());
+        newCompetition.setName(message.getValue().trim());
         Competition registeredCompetition = competitionRepository.save(newCompetition);
         registeredCompetition.setAssignments(assignmentRepository.findAll()
                 .stream()
@@ -401,13 +404,15 @@ public class TaskControlController {
         }
         private void insertGamestatus(Model model) {
             ActiveAssignment state = competition.getActiveAssignment();
+            CompetitionRuntime.CompetitionExecutionModel competitionModel = competition.selectCompetitionRuntimeForGameStart(competition.getCompetition()).getCompetitionModel();
+
             model.addAttribute("timeLeft", state.getTimeRemaining());
             model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addAttribute("running", state.isRunning());
-            boolean isRunningSelected = competition.selectCompetitionRuntimeForGameStart(competition.getCompetition()).getCompetitionModel().isRunning();
+            boolean isRunningSelected = competitionModel.isRunning();
 
             model.addAttribute("runningSelectedCompetition", isRunningSelected);
-            model.addAttribute("clockStyle", (assignmentRuntime.isPaused()?"disabled":"active"));
+            model.addAttribute("clockStyle", (competitionModel.getAssignmentExecutionModel().isPaused()?"disabled":"active"));
             model.addAttribute("currentAssignment", state.getAssignmentDescriptor().getName());
         }
         private void insertAssignmentInfo(Model model) {
@@ -442,7 +447,9 @@ public class TaskControlController {
             if (!teams.isEmpty() && this.isWithAdminRole) {
                 List<Ranking> rankings = rankingsService.getRankings(competition.getCompetitionSession(), competitionService.getSelectedYearValue());
                 model.addAttribute("teamDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, true, rankings));
-                model.addAttribute("activeTeamDetailCanvas",  gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, false, rankings));
+                if (teams.size()>1) {
+                    model.addAttribute("activeTeamDetailCanvas",  gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, false, rankings));
+                }
             }
             model.addAttribute("teams", teams);
             if (this.isWithAdminRole) {

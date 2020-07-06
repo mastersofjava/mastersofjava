@@ -267,16 +267,14 @@ public class CompileService {
     }
 
     private String toSafeFilePathInputForEachOperatingSystem(File file) {
-        return toSafeClasspathInputForEachOperatingSystem(file.toString());
-    }
-    private String toSafeClasspathInputForEachOperatingSystem(String input) {
-        String safePathForEarchOperatingSystem = input;
+        String safePathForEarchOperatingSystem = file.toString();
         if (safePathForEarchOperatingSystem.contains(" ") && OS_WINDOWS) {
             // if with space then make safe for javac execution (otherwise windows execution would go wrong)
             safePathForEarchOperatingSystem = "\"" +safePathForEarchOperatingSystem + "\"";
         }
         return safePathForEarchOperatingSystem;
     }
+
     private CompileResult javaCompile(Languages.JavaVersion javaVersion, Team team, SourceMessage message, CompileInputWrapper compileInputWrapper) {
         compileInputWrapper.startTimeSinceQueue = Instant.now();
         // TODO should not be here.
@@ -292,12 +290,10 @@ public class CompileService {
         List<AssignmentFile> assignmentFiles = compileInputWrapper.readonlyAssignmentFiles;
         log.info("resources: {}, assignmentFiles: {}" ,resources.size(), assignmentFiles.size());
 
-        // TODO this should be somewhere else
         TeamProjectPathModel pathModel = new TeamProjectPathModel(team, compileInputWrapper.assignment, compileInputWrapper.state);
         pathModel.cleanCompileLocationForTeam();
         // copy resources
         pathModel.prepareResources(compileInputWrapper.resources);
-        // TODO fix compile result so team knows something is very wrong.
         try {
             pathModel.prepareInputSources(message, compileInputWrapper);
         } catch (Exception e) {
@@ -329,9 +325,9 @@ public class CompileService {
                 cmd.add("UTF8");
                 cmd.add("-g:source,lines,vars");
                 cmd.add("-cp");
-                cmd.add(toSafeClasspathInputForEachOperatingSystem(makeClasspath(pathModel.classesDir).stream()
+                cmd.add(makeClasspath(pathModel.classesDir).stream()
                         .map(f -> f.getAbsoluteFile().toString())
-                        .collect(Collectors.joining(File.pathSeparator))));
+                        .collect(Collectors.joining(File.pathSeparator)));
                 cmd.add("-d");
                 cmd.add(toSafeFilePathInputForEachOperatingSystem(pathModel.classesDir.toAbsolutePath().toFile()));
                 assignmentFiles.forEach(a -> {

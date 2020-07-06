@@ -70,10 +70,6 @@ public class CompetitionRuntime {
         @JsonIgnore
         private AssignmentRuntime.AssignmentExecutionModel assignmentExecutionModel = new AssignmentRuntime.AssignmentExecutionModel();
 
-        public void setAssignmentExecutionModel(AssignmentRuntime.AssignmentExecutionModel assignmentExecutionModel) {
-            this.assignmentExecutionModel = assignmentExecutionModel;
-        }
-
         public AssignmentRuntime.AssignmentExecutionModel getAssignmentExecutionModel() {
             return assignmentExecutionModel;
         }
@@ -93,9 +89,9 @@ public class CompetitionRuntime {
         }
         public String getTimer() {
             if (assignmentExecutionModel.getTimer()==null) {
-                return "-";
+                return "[no timer]";
             }
-            return new Date(assignmentExecutionModel.getTimer().getStartTime()) + " - " + new Date(assignmentExecutionModel.getTimer().getTime());
+            return "[start " +new Date(assignmentExecutionModel.getTimer().getStartTime()) + ", left:" + assignmentExecutionModel.getTimer().getTime()+ ", " +assignmentExecutionModel.getTimeRemaining()+ "]";
         }
     }
     private Map<Long, CompetitionExecutionModel> activeCompetitionsMap = new TreeMap<>();
@@ -176,18 +172,18 @@ public class CompetitionRuntime {
     public void restoreSession() {
         stopCurrentAssignment();
         Instant nowTime = Instant.now();
-        competitionModel.competitionSession.setActive(true);
+        competitionModel.competitionSession.setAvailable(true);
         List<CompetitionSession> sessions = competitionSessionRepository.findByCompetition(competitionModel.competition);
 
         for (CompetitionSession session: sessions) {
-            if (session.isActive() && !session.getId().equals(competitionModel.competitionSession.getId())) {
-                session.setActive(false);
+            if (session.isAvailable() && !session.getId().equals(competitionModel.competitionSession.getId())) {
+                session.setAvailable(false);
                 competitionSessionRepository.save(session);
             }
         }
 
         competitionSessionRepository.save(competitionModel.competitionSession);
-        log.info("session " + competitionModel.competitionSession.getId() + " " +competitionModel.competitionSession.isActive() );
+        log.info("session " + competitionModel.competitionSession.getId() + " " +competitionModel.competitionSession.isAvailable() );
         int hour = nowTime.atZone(ZoneOffset.UTC).getHour();
         Instant maxTime = nowTime.atZone(ZoneOffset.UTC).withHour(hour-1).toInstant();
         // get the completed assignment uuids
@@ -205,7 +201,6 @@ public class CompetitionRuntime {
             }
         });
 
-        competitionModel.setAssignmentExecutionModel(assignmentRuntime.getModel());
         competitionModel.assignmentExecutionModel.setCompetitionSession(competitionModel.competitionSession);
     }
 
@@ -245,17 +240,26 @@ public class CompetitionRuntime {
     }
 
     public void startAssignment(String name) {
-        log.debug("stopping current assignment to start assignment '{}'", name);
-        stopCurrentAssignment();
+        log.debug("startAssignment.trigger '{}'", name);
+        if (isWithAssignmentRunning()) {
+            log.debug("stopping current assignment to start assignment '{}'", name);
+            stopCurrentAssignment();
+        }
         Optional<OrderedAssignment> assignment = competitionModel.competition.getAssignments().stream()
                 .filter(a -> a.getAssignment().getName().equals(name))
                 .findFirst();
 
         if (assignment.isPresent()) {
+
             try {
                 if (!competitionModel.completedAssignments.contains(assignment.get())) {
+                    log.debug("startAssignment name {}, c {}", name , competitionModel.competition.getName());
                     competitionModel.completedAssignments.add(assignment.get());
                     assignmentRuntime.start(assignment.get(), competitionModel);
+                    getCompetitionSession().setRunning(true);
+                    getCompetitionSession().setAssignmentName(name);
+                    getCompetitionSession().setDateTimeStart(Instant.now());
+                    competitionSessionRepository.save(getCompetitionSession());
                 }
             } catch( AssignmentStartException ase ) {
                 messageService.sendStartFail(name, ase.getMessage());
@@ -265,14 +269,18 @@ public class CompetitionRuntime {
             log.error("Cannot start assignment '{}' since there is no such assignment with that name", name);
         }
     }
-
+    private boolean isWithAssignmentRunning() {
+        return competitionModel.assignmentExecutionModel!=null && competitionModel.assignmentExecutionModel.getOrderedAssignment() != null;
+    }
     public void stopCurrentAssignment() {
-        if (competitionModel.assignmentExecutionModel!=null && competitionModel.assignmentExecutionModel.getOrderedAssignment() != null) {
+        if (isWithAssignmentRunning()) {
             log.info("Stopping current assignment {} uuid {}.", competitionModel.assignmentExecutionModel.getOrderedAssignment()
                             .getAssignment()
                             .getName(),
                     competitionModel.assignmentExecutionModel.getOrderedAssignment().getAssignment().getUuid());
             assignmentRuntime.stop();
+            getCompetitionSession().setRunning(false);
+            competitionSessionRepository.save(getCompetitionSession());
         }
     }
 
@@ -303,9 +311,22 @@ public class CompetitionRuntime {
                 .map(orderedAssignment -> teamService.getTeamAssignmentFiles(competitionModel.competitionSession, orderedAssignment.getAssignment(), team))
                 .orElse(Collections.emptyList());
     }
+    public boolean isSessionInAssignmentModel(UUID uuidInput, String nameInput) {
+        UUID uuid   = assignmentRuntime.getModel().getCompetitionSession().getUuid();
+        String name = assignmentRuntime.getModel().getOrderedAssignment().getAssignment().getName();
+        return name.equals(nameInput) || uuid.equals(uuidInput);
+    }
+    public AssignmentStatus handleLateSignup(Team team, UUID uuidInput, String nameInput) {
+        UUID uuid   = competitionModel.getAssignmentExecutionModel().getCompetitionSession().getUuid();
+        String name = competitionModel.getAssignmentExecutionModel().getOrderedAssignment().getAssignment().getName();
 
-    public AssignmentStatus handleLateSignup(Team team) {
-        return assignmentRuntime.initAssignmentForLateTeam(team);
+        log.info("uuidInput " + competitionSessionRepository.findByUuid(uuidInput));
+        log.info("uuid " + competitionSessionRepository.findByUuid(uuid));
+        log.info("name " + name + " " + nameInput);
+
+        Assert.isTrue(name.equals(nameInput),"name not valid: " + nameInput + ", expected " +name);
+        Assert.isTrue(uuid.equals(uuidInput),"uuid not valid: " + uuidInput + ", expected " +uuid);
+        return competitionModel.getAssignmentExecutionModel().initAssignmentForLateTeam(team);
     }
 
     public List<AssignmentFile> getSolutionFiles(UUID assignment) {

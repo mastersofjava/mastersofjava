@@ -18,6 +18,7 @@ package nl.moj.server.competition.model;
 
 
 import javax.persistence.*;
+import java.time.Instant;
 import java.util.UUID;
 
 import lombok.Data;
@@ -38,12 +39,20 @@ public class CompetitionSession {
     @Column(name = "uuid", unique = true, nullable = false)
     private UUID uuid;
 
-    @Column(name = "active")
-    private boolean active;
+    @Column(name = "available")
+    private boolean available;
 
-    public boolean isAvailable() {
-        return active;
-    }
+    @Column(name = "running")
+    private boolean running;
+
+    @Column(name = "time_left")
+    private Long timeLeft;
+
+    @Column(name = "assignment_name")
+    private String assignmentName;
+
+    @Column(name = "date_time_start")
+    private Instant dateTimeStart;
 
     @ManyToOne
     @JoinColumn(name = "competition_id", nullable = false)

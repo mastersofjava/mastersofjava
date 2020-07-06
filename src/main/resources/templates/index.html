@@ -194,7 +194,7 @@
 
         </div>
         <div class="mr-auto p-2">&nbsp;
-            <i>[[${bonus}]]<span th:if="${labels!=null && labels.size()>0}">. Points for each individual test: [[${labels.toString().replace("_","=")}]]</span></i>
+
         </div>
         <div class="ml-auto pr-2 align-self-center" id="status"></div>
         <div class="pr-2 align-self-center">
@@ -202,6 +202,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Modal Tests -->
 <div class="modal fade" id="test-modal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -224,6 +225,7 @@
                         </label>
                     </div>
                 </form>
+                <i><span th:if="${labels!=null && labels.size()>0}">. Points for each individual test: [[${labels.toString().replace("_","=")}]]</span></i>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>

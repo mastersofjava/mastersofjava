@@ -125,6 +125,7 @@ function doCompetitionToggleState(uuid, value) {
 }
 function doCompetitionCreateNew(name) {
     if (name) {
+        name = name.trim();
         if (name.indexOf('|')===-1) {
             name += '|'+ $('#selectedYear').val();
         }
