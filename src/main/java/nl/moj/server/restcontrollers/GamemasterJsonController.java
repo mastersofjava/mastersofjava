@@ -257,10 +257,17 @@ public class GamemasterJsonController {
         }
         return getRunningCompetitions();
     }
+    private void ensureCacheForTeamsReady() {
+        if (teamList==null) {
+            teamList = teamRepository.findAllByRole(Role.USER);
+        }
+    }
+
+    private List<Team> teamList;
 
     public class PerformanceValidation {
         private Map<String, Object> result = new TreeMap<>();
-        private List<Team> teamList;
+        private List<Team> inputTeamList;
         int errorsCompile = 0;
         int errorsTest = 0;
         private Date startTime = new Date();
@@ -311,7 +318,7 @@ public class GamemasterJsonController {
         public PerformanceValidation(int runs) {
             result.put("timeStart", startTime.toString());
             this.runs = runs;
-            teamList = teamRepository.findAllByRole(Role.USER);
+            ensureCacheForTeamsReady();
             result.put("teams", teamList.size());
             result.put("runs", runs);
             CompetitionRuntime.CompetitionExecutionModel model = competitionRuntime.getCompetitionModel();
@@ -324,23 +331,47 @@ public class GamemasterJsonController {
                     fileList.add(source);
                 }
             }
-            if (teamList.size()>maxUsers) {
-                teamList = teamList.subList(0, maxUsers);
-            }
+
+        }
+
+        int selectedUser = -1;
+
+        public void setSelectedUser(int selectedUser) {
+            this.selectedUser = selectedUser;
         }
 
         public void doRuns() {
-
             for (int index =0; index< runs ;index++) {
                 this.doOneRun();
             }
         }
+
+        public List<Team> getTeamInputList() {
+            if (inputTeamList==null) {
+                inputTeamList = new ArrayList<>();
+                if (selectedUser!=-1) {
+                    if (teamList.size()>maxUsers) {
+                        inputTeamList = teamList.subList(0, maxUsers);
+                    } else {
+                        inputTeamList = teamList;
+                    }
+                } else {
+                    Team team = inputTeamList.get(selectedUser);
+                    if (team == null) {
+                        team = inputTeamList.get(0);
+                    }
+                    inputTeamList.add(team);
+                }
+            }
+
+            return teamList;
+        }
+
         private int maxUsers = 100;
         private void doOneRun() {
             SourceMessage codeInputInitial = createCodeInputInitial();
             SourceMessage codeInputSolution =  createCodeInputWithSolution();
-            boolean isOnlySolutionCompiliation = true;
-            for (Team team: teamList) {
+            for (Team team: getTeamInputList()) {
                 try {
                     SubmitResult submitResult = submitService.compile(team, codeInputInitial).get(10, TimeUnit.SECONDS);
                     result.put("compile.problem", submitResult.isSuccess());
@@ -388,5 +419,15 @@ public class GamemasterJsonController {
         return performanceValidation.getResult();
     }
 
-
+    @GetMapping(value = "/admin/executeAgent", produces = MediaType.APPLICATION_JSON_VALUE)
+    public @ResponseBody
+    Map<String, Object> doExecuteOneAgentByJMeter() {
+        Assert.isTrue(isEnvironmentForDevelopment(),"unauthorized");
+        Map<Long, String> competitions = getRunningCompetitions();
+        Assert.isTrue(!competitions.isEmpty(),"unauthorized");
+        PerformanceValidation performanceValidation = new PerformanceValidation(1);
+        performanceValidation.setSelectedUser(Integer.parseInt(HttpUtil.getParam("agent","0")));
+        performanceValidation.doOneRun();
+        return performanceValidation.getResult();
+    }
 }
