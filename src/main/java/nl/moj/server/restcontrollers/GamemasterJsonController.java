@@ -274,11 +274,11 @@ public class GamemasterJsonController {
         private int runs;
         private String assignmentName;
         private List<AssignmentFile> fileList = new ArrayList<>();
+        private CompetitionRuntime.CompetitionExecutionModel model;
         private SourceMessage createCodeInputInitial() {
             SourceMessage message = new SourceMessage();
-            CompetitionRuntime.CompetitionExecutionModel model = competitionRuntime.getCompetitionModel();
             message = new SourceMessage();
-            message.setAssignmentName(model.getRunningAssignmentName());
+            message.setAssignmentName(assignmentName);
             message.setTests(new ArrayList<>());
             message.setSources(new TreeMap<>());
             for (AssignmentFile file: fileList) {
@@ -319,9 +319,9 @@ public class GamemasterJsonController {
             result.put("timeStart", startTime.toString());
             this.runs = runs;
             ensureCacheForTeamsReady();
-            result.put("teams", teamList.size());
+
             result.put("runs", runs);
-            CompetitionRuntime.CompetitionExecutionModel model = competitionRuntime.getCompetitionModel();
+            model = competitionRuntime.getCompetitionModel();
             assignmentName = model.getRunningAssignmentName();
             result.put("assignment", assignmentName);
             List<AssignmentFile> sourceList = assignmentService.getAssignmentFiles(competitionRuntime.getCurrentAssignment().getAssignment());
@@ -349,22 +349,23 @@ public class GamemasterJsonController {
         public List<Team> getTeamInputList() {
             if (inputTeamList==null) {
                 inputTeamList = new ArrayList<>();
-                if (selectedUser!=-1) {
+                if (selectedUser==-1) {
                     if (teamList.size()>maxUsers) {
                         inputTeamList = teamList.subList(0, maxUsers);
                     } else {
                         inputTeamList = teamList;
                     }
                 } else {
-                    Team team = inputTeamList.get(selectedUser);
+                    Team team = teamList.get(selectedUser);
                     if (team == null) {
-                        team = inputTeamList.get(0);
+                        team = teamList.get(0);
                     }
                     inputTeamList.add(team);
                 }
             }
-
-            return teamList;
+            result.put("inputTeams", inputTeamList.size());
+            result.put("cachedTeams", teamList.size());
+            return inputTeamList;
         }
 
         private int maxUsers = 100;
@@ -423,10 +424,10 @@ public class GamemasterJsonController {
     public @ResponseBody
     Map<String, Object> doExecuteOneAgentByJMeter() {
         Assert.isTrue(isEnvironmentForDevelopment(),"unauthorized");
-        Map<Long, String> competitions = getRunningCompetitions();
-        Assert.isTrue(!competitions.isEmpty(),"unauthorized");
+        Assert.isTrue(competitionRuntime.getCurrentAssignment()!=null,"unready");
+        int nr = Integer.parseInt(HttpUtil.getParam("agent","0"));
         PerformanceValidation performanceValidation = new PerformanceValidation(1);
-        performanceValidation.setSelectedUser(Integer.parseInt(HttpUtil.getParam("agent","0")));
+        performanceValidation.setSelectedUser(nr);
         performanceValidation.doOneRun();
         return performanceValidation.getResult();
     }

@@ -18,7 +18,7 @@ public class HttpUtil {
     }
     public static String getParam(String param, String defaultVal) {
         HttpServletRequest req = getCurrentHttpRequest();
-        return req==null?defaultVal: req.getParameter(param);
+        return req==null||req.getParameter(param)==null?defaultVal: req.getParameter(param);
     }
     public static boolean hasParam(String param) {
         HttpServletRequest req = getCurrentHttpRequest();
