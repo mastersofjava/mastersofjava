@@ -71,7 +71,7 @@ public class CompetitionCleaningService {
                 }
                 List<TestAttempt> taList =  testAttemptRepository.findByAssignmentStatus(status);
                 for (TestAttempt ta: taList) {
-                    List<TestCase> tcList= ta.getTestCases();
+                    List<TestCase> tcList= testCasesRepository.findByTestAttempt(ta);
                     for (TestCase tc: tcList) {
                         testCasesRepository.delete(tc);
                     }

@@ -44,12 +44,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 /**
@@ -59,6 +62,8 @@ import java.util.stream.Collectors;
 @Controller
 @RequiredArgsConstructor
 public class GamemasterJsonController {
+    @Autowired
+    private Environment env;
 
     private final MojServerProperties mojServerProperties;
 
@@ -71,19 +76,6 @@ public class GamemasterJsonController {
     private final SessionRegistry sessionRegistry;
 
     private final TaskScheduler taskScheduler;
-
-    private final TeamRepository teamRepository;
-
-    private final SubmitService submitService;
-
-    private final AssignmentService assignmentService;
-
-    @Autowired
-    private Environment env;
-
-    private boolean isEnvironmentForDevelopment() {
-        return Arrays.asList(env.getActiveProfiles()).contains("local");
-    }
 
     @GetMapping(value = "/getGameMasterState", produces = MediaType.APPLICATION_JSON_VALUE)
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
@@ -199,22 +191,9 @@ public class GamemasterJsonController {
             Assert.isTrue(competitionRuntime.getActiveCompetitionsMap().containsKey(competition.getId()), "competition not loaded: "+competition.getId());
         }
         for (Competition competition : competitionList) {
-           // CompetitionRuntime miniRuntime = competitionRuntime.selectCompetitionRuntimeForGameStart(competition);
             CompetitionRuntime.CompetitionExecutionModel model = competitionRuntime.getActiveCompetitionsMap().get(competition.getId());
-            log.info("start miniruntime: " + competition.getDisplayName() + " " + model.getRunningAssignmentName() + " " + model.getTimer());
             model.getAssignmentExecutionModel().clearHandlers();
         }
-        ThreadPoolTaskScheduler xScheduler = (ThreadPoolTaskScheduler)this.taskScheduler;
-        log.info("xScheduler " +xScheduler);
-
-        ScheduledThreadPoolExecutor xService = (ScheduledThreadPoolExecutor)xScheduler.getScheduledExecutor();
-        log.info("xService " +xService);
-
-        BlockingQueue<Runnable> queue = xService.getQueue();
-        log.info("queue " +queue);
-        Object[] scheduledJobs = queue.toArray();
-
-        log.info("scheduledJobs " + Arrays.asList(scheduledJobs).size() + " " +Arrays.asList(scheduledJobs));
 
         return getRunningCompetitions();
     }
@@ -257,178 +236,7 @@ public class GamemasterJsonController {
         }
         return getRunningCompetitions();
     }
-    private void ensureCacheForTeamsReady() {
-        if (teamList==null) {
-            teamList = teamRepository.findAllByRole(Role.USER);
-        }
-    }
 
-    private List<Team> teamList;
 
-    public class PerformanceValidation {
-        private Map<String, Object> result = new TreeMap<>();
-        private List<Team> inputTeamList;
-        int errorsCompile = 0;
-        int errorsTest = 0;
-        private Date startTime = new Date();
-        private int runs;
-        private String assignmentName;
-        private List<AssignmentFile> fileList = new ArrayList<>();
-        private CompetitionRuntime.CompetitionExecutionModel model;
-        private SourceMessage createCodeInputInitial() {
-            SourceMessage message = new SourceMessage();
-            message = new SourceMessage();
-            message.setAssignmentName(assignmentName);
-            message.setTests(new ArrayList<>());
-            message.setSources(new TreeMap<>());
-            for (AssignmentFile file: fileList) {
-                if (file.getName().toLowerCase().contains("test")) {
-                    message.getTests().add(file.getUuid().toString());
-                } else
-                if (!file.isReadOnly()) {
-                    message.getSources().put(file.getUuid().toString(), file.getContentAsString());
-                }
-            }
-            return message;
-        }
-        private SourceMessage createCodeInputWithSolution() {
-            SourceMessage message = new SourceMessage();
-            message = new SourceMessage();
-            message.setAssignmentName(assignmentName);
-            message.setTests(new ArrayList<>());
-            message.setSources(new TreeMap<>());
-            for (AssignmentFile file: fileList) {
-                if (file.getName().toLowerCase().contains("test")) {
-                    message.getTests().add(file.getUuid().toString());
-                } else
-                if (!file.isReadOnly()) {
-                    JavaAssignmentFileResolver resolver = new JavaAssignmentFileResolver();
-                    String path = file.getAbsoluteFile().toFile().getPath().replace("src\\main\\java","assets").replace("src/main/java","assets");
-                    File solutionFile = new File(path.replace(".java","Solution.java"));
 
-                    if (solutionFile.exists()) {
-                        file = resolver.convertToAssignmentFile(file.getName(), solutionFile.toPath(), file.getBase(), solutionFile.toPath(), AssignmentFileType.EDIT, false, file.getUuid());
-                    }
-                    message.getSources().put(file.getUuid().toString(), file.getContentAsString());
-                }
-            }
-
-            return message;
-        }
-        public PerformanceValidation(int runs) {
-            result.put("timeStart", startTime.toString());
-            this.runs = runs;
-            ensureCacheForTeamsReady();
-
-            result.put("runs", runs);
-            model = competitionRuntime.getCompetitionModel();
-            assignmentName = model.getRunningAssignmentName();
-            result.put("assignment", assignmentName);
-            List<AssignmentFile> sourceList = assignmentService.getAssignmentFiles(competitionRuntime.getCurrentAssignment().getAssignment());
-
-            for (AssignmentFile source : sourceList) {
-                if (source.getFile().toFile().getName().endsWith(".java")) {
-                    fileList.add(source);
-                }
-            }
-
-        }
-
-        int selectedUser = -1;
-
-        public void setSelectedUser(int selectedUser) {
-            this.selectedUser = selectedUser;
-        }
-
-        public void doRuns() {
-            for (int index =0; index< runs ;index++) {
-                this.doOneRun();
-            }
-        }
-
-        public List<Team> getTeamInputList() {
-            if (inputTeamList==null) {
-                inputTeamList = new ArrayList<>();
-                if (selectedUser==-1) {
-                    if (teamList.size()>maxUsers) {
-                        inputTeamList = teamList.subList(0, maxUsers);
-                    } else {
-                        inputTeamList = teamList;
-                    }
-                } else {
-                    Team team = teamList.get(selectedUser);
-                    if (team == null) {
-                        team = teamList.get(0);
-                    }
-                    inputTeamList.add(team);
-                }
-            }
-            result.put("inputTeams", inputTeamList.size());
-            result.put("cachedTeams", teamList.size());
-            return inputTeamList;
-        }
-
-        private int maxUsers = 100;
-        private void doOneRun() {
-            SourceMessage codeInputInitial = createCodeInputInitial();
-            SourceMessage codeInputSolution =  createCodeInputWithSolution();
-            for (Team team: getTeamInputList()) {
-                try {
-                    SubmitResult submitResult = submitService.compile(team, codeInputInitial).get(10, TimeUnit.SECONDS);
-                    result.put("compile.problem", submitResult.isSuccess());
-                } catch (Exception ex) {
-                    errorsCompile++;
-                    ex.printStackTrace();
-                }
-
-                try {
-                    SubmitResult submitResult = submitService.compile(team, codeInputSolution).get(10, TimeUnit.SECONDS);
-                    result.put("compileOk", submitResult.isSuccess());
-                } catch (Exception ex) {
-                    errorsCompile++;
-                    ex.printStackTrace();
-                }
-                try {
-                    SubmitResult submitResult = submitService.test(team, codeInputSolution).get(10, TimeUnit.SECONDS);
-                    result.put("test", submitResult.isSuccess());
-                } catch (Exception ex) {
-                    errorsTest++;
-                    ex.printStackTrace();
-                }
-            }
-
-            result.put("errorsCompile", errorsCompile);
-            result.put("errorsTest", errorsTest);
-        }
-
-        public Map<String, Object> getResult() {
-            result.put("timeEnd", new Date().getTime() - startTime.getTime());
-            return result;
-        }
-    }
-
-    @GetMapping(value = "/admin/executeAgents", produces = MediaType.APPLICATION_JSON_VALUE)
-    @RolesAllowed({Role.ADMIN})
-    public @ResponseBody
-    Map<String, Object> doExecuteAgents() {
-        Assert.isTrue(isEnvironmentForDevelopment(),"unauthorized");
-        Map<Long, String> competitions = getRunningCompetitions();
-        Assert.isTrue(!competitions.isEmpty(),"unauthorized");
-
-        PerformanceValidation performanceValidation = new PerformanceValidation(10);
-        performanceValidation.doRuns();
-        return performanceValidation.getResult();
-    }
-
-    @GetMapping(value = "/admin/executeAgent", produces = MediaType.APPLICATION_JSON_VALUE)
-    public @ResponseBody
-    Map<String, Object> doExecuteOneAgentByJMeter() {
-        Assert.isTrue(isEnvironmentForDevelopment(),"unauthorized");
-        Assert.isTrue(competitionRuntime.getCurrentAssignment()!=null,"unready");
-        int nr = Integer.parseInt(HttpUtil.getParam("agent","0"));
-        PerformanceValidation performanceValidation = new PerformanceValidation(1);
-        performanceValidation.setSelectedUser(nr);
-        performanceValidation.doOneRun();
-        return performanceValidation.getResult();
-    }
 }
