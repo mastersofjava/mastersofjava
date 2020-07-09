@@ -20,7 +20,8 @@ Make sure you update the application.yaml to it works for the machine that is ru
 - The resources are default located in: ./moj-data/
 - For downloading all javadocs via commandline: `mvn dependency:sources dependency:resolve -Dclassifier=javadoc`
 - Download the newest SDK documentation and extract (directory `api`) into directory: `./moj-data/javadoc/api` (now the participants have easily access to these docs via the GUI))
-- Don't forget to configure your Keycloak instance with the right realm, roles and users and use this in the keycloak configuration in the game server. In the keycloak-template directory, there is a master of java keycloak template. You can copy the moj directory to the keycloak server themes directory for a MoJ theme.
+- Don't forget to configure your Keycloak instance with the right realm, roles and users and use this in the keycloak configuration in the game server. The roles can be found in the `nl.moj.server.teams.model.Role` class. The realm and other configuration can be found in the `application.yml`. For a [quick tutorial try this](https://www.baeldung.com/spring-boot-keycloak)
+- In the keycloak-template directory, there is a master of java keycloak template. You can copy the moj directory to the keycloak server themes directory for a MoJ theme.
 
 #### Starting
 - From any IDE you can just run the `MojServerApplication.class`
