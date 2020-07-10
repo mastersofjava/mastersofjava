@@ -26,29 +26,31 @@ Make sure you update the application.yaml to it works for the machine that is ru
 
 The procedure below is based on [this tutorial](https://www.baeldung.com/spring-boot-keycloak) but could change based on differences in versions
 - Download the latest standalone keycloak-server from the link on the page [here](https://www.keycloak.org/getting-started/getting-started-zip)
+- Unpack the installation file to a directory
+- Copy the content of the src/main/keycloak-template directory of this project to themes directory within the keycloak 
+  installation directory 
 - Run it using `bin/standalone.sh -Djboss.socket.binding.port-offset=100` or `bin/standalone.bat -Djboss.socket.binding.port-offset=100`
 - Go the webpage at http://localhost:8180
    * Create an admin account and log in
    * Hover on the word 'Master' at the left-top of the webpage and select 'Add realm'
         * Name the new realm 'moj'
-        * Click on 'Import' - 'Select file' and select the file moj-keycloak-realm-export.json in the root of this project
+        * Click on 'Import' - 'Select file' and select the file `moj-keycloak-realm-export.json` in the root of this project
    * Navigate on the left menu to 'Clients'
         * Click on 'Create'
         * enter Client ID: 'moj' and click on save
    * Navigate on the left menu to 'Users' 
         * Click on 'Add user'
         * add 'Username': 'admin', enter a password, and click on save
-        * click on the admin user once saved
+        * Click on 'View all users'
+        * Select on the id of the user with username 'admin'
         * click on tab 'Role mappings'
             * add role 'ROLE_ADMIN' and 'ROLE_GAME_MASTER'
             
-After this is configured, the MoJ game server will redirect to the keycloack URL and you will need 
-to enter the admin account credentials there and the admin console should appear. All following web sessions will also
-be redirected to keycloak and one can create a new account there and log in.               
-   
-- Don't forget to configure your Keycloak instance with the right realm, roles and users and use this in the keycloak configuration in the game server. The roles can be found in the `nl.moj.server.teams.model.Role` class. The realm and other configuration can be found in the `application.yml`. For a [quick tutorial try this](https://www.baeldung.com/spring-boot-keycloak). A basic keycloak realm config can be found in the `moj-keycloak-realm-export.json` file
-- In the keycloak-template directory, there is a master of java keycloak template. You can copy the moj directory to the keycloak server themes directory for a MoJ theme.
+Now when loading the webpage of The MoJ game server (http://localhost:8080) it should redirect to the keycloack URL and 
+you will need to enter the admin account credentials there and the MoJ game server admin console should appear. 
 
+All following web sessions will also be redirected to keycloak and one can create a new account there and log in.               
+   
 #### Starting
 - From any IDE you can just run the `MojServerApplication.class`
 - Startup via commandline: `mvn compile spring-boot:run`
