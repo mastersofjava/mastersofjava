@@ -57,4 +57,10 @@ public class CompetitionSession {
     @ManyToOne
     @JoinColumn(name = "competition_id", nullable = false)
     private Competition competition;
+
+    public boolean isRunning() {
+        Instant maxDuration = Instant.now().minusSeconds(3600);// max duration is 1 hour
+        return running && !dateTimeStart.isBefore(maxDuration);
+    }
+
 }

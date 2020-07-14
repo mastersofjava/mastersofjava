@@ -131,6 +131,9 @@ public class TaskControlController {
     public String doClearCompetition() {
         log.warn("clearCompetition entered");
         gamemasterTableComponents.deleteCurrentSessionResources();
+        if (competition.getCompetitionSession().isRunning()) {
+            stopTask();
+        }
         return competitionCleaningService.doCleanComplete(competition.getCompetitionSession());
     }
 
@@ -403,6 +406,10 @@ public class TaskControlController {
 
         }
         private void insertGamestatus(Model model) {
+            log.info("insertGamestatus " +competition.getCurrentAssignment()+ " " +competition.getCompetitionSession().isRunning());
+            if (competition.getCurrentAssignment() == null && competition.getCompetitionSession().isRunning()) {
+                competition.startAssignment(competition.getCompetitionSession().getAssignmentName());
+            }
             ActiveAssignment state = competition.getActiveAssignment();
             CompetitionRuntime.CompetitionExecutionModel competitionModel = competition.selectCompetitionRuntimeForGameStart(competition.getCompetition()).getCompetitionModel();
 
@@ -439,10 +446,14 @@ public class TaskControlController {
             Assert.isTrue(!isWithSecretCurrentYear||isWithAdminRole,"Gamemasters are not authorized to see secret current year assignments");
         }
         private boolean isDuringCompetitionAssignment() {
-            return competition.getCurrentAssignment() != null;
+            return competition.getCompetitionSession().isRunning();
         }
         private void insertCompetitionInfo(Model model) {
-
+            List<CompetitionSession> sessions = competitionSessionRepository.findAll();
+            if (sessions.isEmpty()) {
+                competition.startSession(competition.getCompetition());
+                sessions.add(competition.getCompetitionSession());
+            }
             List<Team> teams = getAllTeams();
             if (!teams.isEmpty() && this.isWithAdminRole) {
                 List<Ranking> rankings = rankingsService.getRankings(competition.getCompetitionSession(), competitionService.getSelectedYearValue());
@@ -456,14 +467,11 @@ public class TaskControlController {
                 model.addAttribute("repositoryLocation", competitionService.getSelectedLocation());
                 model.addAttribute("selectedYearLabel", this.selectedYearLabel);
             }
-            List<CompetitionSession> sessions = competitionSessionRepository.findAll();
 
             model.addAttribute("sessions", sessions);
             model.addAttribute("setting_registration_disabled", competitionService.isRegistrationFormDisabled());
             model.addAttribute("sessionDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForSessions());
-            if (sessions.isEmpty()) {
-                competition.startSession(competition.getCompetition());
-            }
+
         }
     }
 

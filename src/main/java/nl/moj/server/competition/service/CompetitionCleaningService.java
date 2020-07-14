@@ -55,6 +55,11 @@ public class CompetitionCleaningService {
         log.info("contents of session " + statusList.size() + " " +resultList.size() );
 
         try {
+            competitionSession.setDateTimeStart(null);
+            competitionSession.setRunning(false);
+            competitionSession.setAssignmentName(null);
+            competitionSession.setTimeLeft(null);
+            competitionSessionRepository.save(competitionSession);
             for (AssignmentResult result: resultList) {
                 assignmentResultRepository.delete(result);
             }
@@ -79,11 +84,7 @@ public class CompetitionCleaningService {
                 }
                 assignmentStatusRepository.delete(status);
             }
-            competitionSession.setDateTimeStart(null);
-            competitionSession.setRunning(false);
-            competitionSession.setAssignmentName(null);
-            competitionSession.setTimeLeft(null);
-            competitionSessionRepository.save(competitionSession);
+
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }

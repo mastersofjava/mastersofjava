@@ -113,7 +113,8 @@ function updateSettingRegistrationFormDisabled(isInput) {
 function updateTeamStatus(uuid, value) {
     clientSend("/app/control/updateTeamStatus", { taskName: 'updateTeamStatus', uuid: uuid, value:value });
 }
-function doCompetitionSaveName(name, uuid) {
+function doCompetitionSaveName(node, uuid) {
+    var name = node.innerText.trim();
     console.log('name ' + name + " " + uuid);
     if (name) {
         clientSend("/app/control/competitionSaveName", { taskName: 'competitionSaveName', uuid: uuid, value:name });

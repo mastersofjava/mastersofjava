@@ -42,6 +42,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -107,6 +108,7 @@ public class AssignmentRuntime {
         private boolean paused;
         private CompetitionSession competitionSession;
         private AssignmentPreparations assignmentPreparations;
+        private Long durationInSeconds;
 
         public CompetitionSession getCompetitionSession() {
             return competitionSession;
@@ -136,6 +138,7 @@ public class AssignmentRuntime {
             this.handlers = new HashMap<>();
         }
         public ActiveAssignment getState() {
+            Assert.isTrue(this.assignmentDescriptor!=null,"not initialized " + competitionSession.getAssignmentName());
             return ActiveAssignment.builder()
                     .competitionSession(this.competitionSession)
                     .assignment(this.assignment)
@@ -143,13 +146,13 @@ public class AssignmentRuntime {
                     .timeElapsed(getTimeElapsed())
                     .assignmentDescriptor(this.assignmentDescriptor)
                     .assignmentFiles(this.originalAssignmentFiles)
-                    .running(this.running)
+                    .running(competitionSession.isRunning())
                     .build();
         }
         public Long getTimeRemaining() {
             long remaining = 0;
             if (this.assignmentDescriptor != null && this.timer != null) {
-                remaining = this.assignmentDescriptor.getDuration().getSeconds() - this.timer.getTime(TimeUnit.SECONDS);
+                remaining = durationInSeconds - this.timer.getTime(TimeUnit.SECONDS);
                 if (remaining < 0) {
                     remaining = 0;
                 }
@@ -161,8 +164,9 @@ public class AssignmentRuntime {
             Duration elapsed = null;
             if (this.assignmentDescriptor != null && this.timer != null) {
                 elapsed = Duration.ofSeconds(this.timer.getTime(TimeUnit.SECONDS));
-                if (elapsed.compareTo(this.assignmentDescriptor.getDuration()) > 0) {
-                    elapsed = this.assignmentDescriptor.getDuration();
+                Duration duration = Duration.ofSeconds(durationInSeconds);
+                if (elapsed.compareTo(duration) > 0) {
+                    elapsed = duration;
                 }
             }
             return elapsed;
@@ -192,12 +196,10 @@ public class AssignmentRuntime {
      * @return the {@link Future}
      */
     public Future<?> start(OrderedAssignment orderedAssignment, CompetitionRuntime.CompetitionExecutionModel competitionExecutionModel) throws AssignmentStartException {
-        if (model.originalAssignmentFiles!=null) {
-            log.info("startstate.last " +orderedAssignment.getAssignment().getName() + " " + model.originalAssignmentFiles.size() + " " + model.handlers.size() );
-        }
+
         model = competitionExecutionModel.getAssignmentExecutionModel();
         assignmentExecutionModelMap.put(competitionExecutionModel.getCompetition().getId(), model);
-        log.info("startstate.input " +orderedAssignment.getAssignment().getName() + " " +assignmentExecutionModelMap.size() + " " +competitionExecutionModel.getCompetition().getId());
+        log.debug("assignmentRuntime.start input " +orderedAssignment.getAssignment().getName() + " " +assignmentExecutionModelMap.size() + " " +competitionExecutionModel.getCompetition().getId() + " " + competitionExecutionModel.getCompetitionSession().getTimeLeft());
 
         Future<?> result = start(orderedAssignment, competitionExecutionModel.getCompetitionSession());
         return result;
@@ -210,26 +212,33 @@ public class AssignmentRuntime {
         model.orderedAssignment = orderedAssignment;
         model.assignment = orderedAssignment.getAssignment();
         model.assignmentDescriptor = assignmentService.getAssignmentDescriptor(model.assignment);
-        model.competitionSession.setTimeLeft(model.assignmentDescriptor.getDuration().toSeconds());
-        // verify assignment
-
         AssignmentPreparations preparations = new AssignmentPreparations(model);
-        preparations.verifyAssignment(model.assignmentDescriptor);
-        // init assignment sources;
         preparations.initOriginalAssignmentFiles();
-
-        preparations.initTeamsForAssignment();
         model.assignmentPreparations = preparations;
+        model.running = true;
+
+        boolean isRestart = model.competitionSession.getTimeLeft()!=null&&model.competitionSession.getTimeLeft()!=0;
+
+        if (isRestart) {
+            model.durationInSeconds = model.competitionSession.getTimeLeft();
+            log.info("Refreshed running assignment {}", model.assignment.getName());
+            return startTimers();
+        } else {
+            model.durationInSeconds = model.assignmentDescriptor.getDuration().toSeconds();
+        }
+
+        model.competitionSession.setTimeLeft(model.durationInSeconds);
         // play the gong
         taskScheduler.schedule(soundService::playGong, Instant.now());
+        // verify assignment
+        preparations.verifyAssignment(model.assignmentDescriptor);
+        // init assignment sources;
+        model.durationInSeconds = model.assignmentDescriptor.getDuration().getSeconds();
+        preparations.initTeamsForAssignment();
         // start the timers
         Future<?> mainHandle = startTimers();
-
         // update assignment status start times
         preparations.updateTeamAssignmentStatuses();
-
-        // mark assignment as running
-        model.running = true;
 
         // send start to clients.
         messageService.sendStartToTeams(model.assignment.getName(), model.competitionSession.getUuid().toString());
@@ -403,10 +412,8 @@ public class AssignmentRuntime {
     private Future<?> startTimers() {
         model.timer = StopWatch.createStarted();
         Future<?> main = scheduleTimeSync();
-        model.handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(model.assignmentDescriptor.getDuration()
-                .toSeconds() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
-        model.handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(model.assignmentDescriptor.getDuration()
-                .toSeconds() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
+        model.handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(model.competitionSession.getTimeLeft() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
+        model.handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(model.competitionSession.getTimeLeft() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
         model.handlers.put(TIMESYNC, main);
         model.handlers.put(STOP, scheduleStop());
         return model.handlers.get(STOP);

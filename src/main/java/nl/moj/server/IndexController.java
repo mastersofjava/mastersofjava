@@ -67,29 +67,51 @@ public class IndexController {
     private AssignmentRepository assignmentRepository;
     private CompetitionSessionRepository competitionSessionRepository;
 
+
+    public UUID getSelectedSessionId() {
+        UUID globalUUID = competitionRuntime.getCompetitionSession().getUuid();
+        return HttpUtil.getSelectedUserSession(globalUUID);
+    }
+    public CompetitionSession getSelectedCompetitionSession() {
+        UUID globalUUID = competitionRuntime.getCompetitionSession().getUuid();
+        UUID httpUUID = getSelectedSessionId();
+        if (globalUUID.equals(httpUUID)) {
+            return competitionRuntime.getCompetitionSession();
+        }
+        return competitionSessionRepository.findByUuid(httpUUID);
+    }
     public CompetitionRuntime getCompetitionRuntimeForGameStart() {
         Assert.isTrue(competitionRuntime!=null,"runtime not ready");
         Assert.isTrue(competitionRuntime.getCompetitionSession()!=null,"runtime.session not ready");
         UUID globalUUID = competitionRuntime.getCompetitionSession().getUuid();
         UUID httpUUID = HttpUtil.getSelectedUserSession(globalUUID);
-        log.info("httpUUID " + httpUUID+ " globalUUID " + globalUUID);
-        if (competitionRuntime.getCompetitionSession().getUuid().equals(httpUUID)||HttpUtil.hasParam("default")) {
-            return competitionRuntime;
-        } else {
-            return competitionRuntime.selectCompetitionRuntimeForGameStart(competitionSessionRepository.findByUuid(httpUUID).getCompetition());
+        log.debug("httpUUID " + httpUUID+ " globalUUID " + globalUUID);
+        CompetitionRuntime result = competitionRuntime;
+        if (!competitionRuntime.getCompetitionSession().getUuid().equals(httpUUID)&&!HttpUtil.hasParam("default")) {
+            CompetitionSession temp = competitionSessionRepository.findByUuid(httpUUID);
+            if (competitionRuntime.isActiveCompetition(temp.getCompetition())) {
+                result = competitionRuntime.selectCompetitionRuntimeForGameStart(temp.getCompetition());
+            }
         }
+        log.debug("result " + result.getCompetitionSession().getUuid());
+        return result;
     }
 
     @GetMapping("/")
     public String index(Model model, @AuthenticationPrincipal Principal user,@ModelAttribute("selectSessionForm") SelectSessionForm ssf) {
-        CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
-        insertCompetitionSelector(model, ssf, runtime.getCompetitionSession().getUuid());
-        if (runtime.getCurrentAssignment() == null) {
+        CompetitionSession competitionSession = getSelectedCompetitionSession();
+        insertCompetitionSelector(model, ssf, competitionSession.getUuid());
+        boolean isAvailableAssignment = competitionRuntime.isActiveCompetition(competitionSession.getCompetition());
+        if (isAvailableAssignment) {
+            CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
+            isAvailableAssignment = runtime.getCompetitionModel().getAssignmentExecutionModel().getOrderedAssignment()!=null;
+        }
+        if (!isAvailableAssignment ) {
             model.addAttribute("team", user.getName());
             model.addAttribute("isWithValidation", false);
             return "index";
         }
-        addModelDataForUserWithAssignment(model, user, runtime.getActiveAssignment());
+        addModelDataForUserWithAssignment(model, user, getCompetitionRuntimeForGameStart().getActiveAssignment());
         return "index";
     }
     private void insertCompetitionSelector(Model model, SelectSessionForm ssf,UUID sessionUUID) {
@@ -102,7 +124,7 @@ public class IndexController {
         }
         model.addAttribute("sessions", activeSessions);
         UUID input = HttpUtil.getSelectedUserSession( sessionUUID);
-        log.info("input " + input + " activeSessions " +activeSessions.size());
+        log.debug("input " + input + " activeSessions " +activeSessions.size());
         if (ssf!=null) {
             ssf.setSession(input);
         }
@@ -137,7 +159,7 @@ public class IndexController {
     private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String solutionInputFileName, boolean isWithValidation) {
         Team team = teamRepository.findByName(user.getName());
         CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, solutionInputFileName, isWithValidation);
-        codePage.saveFiles(getCompetitionRuntimeForGameStart().getCompetitionSession(), assignment, team);
+        codePage.saveFiles(getSelectedCompetitionSession(), assignment, team);
         codePage.saveAdminState(assignment);
     }
 

@@ -247,7 +247,7 @@ public class GamemasterTableComponents {
                 }
                 html.append("<tbody title='sessiepanel van competitie "+competitionCounter +"' ><tr class='");
                 html.append(styleCompetitionText+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;");
-                html.append(competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td class='notextdecoration'>");
+                html.append(competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td class='notextdecoration'>");
                 html.append(htmlButtonsUpdate+"</td><td>"+actionsDelete+"</td></tr>");
 
                 int sessionCounter = 1;
@@ -308,6 +308,9 @@ public class GamemasterTableComponents {
             StringBuilder html = new StringBuilder();
             for (Competition competition:competitionList) {
                 List<CompetitionSession> sessionList = competitionSessionRepository.findByCompetition(competition);
+                if (sessionList.isEmpty()) {
+                    continue;
+                }
                 BootstrapTableForCompetition tableForCompetition = new BootstrapTableForCompetition(competition, sessionList);
                 html.append(tableForCompetition.createHtml());
                 competitionCounter++;

@@ -234,7 +234,7 @@ public class PerformanceValidationController {
     }
 
     /**
-     * JMeter entrypoiny, only available on localhost with profile local.
+     * JMeter entrypoint, only available on localhost with profile local.
     */
     @GetMapping(value = "/admin/executeAgent", produces = MediaType.APPLICATION_JSON_VALUE)
     public @ResponseBody

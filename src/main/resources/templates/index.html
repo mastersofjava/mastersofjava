@@ -182,7 +182,7 @@
                 <form class="form" method="post" th:action="@{/index/select-session}" th:object="${selectSessionForm}">
                     <div >
                         <select class="form-control inlineBlock maxWidth300 font10px" th:classappend="${sessions.size()==1?'hide':''}"
-                                id="sessions"  onchange="if (this.value) $(this).closest('form').submit()" th:field="*{session}">
+                                id="sessions"  onchange="if (this.value) $(this).closest('form').submit()" th:field="*{session}" th:title="*{session}">
                             <option value="">Speelbare competities: </option>
                             <option th:each="s : ${sessions}" th:value="${s.uuid}" th:text="${'Session '+(sStat.index +1)+ ' (' + s.getCompetition().getShortName()+ ')'}">
                             </option>
