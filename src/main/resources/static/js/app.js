@@ -281,7 +281,8 @@ function doUserActionCompile() {
     activeAction = "COMPILE";
     stomp.send("/app/submit/compile", {}, JSON.stringify({
         'sources': getContent(),
-        'assignmentName': assignmentName
+        'assignmentName': assignmentName,
+        'uuid': $('#sessions').val()
     }));
 }
 
@@ -297,7 +298,8 @@ function doUserActionTest() {
     stomp.send("/app/submit/test", {}, JSON.stringify({
         'sources': getContent(),
         'tests': tests,
-        'assignmentName': assignmentName
+        'assignmentName': assignmentName,
+        'uuid': $('#sessions').val()
     }));
 }
 
@@ -345,7 +347,8 @@ function doUserActionSubmit() {
     showOutput();
     activeAction = "SUBMIT";
     stomp.send("/app/submit/submit", {}, JSON.stringify({
-        'sources': getContent()
+        'sources': getContent(),
+        'uuid': $('#sessions').val()
     }));
     showSubmitDetails();
 }

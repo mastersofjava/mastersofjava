@@ -128,7 +128,15 @@ public class CompetitionRuntime {
     public boolean isActiveCompetition(Competition competition) {
         return activeCompetitionsMap.get(competition.getId())!=null;
     }
-
+    public Competition selectCompetitionByUUID(UUID uuid) {
+        Competition result = null;
+        for (CompetitionExecutionModel model: activeCompetitionsMap.values()) {
+            if (model.getCompetition().getUuid().equals(uuid) || model.getCompetitionSession().getUuid().equals(uuid)) {
+                result = model.getCompetition();
+            }
+        }
+        return result;
+    }
     public CompetitionRuntime selectCompetitionRuntimeForGameStart(Competition competition) {
         CompetitionRuntime result = new CompetitionRuntime(assignmentRuntime, assignmentService,teamService, competitionSessionRepository,assignmentResultRepository,messageService);
         if (activeCompetitionsMap.get(competition.getId())==null) {
@@ -240,6 +248,9 @@ public class CompetitionRuntime {
 
     public ActiveAssignment getActiveAssignment() {
         competitionModel.assignmentExecutionModel.setCompetitionSession(competitionModel.competitionSession);
+        if (competitionModel.assignmentExecutionModel.getOrderedAssignment()==null) {
+            return null;
+        }
         return competitionModel.assignmentExecutionModel.getState();
     }
 
@@ -327,10 +338,6 @@ public class CompetitionRuntime {
     public AssignmentStatus handleLateSignup(Team team, UUID uuidInput, String nameInput) {
         UUID uuid   = competitionModel.getAssignmentExecutionModel().getCompetitionSession().getUuid();
         String name = competitionModel.getAssignmentExecutionModel().getOrderedAssignment().getAssignment().getName();
-
-        log.info("uuidInput " + competitionSessionRepository.findByUuid(uuidInput));
-        log.info("uuid " + competitionSessionRepository.findByUuid(uuid));
-        log.info("name " + name + " " + nameInput);
 
         Assert.isTrue(name.equals(nameInput),"name not valid: " + nameInput + ", expected " +name);
         Assert.isTrue(uuid.equals(uuidInput),"uuid not valid: " + uuidInput + ", expected " +uuid);

@@ -55,6 +55,10 @@ public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
         if (node.get("assignmentName") != null && node.get("assignmentName").isTextual()) {
             assignmentNameForAdminPurpose = node.get("assignmentName").asText();
         }
-        return new SourceMessage(sources, tests, assignmentNameForAdminPurpose);
+        String uuid = null;
+        if (node.get("uuid") != null && node.get("uuid").isTextual()) {
+            uuid = node.get("uuid").asText();
+        }
+        return new SourceMessage(sources, tests, assignmentNameForAdminPurpose, uuid);
     }
 }

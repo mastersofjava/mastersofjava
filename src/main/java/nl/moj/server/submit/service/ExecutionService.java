@@ -39,22 +39,20 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ExecutionService {
 
-    private final CompetitionRuntime competition;
     private final CompileService compileService;
     private final TestService testService;
     private final Executor sequential;
     private final Executor parallel;
 
-    public ExecutionService(@Qualifier("sequential") Executor sequential, @Qualifier("parallel") Executor parallel, CompetitionRuntime competition,
+    public ExecutionService(@Qualifier("sequential") Executor sequential, @Qualifier("parallel") Executor parallel,
                             CompileService compileService, TestService testService) {
         this.sequential = sequential;
         this.parallel = parallel;
-        this.competition = competition;
         this.compileService = compileService;
         this.testService = testService;
     }
 
-    public CompletableFuture<CompileResult> compile(Team team, SourceMessage message, Assignment assignment, ActiveAssignment activeAssignment) {
+    public CompletableFuture<CompileResult> compile(Team team, SourceMessage message, ActiveAssignment activeAssignment) {
         return compileService.scheduleCompile(team, message, getExecutor(activeAssignment), activeAssignment);
     }
 

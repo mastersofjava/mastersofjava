@@ -29,6 +29,9 @@ import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.CompetitionRuntime;
@@ -52,7 +55,7 @@ import org.springframework.util.Assert;
 @Slf4j
 public class SubmitService {
 
-    private final CompetitionRuntime competition;
+    private final CompetitionRuntime competitionRuntime;
     private final ExecutionService executionService;
     private final ScoreService scoreService;
     private final MessageService messageService;
@@ -62,6 +65,7 @@ public class SubmitService {
     private final SubmitAttemptRepository submitAttemptRepository;
     private final AssignmentRepository assignmentRepository;
     private final AssignmentService assignmentService;
+    private final CompetitionSessionRepository competitionSessionRepository;
 
     public CompletableFuture<SubmitResult> compile(Team team, SourceMessage message) {
         final Assignment assignment = determineAssignment(team, message);
@@ -74,7 +78,7 @@ public class SubmitService {
     }
 
     private CompletableFuture<SubmitResult> compileInternal(Team team, SourceMessage message, Assignment assignment) {
-        return executionService.compile(team, message, assignment, getActiveAssignment())
+        return executionService.compile(team, message, getActiveAssignment(team, message))
                 .thenApply(r -> {
                     log.info("DONE with compile execution team {}", team.getName());
                     messageService.sendCompileFeedback(team, r);
@@ -102,19 +106,36 @@ public class SubmitService {
             return r;
         });
     }
-    private ActiveAssignment getActiveAssignment() {
-        return competition.getActiveAssignment();
+    private ActiveAssignment getActiveAssignment(Team team, SourceMessage message) {
+        UUID uuid = UUID.fromString(message.getUuid());
+        Competition competition = competitionRuntime.selectCompetitionByUUID(uuid);
+        if (!team.getRole().equals(Role.ADMIN)) {
+            return competitionRuntime.selectCompetitionRuntimeForGameStart(competition).getActiveAssignment();
+        }
+        ActiveAssignment activeAssignment = null;
+        if (competition!=null) {
+            activeAssignment = competitionRuntime.selectCompetitionRuntimeForGameStart(competition).getActiveAssignment();
+        }
+        if (activeAssignment!=null && message.getAssignmentName().equals(activeAssignment.getAssignment().getName())) {
+            return activeAssignment;
+        }
+        CompetitionSession competitionSession = competitionRuntime.getCompetitionSession();
+        if (!message.getUuid().equals(competitionSession.getUuid())) {
+            competitionSession = competitionSessionRepository.findByUuid(uuid);
+        }
+        Assignment assignment = assignmentRepository.findByName(message.getAssignmentName() );
+        List<AssignmentFile> fileList   = assignmentService.getAssignmentFiles(assignment);
+        AssignmentDescriptor assignmentDescriptor =assignmentService.getAssignmentDescriptor(assignment);
+        activeAssignment  = ActiveAssignment.builder().competitionSession(competitionSession).assignment(assignment).assignmentDescriptor(assignmentDescriptor).assignmentFiles(fileList).build();
+
+        return activeAssignment;
     }
     private Assignment determineAssignment(Team team, SourceMessage message) {
-        ActiveAssignment activeAssignment = getActiveAssignment();
-        Assignment result = activeAssignment.getAssignment();
+        ActiveAssignment activeAssignment = getActiveAssignment(team, message);
         if (!team.getRole().equals(Role.ADMIN)) {
-            return result;
+            return activeAssignment.getAssignment();
         }
-        if (result==null  || !message.getAssignmentName().equals(result.getName())) {
-            result = assignmentRepository.findByName(message.getAssignmentName() );
-        }
-        return result;
+        return assignmentRepository.findByName(message.getAssignmentName() );
     }
 
     private CompletableFuture<SubmitResult> testInternal(Team team, SourceMessage message, boolean submit, Assignment assignment) {
@@ -124,18 +145,8 @@ public class SubmitService {
         return compileInternal(team, message, assignment)
                 .thenCompose(submitResult -> {
                     log.info("testInternal.after compile ( assignent {}, compile {}) ", message.getAssignmentName(),  submitResult.isSuccess() );
-                    ActiveAssignment activeAssignment = getActiveAssignment();
-                    try {
-                        boolean isAssignmentNull = activeAssignment.getAssignment()==null;
-                        boolean isOverride = !isAssignmentNull && message.getAssignmentName()!=null && !message.getAssignmentName().equals(activeAssignment.getAssignment().getName());
-                        if (isAssignmentNull  || isOverride) {
-                            List<AssignmentFile> fileList   = assignmentService.getAssignmentFiles(assignment);
-                            AssignmentDescriptor assignmentDescriptor =assignmentService.getAssignmentDescriptor(assignment);
-                            activeAssignment  = ActiveAssignment.builder().competitionSession(getActiveAssignment().getCompetitionSession()).assignment(assignment).assignmentDescriptor(assignmentDescriptor).assignmentFiles(fileList).build();
-                        }
-                    } catch (Exception ex) {
-                        log.info("ERROR ", ex);
-                    }
+                    ActiveAssignment activeAssignment = getActiveAssignment(team, message);
+
                     Assert.isTrue( activeAssignment.getAssignment()!=null, "not ready for test");
 
                     if (submitResult.isSuccess()) {
@@ -168,7 +179,7 @@ public class SubmitService {
 
     @Transactional
     public CompletableFuture<SubmitResult> submit(Team team, SourceMessage message) {
-        final ActiveAssignment activeAssignment = getActiveAssignment();
+        final ActiveAssignment activeAssignment = getActiveAssignment(team, message );
         final AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment
                 .getAssignment(), activeAssignment.getCompetitionSession(), team);
 
@@ -223,7 +234,8 @@ public class SubmitService {
     }
 
     private int getRemainingSubmits(AssignmentStatus as) {
-        ActiveAssignment activeAssignment = getActiveAssignment();
+        Competition competition = competitionRuntime.selectCompetitionByUUID(as.getCompetitionSession().getUuid());
+        ActiveAssignment activeAssignment = competitionRuntime.selectCompetitionRuntimeForGameStart(competition).getActiveAssignment();
         int maxSubmits = activeAssignment.getAssignmentDescriptor().getScoringRules().getMaximumResubmits() + 1;
         return maxSubmits - as.getSubmitAttempts().size();
     }

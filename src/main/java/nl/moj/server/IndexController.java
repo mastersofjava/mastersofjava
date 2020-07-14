@@ -87,7 +87,7 @@ public class IndexController {
         UUID httpUUID = HttpUtil.getSelectedUserSession(globalUUID);
         log.debug("httpUUID " + httpUUID+ " globalUUID " + globalUUID);
         CompetitionRuntime result = competitionRuntime;
-        if (!competitionRuntime.getCompetitionSession().getUuid().equals(httpUUID)&&!HttpUtil.hasParam("default")) {
+        if (!competitionRuntime.getCompetitionSession().getUuid().equals(httpUUID)) {
             CompetitionSession temp = competitionSessionRepository.findByUuid(httpUUID);
             if (competitionRuntime.isActiveCompetition(temp.getCompetition())) {
                 result = competitionRuntime.selectCompetitionRuntimeForGameStart(temp.getCompetition());

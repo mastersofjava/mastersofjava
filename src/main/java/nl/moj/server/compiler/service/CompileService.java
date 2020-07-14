@@ -68,8 +68,6 @@ public class CompileService {
     private AssignmentStatusRepository assignmentStatusRepository;
     private AssignmentRepository assignmentRepository;
     private AssignmentService assignmentService;
-
-    //private CompetitionRuntime competition;
     private MojServerProperties mojServerProperties;
     private TeamService teamService;
     private static final boolean OS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
