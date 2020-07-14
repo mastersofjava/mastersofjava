@@ -22,7 +22,7 @@ Make sure you update the application.yaml to it works for the machine that is ru
 - Download the newest SDK documentation and extract (directory `api`) into directory: `./moj-data/javadoc/api` (now the participants have easily access to these docs via the GUI))
 - This project requires a properly configured keycloak to run for user authentication, see below:
 
-#### Keycloak installation, configuration and execution
+#### Keycloak installation, execution and configuration
 
 The procedure below is based on [this tutorial](https://www.baeldung.com/spring-boot-keycloak) but could change based on differences in versions
 - Download the latest standalone keycloak-server from the link on the page [here](https://www.keycloak.org/getting-started/getting-started-zip)
