@@ -122,9 +122,11 @@ public class CompetitionRuntime {
         return competitionModel.getCompetition();
     }
 
+
     private void registerCurrentAdminCompetition(Competition competition) {
         if (activeCompetitionsMap.containsKey(competition.getId())) {
             competitionModel = activeCompetitionsMap.get(competition.getId());
+            competitionModel.competition = competition;
             return;
         }
         competitionModel = new CompetitionExecutionModel();

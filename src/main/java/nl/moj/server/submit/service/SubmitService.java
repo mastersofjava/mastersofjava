@@ -158,9 +158,17 @@ public class SubmitService {
                                 .filter(t -> message.getTests().contains(t.getUuid().toString()))
                                 .collect(Collectors.toList());
 
-                        if (submit || team.getRole().equals(Role.ADMIN)) {
-                            testCases = activeAssignment.getSubmitTestFiles();
+
+                        boolean isWithAllTestFiles = submit; // on submit, also validate the hidden tests.
+                        if (!isWithAllTestFiles && team.getRole().equals(Role.ADMIN)) {
+                            // if admin and all tests are selected, then also validate the hidden tests.
+                            isWithAllTestFiles = activeAssignment.getTestFiles().size()==message.getTests().size();
                         }
+
+                        if (isWithAllTestFiles) {
+                            testCases = activeAssignment.getSubmitTestFiles();// contains hidden tests.
+                        }
+                        log.info("testCases (isWithAllTestFiles {}, default {}, selected {})" , isWithAllTestFiles, activeAssignment.getTestFiles().size(), message.getTests().size());
                         log.info("testCases (size {}, compile {}, assignment {}, session {}) " , testCases.size(), submitResult.isSuccess(), activeAssignment.getAssignment().getName(), activeAssignment.getCompetitionSession().getUuid());
 
                         // run selected testcases
