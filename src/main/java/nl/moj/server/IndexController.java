@@ -37,8 +37,6 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.HttpUtil;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -131,7 +129,7 @@ public class IndexController {
     }
 
     private boolean isUsingCurrentCompetitionAssignment(Assignment assignment,CompetitionRuntime runtime) {
-        return runtime.getCurrentAssignment()!=null && assignment.equals(runtime.getActiveAssignment().getAssignment());
+        return runtime.getCurrentRunningAssignment()!=null && assignment.equals(runtime.getActiveAssignment().getAssignment());
     }
     @GetMapping("/assignmentAdmin")
     public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user,
@@ -180,12 +178,10 @@ public class IndexController {
             UUID currentUUID = competitionRuntime.getCompetitionSession().getUuid();
             UUID uuid = HttpUtil.getSelectedUserSession(currentUUID);
             CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
-            boolean isInAssignmentModel = runtime.isSessionInAssignmentModel(uuid, state.getAssignment().getName());
-            log.info("competition session default: "+currentUUID +", selected " +uuid + ", isInAssignmentModel " +isInAssignmentModel);
+           // boolean isInAssignmentModel = runtime.isSessionInAssignmentModel(uuid, state.getAssignment().getName());
+            log.info("competition session default: "+currentUUID +", selected " +uuid + ", isInAssignmentModel ");
 
-            if (isInAssignmentModel ||!HttpUtil.isWithAdminRole(user)) {
-                as = runtime.handleLateSignup(team, uuid, state.getAssignment().getName() );
-            }
+            as = runtime.handleLateSignup(team, uuid, state.getAssignment().getName() );
         }
 
         AssignmentStatusHelper ash = new AssignmentStatusHelper(as, state.getAssignmentDescriptor());
@@ -314,6 +310,9 @@ public class IndexController {
         public AssignmentStatusHelper(AssignmentStatus assignmentStatus, AssignmentDescriptor assignmentDescriptor) {
             this.assignmentStatus = assignmentStatus;
             this.assignmentDescriptor = assignmentDescriptor;
+            Assert.isTrue(this.assignmentStatus!=null,"assignmentStatus not ready");
+            Assert.isTrue(this.assignmentDescriptor!=null,"assignmentDescriptor not ready");
+
         }
 
         public boolean isCompleted() {

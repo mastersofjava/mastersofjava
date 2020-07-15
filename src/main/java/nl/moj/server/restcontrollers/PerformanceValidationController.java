@@ -80,23 +80,23 @@ public class PerformanceValidationController {
             solutionErrors = 0;
         }
         private void ensureCacheForAssignments() {
-            if (assignmentFilesCacheMap.containsKey(competitionRuntime.getCurrentAssignment().getAssignment().getName())) {
+            if (assignmentFilesCacheMap.containsKey(competitionRuntime.getCurrentRunningAssignment().getAssignment().getName())) {
                 // test run has already started
                 return;
             }
             resetStateForNewTestRun();
-            List<AssignmentFile> sourceList = assignmentService.getAssignmentFiles(competitionRuntime.getCurrentAssignment().getAssignment());
+            List<AssignmentFile> sourceList = assignmentService.getAssignmentFiles(competitionRuntime.getCurrentRunningAssignment().getAssignment());
             List<AssignmentFile> fileList = new ArrayList<>();
             for (AssignmentFile source : sourceList) {
                 if (source.getFile().toFile().getName().endsWith(".java")) {
                     fileList.add(source);
                 }
             }
-            assignmentFilesCacheMap.put(competitionRuntime.getCurrentAssignment().getAssignment().getName(), fileList);
+            assignmentFilesCacheMap.put(competitionRuntime.getCurrentRunningAssignment().getAssignment().getName(), fileList);
         }
 
         public List<AssignmentFile> getAssignmentFiles() {
-            return assignmentFilesCacheMap.get(competitionRuntime.getCurrentAssignment().getAssignment().getName());
+            return assignmentFilesCacheMap.get(competitionRuntime.getCurrentRunningAssignment().getAssignment().getName());
         }
     }
 
@@ -226,7 +226,7 @@ public class PerformanceValidationController {
     public @ResponseBody
     Map<String, Object> doExecuteAgents() {
         Assert.isTrue(isEnvironmentForDevelopment(),"unauthorized");
-        Assert.isTrue(competitionRuntime.getCurrentAssignment()!=null,"unready");
+        Assert.isTrue(competitionRuntime.getCurrentRunningAssignment()!=null,"unready");
 
         PerformanceValidation performanceValidation = new PerformanceValidation(10);
         performanceValidation.doRuns();
@@ -240,7 +240,7 @@ public class PerformanceValidationController {
     public @ResponseBody
     Map<String, Object> doExecuteOneAgentByJMeter() {
         Assert.isTrue(isEnvironmentForDevelopment(),"unauthorized");// nb deze methode is aanroepbaar via JMeter, alleen op localhost.
-        Assert.isTrue(competitionRuntime.getCurrentAssignment()!=null,"unready");
+        Assert.isTrue(competitionRuntime.getCurrentRunningAssignment()!=null,"unready");
         int nr = Integer.parseInt(HttpUtil.getParam("agent","0"));
         PerformanceValidation performanceValidation = new PerformanceValidation(1);
         performanceValidation.setSelectedUser(nr);

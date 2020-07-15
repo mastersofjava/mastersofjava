@@ -231,7 +231,7 @@
                                 &nbsp;&nbsp;<sup>(# locaties beschikbaar op server: [[${locationList.size()}]])</sup>
                         </div>
                         <div class="p-2 col-6 roundGrayBorder" th:if="${locationList.size()>=0}">
-                            <select class="p-2" th:disabled="${locationList.size()==1}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
+                            <select class="p-2" th:disabled="${locationList.size()==1 || runningSelectedCompetition}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
                                 <option value="">Selecteer een ander jaar</option>
                                 <option th:each="team : ${locationList}" th:value="${team.getName()}"
                                         th:text="${team.getName()}" th:selected="${team.getName().equals(repositoryLocation.getName())}"></option>
@@ -268,7 +268,8 @@
                             &nbsp;&nbsp;<sup>met name voor development</sup>
                         </div>
                         <div class="p-2 col-6 roundGrayBorder">
-                            <a class="btn btn-success" href="/getGameMasterState" target="getGameMasterState">Bekijk systeemstatus (export)</a>
+                            <a class="btn btn-success" href="/getGameMasterState" target="getGameMasterState">Bekijk systeemstatus (export)</a><br/><br/>
+                            <a class="btn btn-success" href="/admin/systemState" target="systemState">Bekijk competitie uitvoering</a>
                         </div>
                     </div>
                     <br>

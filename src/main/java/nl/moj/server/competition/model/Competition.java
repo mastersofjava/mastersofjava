@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -44,9 +45,11 @@ public class Competition {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "competition", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<OrderedAssignment> assignments = new ArrayList<>();
 
+    @JsonIgnore
     public List<OrderedAssignment> getAssignmentsInOrder() {
         List<OrderedAssignment> copyFiltered = copyFilteredList();
         copyFiltered.sort(Comparator.comparingInt(OrderedAssignment::getOrder));

@@ -107,6 +107,9 @@ public class SubmitService {
         });
     }
     private ActiveAssignment getActiveAssignment(Team team, SourceMessage message) {
+        if (message.getUuid()==null) {
+            return competitionRuntime.getActiveAssignment();
+        }
         UUID uuid = UUID.fromString(message.getUuid());
         Competition competition = competitionRuntime.selectCompetitionByUUID(uuid);
         if (!team.getRole().equals(Role.ADMIN)) {

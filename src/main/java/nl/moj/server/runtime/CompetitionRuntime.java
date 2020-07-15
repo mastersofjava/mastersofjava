@@ -77,8 +77,11 @@ public class CompetitionRuntime {
         public boolean isRunning() {
             return assignmentExecutionModel.isRunning();
         }
-        public int getAmountOfComplemetedAssignments() {
+        public int getAmountOfCompletedAssignments() {
             return completedAssignments.size();
+        }
+        public boolean isNewAssignmentInCompetition(OrderedAssignment orderedAssignment) {
+            return !completedAssignments.contains(orderedAssignment);
         }
 
         public String getRunningAssignmentName() {
@@ -91,13 +94,13 @@ public class CompetitionRuntime {
             if (assignmentExecutionModel.getTimer()==null) {
                 return "[no timer]";
             }
-            return "[start " +new Date(assignmentExecutionModel.getTimer().getStartTime()) + ", left:" + assignmentExecutionModel.getTimer().getTime()+ ", " +assignmentExecutionModel.getTimeRemaining()+ "]";
+            return "[start " +new Date(assignmentExecutionModel.getTimer().getStartTime()) + ", left:" + assignmentExecutionModel.getTimeRemaining()+ "]";
         }
     }
     private Map<Long, CompetitionExecutionModel> activeCompetitionsMap = new TreeMap<>();
 
     public Map<Long, CompetitionExecutionModel> getActiveCompetitionsMap() {
-        return activeCompetitionsMap;
+        return Collections.unmodifiableMap(activeCompetitionsMap);
     }
     public Map<Long, String> getRunningCompetitionsQuickviewMap() {
         Map<Long, String> result = new TreeMap<>();
@@ -119,7 +122,11 @@ public class CompetitionRuntime {
         return competitionModel.getCompetition();
     }
 
-    private void registerCompetition(Competition competition) {
+    private void registerCurrentAdminCompetition(Competition competition) {
+        if (activeCompetitionsMap.containsKey(competition.getId())) {
+            competitionModel = activeCompetitionsMap.get(competition.getId());
+            return;
+        }
         competitionModel = new CompetitionExecutionModel();
         competitionModel.competition = competition;
         activeCompetitionsMap.put(competition.getId(), competitionModel);
@@ -147,7 +154,7 @@ public class CompetitionRuntime {
     }
     public void startSession(Competition competition) {
         log.info("Starting new session for competition {}", competition.getName());
-        registerCompetition(competition);
+        registerCurrentAdminCompetition(competition);
         competitionModel.competitionSession = competitionSessionRepository.save(createNewCompetitionSession(competition));
         restoreSession();
     }
@@ -170,19 +177,20 @@ public class CompetitionRuntime {
      */
     public void loadSession(Competition competition, UUID session) {
         log.info("Loading session {} for competition {}", session, competition.getName());
-        registerCompetition(competition);
+        registerCurrentAdminCompetition(competition);
         competitionModel.competitionSession = competitionSessionRepository.findByUuid(session);
         restoreSession();
     }
     public void changeSession(UUID session) {
+        log.info("changeSession " +session );
         CompetitionSession competitionSession = competitionSessionRepository.findByUuid(session);
-        registerCompetition(competitionSession.getCompetition());
+        registerCurrentAdminCompetition(competitionSession.getCompetition());
         competitionModel.competitionSession = competitionSession;
         restoreSession();
     }
     @Transactional
     public void restoreSession() {
-        stopCurrentAssignment();
+        //stopCurrentAssignment();
         Instant nowTime = Instant.now();
         competitionModel.competitionSession.setAvailable(true);
         List<CompetitionSession> sessions = competitionSessionRepository.findByCompetition(competitionModel.competition);
@@ -195,7 +203,7 @@ public class CompetitionRuntime {
         }
 
         competitionSessionRepository.save(competitionModel.competitionSession);
-        log.info("restoreSession " + competitionModel.competitionSession.getId() + " " +competitionModel.competitionSession.isRunning()  + " " +competitionModel.competitionSession.getTimeLeft());
+        log.info("restoreSession " + competitionModel.competitionSession.getId() + " " +competitionModel.competitionSession.isRunning()  + " " +competitionModel.competitionSession.getTimeLeft() + " " +competitionModel.competition.getShortName());
         int hour = nowTime.atZone(ZoneOffset.UTC).getHour();
         Instant maxTime = nowTime.atZone(ZoneOffset.UTC).withHour(hour-1).toInstant();
         // get the completed assignment uuids
@@ -216,7 +224,7 @@ public class CompetitionRuntime {
         competitionModel.assignmentExecutionModel.setCompetitionSession(competitionModel.competitionSession);
     }
 
-    public OrderedAssignment getCurrentAssignment() {
+    public OrderedAssignment getCurrentRunningAssignment() {
         if (competitionModel.assignmentExecutionModel==null) {
             return null;
         }
@@ -247,7 +255,9 @@ public class CompetitionRuntime {
     }
 
     public ActiveAssignment getActiveAssignment() {
-        competitionModel.assignmentExecutionModel.setCompetitionSession(competitionModel.competitionSession);
+        if (getActiveCompetitionsMap().containsKey(competitionModel.competition.getId())) {
+            competitionModel = getActiveCompetitionsMap().get(competitionModel.competition.getId());
+        }
         if (competitionModel.assignmentExecutionModel.getOrderedAssignment()==null) {
             return null;
         }
@@ -256,36 +266,35 @@ public class CompetitionRuntime {
 
     public void startAssignment(String name) {
 
-        if (isWithAssignmentRunning()) {
-            log.debug("stopping current assignment to start assignment '{}'", name);
-            stopCurrentAssignment();
-        }
         Optional<OrderedAssignment> assignment = competitionModel.competition.getAssignments().stream()
                 .filter(a -> a.getAssignment().getName().equals(name))
                 .findFirst();
-
-        if (assignment.isPresent()) {
-
-            try {
-                boolean isNew = !competitionModel.completedAssignments.contains(assignment.get());
-                if (isNew ) {
-                    log.info("startAssignment name {}, c {}", name , competitionModel.competition.getName());
-                    assignmentRuntime.start(assignment.get(), competitionModel);
-                    competitionModel.completedAssignments.add(assignment.get());
-                    getCompetitionSession().setRunning(true);
-                    getCompetitionSession().setAssignmentName(name);
-                    getCompetitionSession().setDateTimeStart(Instant.now());
-                    competitionSessionRepository.save(getCompetitionSession());
-                } else {
-                    log.info("startAssignment.allready completed '{}'", name);
-                }
-            } catch( AssignmentStartException ase ) {
-                competitionModel.completedAssignments.remove(assignment.get());
-                messageService.sendStartFail(name, ase.getMessage());
-                log.error("Cannot start assignment '{}'.", name, ase);
-            }
-        } else {
+        if (!assignment.isPresent()) {
             log.error("Cannot start assignment '{}' since there is no such assignment with that name", name);
+            return;
+        }
+        boolean isNew = competitionModel.isNewAssignmentInCompetition(assignment.get()) || competitionModel.getCompetitionSession().isRunning();
+        if (!isNew) {
+            log.error("Cannot start assignment '{}' because already started/completed in competition {}.", name , competitionModel.competition.getName());
+            return;
+        }
+        if (isWithAssignmentRunning() && !competitionModel.getCompetitionSession().isRunning() ) {
+            log.debug("stopping current assignment to start assignment '{}'", name);
+            stopCurrentAssignment();
+        }
+
+        try {
+            log.info("startAssignment name {}, c {}", name , competitionModel.competition.getName());
+            assignmentRuntime.start(assignment.get(), competitionModel);
+            competitionModel.completedAssignments.add(assignment.get());
+            getCompetitionSession().setRunning(true);
+            getCompetitionSession().setAssignmentName(name);
+            getCompetitionSession().setDateTimeStart(Instant.now());
+            competitionSessionRepository.save(getCompetitionSession());
+        } catch( AssignmentStartException ase ) {
+            competitionModel.completedAssignments.remove(assignment.get());
+            messageService.sendStartFail(name, ase.getMessage());
+            log.error("Cannot start assignment '{}'.", name, ase);
         }
     }
     private boolean isWithAssignmentRunning() {

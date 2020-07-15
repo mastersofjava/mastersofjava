@@ -73,7 +73,7 @@ public class RankingsController {
         model.addObject("bottom2", parts.get(1));
         model.addObject("bottom3", parts.get(2));
         model.addObject("bottom4", parts.get(3));
-        if (rankingProvider.getCurrentAssignment() != null) {
+        if (rankingProvider.getCurrentRunningAssignment() != null) {
             ActiveAssignment state = rankingProvider.getActiveAssignment();
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addObject("timeLeft", state.getTimeRemaining());

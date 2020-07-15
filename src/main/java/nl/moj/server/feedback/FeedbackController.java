@@ -72,7 +72,7 @@ public class FeedbackController {
 
         List<String> testNames = new ArrayList<>();
 
-        if (resultsProvider.getCurrentAssignment() != null) {
+        if (resultsProvider.getCurrentRunningAssignment() != null) {
             ActiveAssignment state = resultsProvider.getActiveAssignment();
 
             testNames = state.getTestNames();

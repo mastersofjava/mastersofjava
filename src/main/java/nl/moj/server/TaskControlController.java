@@ -131,7 +131,7 @@ public class TaskControlController {
     public String doClearCompetition() {
         log.warn("clearCompetition entered");
         gamemasterTableComponents.deleteCurrentSessionResources();
-        if (competition.getCompetitionSession().isRunning()) {
+        if (competition.getCompetitionSession().isRunning() && competition.getActiveAssignment()!=null) {
             stopTask();
         }
         return competitionCleaningService.doCleanComplete(competition.getCompetitionSession());
@@ -336,7 +336,9 @@ public class TaskControlController {
             log.info("assignmentList size {} ",assignmentList.size()) ;
 
             String name = competition.getCompetition().getName().split("\\|")[0]+ "|" + path.toFile().getName();
-            startCompetitionWithFreshAssignments(name);
+            if (!competition.getCompetitionSession().isRunning()) {
+                startCompetitionWithFreshAssignments(name);
+            }
             assignmentRuntime.reloadOriginalAssignmentFiles();
 
 
@@ -406,11 +408,20 @@ public class TaskControlController {
 
         }
         private void insertGamestatus(Model model) {
-            log.info("insertGamestatus " +competition.getCurrentAssignment()+ " " +competition.getCompetitionSession().isRunning());
-            if (competition.getCurrentAssignment() == null && competition.getCompetitionSession().isRunning()) {
+            log.info("insertGamestatus " +competition.getCurrentRunningAssignment()+ " " +competition.getCompetitionSession().isRunning());
+            boolean isSwitch = competition.getCurrentRunningAssignment() == null;
+            if (isSwitch && competition.getCompetitionSession().isRunning()) {
+                log.info("CompetitionSession.refresh " + competition.getCompetitionSession().getAssignmentName());
                 competition.startAssignment(competition.getCompetitionSession().getAssignmentName());
             }
             ActiveAssignment state = competition.getActiveAssignment();
+            if (state==null) {
+                log.info("CompetitionSession.isRunning " + competition.getCompetitionSession().isRunning() + " isSwitch " +isSwitch);
+                log.info("CompetitionSession.uuid " + competition.getCompetitionSession().getUuid());
+                log.info("CompetitionSession.mapQuick " + competition.getRunningCompetitionsQuickviewMap());
+                log.info("CompetitionSession.mapBig" + competition.getActiveCompetitionsMap().keySet() + " " +competition.getCompetition().getId() );
+            }
+            Assert.isTrue(state!=null,"incorrect status, view logs");
             CompetitionRuntime.CompetitionExecutionModel competitionModel = competition.selectCompetitionRuntimeForGameStart(competition.getCompetition()).getCompetitionModel();
 
             model.addAttribute("timeLeft", state.getTimeRemaining());

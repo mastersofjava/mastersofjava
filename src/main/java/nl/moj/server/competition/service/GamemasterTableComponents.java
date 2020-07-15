@@ -102,7 +102,7 @@ public class GamemasterTableComponents {
     }
     private String toViewStatus(OrderedAssignment orderedAssignment) {
         boolean isCompleted = false;
-        boolean isSelectedAndNotCompleted = orderedAssignment.equals(competitionRuntime.getCurrentAssignment())
+        boolean isSelectedAndNotCompleted = orderedAssignment.equals(competitionRuntime.getCurrentRunningAssignment())
                 &&  competitionRuntime.getActiveAssignment().getTimeRemaining()>0;
         List<OrderedAssignment> completedList = competitionRuntime.getCompetitionState().getCompletedAssignments();
         for (OrderedAssignment completedAssignment: completedList) {
@@ -195,7 +195,8 @@ public class GamemasterTableComponents {
             private final List<CompetitionSession> sessionList;
             private final boolean isSelectedCompetition;
             private final boolean isWithCleanSession;
-            private final boolean isWithActiveSession;
+            private final boolean isWithAvailableSession;
+            private final boolean isWithRunningSession;
             private final String mostRecentSessionUuid;
             private String createActivationToggle(boolean isActive) {
                 String check1 = isActive? "checked active":"";
@@ -215,6 +216,7 @@ public class GamemasterTableComponents {
                 isSelectedCompetition = competition.getName().equals(selectedCompetitionName);
                 boolean isAllSessionsUsed = true;
                 boolean isNoSessionActive = true;
+                boolean isWithAnyRunningSession = false;
                 for (CompetitionSession session: sessionList) {
                     if (!isSessionUsed(session.getId())) {
                         isAllSessionsUsed = false;
@@ -222,9 +224,13 @@ public class GamemasterTableComponents {
                     if (session.isAvailable()) {
                         isNoSessionActive = false;
                     }
+                    if (session.isRunning()) {
+                        isWithAnyRunningSession = true;
+                    }
                 }
                 isWithCleanSession = !isAllSessionsUsed;
-                isWithActiveSession = !isNoSessionActive;
+                isWithAvailableSession = !isNoSessionActive;
+                isWithRunningSession = isWithAnyRunningSession;
                 mostRecentSessionUuid = sessionList.get(sessionList.size()-1).getUuid().toString();
             }
 
@@ -241,15 +247,18 @@ public class GamemasterTableComponents {
                 String styleCompetitionContent = isSelectedCompetition ? "" :" hide ";
                 StringBuilder htmlButtonsUpdate = new StringBuilder();
 
-                htmlButtonsUpdate.append(createActivationToggle(isWithActiveSession));
+                htmlButtonsUpdate.append(createActivationToggle(isWithAvailableSession));
                 if (!isWithCleanSession) {
                     htmlButtonsUpdate.append("&nbsp;&nbsp;&nbsp;&nbsp;" + actionsAdd);
                 }
                 html.append("<tbody title='sessiepanel van competitie "+competitionCounter +"' ><tr class='");
                 html.append(styleCompetitionText+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;");
                 html.append(competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td class='notextdecoration'>");
-                html.append(htmlButtonsUpdate+"</td><td>"+actionsDelete+"</td></tr>");
-
+                html.append(htmlButtonsUpdate+"</td><td>");
+                if (!isWithRunningSession) {
+                    html.append(actionsDelete);
+                }
+                html.append("</td></tr>");
                 int sessionCounter = 1;
 
                 for (CompetitionSession session: sessionList) {
