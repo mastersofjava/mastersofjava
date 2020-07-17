@@ -16,7 +16,7 @@
 */
 package nl.moj.server.message.service;
 
-import java.util.UUID;
+import java.time.Instant;
 
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.TaskControlController.TaskMessage;
@@ -115,6 +115,7 @@ public class MessageService {
             if (remainingTime==0) {
                 session.setRunning(false);
             }
+            session.setDateTimeLastUpdate(Instant.now());
             competitionSessionRepository.save(session);
 
         } catch (Exception e) {

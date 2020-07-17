@@ -111,26 +111,39 @@ public class PerformanceValidationController {
         private String assignmentName;
         private List<AssignmentFile> fileList = new ArrayList<>();
         private CompetitionRuntime.CompetitionExecutionModel model;
+        private boolean isValidateWithProblem = false;
+        private Map<String, String> files = new LinkedHashMap<>();
 
-        private SourceMessage createCodeInputWithSolution() {
+        private SourceMessage createCodeInput(boolean isWithProblem) {
             SourceMessage message = new SourceMessage();
             message = new SourceMessage();
             message.setAssignmentName(assignmentName);
             message.setTests(new ArrayList<>());
             message.setSources(new TreeMap<>());
             for (AssignmentFile file: fileList) {
+                if (!file.getFile().toFile().getPath().toLowerCase().endsWith(".java")) {
+                    continue;
+                }
+
                 if (file.getName().toLowerCase().contains("test")) {
                     message.getTests().add(file.getUuid().toString());
-                } else
+                    files.put(file.getFile().toFile().getPath(), file.getFileType().name());
+                    continue;
+                }
                 if (!file.isReadOnly()) {
-                    JavaAssignmentFileResolver resolver = new JavaAssignmentFileResolver();
-                    String path = file.getAbsoluteFile().toFile().getPath().replace("src\\main\\java","assets").replace("src/main/java","assets");
-                    File solutionFile = new File(path.replace(".java","Solution.java"));
+                    files.put(file.getFile().toFile().getPath(), file.getFileType().name());
+                    if (!isWithProblem) {
+                        JavaAssignmentFileResolver resolver = new JavaAssignmentFileResolver();
+                        String path = file.getAbsoluteFile().toFile().getPath().replace("src\\main\\java","assets").replace("src/main/java","assets");
+                        File solutionFile = new File(path.replace(".java","Solution.java"));
 
-                    if (solutionFile.exists()) {
-                        file = resolver.convertToAssignmentFile(file.getName(), solutionFile.toPath(), file.getBase(), solutionFile.toPath(), AssignmentFileType.EDIT, false, file.getUuid());
+                        if (solutionFile.exists()) {
+                            file = resolver.convertToAssignmentFile(file.getName(), solutionFile.toPath(), file.getBase(), solutionFile.toPath(), AssignmentFileType.EDIT, false, file.getUuid());
+                        }
+                        message.getSources().put(file.getUuid().toString(), file.getContentAsString());
+                    } else {
+                        message.getSources().put(file.getUuid().toString(), file.getContentAsString());
                     }
-                    message.getSources().put(file.getUuid().toString(), file.getContentAsString());
                 }
             }
             return message;
@@ -183,11 +196,11 @@ public class PerformanceValidationController {
 
         private int maxUsers = 100;
         private boolean doOneRun() {
-            SourceMessage codeInputSolution =  createCodeInputWithSolution();
+            SourceMessage codeInputSolution =  createCodeInput(isValidateWithProblem);
             for (Team team: getTeamInputList()) {
                 try {
                     agentStartupCache.executionTest++;
-                    SubmitResult submitResult = submitService.test(team, codeInputSolution).get(10, TimeUnit.SECONDS);
+                    SubmitResult submitResult = submitService.test(team, codeInputSolution).get(180, TimeUnit.SECONDS);
                     outputParameters.put("test", submitResult.isSuccess());
                     if (!submitResult.isSuccess()) {
                         agentStartupCache.solutionErrors++;
@@ -206,13 +219,17 @@ public class PerformanceValidationController {
                     log.error("error intercepted", ex);
                 }
             }
-
+            readState();
+            return errorsTest==0;
+        }
+        private void readState() {
+            outputParameters.put("files", files);
+            outputParameters.put("isValidateWithProblem", isValidateWithProblem);
             outputParameters.put("errorsTest", errorsTest);
             outputParameters.put("solutionErrors", agentStartupCache.solutionErrors);
             outputParameters.put("errorsTest.Total", agentStartupCache.errorsTest);
             outputParameters.put("errorsTimeout.Total", agentStartupCache.timeoutsTest);
             outputParameters.put("executionTest.Total", agentStartupCache.executionTest);
-            return errorsTest==0;
         }
 
         public Map<String, Object> getOutputParameters() {
@@ -240,18 +257,24 @@ public class PerformanceValidationController {
     public @ResponseBody
     Map<String, Object> doExecuteOneAgentByJMeter() {
         Assert.isTrue(isEnvironmentForDevelopment(),"unauthorized");// nb deze methode is aanroepbaar via JMeter, alleen op localhost.
-        Assert.isTrue(competitionRuntime.getCurrentRunningAssignment()!=null,"unready");
+        boolean isWithProblem = Boolean.parseBoolean(HttpUtil.getParam("problem","false"));
+        if (HttpUtil.hasParam("reset_cache")) { // explicit reset of rundata by admin
+            agentStartupCache = new AgentStartupCache();
+        }
+        Assert.isTrue(competitionRuntime.getCurrentRunningAssignment()!=null,"no running assignments");
+
         int nr = Integer.parseInt(HttpUtil.getParam("agent","0"));
         PerformanceValidation performanceValidation = new PerformanceValidation(1);
         performanceValidation.setSelectedUser(nr);
-
-        if (!performanceValidation.doOneRun()) {
-            throw new ForbiddenException();// this ensures that the error is registrated in JMeter
+        performanceValidation.isValidateWithProblem = isWithProblem;
+        if (HttpUtil.hasParam("read_state")) {
+            performanceValidation.readState();
+            performanceValidation.createCodeInput(isWithProblem);
+            performanceValidation.getTeamInputList();
+            return performanceValidation.getOutputParameters();
         }
-
-        if (HttpUtil.hasParam("reset_cache")) { // explicit reset of rundata by admin
-            agentStartupCache = new AgentStartupCache();
-            performanceValidation.getOutputParameters().put("reset_cache","reset_cache");
+        if (!performanceValidation.doOneRun()&&!HttpUtil.hasParam("skip_jmeter_error")) {
+            throw new ForbiddenException();// this ensures that the error is registrated in JMeter
         }
         return performanceValidation.getOutputParameters();
     }

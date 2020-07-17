@@ -292,6 +292,7 @@ public class CompetitionRuntime {
             getCompetitionSession().setRunning(true);
             getCompetitionSession().setAssignmentName(name);
             getCompetitionSession().setDateTimeStart(Instant.now());
+            getCompetitionSession().setDateTimeLastUpdate(Instant.now());
             competitionSessionRepository.save(getCompetitionSession());
         } catch( AssignmentStartException ase ) {
             competitionModel.completedAssignments.remove(assignment.get());

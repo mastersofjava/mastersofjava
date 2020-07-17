@@ -54,6 +54,9 @@ public class CompetitionSession {
     @Column(name = "date_time_start")
     private Instant dateTimeStart;
 
+    @Column(name = "last_update")
+    private Instant dateTimeLastUpdate;
+
     @ManyToOne
     @JoinColumn(name = "competition_id", nullable = false)
     private Competition competition;

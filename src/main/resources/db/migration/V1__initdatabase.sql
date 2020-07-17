@@ -53,7 +53,8 @@ create table competition_sessions
   running        boolean not null,
   time_left      bigint,
   assignment_name varchar(255),
-  date_time_start        timestamp,
+  date_time_start       timestamp,
+  last_update           timestamp,
   primary key (id)
 );
 
