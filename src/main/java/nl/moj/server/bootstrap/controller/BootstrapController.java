@@ -52,7 +52,7 @@ public class BootstrapController {
                 try {
                     bootstrapService.bootstrap(form.getUsername(), form.getPassword1());
                 } catch (IOException ioe) {
-                    log.error("Bootstrap failed.", ioe);
+                    log.error("Bootstrap failed.", ioe.getMessage());
                     return redirectFailure(redirectAttributes, "Bootstrap failed, see console logs for more information.");
                 }
             } else {

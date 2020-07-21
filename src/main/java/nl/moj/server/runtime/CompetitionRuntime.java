@@ -297,7 +297,7 @@ public class CompetitionRuntime {
         } catch( AssignmentStartException ase ) {
             competitionModel.completedAssignments.remove(assignment.get());
             messageService.sendStartFail(name, ase.getMessage());
-            log.error("Cannot start assignment '{}'.", name, ase);
+            log.error("Cannot start assignment '{}'.", name);
         }
     }
     private boolean isWithAssignmentRunning() {
