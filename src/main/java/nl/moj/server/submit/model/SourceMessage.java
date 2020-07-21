@@ -35,4 +35,6 @@ public class SourceMessage {
     private List<String> tests;
     private String assignmentName;
     private String uuid;
+    private String timeLeft;
+    private Long arrivalTime;
 }

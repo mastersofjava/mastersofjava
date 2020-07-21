@@ -175,29 +175,6 @@ public class GamemasterJsonController {
         doValidatePerformance();
         return "beschikbare competities allen geactiveerd, reload pagina";
     }
-    @GetMapping(value = "/admin/clearRuntime", produces = MediaType.APPLICATION_JSON_VALUE)
-    @RolesAllowed({Role.ADMIN})
-    public @ResponseBody
-    Map<Long, ?> doClearRuntime() {
-        List<Competition> competitionList = competitionService.getAvailableCompetitions();
-
-        log.info("competitionList " + competitionList.stream().map(Competition::getShortName).collect(Collectors.toList()));
-        for (Competition competition : competitionList) {
-            boolean isActive = competitionRuntime.getActiveCompetitionsMap().containsKey(competition.getId());
-            log.info("isActive " + competition.getShortName() + " " + isActive);
-            if (!isActive) {
-                competitionRuntime.loadMostRecentSession(competition);
-            }
-            Assert.isTrue(competitionRuntime.getActiveCompetitionsMap().containsKey(competition.getId()), "competition not loaded: "+competition.getId());
-        }
-        for (Competition competition : competitionList) {
-            CompetitionRuntime.CompetitionExecutionModel model = competitionRuntime.getActiveCompetitionsMap().get(competition.getId());
-            model.getAssignmentExecutionModel().clearHandlers();
-        }
-
-        return getRunningCompetitions();
-    }
-
 
     @GetMapping(value = "/admin/activateAllAvailable", produces = MediaType.APPLICATION_JSON_VALUE)
     @RolesAllowed({Role.ADMIN})

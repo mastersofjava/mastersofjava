@@ -161,7 +161,6 @@ public class GamemasterTableComponents {
 
             for (String[] item : highscoreList) {
                 HighscoreDataWrapper result = new HighscoreDataWrapper(item);
-                result.getAssignmentName();
                 Long sessionId = result.getSessionId();
                 List<String> stateList = sessionAssignmentAmount.getOrDefault(sessionId,new ArrayList<>());
                 stateList.add(result.getAssignmentName());

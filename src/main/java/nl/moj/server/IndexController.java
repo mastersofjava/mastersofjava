@@ -178,7 +178,6 @@ public class IndexController {
             UUID currentUUID = competitionRuntime.getCompetitionSession().getUuid();
             UUID uuid = HttpUtil.getSelectedUserSession(currentUUID);
             CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
-           // boolean isInAssignmentModel = runtime.isSessionInAssignmentModel(uuid, state.getAssignment().getName());
             log.info("competition session default: "+currentUUID +", selected " +uuid + ", isInAssignmentModel ");
 
             as = runtime.handleLateSignup(team, uuid, state.getAssignment().getName() );
@@ -270,7 +269,7 @@ public class IndexController {
 
         public void saveAdminState( Assignment assignment) {
             model.addAttribute("finished",false);
-            model.addAttribute("submitDisabled", true);
+            model.addAttribute("submitDisabled", false);
             model.addAttribute("submittime", 0);
             model.addAttribute("finalscore", 0);
             model.addAttribute("maxSubmits", 1);

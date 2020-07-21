@@ -17,6 +17,7 @@
 package nl.moj.server.submit.service;
 
 import javax.transaction.Transactional;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -123,13 +124,25 @@ public class SubmitService {
             return activeAssignment;
         }
         CompetitionSession competitionSession = competitionRuntime.getCompetitionSession();
-        if (!message.getUuid().equals(competitionSession.getUuid())) {
+        if (!message.getUuid().equals(competitionSession.getUuid().toString())) {
             competitionSession = competitionSessionRepository.findByUuid(uuid);
         }
         Assignment assignment = assignmentRepository.findByName(message.getAssignmentName() );
         List<AssignmentFile> fileList   = assignmentService.getAssignmentFiles(assignment);
         AssignmentDescriptor assignmentDescriptor =assignmentService.getAssignmentDescriptor(assignment);
-        activeAssignment  = ActiveAssignment.builder().competitionSession(competitionSession).assignment(assignment).assignmentDescriptor(assignmentDescriptor).assignmentFiles(fileList).build();
+        Long timeLeft = Long.parseLong(message.getTimeLeft());
+        Long timeElapsed = assignmentDescriptor.getDuration().toSeconds()-timeLeft;
+        if (!competitionSession.isRunning())  {
+            long timeDelta = (message.getArrivalTime() - competitionSession.getDateTimeLastUpdate().plusSeconds(5*60).toEpochMilli())/1000;
+            Assert.isTrue (timeDelta<0,"warning: user " + team.getName() + " submitted far after max submit time ( seconds too late: "+timeDelta+", ignore this attempt).");
+        }
+        activeAssignment  = ActiveAssignment.builder()
+                .competitionSession(competitionSession)
+                .assignment(assignment)
+                .timeElapsed(Duration.ofSeconds(timeElapsed))
+                .timeRemaining(timeLeft)
+                .assignmentDescriptor(assignmentDescriptor)
+                .assignmentFiles(fileList).build();
 
         return activeAssignment;
     }
@@ -142,12 +155,12 @@ public class SubmitService {
     }
 
     private CompletableFuture<SubmitResult> testInternal(Team team, SourceMessage message, boolean submit, Assignment assignment) {
-        log.info("testInternal start with ( assignent {}, submit {}) ", message.getAssignmentName() , submit);
+        log.info("testInternal start with ( assignment {}, submit {}) ", message.getAssignmentName() , submit);
 
         //compile
         return compileInternal(team, message, assignment)
                 .thenCompose(submitResult -> {
-                    log.info("testInternal.after compile ( assignent {}, compile {}) ", message.getAssignmentName(),  submitResult.isSuccess() );
+                    log.info("testInternal.after compile ( assignment {}, compile {}) ", message.getAssignmentName(),  submitResult.isSuccess() );
                     ActiveAssignment activeAssignment = getActiveAssignment(team, message);
 
                     Assert.isTrue( activeAssignment.getAssignment()!=null, "not ready for test");
@@ -193,8 +206,9 @@ public class SubmitService {
         final ActiveAssignment activeAssignment = getActiveAssignment(team, message );
         final AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment
                 .getAssignment(), activeAssignment.getCompetitionSession(), team);
+        boolean isSubmitAllowedForTeam = isSubmitAllowedForTeam(as, activeAssignment);
 
-        if (isSubmitAllowedForTeam(as)) {
+        if (isSubmitAllowedForTeam) {
             messageService.sendSubmitStarted(team);
             SubmitAttempt sa = SubmitAttempt.builder()
                     .assignmentStatus(as)
@@ -206,7 +220,7 @@ public class SubmitService {
 
             return testInternal(team, message, true,activeAssignment
                     .getAssignment()).thenApply(sr -> {
-                int remainingSubmits = getRemainingSubmits(as);
+                int remainingSubmits = getRemainingSubmits(as, activeAssignment);
                 try {
                     if( sr.getCompileResult() != null) {
                         sa.setCompileAttempt(compileAttemptRepository.findByUuid(sr.getCompileResult()
@@ -219,7 +233,7 @@ public class SubmitService {
                     sa.setDateTimeEnd(Instant.now());
                     submitAttemptRepository.save(sa);
 
-                    remainingSubmits = getRemainingSubmits(as);
+                    remainingSubmits = getRemainingSubmits(as, activeAssignment);
 
                     if (sr.isSuccess() || remainingSubmits <= 0) {
                         AssignmentStatus scored = scoreService.finalizeScore(as, activeAssignment);
@@ -237,16 +251,15 @@ public class SubmitService {
                 return sr;
             });
         }
+        log.warn("no submit allowed for team {}", team.getName() );
         return CompletableFuture.completedFuture(SubmitResult.builder().build());
     }
 
-    private boolean isSubmitAllowedForTeam(AssignmentStatus as) {
-        return getRemainingSubmits(as) > 0;
+    private boolean isSubmitAllowedForTeam(AssignmentStatus as, ActiveAssignment activeAssignment) {
+        return getRemainingSubmits(as, activeAssignment) > 0;
     }
 
-    private int getRemainingSubmits(AssignmentStatus as) {
-        Competition competition = competitionRuntime.selectCompetitionByUUID(as.getCompetitionSession().getUuid());
-        ActiveAssignment activeAssignment = competitionRuntime.selectCompetitionRuntimeForGameStart(competition).getActiveAssignment();
+    private int getRemainingSubmits(AssignmentStatus as, ActiveAssignment activeAssignment) {
         int maxSubmits = activeAssignment.getAssignmentDescriptor().getScoringRules().getMaximumResubmits() + 1;
         return maxSubmits - as.getSubmitAttempts().size();
     }

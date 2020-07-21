@@ -82,6 +82,9 @@ function connectCompetition() {
         if (clock && isSessionValid(msg)) {
             clock.sync(msg.remainingTime, msg.totalTime);
             clock.isPaused = !msg.running;
+            if (msg.remainingTime===0) {
+                disable();
+            }
         } else {
             console.log('timer msg retrieved:' +msg.sessionId + " " + msg.remainingTime + ' ' +$('#sessions').val());
         }
@@ -282,7 +285,8 @@ function doUserActionCompile() {
     stomp.send("/app/submit/compile", {}, JSON.stringify({
         'sources': getContent(),
         'assignmentName': assignmentName,
-        'uuid': $('#sessions').val()
+        'uuid': $('#sessions').val(),
+        'timeLeft': getTimeleft()
     }));
 }
 
@@ -299,7 +303,8 @@ function doUserActionTest() {
         'sources': getContent(),
         'tests': tests,
         'assignmentName': assignmentName,
-        'uuid': $('#sessions').val()
+        'uuid': $('#sessions').val(),
+        'timeLeft': getTimeleft()
     }));
 }
 
@@ -348,11 +353,15 @@ function doUserActionSubmit() {
     activeAction = "SUBMIT";
     stomp.send("/app/submit/submit", {}, JSON.stringify({
         'sources': getContent(),
-        'uuid': $('#sessions').val()
+        'uuid': $('#sessions').val(),
+        'assignmentName': assignmentName,
+        'timeLeft': getTimeleft()
     }));
     showSubmitDetails();
 }
-
+function getTimeleft() {
+    return ''+ $('#assignment-clock').data()['timeLeft'];
+}
 function showOutput() {
     $('#output').tab('show');
 }

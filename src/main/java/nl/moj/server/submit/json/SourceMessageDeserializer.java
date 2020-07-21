@@ -17,6 +17,7 @@
 package nl.moj.server.submit.json;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +60,11 @@ public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
         if (node.get("uuid") != null && node.get("uuid").isTextual()) {
             uuid = node.get("uuid").asText();
         }
-        return new SourceMessage(sources, tests, assignmentNameForAdminPurpose, uuid);
+        String timeLeft = null;
+        if (node.get("timeLeft") != null && node.get("timeLeft").isTextual()) {
+            timeLeft = node.get("timeLeft").asText();
+        }
+        Long arrivalTime = Instant.now().toEpochMilli();
+        return new SourceMessage(sources, tests, assignmentNameForAdminPurpose, uuid, timeLeft, arrivalTime);
     }
 }
