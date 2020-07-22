@@ -112,7 +112,7 @@ public class IndexController {
 			@RequestParam("assignment") String assignmentInput,
 			@RequestParam(required = false, name = "solution") String solutionInputFileName) {
 		if (!isAdminAuthorized(user, request)) {
-			return "login";
+			return "redirect:" + KeycloakAuthenticationEntryPoint.DEFAULT_LOGIN_URI;
 		}
 		boolean isWithAdminValidation = request.getParameterMap().containsKey("validate");
 		Assignment assignment = assignmentRepository.findByName(assignmentInput);

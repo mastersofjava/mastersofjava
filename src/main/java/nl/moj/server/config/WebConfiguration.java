@@ -94,8 +94,8 @@ public class WebConfiguration {
 		protected void configure(HttpSecurity http) throws Exception {
 			super.configure(http);
 			http.authorizeRequests()
-					.antMatchers("/", "/feedback").hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
-					.antMatchers("/control", "/bootstrap").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
+					.antMatchers("/", "/feedback", "/rankings").hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
+					.antMatchers("/control", "/bootstrap","/assignmentAdmin").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
 					.anyRequest().permitAll()
                     .and().headers().frameOptions().disable()
                     .and().csrf().disable();
