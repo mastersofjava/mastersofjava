@@ -93,5 +93,11 @@ public class BootstrapControllerTest {
         ).andExpect(MockMvcResultMatchers.redirectedUrl("/bootstrap"));
     }
 
+    @Test
+    public void shouldRedirectWhenApproachedButNotNeeded() throws Exception {
+        when(bootstrapService.isBootstrapNeeded()).thenReturn(false);
 
+        mockMvc.perform(MockMvcRequestBuilders.get("/bootstrap")
+        ).andExpect(MockMvcResultMatchers.redirectedUrl("/"));
+    }
 }

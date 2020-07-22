@@ -40,13 +40,21 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
+import org.springframework.util.Assert;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * During integration testing this class is executed twice, one for sequential and one for parallel.
+ * This test validates the Assignment Submit.
+ * - with a long timeout ==> user gets zero points (because the solution is invalidated by timeout constraints)
+ * - without timeout on first submit ==> users gets a score (while competition running)
+ * - user submits in last second and process takes more than second ==> user gets a score (while competition not running)
+ */
 @RunWith(Parameterized.class)
 @SpringBootTest
 public class AssignmentSubmitTest extends BaseRuntimeTest {
-
+    // NB. these final parameters belong to the RunWith Parameterized configuration.
     @ClassRule
     public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
 
@@ -66,61 +74,107 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
 
     @Parameterized.Parameters(name = "{index} = {0}")
     public static String[] data() {
-        return new String[]{"sequential","parallel"};
+        return new String[]{
+                "sequential"
+                ,"parallel"
+        };
     }
 
     public AssignmentSubmitTest(String assignment) {
-        this.assignment = assignment;
+        this.assignment = assignment; // sequential or parallel
     }
 
-    @Test
-    public void shouldUseSpecifiedAssignmentTestTimeout() throws Exception {
-
-        OrderedAssignment oa = getAssignment(assignment);
-
-        competitionRuntime.startAssignment(oa.getAssignment().getName());
-
+    private SourceMessage createSourceMessageWithLongTimeout(Duration timeout) {
         ActiveAssignment state = competitionRuntime.getActiveAssignment();
-        Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
-        timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
 
         Map<String, String> variables = new HashMap<>();
-        variables.put("wait", Long.toString(timeout.toMillis()));
+        if (timeout!=null) {
+            variables.put("wait", Long.toString(timeout.toMillis()));
+        }
         Map<String, String> files = getAssignmentFiles(state, variables);
 
         SourceMessage src = new SourceMessage();
         src.setSources(files);
         src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
 
+        return src;
+    }
+    private void insertArrivalDetails(SourceMessage src) {
+        ActiveAssignment state = competitionRuntime.getActiveAssignment();
+        src.setAssignmentName(state.getAssignment().getName());
+        src.setUuid(state.getCompetitionSession().getUuid().toString());
 
-        SubmitResult submitResult = submitService.test(getTeam(), src)
+        Assert.isTrue(state.getCompetitionSession().getUuid().toString()!=null,"session is unknown");
+    }
+    private SourceMessage createSourceMessageWithNoTimeout() {
+        return createSourceMessageWithLongTimeout(null);
+    }
+    private Duration createDurationThatIsLarge() {
+        Duration timeout = competitionRuntime.getActiveAssignment().getAssignmentDescriptor().getTestTimeout();
+        return timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
+    }
+    private void startSelectedAssignmment() {
+        OrderedAssignment oa = getAssignment(assignment);
+
+        competitionRuntime.startAssignment(oa.getAssignment().getName());
+    }
+    private SubmitResult doValidate(SourceMessage src,Duration timeout) throws Exception {
+        return submitService.test(getTeam(), src)
                 .get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
-
+    }
+    private SubmitResult doSubmit(SourceMessage src,Duration timeout) throws Exception {
+        return submitService.submit(getTeam(), src)
+                .get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
+    }
+    private void stopSelectedAssignment() {
+        OrderedAssignment oa = getAssignment(assignment);
+        competitionRuntime.startAssignment(oa.getAssignment().getName());
+    }
+    private void assertValidSubmit( SubmitResult submitResult) {
+        assertThat(submitResult.isSuccess()).isTrue();
+        assertThat(submitResult.getScore()).isGreaterThan(0);
+    }
+    private void assertInvalidSubmit( SubmitResult submitResult) {
+        assertThat(submitResult.isSuccess()).isFalse();
+        assertThat(submitResult.getScore()).isEqualTo(0);
+    }
+    @Test
+    public void shouldUseSpecifiedAssignmentTestTimeout() throws Exception {
+        startSelectedAssignmment();
+        Duration timeout = createDurationThatIsLarge();
+        SourceMessage src = createSourceMessageWithLongTimeout(timeout);
+        SubmitResult submitResult = doValidate(src, timeout);
         assertThat(submitResult.getTestResults().getResults().get(0).isSuccess()).isFalse();
         assertThat(submitResult.getTestResults().getResults().get(0).isTimeout()).isTrue();
-
     }
 
     @Test
     public void shouldGetPointsForSuccessOnFirstAttempt() throws Exception {
-        OrderedAssignment oa = getAssignment(assignment);
+        startSelectedAssignmment();
+        Duration timeout = createDurationThatIsLarge();
+        SourceMessage src = createSourceMessageWithNoTimeout();
 
-        competitionRuntime.startAssignment(oa.getAssignment().getName());
+        SubmitResult submitResult = doSubmit(src, timeout);
+        assertValidSubmit(submitResult);
+    }
 
-        ActiveAssignment state = competitionRuntime.getActiveAssignment();
-        Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
-        timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
-
-        Map<String, String> files = getAssignmentFiles(state, new HashMap<>());
-
-        SourceMessage src = new SourceMessage();
-        src.setSources(files);
-        src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
-
-        SubmitResult submitResult = submitService.submit(getTeam(), src)
-                .get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
-
-        assertThat(submitResult.isSuccess()).isTrue();
-        assertThat(submitResult.getScore()).isGreaterThan(0);
+    @Test
+    public void shouldGetPointsForSuccessOnVeryLateAttempt() throws Exception {
+        startSelectedAssignmment();
+        Duration timeout = createDurationThatIsLarge();
+        SourceMessage src = createSourceMessageWithNoTimeout();
+        insertArrivalDetails(src);
+        stopSelectedAssignment();
+        SubmitResult submitResult = doSubmit(src, timeout);
+        assertValidSubmit(submitResult);
+    }
+    @Test
+    public void shouldGetZeroPointsForSuccessOnTooLateAttempt() throws Exception {
+         startSelectedAssignmment();
+         stopSelectedAssignment();
+         Duration timeout = createDurationThatIsLarge();
+         SourceMessage src = createSourceMessageWithNoTimeout();
+         SubmitResult submitResult = doSubmit(src, timeout);
+         assertInvalidSubmit(submitResult);
     }
 }

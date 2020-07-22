@@ -21,7 +21,7 @@ function connect() {
         stompClient.subscribe('/user/queue/controlfeedback', function (msg) {
             console.log("/user/queue/controlfeedback ");
             showAlert(msg.body);
-            if (msg.body.indexOf('reload')!=-1) {
+            if (msg.body.indexOf('reload')!==-1) {
                 reloadPage();
             }
         });

@@ -404,8 +404,6 @@ public class TaskControlController {
             model.addAttribute("isWithCompetitionStarted",false);
             model.addAttribute("nrOfUsersOnline", sessionRegistry.getAllPrincipals().size());
             model.addAttribute("nrOfRunningCompetitions", activeCompetitions.size());
-
-
         }
         private void insertGamestatus(Model model) {
             log.info("insertGamestatus " +competition.getCurrentRunningAssignment()+ " " +competition.getCompetitionSession().isRunning());

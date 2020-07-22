@@ -48,6 +48,7 @@ import nl.moj.server.util.PathUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 
 import static nl.moj.server.TestUtil.classpathResourceToPath;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,6 +148,7 @@ public abstract class BaseRuntimeTest {
     }
 
     protected OrderedAssignment getAssignment(String name) {
+        Assert.isTrue(name!=null,"invalid name used");
         return getCompetition().getAssignments()
                 .stream()
                 .filter(a -> a.getAssignment().getName().equals(name))

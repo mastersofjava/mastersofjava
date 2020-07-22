@@ -128,7 +128,6 @@ public class TestService {
     }
 
     private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, ActiveAssignment activeAssignment) {
-
         Assert.isTrue(activeAssignment.getCompetitionSession()!=null,"CompetitionSession is not ready");
         Assert.isTrue(activeAssignment.getAssignment().getName()!=null,"assignmentcontext is not ready");
         TestCase testCase = TestCase.builder()
@@ -142,8 +141,6 @@ public class TestService {
         AssignmentDescriptor ad = activeAssignment.getAssignmentDescriptor();
         Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(activeAssignment.getCompetitionSession(), team, activeAssignment
                 .getAssignment());
-
-
 
         Path policy = ad.getAssignmentFiles().getSecurityPolicy();
         if (policy != null) {

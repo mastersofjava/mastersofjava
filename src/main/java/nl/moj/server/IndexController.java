@@ -170,7 +170,6 @@ public class IndexController {
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(), state
                 .getCompetitionSession(), team);
 
-
         //late signup
         if (as == null) {
             log.info("no status found for user " + team + ", " + state.getAssignment() + ", " + state

@@ -53,14 +53,18 @@ public class CustomSecurityPolicyTest extends BaseRuntimeTest {
     @Test
     public void shouldUseAssignmentSecurityPolicy() throws Exception {
 
-        OrderedAssignment oa = getCompetition().getAssignments()
-                .stream()
-                .filter(a -> a.getAssignment().getName().equals("custom-security-policy"))
-                .findFirst()
-                .orElseThrow();
+        OrderedAssignment oa = getAssignment("custom-security-policy");
 
         competitionRuntime.startAssignment(oa.getAssignment().getName());
 
+        SubmitResult submitResult = doSubmitValidInput();
+
+        Assertions.assertThat(submitResult.isSuccess()).isTrue();
+        Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isSuccess()).isTrue();
+        Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isTimeout()).isFalse();
+    }
+
+    private SubmitResult doSubmitValidInput() throws Exception  {
         ActiveAssignment state = competitionRuntime.getActiveAssignment();
         Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
         timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
@@ -74,11 +78,7 @@ public class CustomSecurityPolicyTest extends BaseRuntimeTest {
         src.setTests(List.of(state.getTestFiles().get(0).getUuid().toString()));
 
 
-        SubmitResult submitResult = submitService.test(getTeam(), src)
+        return submitService.test(getTeam(), src)
                 .get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
-
-        Assertions.assertThat(submitResult.isSuccess()).isTrue();
-        Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isSuccess()).isTrue();
-        Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isTimeout()).isFalse();
     }
 }

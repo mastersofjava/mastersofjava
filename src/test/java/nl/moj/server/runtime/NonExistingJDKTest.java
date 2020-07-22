@@ -43,13 +43,7 @@ public class NonExistingJDKTest extends BaseRuntimeTest {
 
     @Test
     public void assignmentShouldNotStartWhenJDKVersionUnavailable() {
-
-        OrderedAssignment oa = getCompetition().getAssignments()
-                .stream()
-                .filter(a -> a.getAssignment().getName().equals("non-existing-jdk"))
-                .findFirst()
-                .orElseThrow();
-
+        OrderedAssignment oa = getAssignment("non-existing-jdk");
         competitionRuntime.startAssignment(oa.getAssignment().getName());
         Mockito.verify(messageService).sendStartFail(eq("non-existing-jdk"), any());
     }
