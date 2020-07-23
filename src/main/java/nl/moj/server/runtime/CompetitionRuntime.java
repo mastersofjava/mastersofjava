@@ -311,6 +311,7 @@ public class CompetitionRuntime {
                     competitionModel.assignmentExecutionModel.getOrderedAssignment().getAssignment().getUuid());
             assignmentRuntime.stop();
             getCompetitionSession().setRunning(false);
+            getCompetitionSession().setDateTimeLastUpdate(Instant.now());
             competitionSessionRepository.save(getCompetitionSession());
         }
     }

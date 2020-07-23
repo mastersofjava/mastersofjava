@@ -17,6 +17,7 @@
 package nl.moj.server.runtime;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,11 +100,12 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
 
         return src;
     }
-    private void insertArrivalDetails(SourceMessage src) {
+    private void insertArrivalDetails(SourceMessage src, long timestamp) {
         ActiveAssignment state = competitionRuntime.getActiveAssignment();
         src.setAssignmentName(state.getAssignment().getName());
         src.setUuid(state.getCompetitionSession().getUuid().toString());
-
+        src.setTimeLeft("0");
+        src.setArrivalTime(timestamp);
         Assert.isTrue(state.getCompetitionSession().getUuid().toString()!=null,"session is unknown");
     }
     private SourceMessage createSourceMessageWithNoTimeout() {
@@ -127,8 +129,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
                 .get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
     }
     private void stopSelectedAssignment() {
-        OrderedAssignment oa = getAssignment(assignment);
-        competitionRuntime.startAssignment(oa.getAssignment().getName());
+        competitionRuntime.stopCurrentAssignment();
     }
     private void assertValidSubmit( SubmitResult submitResult) {
         assertThat(submitResult.isSuccess()).isTrue();
@@ -163,7 +164,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         startSelectedAssignmment();
         Duration timeout = createDurationThatIsLarge();
         SourceMessage src = createSourceMessageWithNoTimeout();
-        insertArrivalDetails(src);
+        insertArrivalDetails(src, Instant.now().toEpochMilli());
         stopSelectedAssignment();
         SubmitResult submitResult = doSubmit(src, timeout);
         assertValidSubmit(submitResult);
@@ -171,9 +172,10 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     @Test
     public void shouldGetZeroPointsForSuccessOnTooLateAttempt() throws Exception {
          startSelectedAssignmment();
-         stopSelectedAssignment();
          Duration timeout = createDurationThatIsLarge();
          SourceMessage src = createSourceMessageWithNoTimeout();
+         insertArrivalDetails(src, Instant.now().plusSeconds(60*10).toEpochMilli());
+         stopSelectedAssignment();
          SubmitResult submitResult = doSubmit(src, timeout);
          assertInvalidSubmit(submitResult);
     }

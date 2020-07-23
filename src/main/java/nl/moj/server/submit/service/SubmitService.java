@@ -108,14 +108,18 @@ public class SubmitService {
         });
     }
     private ActiveAssignment getActiveAssignment(Team team, SourceMessage message) {
+        ActiveAssignment activeAssignment = getActiveAssignmentValidate(team, message);
+        Assert.isTrue(activeAssignment!=null, "activeAssignment missing");
+        Assert.isTrue(activeAssignment.getCompetitionSession()!=null, "CompetitionSession missing");
+        return activeAssignment;
+    }
+    private ActiveAssignment getActiveAssignmentValidate(Team team, SourceMessage message) {
         if (message.getUuid()==null) {
             return competitionRuntime.getActiveAssignment();
         }
         UUID uuid = UUID.fromString(message.getUuid());
         Competition competition = competitionRuntime.selectCompetitionByUUID(uuid);
-        if (!team.getRole().equals(Role.ADMIN)) {
-            return competitionRuntime.selectCompetitionRuntimeForGameStart(competition).getActiveAssignment();
-        }
+
         ActiveAssignment activeAssignment = null;
         if (competition!=null) {
             activeAssignment = competitionRuntime.selectCompetitionRuntimeForGameStart(competition).getActiveAssignment();
@@ -129,20 +133,30 @@ public class SubmitService {
         }
         Assignment assignment = assignmentRepository.findByName(message.getAssignmentName() );
         List<AssignmentFile> fileList   = assignmentService.getAssignmentFiles(assignment);
-        AssignmentDescriptor assignmentDescriptor =assignmentService.getAssignmentDescriptor(assignment);
+        AssignmentDescriptor assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
         Long timeLeft = Long.parseLong(message.getTimeLeft());
         Long timeElapsed = assignmentDescriptor.getDuration().toSeconds()-timeLeft;
-        if (!competitionSession.isRunning())  {
-            long timeDelta = (message.getArrivalTime() - competitionSession.getDateTimeLastUpdate().plusSeconds(5*60).toEpochMilli())/1000;
-            Assert.isTrue (timeDelta<0,"warning: user " + team.getName() + " submitted far after max submit time ( seconds too late: "+timeDelta+", ignore this attempt).");
+        boolean isWithSubmitValidation = competitionSession.isRunning() || team.getRole().equals(Role.ADMIN);
+        if (!isWithSubmitValidation)  {
+            // after competition completion, we still allow arriving submits for 5 minutes (because of performance reasons)
+            long maxSubmitDelayAfterFinish = competitionSession.getDateTimeLastUpdate().plusSeconds(5*60).toEpochMilli();
+            long timeDelta = message.getArrivalTime() - maxSubmitDelayAfterFinish;
+
+            if (timeDelta<0) {
+                isWithSubmitValidation = true ;
+                log.info(" user " + team.getName() + " submitted before max submit time ( milliseconds left : "+timeDelta+", attempt will be used).");
+            } else {
+                log.info("warning: user " + team.getName() + " submitted far after max submit time ( milliseconds too late: "+timeDelta+", attempt will be ignored).");
+            }
         }
         activeAssignment  = ActiveAssignment.builder()
                 .competitionSession(competitionSession)
                 .assignment(assignment)
                 .timeElapsed(Duration.ofSeconds(timeElapsed))
                 .timeRemaining(timeLeft)
+                .running(isWithSubmitValidation)
                 .assignmentDescriptor(assignmentDescriptor)
-                .assignmentFiles(fileList).build();
+                .assignmentFiles(fileList).build();// individual user
 
         return activeAssignment;
     }
@@ -221,6 +235,7 @@ public class SubmitService {
             return testInternal(team, message, true,activeAssignment
                     .getAssignment()).thenApply(sr -> {
                 int remainingSubmits = getRemainingSubmits(as, activeAssignment);
+
                 try {
                     if( sr.getCompileResult() != null) {
                         sa.setCompileAttempt(compileAttemptRepository.findByUuid(sr.getCompileResult()
@@ -229,14 +244,22 @@ public class SubmitService {
                     if( sr.getTestResults() != null ) {
                         sa.setTestAttempt(testAttemptRepository.findByUuid(sr.getTestResults().getTestAttemptUuid()));
                     }
-                    sa.setSuccess(sr.isSuccess());
+                    sa.setSuccess(sr.isSuccess() && activeAssignment.isRunning());
                     sa.setDateTimeEnd(Instant.now());
                     submitAttemptRepository.save(sa);
 
                     remainingSubmits = getRemainingSubmits(as, activeAssignment);
 
+                    log.info("remaining submits {}, assignment {}, running {} ",remainingSubmits, activeAssignment.getAssignment().getName(), activeAssignment.isRunning());
+                    log.info("isSuccess {}, remainingSubmits {}, finalized {}",sr.isSuccess(), remainingSubmits, as.getDateTimeEnd());
+
                     if (sr.isSuccess() || remainingSubmits <= 0) {
+                        if (activeAssignment.isRunning() && as.getDateTimeEnd()!=null) {
+                            as.setDateTimeEnd(null);
+                        }
                         AssignmentStatus scored = scoreService.finalizeScore(as, activeAssignment);
+                        log.info("scored {}, assignment {}",scored.getAssignmentResult().getFinalScore(), activeAssignment.getAssignment().getName());
+
                         return sr.toBuilder().score(scored.getAssignmentResult().getFinalScore())
                                 .remainingSubmits(0).build();
                     }
@@ -256,7 +279,7 @@ public class SubmitService {
     }
 
     private boolean isSubmitAllowedForTeam(AssignmentStatus as, ActiveAssignment activeAssignment) {
-        return getRemainingSubmits(as, activeAssignment) > 0;
+        return getRemainingSubmits(as, activeAssignment) > 0 && activeAssignment.isRunning();
     }
 
     private int getRemainingSubmits(AssignmentStatus as, ActiveAssignment activeAssignment) {
