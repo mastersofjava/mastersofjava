@@ -29,3 +29,9 @@ pipelines:
         - maven
         script:
         - mvn -B clean install
+    bugfix/*:
+    - step:
+        caches:
+        - maven
+        script:
+        - mvn -B clean install
