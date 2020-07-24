@@ -206,8 +206,7 @@ public class CompetitionRuntime {
 
         competitionSessionRepository.save(competitionModel.competitionSession);
         log.info("restoreSession " + competitionModel.competitionSession.getId() + " " +competitionModel.competitionSession.isRunning()  + " " +competitionModel.competitionSession.getTimeLeft() + " " +competitionModel.competition.getShortName());
-        int hour = nowTime.atZone(ZoneOffset.UTC).getHour();
-        Instant maxTime = nowTime.atZone(ZoneOffset.UTC).withHour(hour-1).toInstant();
+        Instant maxTime = nowTime.atZone(ZoneOffset.UTC).minusHours(1).toInstant();
         // get the completed assignment uuids
         List<UUID> completedAssignmentList = assignmentResultRepository.findByCompetitionSession(competitionModel.competitionSession).stream()
                 .filter(ar ->
@@ -343,11 +342,7 @@ public class CompetitionRuntime {
                 .map(orderedAssignment -> teamService.getTeamAssignmentFiles(competitionModel.competitionSession, orderedAssignment.getAssignment(), team))
                 .orElse(Collections.emptyList());
     }
-    public boolean isSessionInAssignmentModel(UUID uuidInput, String nameInput) {
-        UUID uuid   = assignmentRuntime.getModel().getCompetitionSession().getUuid();
-        String name = assignmentRuntime.getModel().getOrderedAssignment().getAssignment().getName();
-        return name.equals(nameInput) || uuid.equals(uuidInput);
-    }
+
     public AssignmentStatus handleLateSignup(Team team, UUID uuidInput, String nameInput) {
         UUID uuid   = competitionModel.getAssignmentExecutionModel().getCompetitionSession().getUuid();
         String name = competitionModel.getAssignmentExecutionModel().getOrderedAssignment().getAssignment().getName();

@@ -454,10 +454,4 @@ public class AssignmentRuntime {
                 }
                 , TIMESYNC_FREQUENCY);
     }
-
-
-    @Deprecated
-    private AssignmentRuntime getSelfReference() {
-        return this;
-    }
 }

@@ -413,12 +413,6 @@ public class TaskControlController {
                 competition.startAssignment(competition.getCompetitionSession().getAssignmentName());
             }
             ActiveAssignment state = competition.getActiveAssignment();
-            if (state==null) {
-                log.info("CompetitionSession.isRunning " + competition.getCompetitionSession().isRunning() + " isSwitch " +isSwitch);
-                log.info("CompetitionSession.uuid " + competition.getCompetitionSession().getUuid());
-                log.info("CompetitionSession.mapQuick " + competition.getRunningCompetitionsQuickviewMap());
-                log.info("CompetitionSession.mapBig" + competition.getActiveCompetitionsMap().keySet() + " " +competition.getCompetition().getId() );
-            }
             Assert.isTrue(state!=null,"incorrect status, view logs");
             CompetitionRuntime.CompetitionExecutionModel competitionModel = competition.selectCompetitionRuntimeForGameStart(competition.getCompetition()).getCompetitionModel();
 
