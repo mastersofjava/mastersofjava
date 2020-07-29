@@ -275,7 +275,7 @@ public class GamemasterTableComponents {
                     }
                     sb.append("<tr class='subrows hide font10px'><td colspan=2>");
                     sb.append(inputField);
-                    sb.append("</td><td colspan=2 class='alignCenter'>"+deleteButton+disqualifyButton+"<button onclick=\"$('.passwordModal').toggleClass('hide')\" class='font10px minWidth100 smallBlackBorder cursorPointer nowrap'>password update</button></td></tr>");
+                    sb.append("</td><td colspan=2 class='alignCenter'>"+deleteButton+disqualifyButton+"</td></tr>");
                 }
                 sb.append("</tbody>");
                 return sb.toString();

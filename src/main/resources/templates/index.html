@@ -111,8 +111,8 @@
             <div class="p-2 align-self-center">
                 <h2>Team: [[${team}]]</h2>
                 <div class="p-2 align-self-center alignCenter">
-                    <button class="cursorPointer hide" data-toggle="modal" data-target="#editTeam-modal" >edit team</button>
-                </div>
+					<a th:href="@{/control}" class="btn btn-danger" th:classappend="${isControlRole?'':'hide'}">control</a>
+					                </div>
             </div>
             <div class="p-2 text-center">
                 <br/>
@@ -184,7 +184,7 @@
         </div>
         <div class="ml-auto pr-2 align-self-center" id="status"></div>
         <div class="pr-2 align-self-center">
-            <a th:href="@{/logout}" class="btn btn-danger">Disconnect</a>
+            <a th:href="@{/sso/logout}" class="btn btn-danger">Disconnect</a>
         </div>
     </div>
 </div>

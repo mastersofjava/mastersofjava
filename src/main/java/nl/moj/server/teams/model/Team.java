@@ -44,10 +44,6 @@ public class Team {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
-    @Column(name = "password")
-    @JsonIgnore
-    private String password;
-
     @Column(name = "role")
     private String role;
 

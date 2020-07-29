@@ -20,6 +20,7 @@ import java.io.File;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,8 @@ import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.service.CompetitionService;
+import nl.moj.server.login.SignupForm;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.JavaAssignmentFileResolver;
 import nl.moj.server.runtime.model.ActiveAssignment;
@@ -39,6 +42,10 @@ import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
+
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationEntryPoint;
+import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -53,215 +60,254 @@ import javax.servlet.http.HttpServletRequest;
 @AllArgsConstructor
 public class IndexController {
 
-    private CompetitionRuntime competition;
-    private TeamRepository teamRepository;
-    private TeamService teamService;
-    private AssignmentStatusRepository assignmentStatusRepository;
-    private AssignmentRepository assignmentRepository;
+	private CompetitionRuntime competition;
+	private TeamRepository teamRepository;
+	private TeamService teamService;
+	private AssignmentStatusRepository assignmentStatusRepository;
+	private AssignmentRepository assignmentRepository;
+	private CompetitionService competitionService;
 
-    @GetMapping("/")
-    public String index(Model model, @AuthenticationPrincipal Principal user) {
-        if (competition.getCurrentAssignment() == null) {
-            model.addAttribute("team", user.getName());
-            return "index";
-        }
-        addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment());
-        return "index";
-    }
+	@GetMapping("/")
+	public String index(Model model, @AuthenticationPrincipal Principal user, HttpServletRequest request) {
+		if (user == null) {
+			return "redirect:" + KeycloakAuthenticationEntryPoint.DEFAULT_LOGIN_URI;
+		}
+		// The admin user should be created with the bootstrap
+		if ((!doesUserExist(user) && !isAdminUser(user))) {
+			createNewTeam(user);
+		}
+		model.addAttribute("isControlRole", isAdminUser(user));
+		if (competition.getCurrentAssignment() == null) {
+			model.addAttribute("team", user.getName());
+			return "index";
+		}
+		addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment());
+		return "index";
+	}
 
-    private boolean isAuthorized(Principal user, HttpServletRequest request) {
-        return user!=null &&  user.getName().equalsIgnoreCase("admin") && request.getParameterMap().containsKey("assignment");
-    }
-    private boolean isUsingCurrentCompetitionAssignment(Assignment assignment) {
-        return competition.getCurrentAssignment()!=null && assignment.equals(competition.getActiveAssignment().getAssignment());
-    }
-    @GetMapping("/assignmentAdmin")
-    public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user,
-                              HttpServletRequest request,@RequestParam("assignment") String assignmentInput,
-                              @RequestParam(required = false, name = "solution") String solutionInputFileName) {
-        if (!isAuthorized(user, request)) {
-            return "login";
-        }
-        boolean isWithAdminValidation = request.getParameterMap().containsKey("validate");
-        Assignment assignment = assignmentRepository.findByName(assignmentInput);
-        Assert.isTrue(assignment!=null,"unauthorized");
-        log.info("viewAsAdmin.solution {}, assignment {}", solutionInputFileName, assignmentInput);
-        if (isUsingCurrentCompetitionAssignment(assignment)) {
+	private void createNewTeam(Principal user) {
+		SignupForm form = SignupForm.builder().company("None").country("NL").name(user.getName()).build();
+		competitionService.createNewTeam(form, Role.USER);
+	}
 
-            addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment(), solutionInputFileName, isWithAdminValidation);
-        } else {
-            addModelDataForAdmin(model, user, assignment, solutionInputFileName, isWithAdminValidation);
-        }
-        return "index";
-    }
+	private boolean doesUserExist(Principal user) {
+		return teamRepository.findByName(user.getName()) != null;
+	}
 
-    private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String solutionInputFileName, boolean isWithValidation) {
-        Team team = teamRepository.findByName(user.getName());
-        CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, solutionInputFileName, isWithValidation);
-        codePage.saveFiles(competition.getCompetitionSession(), assignment, team);
-        codePage.saveAdminState(assignment);
-    }
+	private boolean isAdminUser(Principal user) {
+		return Role.isWithControleRole((org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken) user);
+	}
 
-    private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state) {
-        addModelDataForUserWithAssignment(model, user, state, null, false);
-    }
+	private boolean isAdminAuthorized(Principal user, HttpServletRequest request) {
+		return user != null && isAdminUser(user) && request.getParameterMap().containsKey("assignment");
+	}
 
-    private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state, String solutionInputFileName, boolean isWithAdminValidation) {
-        Team team = teamRepository.findByName(user.getName());
-        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(), state
-                .getCompetitionSession(), team);
+	private boolean isUsingCurrentCompetitionAssignment(Assignment assignment) {
+		return competition.getCurrentAssignment() != null
+				&& assignment.equals(competition.getActiveAssignment().getAssignment());
+	}
 
-        //late signup
-        if (as == null) {
-            as = competition.handleLateSignup(team);
-        }
+	@GetMapping("/assignmentAdmin")
+	public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user, HttpServletRequest request,
+			@RequestParam("assignment") String assignmentInput,
+			@RequestParam(required = false, name = "solution") String solutionInputFileName) {
+		if (!isAdminAuthorized(user, request)) {
+			return "redirect:" + KeycloakAuthenticationEntryPoint.DEFAULT_LOGIN_URI;
+		}
+		boolean isWithAdminValidation = request.getParameterMap().containsKey("validate");
+		Assignment assignment = assignmentRepository.findByName(assignmentInput);
+		Assert.isTrue(assignment != null, "unauthorized");
+		log.info("viewAsAdmin.solution {}, assignment {}", solutionInputFileName, assignmentInput);
+		if (isUsingCurrentCompetitionAssignment(assignment)) {
 
-        AssignmentStatusHelper ash = new AssignmentStatusHelper(as, state.getAssignmentDescriptor());
+			addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment(), solutionInputFileName,
+					isWithAdminValidation);
+		} else {
+			addModelDataForAdmin(model, user, assignment, solutionInputFileName, isWithAdminValidation);
+		}
+		model.addAttribute("isControlRole", isAdminUser(user));
+		return "index";
+	}
 
-        CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, solutionInputFileName, isWithAdminValidation && team.getRole().equals(Role.ADMIN));
-        codePage.saveFiles(competition.getCompetitionSession(), state.getAssignment(), team);
-        codePage.saveAssignmentDetails(state);
-        codePage.saveTeamState(ash);
-    }
+	private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String solutionInputFileName,
+			boolean isWithValidation) {
+		Team team = teamRepository.findByName(user.getName());
+		CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, solutionInputFileName, isWithValidation);
+		codePage.saveFiles(competition.getCompetitionSession(), assignment, team);
+		codePage.saveAdminState(assignment);
+	}
 
-    private class CodePageModelWrapper {
-        private Model model;
-        private List<AssignmentFile> inputFiles;
-        private String solutionToken;
-        private boolean isWithInsertSolution;
-        private boolean isWithValidation;
-        public CodePageModelWrapper(Model model, Principal user, String solutionToken, boolean isWithValidation) {
-            this.model = model ;
-            this.solutionToken = solutionToken;
-            isWithInsertSolution = solutionToken != null;
-            this.isWithValidation = isWithValidation;
-            model.addAttribute("team", user.getName());
-        }
-        private AssignmentFile createSolution(AssignmentFile file){
-            JavaAssignmentFileResolver resolver = new JavaAssignmentFileResolver();
-            String path = file.getAbsoluteFile().toFile().getPath().replace("src\\main\\java","assets").replace("src/main/java","assets");
-            File solutionFile = new File(path.replace(".java",solutionToken+"Solution.java"));
-            if (!solutionToken.isEmpty()) {
-                log.info("solutionFile (token=" +solutionToken+ ")=" + solutionFile+ ", exist: " + solutionFile.exists() );
-            }
-            if (solutionFile.exists()) {
-                file = resolver.convertToAssignmentFile(file.getName(), solutionFile.toPath(), file.getBase(), solutionFile.toPath(), AssignmentFileType.EDIT, false, file.getUuid());
-            }
-            return file;
-        }
-        public void saveFiles(CompetitionSession session, Assignment assignment, Team team) {
-            List<AssignmentFile> teamAssignmentFiles = teamService.getTeamAssignmentFiles(session, assignment, team);
-            model.addAttribute("files", prepareInputFilesOnScreen(teamAssignmentFiles));
-        }
-        private List<AssignmentFile> prepareInputFilesOnScreen(List<AssignmentFile> teamAssignmentFiles) {
-            inputFiles = new ArrayList<>();
-            for (AssignmentFile file: teamAssignmentFiles) {
-                if (file.isReadOnly()||!isWithInsertSolution) {
-                    inputFiles.add(file);
-                } else {
-                    // insert solution for the admin (instead of editable file)
-                    inputFiles.add(createSolution(file));
-                }
-            }
-            // order the task file(s) at the beginning.
-            inputFiles.sort((arg0, arg1) -> {
-                if (arg0.getFileType().equals(AssignmentFileType.TASK)) {
-                    return -10;
-                }
-                return 10;
-            });
-            return inputFiles;
-        }
+	private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state) {
+		addModelDataForUserWithAssignment(model, user, state, null, false);
+	}
 
-        public void saveTeamState(AssignmentStatusHelper ash) {
-            boolean isCompleted = ash.isCompleted();
-            model.addAttribute("finished", isCompleted);
-            model.addAttribute("submittime", ash.getSubmitTime());
-            model.addAttribute("finalscore", ash.getScore());
-            model.addAttribute("maxSubmits", ash.getMaximumSubmits());
-            model.addAttribute("submits", ash.getRemainingSubmits());
-            model.addAttribute("solution", isWithInsertSolution);
-            model.addAttribute("submitDisabled", isCompleted);
-        }
+	private void addModelDataForUserWithAssignment(Model model, Principal user, ActiveAssignment state,
+			String solutionInputFileName, boolean isWithAdminValidation) {
+		Team team = teamRepository.findByName(user.getName());
+		AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(
+				state.getAssignment(), state.getCompetitionSession(), team);
 
-        private List<AssignmentFile> filterUnitTestsFromInputFiles() {
-            List<AssignmentFile> tests = new ArrayList<>();
-            for (AssignmentFile inputFile: inputFiles) {
-                String name = inputFile.getFile().toFile().getName().toLowerCase();
-                boolean isTestCase = name.endsWith(".java") && name.contains("test") && inputFile.isReadOnly();
-                if (isTestCase) {
-                    tests.add(inputFile);
-                }
-            }
-            return tests;
-        }
+		// late signup
+		if (as == null) {
+			as = competition.handleLateSignup(team);
+		}
 
-        public void saveAdminState( Assignment assignment) {
-            model.addAttribute("finished",false);
-            model.addAttribute("submitDisabled", true);
-            model.addAttribute("submittime", 0);
-            model.addAttribute("finalscore", 0);
-            model.addAttribute("maxSubmits", 1);
-            model.addAttribute("submits", 1);
-            model.addAttribute("assignment", assignment.getName());
-            model.addAttribute("timeLeft", 0);
-            model.addAttribute("time", 0);
-            model.addAttribute("tests", filterUnitTestsFromInputFiles());
-            model.addAttribute("running", true);
-            model.addAttribute("solution", isWithInsertSolution);
-            model.addAttribute("isWithValidation", isWithValidation);
-            model.addAttribute("labels", new ArrayList<>());
-            model.addAttribute("bonus", "");
-            model.addAttribute("assignmentName", assignment.getName());
-        }
+		AssignmentStatusHelper ash = new AssignmentStatusHelper(as, state.getAssignmentDescriptor());
 
-        public void saveAssignmentDetails(ActiveAssignment state) {
-            List<String> scoreLabels = state.getAssignmentDescriptor().readScoreLables();
+		CodePageModelWrapper codePage = new CodePageModelWrapper(model, 
+				user, 
+				solutionInputFileName,
+				isWithAdminValidation && Role.isWithControleRole(
+						(KeycloakAuthenticationToken) user));
+		codePage.saveFiles(competition.getCompetitionSession(), state.getAssignment(), team);
+		codePage.saveAssignmentDetails(state);
+		codePage.saveTeamState(ash);
+	}
 
-            model.addAttribute("assignmentName", state.getAssignmentDescriptor().getName());
-            model.addAttribute("assignment", state.getAssignmentDescriptor().getDisplayName());
-            model.addAttribute("labels", scoreLabels);
-            model.addAttribute("bonus", "Success bonus: " +state.getAssignmentDescriptor().getScoringRules().getSuccessBonus());
-            model.addAttribute("timeLeft", state.getTimeRemaining());
-            model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
-            model.addAttribute("tests", state.getTestFiles());
-            model.addAttribute("running", state.isRunning());
-            model.addAttribute("isWithValidation", isWithValidation);
+	private class CodePageModelWrapper {
+		private Model model;
+		private List<AssignmentFile> inputFiles;
+		private String solutionToken;
+		private boolean isWithInsertSolution;
+		private boolean isWithValidation;
 
-        }
-    }
-    private class AssignmentStatusHelper {
+		public CodePageModelWrapper(Model model, Principal user, String solutionToken, boolean isWithValidation) {
+			this.model = model;
+			this.solutionToken = solutionToken;
+			isWithInsertSolution = solutionToken != null;
+			this.isWithValidation = isWithValidation;
+			model.addAttribute("team", user.getName());
+		}
 
-        private AssignmentStatus assignmentStatus;
-        private AssignmentDescriptor assignmentDescriptor;
+		private AssignmentFile createSolution(AssignmentFile file) {
+			JavaAssignmentFileResolver resolver = new JavaAssignmentFileResolver();
+			String path = file.getAbsoluteFile().toFile().getPath().replace("src\\main\\java", "assets")
+					.replace("src/main/java", "assets");
+			File solutionFile = new File(path.replace(".java", solutionToken + "Solution.java"));
+			if (!solutionToken.isEmpty()) {
+				log.info("solutionFile (token=" + solutionToken + ")=" + solutionFile + ", exist: "
+						+ solutionFile.exists());
+			}
+			if (solutionFile.exists()) {
+				file = resolver.convertToAssignmentFile(file.getName(), solutionFile.toPath(), file.getBase(),
+						solutionFile.toPath(), AssignmentFileType.EDIT, false, file.getUuid());
+			}
+			return file;
+		}
 
-        public AssignmentStatusHelper(AssignmentStatus assignmentStatus, AssignmentDescriptor assignmentDescriptor) {
-            this.assignmentStatus = assignmentStatus;
-            this.assignmentDescriptor = assignmentDescriptor;
-        }
+		public void saveFiles(CompetitionSession session, Assignment assignment, Team team) {
+			List<AssignmentFile> teamAssignmentFiles = teamService.getTeamAssignmentFiles(session, assignment, team);
+			model.addAttribute("files", prepareInputFilesOnScreen(teamAssignmentFiles));
+		}
 
-        public boolean isCompleted() {
-            return assignmentStatus.getSubmitAttempts()
-                    .stream()
-                    .anyMatch(SubmitAttempt::isSuccess) ||
-                    assignmentStatus.getSubmitAttempts().size() >= (assignmentDescriptor.getScoringRules()
-                            .getMaximumResubmits() + 1);
-        }
+		private List<AssignmentFile> prepareInputFilesOnScreen(List<AssignmentFile> teamAssignmentFiles) {
+			inputFiles = new ArrayList<>();
+			for (AssignmentFile file : teamAssignmentFiles) {
+				if (file.isReadOnly() || !isWithInsertSolution) {
+					inputFiles.add(file);
+				} else {
+					// insert solution for the admin (instead of editable file)
+					inputFiles.add(createSolution(file));
+				}
+			}
+			// order the task file(s) at the beginning.
+			inputFiles.sort((arg0, arg1) -> {
+				if (arg0.getFileType().equals(AssignmentFileType.TASK)) {
+					return -10;
+				}
+				return 10;
+			});
+			return inputFiles;
+		}
 
-        public long getSubmitTime() {
-            return assignmentStatus.getAssignmentResult().getInitialScore();
-        }
+		public void saveTeamState(AssignmentStatusHelper ash) {
+			boolean isCompleted = ash.isCompleted();
+			model.addAttribute("finished", isCompleted);
+			model.addAttribute("submittime", ash.getSubmitTime());
+			model.addAttribute("finalscore", ash.getScore());
+			model.addAttribute("maxSubmits", ash.getMaximumSubmits());
+			model.addAttribute("submits", ash.getRemainingSubmits());
+			model.addAttribute("solution", isWithInsertSolution);
+			model.addAttribute("submitDisabled", isCompleted);
+		}
 
-        public int getMaximumSubmits() {
-            return assignmentDescriptor.getScoringRules().getMaximumResubmits() + 1;
-        }
+		private List<AssignmentFile> filterUnitTestsFromInputFiles() {
+			List<AssignmentFile> tests = new ArrayList<>();
+			for (AssignmentFile inputFile : inputFiles) {
+				String name = inputFile.getFile().toFile().getName().toLowerCase();
+				boolean isTestCase = name.endsWith(".java") && name.contains("test") && inputFile.isReadOnly();
+				if (isTestCase) {
+					tests.add(inputFile);
+				}
+			}
+			return tests;
+		}
 
-        public int getRemainingSubmits() {
-            return getMaximumSubmits() - assignmentStatus.getSubmitAttempts().size();
-        }
+		public void saveAdminState(Assignment assignment) {
+			model.addAttribute("finished", false);
+			model.addAttribute("submitDisabled", true);
+			model.addAttribute("submittime", 0);
+			model.addAttribute("finalscore", 0);
+			model.addAttribute("maxSubmits", 1);
+			model.addAttribute("submits", 1);
+			model.addAttribute("assignment", assignment.getName());
+			model.addAttribute("timeLeft", 0);
+			model.addAttribute("time", 0);
+			model.addAttribute("tests", filterUnitTestsFromInputFiles());
+			model.addAttribute("running", true);
+			model.addAttribute("solution", isWithInsertSolution);
+			model.addAttribute("isWithValidation", isWithValidation);
+			model.addAttribute("labels", new ArrayList<>());
+			model.addAttribute("bonus", "");
+			model.addAttribute("assignmentName", assignment.getName());
+		}
 
-        public long getScore() {
-            return assignmentStatus.getAssignmentResult().getFinalScore();
-        }
-    }
+		public void saveAssignmentDetails(ActiveAssignment state) {
+			List<String> scoreLabels = state.getAssignmentDescriptor().readScoreLables();
+
+			model.addAttribute("assignmentName", state.getAssignmentDescriptor().getName());
+			model.addAttribute("assignment", state.getAssignmentDescriptor().getDisplayName());
+			model.addAttribute("labels", scoreLabels);
+			model.addAttribute("bonus",
+					"Success bonus: " + state.getAssignmentDescriptor().getScoringRules().getSuccessBonus());
+			model.addAttribute("timeLeft", state.getTimeRemaining());
+			model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
+			model.addAttribute("tests", state.getTestFiles());
+			model.addAttribute("running", state.isRunning());
+			model.addAttribute("isWithValidation", isWithValidation);
+
+		}
+	}
+
+	private class AssignmentStatusHelper {
+
+		private AssignmentStatus assignmentStatus;
+		private AssignmentDescriptor assignmentDescriptor;
+
+		public AssignmentStatusHelper(AssignmentStatus assignmentStatus, AssignmentDescriptor assignmentDescriptor) {
+			this.assignmentStatus = assignmentStatus;
+			this.assignmentDescriptor = assignmentDescriptor;
+		}
+
+		public boolean isCompleted() {
+			return assignmentStatus.getSubmitAttempts().stream().anyMatch(SubmitAttempt::isSuccess) || assignmentStatus
+					.getSubmitAttempts().size() >= (assignmentDescriptor.getScoringRules().getMaximumResubmits() + 1);
+		}
+
+		public long getSubmitTime() {
+			return assignmentStatus.getAssignmentResult().getInitialScore();
+		}
+
+		public int getMaximumSubmits() {
+			return assignmentDescriptor.getScoringRules().getMaximumResubmits() + 1;
+		}
+
+		public int getRemainingSubmits() {
+			return getMaximumSubmits() - assignmentStatus.getSubmitAttempts().size();
+		}
+
+		public long getScore() {
+			return assignmentStatus.getAssignmentResult().getFinalScore();
+		}
+	}
 }
