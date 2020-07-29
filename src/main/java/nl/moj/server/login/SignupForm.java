@@ -16,9 +16,11 @@
 */
 package nl.moj.server.login;
 
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class SignupForm {
 
     private String name;

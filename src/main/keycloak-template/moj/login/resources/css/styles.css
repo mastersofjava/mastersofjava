@@ -1,0 +1,47 @@
+.login-pf body {
+	background: white none;
+}
+
+#kc-logo-wrapper {
+	background-image: url(../img/moj_logo.png);
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 200px auto;
+	width: 200px;
+	height: 200px;
+}
+
+#kc-header {
+    color: #000000;
+    overflow: visible;
+    white-space: nowrap;
+}
+
+#first8-logo {
+	background-image: url(../img/logo_first8_378x97.png);
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 150px auto;
+	height: 50px;
+}
+
+#kc-header-wrapper {
+    font-size: 29px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    line-height: 1.2em;
+    padding: 62px 10px 20px;
+    white-space: normal;
+}
+
+div.kc-logo-text {
+    background-image: url(../img/moj-logo.png);
+    background-repeat: no-repeat;
+    height: 63px;
+    width: 300px;
+    margin: 0 auto;
+}
+
+#kc-logo {
+    width: 100%;
+}

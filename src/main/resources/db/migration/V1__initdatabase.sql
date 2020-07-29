@@ -108,7 +108,6 @@ create table teams
   company    varchar(255),
   country    varchar(255),
   name       varchar(255) not null,
-  password   varchar(255),
   role       varchar(255),
   indication varchar(255),
   uuid       uuid         not null,

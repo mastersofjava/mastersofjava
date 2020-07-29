@@ -36,7 +36,7 @@
         <div class="col" id="alert">
         </div>
 
-        <div class="col-9"  >
+        <div class="col-8"  >
         <ul class="nav nav-pills" id="pills-tab" role="tablist">
             <li class="nav-item">
                 <a class="nav-link active" id="pills-competitie-tab" data-toggle="pill" href="#pills-competitie" role="tab" aria-controls="pills-competitie" aria-selected="true">Snel starten</a>
@@ -291,26 +291,22 @@
                     <br>
                     <div class="row">
                         <div class="p-2 col-12">
-                            <div class="roundGrayBorder maxWidth300 p-2 inlineBlock">
-                                <div class="form-check input-group radio maxWidth300" >
-                                    <label class="form-check-label">
-                                        <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(true)" type="radio" name="setting_registration_disabled" th:checked="${setting_registration_disabled}"
-                                               value="true"
-                                                /> registratie pagina disabled
-                                    </label>
-                                </div>
-                                <br/>
-                                <div class="form-check input-group radio maxWidth300" >
+                            <div class="roundGrayBorder maxWidth300 p-2">
+                            <div class="form-check input-group radio maxWidth300" >
                                 <label class="form-check-label">
-                                    <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(false)" type="radio" name="setting_registration_disabled" th:checked="${!setting_registration_disabled}"
-                                           value="false"
-                                    /> registratie pagina enabled
+                                    <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(true)" type="radio" name="setting_registration_disabled" th:checked="${setting_registration_disabled}"
+                                           value="true"
+                                            /> registration page disabled
                                 </label>
-                                </div>
                             </div>
-                            <div class="roundGrayBorder maxWidth300 p-2 inlineBlock">
-                                Aantal gebruikers nu online: [[${nrOfUsersOnline}]].
-                                <br/><br/><br/>
+                            <br/>
+                            <div class="form-check input-group radio maxWidth300" >
+                            <label class="form-check-label">
+                                <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(false)" type="radio" name="setting_registration_disabled" th:checked="${!setting_registration_disabled}"
+                                       value="false"
+                                /> registration page enabled
+                            </label>
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -379,7 +375,6 @@
             <br/>
             <a class="btn btn-primary w-100" href="/rankings" target="rankings"><span class="fa fa-trophy pr-1"></span>Ranglijst competitie</a><br/><br/>
             <a class="btn btn-primary w-100" href="/feedback" target="feedback"><span class="fa fa-gamepad pr-1"></span>Tussenstand opdracht</a><br/><br/>
-            <a class="btn btn-primary w-100" href="/register" target="register"><span class="fa fa-user pr-1"></span>Registratie team</a><br/><br/>
         </div>
 
     </div>

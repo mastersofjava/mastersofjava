@@ -155,18 +155,6 @@ public class TaskControlController {
     }
 
 
-    @MessageMapping("/control/updateSettingRegistration")
-    @SendToUser("/queue/controlfeedback")
-    public String updateSettingRegistration(TaskMessage message) {
-        boolean isDisable = "true".equals(message.value);
-        log.warn("updateSettingRegistration disabled = {} " ,isDisable);
-        competitionService.setRegistrationFormDisabled(isDisable);
-        if (isDisable) {
-            return "registration form is disabled, users cannot register";
-        } else {
-            return "registration form is enabled, users can register";
-        }
-    }
     @MessageMapping("/control/restartAssignment")
     @SendToUser("/queue/controlfeedback")
     public String restartAssignment(TaskMessage message) {

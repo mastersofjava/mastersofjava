@@ -23,6 +23,9 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Example;
+import org.springframework.stereotype.Service;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.config.properties.Directories;
@@ -30,9 +33,6 @@ import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
-import org.springframework.data.domain.Example;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -41,7 +41,6 @@ public class BootstrapService {
 
     private MojServerProperties mojServerProperties;
     private TeamRepository teamRepository;
-    private PasswordEncoder passwordEncoder;
 
     private static String[] LIBS = {
             "asciiart-core-1.1.0.jar",
@@ -64,9 +63,9 @@ public class BootstrapService {
         return !adminExists() || !dataValid();
     }
 
-    public void bootstrap(String adminUser, String adminPassword) throws IOException {
+    public void bootstrap(String adminUser) throws IOException {
         updateData();
-        createAdminUser(adminUser, adminPassword);
+        createAdminUser(adminUser);
     }
 
     private void updateData() throws IOException {
@@ -99,7 +98,7 @@ public class BootstrapService {
         }
     }
 
-    private void createAdminUser(String username, String password) {
+    private void createAdminUser(String username) {
         log.info("Creating administrator.");
         // create a new admin user
         List<Team> admins = teamRepository.findAllByRole(Role.ADMIN);
@@ -112,7 +111,6 @@ public class BootstrapService {
                 .uuid(UUID.randomUUID())
                 .country("NL")
                 .role(Role.ADMIN)
-                .password(passwordEncoder.encode(password))
                 .build();
 
         teamRepository.save(admin);

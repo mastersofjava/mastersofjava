@@ -18,6 +18,7 @@ package nl.moj.server.bootstrap.controller;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.security.Principal;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,18 +47,14 @@ public class BootstrapController {
     }
 
     @PostMapping("/bootstrap")
-    public String doBootstrap(@ModelAttribute("form") BootstrapForm form, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+    public String doBootstrap(Principal user, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (bootstrapService.isBootstrapNeeded()) {
-            if (form.getPassword1().equals(form.getPassword2())) {
                 try {
-                    bootstrapService.bootstrap(form.getUsername(), form.getPassword1());
+                    bootstrapService.bootstrap(user.getName());
                 } catch (IOException ioe) {
                     log.error("Bootstrap failed.", ioe.getMessage());
                     return redirectFailure(redirectAttributes, "Bootstrap failed, see console logs for more information.");
                 }
-            } else {
-                return redirectFailure(redirectAttributes, "Passwords do not match.");
-            }
         }
         return "redirect:/control";
     }
