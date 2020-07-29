@@ -281,57 +281,8 @@
                     <h6>Beheren van teams (selecteer een team indien u deze wilt aanpassen)</h6>
                     <br>
                     <div class="row">
-                        <div class="p-2 col-12">
-                            <div class="roundGrayBorder maxWidth300 p-2">
-                            <div class="form-check input-group radio maxWidth300" >
-                                <label class="form-check-label">
-                                    <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(true)" type="radio" name="setting_registration_disabled" th:checked="${setting_registration_disabled}"
-                                           value="true"
-                                            /> registration page disabled
-                                </label>
-                            </div>
-                            <br/>
-                            <div class="form-check input-group radio maxWidth300" >
-                            <label class="form-check-label">
-                                <input class="form-check-input" onchange="if (this.checked) updateSettingRegistrationFormDisabled(false)" type="radio" name="setting_registration_disabled" th:checked="${!setting_registration_disabled}"
-                                       value="false"
-                                /> registration page enabled
-                            </label>
-                            </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
                         <div class="p-2 col-6">
                             <div th:remove="tag" th:utext="${teamDetailCanvas}"></div>
-                        </div>
-
-                        <div class="p-2 col-5">
-                            <div class="roundGrayBorder passwordModal hide rowComponent">
-                                <form class="mt-2 font10px alignCenter" method="POST" action="/control/resetPassword"
-                                      enctype="multipart/form-data" th:object="${newPasswordRequest}">
-
-                                    <select class="p-2 disabled rowIdentifier" th:field="*{teamUuid}" >
-                                        <option th:value="0">Please select user...</option>
-                                        <option th:each="team : ${teams}" th:value="${team.uuid}"
-                                                th:text="${team.name}"></option>
-                                    </select>
-                                    <div class="form-group p-2">
-                                        <label for="password"> New Password</label> <input type="password"
-                                                                                           class="form-control" id="password"
-                                                                                           th:field="*{newPassword}"
-                                                                                           placeholder="">
-                                    </div>
-                                    <div class="form-group p-2">
-                                        <label for="passwordCheck">Confirm Password</label> <input
-                                            type="password" class="form-control" id="passwordCheck"
-                                            th:field="*{newPasswordCheck}" placeholder="">
-                                    </div>
-                                    <input class="btn btn-primary form-control col-3 minWidth100" type="submit"
-                                           value="submit" onclick="return confirm('Are you sure to change password?')"/>
-                                    <br/> <br/>
-                                </form>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -365,7 +316,6 @@
             <br/>
             <a class="btn btn-primary w-100" href="/rankings" target="rankings"><span class="fa fa-trophy pr-1"></span>Ranglijst competitie</a><br/><br/>
             <a class="btn btn-primary w-100" href="/feedback" target="feedback"><span class="fa fa-gamepad pr-1"></span>Tussenstand opdracht</a><br/><br/>
-            <a class="btn btn-primary w-100" href="/register" target="register"><span class="fa fa-user pr-1"></span>Registratie team</a><br/><br/>
         </div>
 
     </div>

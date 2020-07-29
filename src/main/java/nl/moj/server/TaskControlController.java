@@ -153,19 +153,6 @@ public class TaskControlController {
         }
     }
 
-
-    @MessageMapping("/control/updateSettingRegistration")
-    @SendToUser("/queue/controlfeedback")
-    public String updateSettingRegistration(TaskMessage message) {
-        boolean isDisable = "true".equals(message.value);
-        log.warn("updateSettingRegistration disabled = {} " ,isDisable);
-        competitionService.setRegistrationFormDisabled(isDisable);
-        if (isDisable) {
-            return "registration form is disabled, users cannot register";
-        } else {
-            return "registration form is enabled, users can register";
-        }
-    }
     @MessageMapping("/control/restartAssignment")
     @SendToUser("/queue/controlfeedback")
     public String restartAssignment(TaskMessage message) {
@@ -434,7 +421,6 @@ public class TaskControlController {
                 model.addAttribute("selectedYearLabel", this.selectedYearLabel);
             }
 
-            model.addAttribute("setting_registration_disabled", competitionService.isRegistrationFormDisabled());
             model.addAttribute("sessionDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForSessions());
 
         }
@@ -471,35 +457,6 @@ public class TaskControlController {
     @PostMapping("/control/new-session")
     public String newSession() {
         competition.startSession(competition.getCompetition());
-        return "redirect:/control";
-    }
-
-    @PostMapping("/control/resetPassword")
-    public String resetPassword(RedirectAttributes redirectAttributes,
-                                @ModelAttribute("newPasswordRequest") NewPasswordRequest passwordChangeRequest) {
-
-        String errorMessage = null;
-
-        if (passwordChangeRequest.teamUuid.equals("0")) {
-            errorMessage = "No team selected";
-        } else {
-            Team team = teamRepository.findByUuid(UUID.fromString(passwordChangeRequest.teamUuid));
-            if (passwordChangeRequest.newPassword == null || passwordChangeRequest.newPassword.isBlank()) {
-                errorMessage = "New password can't be empty";
-            } else if (!passwordChangeRequest.newPassword.equals(passwordChangeRequest.newPasswordCheck)) {
-                errorMessage = "Password and confirmaton did not match";
-            } else {
-                team.setPassword(competitionService.getEncoder().encode(passwordChangeRequest.newPassword));
-                teamRepository.save(team);
-                redirectAttributes.addFlashAttribute("success", "Successfully changed password");
-                return "redirect:/control";
-            }
-        }
-
-        passwordChangeRequest.clearPasswords();
-        redirectAttributes.addFlashAttribute("newPasswordRequest", passwordChangeRequest);
-        redirectAttributes.addFlashAttribute("error", errorMessage);
-
         return "redirect:/control";
     }
 

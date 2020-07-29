@@ -73,3 +73,6 @@ button[disabled] {
 .paddingLeft50 {
     padding-left: 50px;
 }
+.hide {
+    display: none;
+}
