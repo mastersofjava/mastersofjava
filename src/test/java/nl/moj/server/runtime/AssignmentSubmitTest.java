@@ -16,19 +16,14 @@
 */
 package nl.moj.server.runtime;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import nl.moj.server.competition.model.OrderedAssignment;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.submit.SubmitResult;
-import nl.moj.server.submit.model.SourceMessage;
-import nl.moj.server.submit.service.SubmitService;
-import org.jboss.logging.Param;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,12 +31,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.submit.SubmitResult;
+import nl.moj.server.submit.model.SourceMessage;
+import nl.moj.server.submit.service.SubmitService;
 
 @RunWith(Parameterized.class)
 @SpringBootTest
