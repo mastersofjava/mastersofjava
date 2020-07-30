@@ -22,11 +22,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
+import nl.moj.server.competition.service.CompetitionService;
+import nl.moj.server.login.SignupForm;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.JavaAssignmentFileResolver;
 import nl.moj.server.runtime.model.ActiveAssignment;
@@ -39,11 +43,15 @@ import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
+import nl.moj.server.util.HttpUtil;
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationEntryPoint;
+import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
@@ -58,7 +66,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class IndexController {
 
-    private CompetitionRuntime competition;
+    private CompetitionRuntime competitionRuntime;
     private TeamRepository teamRepository;
     private TeamService teamService;
     private AssignmentStatusRepository assignmentStatusRepository;
@@ -97,9 +105,14 @@ public class IndexController {
     }
 
     @GetMapping("/")
-    public String index(Model model, @AuthenticationPrincipal Principal user,@ModelAttribute("selectSessionForm") SelectSessionForm ssf) {
+    public String index(Model model, @AuthenticationPrincipal Principal user,@ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
+        if (user==null) {
+            return "index";
+        }
         CompetitionSession competitionSession = getSelectedCompetitionSession();
         insertCompetitionSelector(model, ssf, competitionSession.getUuid());
+        model.addAttribute("isControlRole", isAdminUser(user));
+
         boolean isAvailableAssignment = competitionRuntime.isActiveCompetition(competitionSession.getCompetition());
         if (isAvailableAssignment) {
             CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
@@ -109,7 +122,7 @@ public class IndexController {
             model.addAttribute("team", user.getName());
             return "index";
         }
-        addModelDataForUserWithAssignment(model, user, competition.getActiveAssignment());
+        addModelDataForUserWithAssignment(model, user, competitionRuntime.getActiveAssignment());
         return "index";
     }
 
@@ -119,8 +132,24 @@ public class IndexController {
 	}
 
 	private boolean doesUserExist(Principal user) {
-		return teamRepository.findByName(user.getName()) != null;
+        return teamRepository.findByName(user.getName()) != null;
+    }
     private void insertCompetitionSelector(Model model, SelectSessionForm ssf,UUID sessionUUID) {
+        List<CompetitionSession> sessions = competitionSessionRepository.findAll();
+        List<CompetitionSession> activeSessions = new ArrayList<>();
+        for (CompetitionSession session: sessions) {
+            if (session.isAvailable()) {
+                activeSessions.add(session);
+            }
+        }
+        model.addAttribute("sessions", activeSessions);
+        UUID input = HttpUtil.getSelectedUserSession( sessionUUID);
+        log.debug("input " + input + " activeSessions " +activeSessions.size());
+        if (ssf!=null) {
+            ssf.setSession(input);
+        }
+    }
+    private void insertCompetitionSelector(Model model, TaskControlController.SelectSessionForm ssf,UUID sessionUUID) {
         List<CompetitionSession> sessions = competitionSessionRepository.findAll();
         List<CompetitionSession> activeSessions = new ArrayList<>();
         for (CompetitionSession session: sessions) {
@@ -146,22 +175,22 @@ public class IndexController {
     private boolean isUsingCurrentCompetitionAssignment(Assignment assignment,CompetitionRuntime runtime) {
         return runtime.getCurrentRunningAssignment()!=null && assignment.equals(runtime.getActiveAssignment().getAssignment());
     }
+
     @GetMapping("/assignmentAdmin")
     public String viewAsAdmin(Model model, @AuthenticationPrincipal Principal user,
                               HttpServletRequest request,@RequestParam("assignment") String assignmentInput,
-                              @RequestParam(required = false, name = "solution") String solutionInputFileName,@ModelAttribute("selectSessionForm") SelectSessionForm ssf) {
-        if (!HttpUtil.isAuthorizedForAssignmentEditing(user, request)) {
-            return "login";
+                              @RequestParam(required = false, name = "solution") String solutionInputFileName,@ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
         if (!isAdminAuthorized(user, request)) {
             return "redirect:" + KeycloakAuthenticationEntryPoint.DEFAULT_LOGIN_URI;
         }
+
         CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
 
         boolean isWithAdminValidation = request.getParameterMap().containsKey("validate");
         Assignment assignment = assignmentRepository.findByName(assignmentInput);
-        Assert.isTrue(assignment!=null,"unauthorized");
+        Assert.isTrue(assignment != null, "unauthorized");
         log.info("viewAsAdmin.solution {}, assignment {}", solutionInputFileName, assignmentInput);
-        if (isUsingCurrentCompetitionAssignment(assignment,runtime)) {
+        if (isUsingCurrentCompetitionAssignment(assignment, runtime)) {
 
             addModelDataForUserWithAssignment(model, user, runtime.getActiveAssignment(), solutionInputFileName, isWithAdminValidation);
         } else {
@@ -175,7 +204,7 @@ public class IndexController {
     private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String solutionInputFileName, boolean isWithValidation) {
         Team team = teamRepository.findByName(user.getName());
         CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, solutionInputFileName, isWithValidation);
-        codePage.saveFiles(competition.getCompetitionSession(), assignment, team);
+        codePage.saveFiles(competitionRuntime.getCompetitionSession(), assignment, team);
         codePage.saveAdminState(assignment);
     }
 
@@ -190,7 +219,7 @@ public class IndexController {
 
         //late signup
         if (as == null) {
-            as = competition.handleLateSignup(team);
+            as = competitionRuntime.handleLateSignup(team);
         }
 
         AssignmentStatusHelper ash = new AssignmentStatusHelper(as, state.getAssignmentDescriptor());
@@ -200,7 +229,7 @@ public class IndexController {
 				solutionInputFileName,
 				isWithAdminValidation && Role.isWithControleRole(
 						(KeycloakAuthenticationToken) user));
-		codePage.saveFiles(competition.getCompetitionSession(), state.getAssignment(), team);
+		codePage.saveFiles(competitionRuntime.getCompetitionSession(), state.getAssignment(), team);
         codePage.saveAssignmentDetails(state);
         codePage.saveTeamState(ash);
     }

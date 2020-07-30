@@ -5,6 +5,7 @@ import nl.moj.server.bootstrap.filter.BootstrapFilter;
 import nl.moj.server.runtime.BaseRuntimeTest;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
+@Ignore
 public class TaskControllerTest extends BaseRuntimeTest {
 
     @Autowired
@@ -54,6 +56,7 @@ public class TaskControllerTest extends BaseRuntimeTest {
 
     }
 
+    @Ignore
     @Test
     public void shouldWhen() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/login")
@@ -61,4 +64,6 @@ public class TaskControllerTest extends BaseRuntimeTest {
                 .param("password", "admin")
         );///.andExpect(MockMvcResultMatchers.redirectedUrl("/control"));
     }
+
+
 }

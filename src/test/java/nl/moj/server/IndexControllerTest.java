@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +30,7 @@ import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 
 @ExtendWith(MockitoExtension.class)
+@Ignore
 class IndexControllerTest {
 
 	@Mock

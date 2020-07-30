@@ -342,7 +342,9 @@ public class CompetitionRuntime {
                 .map(orderedAssignment -> teamService.getTeamAssignmentFiles(competitionModel.competitionSession, orderedAssignment.getAssignment(), team))
                 .orElse(Collections.emptyList());
     }
-
+    public AssignmentStatus handleLateSignup(Team team) {
+        return competitionModel.getAssignmentExecutionModel().initAssignmentForLateTeam(team);
+    }
     public AssignmentStatus handleLateSignup(Team team, UUID uuidInput, String nameInput) {
         UUID uuid   = competitionModel.getAssignmentExecutionModel().getCompetitionSession().getUuid();
         String name = competitionModel.getAssignmentExecutionModel().getOrderedAssignment().getAssignment().getName();

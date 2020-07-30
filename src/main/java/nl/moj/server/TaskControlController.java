@@ -460,7 +460,7 @@ public class TaskControlController {
             }
 
             model.addAttribute("sessions", sessions);
-            model.addAttribute("setting_registration_disabled", competitionService.isRegistrationFormDisabled());
+            model.addAttribute("setting_registration_disabled", true);
             model.addAttribute("sessionDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForSessions());
 
         }
@@ -512,7 +512,7 @@ public class TaskControlController {
             } else if (!passwordChangeRequest.newPassword.equals(passwordChangeRequest.newPasswordCheck)) {
                 errorMessage = "Password and confirmaton did not match";
             } else {
-                team.setPassword(competitionService.getEncoder().encode(passwordChangeRequest.newPassword));
+                //team.setPassword(competitionService.getEncoder().encode(passwordChangeRequest.newPassword));
                 teamRepository.save(team);
                 redirectAttributes.addFlashAttribute("success", "Successfully changed password");
                 return "redirect:/control";
