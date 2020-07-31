@@ -52,6 +52,7 @@ import org.springframework.ui.Model;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
@@ -107,6 +108,7 @@ public class IndexController {
     @GetMapping("/")
     public String index(Model model, @AuthenticationPrincipal Principal user,@ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
         if (user==null) {
+            model.addAttribute("isControlRole", isAdminUser(user));
             return "index";
         }
         CompetitionSession competitionSession = getSelectedCompetitionSession();
@@ -200,7 +202,11 @@ public class IndexController {
         model.addAttribute("isControlRole", isAdminUser(user));
         return "index";
     }
-
+    @PostMapping("/index/select-session")
+    public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
+        HttpUtil.setSelectedUserSession(ssf.getSession());
+        return "redirect:/";
+    }
     private void addModelDataForAdmin(Model model, Principal user, Assignment assignment, String solutionInputFileName, boolean isWithValidation) {
         Team team = teamRepository.findByName(user.getName());
         CodePageModelWrapper codePage = new CodePageModelWrapper(model, user, solutionInputFileName, isWithValidation);

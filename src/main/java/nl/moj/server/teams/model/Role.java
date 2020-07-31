@@ -33,6 +33,9 @@ public final class Role {
 	}
 	
 	public static boolean isWithControleRole(KeycloakAuthenticationToken user) {
+		if (user==null || user.getAuthorities()==null || user.getAuthorities().isEmpty()) {
+			return false;
+		}
 		return isWithControleRole(user
     			.getAuthorities().stream()
     			.map(GrantedAuthority::getAuthority)
