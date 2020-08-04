@@ -113,6 +113,7 @@ public class SubmitService {
         Assert.isTrue(activeAssignment.getCompetitionSession()!=null, "CompetitionSession missing");
         return activeAssignment;
     }
+
     private ActiveAssignment getActiveAssignmentValidate(Team team, SourceMessage message) {
         if (message.getUuid()==null) {
             return competitionRuntime.getActiveAssignment();
@@ -128,11 +129,12 @@ public class SubmitService {
             return activeAssignment;
         }
         CompetitionSession competitionSession = competitionRuntime.getCompetitionSession();
-        if (!message.getUuid().equals(competitionSession.getUuid().toString())) {
+        boolean isGlobalUuid = message.getUuid().equals(competitionSession.getUuid().toString());
+        if (!isGlobalUuid) {
             competitionSession = competitionSessionRepository.findByUuid(uuid);
         }
         Assignment assignment = assignmentRepository.findByName(message.getAssignmentName() );
-        List<AssignmentFile> fileList   = assignmentService.getAssignmentFiles(assignment);
+        List<AssignmentFile> fileList = assignmentService.getAssignmentFiles(assignment);
         AssignmentDescriptor assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
         Long timeLeft = Long.parseLong(message.getTimeLeft());
         Long timeElapsed = assignmentDescriptor.getDuration().toSeconds()-timeLeft;
@@ -142,7 +144,7 @@ public class SubmitService {
             long maxSubmitDelayAfterFinish = competitionSession.getDateTimeLastUpdate().plusSeconds(5*60).toEpochMilli();
             long timeDelta = message.getArrivalTime() - maxSubmitDelayAfterFinish;
 
-            if (timeDelta<0) {
+            if (isWithDelayedSubmitValidation(competitionSession, message)) {
                 isWithSubmitValidation = true ;
                 log.info(" user " + team.getName() + " submitted before max submit time ( milliseconds left : "+timeDelta+", attempt will be used).");
             } else {
@@ -160,6 +162,12 @@ public class SubmitService {
 
         return activeAssignment;
     }
+    public boolean isWithDelayedSubmitValidation(CompetitionSession competitionSession, SourceMessage message) {
+        long maxSubmitDelayAfterFinish = competitionSession.getDateTimeLastUpdate().plusSeconds(5*60).toEpochMilli();
+        long timeDelta = message.getArrivalTime() - maxSubmitDelayAfterFinish;
+        return timeDelta<0;
+    }
+
     private Assignment determineAssignment(Team team, SourceMessage message) {
         ActiveAssignment activeAssignment = getActiveAssignment(team, message);
         if (!team.getRole().equals(Role.ADMIN)) {
@@ -220,9 +228,9 @@ public class SubmitService {
         final ActiveAssignment activeAssignment = getActiveAssignment(team, message );
         final AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment
                 .getAssignment(), activeAssignment.getCompetitionSession(), team);
-        boolean isSubmitAllowedForTeam = isSubmitAllowedForTeam(as, activeAssignment);
+        boolean isSubmitAllowed = isSubmitAllowedForTeam(as, activeAssignment);
 
-        if (isSubmitAllowedForTeam) {
+        if (isSubmitAllowed) {
             messageService.sendSubmitStarted(team);
             SubmitAttempt sa = SubmitAttempt.builder()
                     .assignmentStatus(as)
