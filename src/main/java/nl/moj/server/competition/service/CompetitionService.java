@@ -88,6 +88,10 @@ public class CompetitionService {
         createNewTeam(form, Role.USER);
     }
     public void createNewTeam(SignupForm form, String role) {
+        SecurityContext context = SecurityContextHolder.getContext();
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(form.getName(), form
+                .getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.USER)));
+
         Team team = Team.builder()
                 .company(form.getCompany())
                 .country(form.getCountry())
@@ -96,6 +100,7 @@ public class CompetitionService {
                 .uuid(UUID.randomUUID())
                 .build();
 
+        context.setAuthentication(authentication);
         saveNewTeam(team);
     }
 

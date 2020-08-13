@@ -20,6 +20,7 @@ import java.io.File;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -147,10 +148,9 @@ public class IndexController {
         model.addAttribute("sessions", activeSessions);
         UUID input = HttpUtil.getSelectedUserSession( sessionUUID);
         log.debug("input " + input + " activeSessions " +activeSessions.size());
-        if (ssf!=null) {
-            ssf.setSession(input);
-        }
+        if (ssf!=null) ssf.setSession(input);
     }
+
     private void insertCompetitionSelector(Model model, TaskControlController.SelectSessionForm ssf,UUID sessionUUID) {
         List<CompetitionSession> sessions = competitionSessionRepository.findAll();
         List<CompetitionSession> activeSessions = new ArrayList<>();
@@ -261,8 +261,7 @@ public class IndexController {
                 log.info("solutionFile (token=" +solutionToken+ ")=" + solutionFile+ ", exist: " + solutionFile.exists() );
             }
             if (solutionFile.exists()) {
-				file = resolver.convertToAssignmentFile(file.getName(), solutionFile.toPath(), file.getBase(),
-						solutionFile.toPath(), AssignmentFileType.EDIT, false, file.getUuid());
+                file = resolver.convertToAssignmentFile(file.getName(), solutionFile.toPath(), file.getBase(), solutionFile.toPath(), AssignmentFileType.EDIT, false, file.getUuid());
             }
             return file;
         }

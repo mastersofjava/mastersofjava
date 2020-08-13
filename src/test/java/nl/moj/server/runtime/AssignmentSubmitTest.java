@@ -16,6 +16,8 @@
 */
 package nl.moj.server.runtime;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -40,7 +42,12 @@ import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
 import org.springframework.util.Assert;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.submit.SubmitResult;
+import nl.moj.server.submit.model.SourceMessage;
+import nl.moj.server.submit.service.SubmitService;
 
 /**
  * During integration testing this class is executed twice, one for sequential and one for parallel.

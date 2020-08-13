@@ -24,22 +24,12 @@ import org.keycloak.adapters.springsecurity.KeycloakConfiguration;
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
 import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.teams.model.Role;
-
-import lombok.AllArgsConstructor;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.teams.model.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,35 +38,35 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import lombok.AllArgsConstructor;
+import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.teams.model.Role;
+
 @Configuration
 @AllArgsConstructor
 public class WebConfiguration {
 
-	private MojServerProperties mojServerProperties;
+    private MojServerProperties mojServerProperties;
 
-	@Configuration
-	public class WebConfig implements WebMvcConfigurer {
+    @Configuration
+    public class WebConfig implements WebMvcConfigurer {
 
-		@Override
-		public void addResourceHandlers(ResourceHandlerRegistry registry) {
-			Path path = Paths.get(mojServerProperties.getDirectories().getJavadocDirectory());
-			if (!path.isAbsolute()) {
-				path = mojServerProperties.getDirectories().getBaseDirectory()
-						.resolve(mojServerProperties.getDirectories().getJavadocDirectory());
-			}
-			registry.addResourceHandler("/javadoc/**").addResourceLocations(path.toAbsolutePath().toUri().toString());
-		}
-	}
-    @Bean
-    public SessionRegistry sessionRegistry() {
-        return new SessionRegistryImpl();
+        @Override
+        public void addResourceHandlers(ResourceHandlerRegistry registry) {
+            Path path = Paths.get(mojServerProperties.getDirectories().getJavadocDirectory());
+            if (!path.isAbsolute()) {
+                path = mojServerProperties.getDirectories().getBaseDirectory()
+                        .resolve(mojServerProperties.getDirectories().getJavadocDirectory());
+            }
+            registry.addResourceHandler("/javadoc/**").addResourceLocations(path.toAbsolutePath().toUri().toString());
+        }
     }
-    @EnableWebSecurity
-	@KeycloakConfiguration
-	@EnableGlobalMethodSecurity(jsr250Enabled = true)
-	public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 
-		// Submits the KeycloakAuthenticationProvider to the AuthenticationManager
+    @KeycloakConfiguration
+    @EnableGlobalMethodSecurity(jsr250Enabled = true)
+    public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
+
+        // Submits the KeycloakAuthenticationProvider to the AuthenticationManager
         @Autowired
         public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
             KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
@@ -95,12 +85,12 @@ public class WebConfiguration {
             return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
         }
 
-		@Bean
-		public PasswordEncoder passwordEncoder() {
-			return new BCryptPasswordEncoder();
-		}
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+            return new BCryptPasswordEncoder();
+        }
 
-		@Override
+        @Override
         protected void configure(HttpSecurity http) throws Exception {
             super.configure(http);
             http.authorizeRequests()
@@ -110,5 +100,5 @@ public class WebConfiguration {
                     .and().headers().frameOptions().disable()
                     .and().csrf().disable();
         }
-	}
+    }
 }

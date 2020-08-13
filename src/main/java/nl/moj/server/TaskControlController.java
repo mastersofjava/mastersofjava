@@ -119,7 +119,6 @@ public class TaskControlController {
     }
 
     @MessageMapping("/control/stoptask")
-    @SendToUser("/queue/controlfeedback")
     public String stopTask() {
         competition.stopCurrentAssignment();
         ActiveAssignment state = competition.getActiveAssignment();
@@ -247,7 +246,7 @@ public class TaskControlController {
         }
         Competition newCompetition = new Competition();
         newCompetition.setUuid(UUID.randomUUID());
-        newCompetition.setName(message.getValue().trim());
+        newCompetition.setName(message.getValue());
         Competition registeredCompetition = competitionRepository.save(newCompetition);
         registeredCompetition.setAssignments(assignmentRepository.findAll()
                 .stream()
