@@ -1,0 +1,26 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  labels:
+    app: moj
+  name: moj
+  namespace: moj
+spec:
+  rules:
+  - host: moj.cloud.bliep.net
+    http:
+      paths:
+      - backend:
+          serviceName: moj
+          servicePort: 80
+        path: /
+  tls:
+  - hosts:
+    - moj.cloud.bliep.net
+    secretName: moj-cloud-bliep-net-certs
