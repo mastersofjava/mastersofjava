@@ -89,33 +89,7 @@ public class GamemasterJsonController {
         response.put("java.home", System.getProperties().get("java.home"));
         response.put("spring.datasource.driver-class-name", env.getProperty("spring.datasource.driver-class-name"));
         response.put("spring.datasource.url", env.getProperty("spring.datasource.url"));
-        response.put("competitionstatus", gamemasterTableComponents.createAssignmentStatusMap());
         response.put("isCompetitionMode", isCompetitionMode);
-
-        if (isCompetitionMode) {
-            response.put("activeAssignment", activeAssignment.getAssignment());
-            response.put("assignmentMetadata", activeAssignment.getAssignmentDescriptor());
-        } else if (activeAssignment != null) {
-            response.put("activeAssignment.getCompetitionSession", activeAssignment.getCompetitionSession());
-        }
-        response.put("principals, from session registry", sessionRegistry.getAllPrincipals());
-        HttpServletRequest request = HttpUtil.getCurrentHttpRequest();
-
-        List<String> nameList = Collections.list(request.getSession().getAttributeNames());
-        response.put("session", nameList);
-
-        for (String name : nameList) {
-            response.put("session." + name, request.getSession().getAttribute(name));
-            response.put("session.name." + name, request.getSession().getAttribute(name).getClass().getName());
-        }
-
-        SecurityContextImpl context = (SecurityContextImpl) request.getSession().getAttribute("SPRING_SECURITY_CONTEXT");
-        response.put("httpsession.user.name", HttpUtil.getCurrentHttpRequestUserName());
-        response.put("httpsession.user.principal", context.getAuthentication().getPrincipal());
-        response.put("httpsession.user.selectedSession", HttpUtil.getSelectedUserSession(null));
-        response.put("activeCompetition", competitionRuntime.getCompetition());
-        response.put("activeCompetitionSession", competitionRuntime.getCompetitionSession().getUuid());
-
         return response;
     }
 

@@ -269,7 +269,9 @@
                         </div>
                         <div class="p-2 col-6 roundGrayBorder">
                             <a class="btn btn-success" href="/getGameMasterState" target="getGameMasterState">Bekijk systeemstatus (export)</a><br/><br/>
-                            <a class="btn btn-success" href="/admin/systemState" target="systemState">Bekijk competitie uitvoering</a>
+                            <a class="btn btn-success" href="/admin/systemState" target="systemState">Bekijk competitie uitvoering</a><br/><br/>
+                            <a class="btn btn-success" th:if="${keycloackUrl.length()>0}"  th:href="${keycloackUrl}" target="Keykloack">Keykloack</a><br/><br/>
+
                         </div>
                     </div>
                     <br>

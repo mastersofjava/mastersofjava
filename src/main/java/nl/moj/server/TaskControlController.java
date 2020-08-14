@@ -457,8 +457,8 @@ public class TaskControlController {
                 model.addAttribute("repositoryLocation", competitionService.getSelectedLocation());
                 model.addAttribute("selectedYearLabel", this.selectedYearLabel);
             }
-
             model.addAttribute("sessions", sessions);
+            model.addAttribute("keycloackUrl", mojServerProperties.getAuthServerUrl());
             model.addAttribute("setting_registration_disabled", true);
             model.addAttribute("sessionDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForSessions());
 

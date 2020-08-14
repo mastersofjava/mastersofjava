@@ -29,7 +29,7 @@ public class UploadController {
         Assert.isTrue(file.getBytes().length<1000*1000,"max size of importfile exceeded");
     }
 
-    @PostMapping("/importUsers")
+    @PostMapping(value="/importUsers", consumes = {"multipart/form-data"})
     @RolesAllowed({Role.ADMIN})
     public String handleFileUpload(@RequestParam("file") MultipartFile file,
                                    RedirectAttributes redirectAttributes) {
