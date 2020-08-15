@@ -30,7 +30,7 @@ spec:
             - containerPort: 8080
           volumeMounts:
             - name: moj-data
-              mountPath: /moj-data
+              mountPath: /data
       volumes:
         - name: moj-data
           persistentVolumeClaim:
