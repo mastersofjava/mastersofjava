@@ -8,11 +8,6 @@ spec:
   selector:
     matchLabels:
       app: moj
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -21,7 +16,8 @@ spec:
       imagePullSecrets:
         - name: registry.cloud.bliep.net
       containers:
-        - name: nexus
+        - name: moj
+          imagePullPolicy: Always
           image: registry.cloud.bliep.net/moj/moj-game-server:latest
           resources:
             limits:
