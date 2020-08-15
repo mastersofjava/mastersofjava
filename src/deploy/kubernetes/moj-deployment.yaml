@@ -5,6 +5,8 @@ metadata:
   namespace: moj
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: moj
