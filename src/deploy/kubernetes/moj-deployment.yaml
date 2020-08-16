@@ -5,14 +5,11 @@ metadata:
   namespace: moj
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: moj
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -21,7 +18,8 @@ spec:
       imagePullSecrets:
         - name: registry.cloud.bliep.net
       containers:
-        - name: nexus
+        - name: moj
+          imagePullPolicy: Always
           image: registry.cloud.bliep.net/moj/moj-game-server:latest
           resources:
             limits:
@@ -34,7 +32,7 @@ spec:
             - containerPort: 8080
           volumeMounts:
             - name: moj-data
-              mountPath: /moj-data
+              mountPath: /data
       volumes:
         - name: moj-data
           persistentVolumeClaim:
