@@ -45,6 +45,7 @@ import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.util.HttpUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -390,6 +391,8 @@ public class TaskControlController {
             model.addAttribute("competitionName", competition.getCompetition().getShortName());
             model.addAttribute("isWithCompetitionStarted",false);
             model.addAttribute("nrOfUsersOnline", sessionRegistry.getAllPrincipals().size());
+            model.addAttribute("currentUserName", HttpUtil.getCurrentHttpRequestUserName());
+
             model.addAttribute("nrOfRunningCompetitions", activeCompetitions.size());
         }
         private void insertGamestatus(Model model) {

@@ -49,6 +49,7 @@ import nl.moj.server.teams.model.Role;
 public class WebConfiguration {
 
     private MojServerProperties mojServerProperties;
+    //private SessionRegistry sessionRegistry;
 
     @Configuration
     public class WebConfig implements WebMvcConfigurer {
@@ -63,7 +64,6 @@ public class WebConfiguration {
             registry.addResourceHandler("/javadoc/**").addResourceLocations(path.toAbsolutePath().toUri().toString());
         }
     }
-
     @Bean
     public SessionRegistry sessionRegistry() {
         return new SessionRegistryImpl();
@@ -105,6 +105,10 @@ public class WebConfiguration {
                     .anyRequest().permitAll()
                     .and().headers().frameOptions().disable()
                     .and().csrf().disable();
+
+            //http.sessionManagement().maximumSessions(1).sessionRegistry(sessionRegistry);
         }
+
+
     }
 }
