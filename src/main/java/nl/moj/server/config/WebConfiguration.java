@@ -100,9 +100,9 @@ public class WebConfiguration {
         protected void configure(HttpSecurity http) throws Exception {
             super.configure(http);
             http.authorizeRequests()
-                    .antMatchers("/home", "/feedback", "/rankings").hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
+                    .antMatchers("/play", "/feedback", "/rankings").hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
                     .antMatchers("/control", "/bootstrap","/assignmentAdmin").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
-                    .anyRequest().permitAll()
+                    .anyRequest().authenticated()
                     .and().headers().frameOptions().disable()
                     .and().csrf().disable();
 
