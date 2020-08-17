@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
-import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -47,7 +45,7 @@ class IndexControllerTest {
     private CompetitionService competitionService;
 	
     @InjectMocks
-    private IndexController indexController;
+    private GameController indexController;
     
 	@Test
 	void testIndexNoUser() {
