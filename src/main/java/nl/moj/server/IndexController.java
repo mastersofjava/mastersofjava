@@ -106,12 +106,12 @@ public class IndexController {
         return result;
     }
 
-    @GetMapping("/")
+    @GetMapping("/play")
     public String index(Model model, @AuthenticationPrincipal Principal user,@ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
         log.info("user " +user);
         if (user==null) {
             model.addAttribute("isControlRole", isAdminUser(user));
-            return "index";
+            return "play";
         }
 		// The admin user should be created with the bootstrap
         boolean isWithExistingKcUser = doesUserExist(user);
@@ -131,10 +131,10 @@ public class IndexController {
         }
         if (!isAvailableAssignment ) {
             model.addAttribute("team", user.getName());
-            return "index";
+            return "play";
         }
         addModelDataForUserWithAssignment(model, user, competitionRuntime.getActiveAssignment());
-        return "index";
+        return "play";
     }
 
 	private void createNewTeam(Principal user) {
@@ -208,7 +208,7 @@ public class IndexController {
         }
         insertCompetitionSelector(model, ssf, runtime.getCompetitionSession().getUuid());
         model.addAttribute("isControlRole", isAdminUser(user));
-        return "index";
+        return "play";
     }
     @PostMapping("/index/select-session")
     public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
