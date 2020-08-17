@@ -66,7 +66,7 @@ import java.util.UUID;
 @Slf4j
 @Controller
 @AllArgsConstructor
-public class IndexController {
+public class GameController {
 
     private CompetitionRuntime competitionRuntime;
     private TeamRepository teamRepository;
@@ -306,6 +306,8 @@ public class IndexController {
             model.addAttribute("submits", ash.getRemainingSubmits());
             model.addAttribute("solution", isWithInsertSolution);
             model.addAttribute("submitDisabled", isCompleted);
+            model.addAttribute("isWithValidation", isWithValidation);
+
         }
 
         private List<AssignmentFile> filterUnitTestsFromInputFiles() {
