@@ -234,7 +234,7 @@ public class CompetitionService {
     }
     public File getLocationByYear(int year) {
         File defaultLocation = mojServerProperties.getAssignmentRepo().toFile();
-
+        defaultLocation.mkdirs();
         String token = ""+year  +"-";
         for (File file: locationList()) {
             if (file.getName().startsWith(token)) {
@@ -259,6 +259,7 @@ public class CompetitionService {
         List<File> locationList = new ArrayList<>();
         File defaultLocation = mojServerProperties.getAssignmentRepo().toFile();
         if (!defaultLocation.exists()||!defaultLocation.getParentFile().isDirectory()) {
+            mojServerProperties.getAssignmentRepo().toFile().mkdirs();
             return locationList;
         }
         return Arrays.stream(defaultLocation.getParentFile().listFiles())

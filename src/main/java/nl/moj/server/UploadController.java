@@ -60,6 +60,7 @@ public class UploadController {
 
     private void validateValidZipFileForLocation(MultipartFile file) {
         Assert.isTrue(file.getContentType().contains("zip"),"invalid contenttype " +file.getContentType());
+        mojServerProperties.getAssignmentRepo().toFile().mkdirs();
         Assert.isTrue(mojServerProperties.getAssignmentRepo().toFile().exists(),"location invalid " +mojServerProperties.getAssignmentRepo());
     }
     private void validateValidAssignmentStorage(String name) {
@@ -73,6 +74,9 @@ public class UploadController {
                                    RedirectAttributes redirectAttributes) {
         try {
             validateImportedSmallFile(file);
+            if (!mojServerProperties.getAssignmentRepo().toFile().exists()) {
+                mojServerProperties.getAssignmentRepo().toFile().mkdirs();
+            }
 
             validateValidZipFileForLocation(file);
             validateValidAssignmentStorage(file.getOriginalFilename());
