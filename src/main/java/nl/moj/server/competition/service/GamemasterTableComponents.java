@@ -678,6 +678,7 @@ public class GamemasterTableComponents {
                 String title = descriptor.getDisplayName()+ " - VIEW LABELS FOR MORE DETAILS";
                 String author = createShortAuthorColumn(descriptor);
                 long duration = descriptor.getDuration().toMinutes();
+
                 String selectionBox = toSelectionBox(descriptor.getLabels());
                 String postfix = createAssignmentWarningIfNeeded(descriptor);
                 List<Path> list = descriptor.getAssignmentFiles().getSolution();
@@ -707,7 +708,10 @@ public class GamemasterTableComponents {
         private String createBonusInfo(AssignmentDescriptor descriptor) {
             boolean isWithHiddenTests = !descriptor.getAssignmentFiles().getTestSources().getHiddenTests().isEmpty();
             String bonus = "" + descriptor.getScoringRules().getSuccessBonus() ;
-            boolean isWithIndividualTestBonus = descriptor.getLabels().toString().contains("[test");
+            boolean isWithIndividualTestBonus = false;
+            if (descriptor.getLabels()!=null) {
+                isWithIndividualTestBonus = descriptor.getLabels().toString().contains("[test");
+            }
             if (isWithHiddenTests) {
                 File directory = descriptor.getDirectory().toFile();
                 File hiddenTestFile = new File(directory, "src/test/java/" +descriptor.getAssignmentFiles().getTestSources().getHiddenTests().get(0).toFile().getName());
@@ -727,6 +731,9 @@ public class GamemasterTableComponents {
             return bonus;
         }
         private String createAssignmentWarningIfNeeded(AssignmentDescriptor descriptor) {
+            if (descriptor.getLabels()==null) {
+                return "";
+            }
             boolean isNotReady = descriptor.getLabels().contains("not-ready")||descriptor.getLabels().contains("label1")||descriptor.getLabels().contains("label2");
             boolean isNotForCompetition = descriptor.getLabels().contains("internet-searchable");
             String postfix = "";
@@ -755,6 +762,9 @@ public class GamemasterTableComponents {
             return author;
         }
         private String toSelectionBox(List<String> list) {
+            if (list==null) {
+                return "";
+            }
             StringBuilder sb = new StringBuilder();
             sb.append("<select >");
             for (String item: list) {

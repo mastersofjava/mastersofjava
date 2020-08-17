@@ -228,7 +228,7 @@
                         </div>
                         <div class="p-2 col-5 roundGrayBorder" th:if="${locationList.size()>0}">
                             <h6>Inladen van opdrachten</h6>
-                                &nbsp;&nbsp;<sup>(# locaties beschikbaar op server: [[${locationList.size()}]])</sup>
+                                &nbsp;&nbsp;<sup th:title="${repositoryLocation.getPath()}">(# locaties beschikbaar op server: [[${locationList.size()}]])</sup>
                         </div>
                         <div class="p-2 col-6 roundGrayBorder" th:if="${locationList.size()>=0}">
                             <select class="p-2" th:disabled="${locationList.size()==1 || runningSelectedCompetition}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
@@ -243,6 +243,28 @@
                     </div>
                     <br/><br/>
                     <div class="row">
+                        <div class="p-2 col-5 roundGrayBorder" >
+                            <h6>U kunt nieuwe opdrachtcollecties als zip-file uploaden</h6><br/>
+                                &nbsp;<sup>(let op:
+                            - hiermee kunt u eventueel bestaande opdrachtcollecties overschrijven
+                            - het invoerbestand moet beginnen met een (jaar)getal en het woord assignments bevatten (bv 2018-assignments.zip)</sup>
+                        </div>
+                        <div class="p-2 col-6 roundGrayBorder">
+
+                            <form method="POST" action="/importAssignments" enctype="multipart/form-data" title="importeer een opdrachtenset">
+
+                                <div class="row p-2 m-2">
+                                    Stap 1. selecteer zip-file:&nbsp;&nbsp;&nbsp; <input id="file" type="file" name="file"/>
+                                </div>
+                                <div class="row p-2 m-2">
+                                    Stap 2. &nbsp;<input class="btn btn-primary minWidth200" type="submit" value="upload assignments"/>
+                                </div>
+                            </form>
+
+                        </div>
+                    </div>
+                    <br/><br/>
+                    <div class="row">
                         <div class="p-2 col-5 roundGrayBorder">
                             <h6>Importeer teamdata</h6>
                             &nbsp;&nbsp;<sup>voor het bijwerken van deelnemers</sup>
@@ -252,10 +274,10 @@
                             <form method="POST" action="/importUsers" enctype="multipart/form-data" title="importeer teamdata">
 
                                 <div class="row p-2 m-2">
-                                    Stap 1. &nbsp;<input id="file" type="file" name="file"/>
+                                    Stap 1. selecteer csv-file:&nbsp;&nbsp;&nbsp;<input id="file" type="file" name="file"/>
                                 </div>
                                 <div class="row p-2 m-2">
-                                    Stap 2. &nbsp;<input class="btn btn-primary minWidth200" type="submit" value="upload"/>
+                                    Stap 2. &nbsp;<input class="btn btn-primary minWidth200" type="submit" value="upload users"/>
                                 </div>
                             </form>
 
