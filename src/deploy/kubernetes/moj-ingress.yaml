@@ -20,7 +20,15 @@ spec:
           serviceName: moj
           servicePort: 80
         path: /
+  - host: game.moj.first8.nl
+    http:
+      paths:
+      - backend:
+          serviceName: moj
+          servicePort: 80
+        path: /
   tls:
   - hosts:
     - moj.cloud.bliep.net
+    - game.moj.first8.nl
     secretName: moj-cloud-bliep-net-certs
