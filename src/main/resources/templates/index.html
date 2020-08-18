@@ -4,48 +4,28 @@
     <meta charset="UTF-8"/>
 
     <title>Masters of Java - Startpage</title>
-
-
-    <link rel="manifest" href="/static/manifest.json"/>
-    <meta name="theme-color" content="#ffffff"/>
-
-    <style type="text/css">
-        ol a {
-            text-decoration: none;
-        }
-        a:hover {
-           background-color: yellow;
-        }
-    </style>
+    <link rel="stylesheet" th:href="@{/public/css/index.css}"/>
 </head>
 <body>
-<h3>Welcome to the Masters Of Java demo on 18-08!</h3>
-
-<h3>Navigate:</h3>
-<ol>
-    <li>
-        <a href="/assignmentAdmin?assignment=HexagonalChess&solution">exercise with sample solution</a>
-    </li>
-    <li>
-        <a href="/play">enter our game zone</a>
-    </li>
-    <li>
-        <a href="/rankings">view scores</a>
-    </li>
-    <li>
-        <a href="/feedback">view back actions on current assignment</a>
-    </li>
-    <li>
-        <a href="/control">origanize our game zone</a>
-    </li>
-</ol>
-
-<iframe width="500" height="300" src="https://www.youtube.com/embed/CcxUbPsCPdQ" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-<br>
-<img width="500" height="300" src="https://upload.wikimedia.org/wikipedia/commons/8/84/Hexagonal_chess.svg">
-<br>
-<img width="500" height="300" src="https://www.completecircledigitalmarketing.com/wp-content/uploads/2020/03/SEO_Best_Practices_2020.jpg">
-
-
+<div class="fc">
+    <div class="row">
+        <img class="logo" th:src="@{/public/images/moj_logo.png}"/>
+    </div>
+    <div class="row">
+        <h1>Masters Of Java 2020 Closed Beta Sessions</h1>
+    </div>
+    <div class="row">
+        <p class="para">Welcome to the Masters of Java 2020 Closed Beta Session. Have a look at the intro movie below to get an idea
+            on what to expect. When you are ready to join the game click the Play Now button.</p>
+    </div>
+    <div class="row">
+        <iframe width="500" height="300" src="https://www.youtube.com/embed/CcxUbPsCPdQ" frameborder="0"
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+    </div>
+    <div class="row">
+        <a href="/play"><img class="button play" th:src="@{/public/images/play-now.png}"></a>
+    </div>
+</div>
 </body>
 </html>
