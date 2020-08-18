@@ -3,6 +3,7 @@ package nl.moj.server.restcontrollers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.JavaAssignmentFileResolver;
 import nl.moj.server.runtime.model.AssignmentFile;
@@ -44,6 +45,8 @@ public class PerformanceValidationController {
     @Autowired
     private Environment env;
 
+    private final MojServerProperties mojServerProperties;
+
     private final CompetitionRuntime competitionRuntime;
 
     private final TeamRepository teamRepository;
@@ -53,7 +56,7 @@ public class PerformanceValidationController {
     private final AssignmentService assignmentService;
 
     private boolean isEnvironmentForDevelopment() {
-        return Arrays.asList(env.getActiveProfiles()).contains("local");
+        return Arrays.asList(env.getActiveProfiles()).contains("local")||mojServerProperties.isPerformanceValidation();
     }
     private AgentStartupCache agentStartupCache = new AgentStartupCache();
 
@@ -243,6 +246,7 @@ public class PerformanceValidationController {
     public @ResponseBody
     Map<String, Object> doExecuteAgents() {
         Assert.isTrue(isEnvironmentForDevelopment(),"unauthorized");
+
         Assert.isTrue(competitionRuntime.getCurrentRunningAssignment()!=null,"unready");
 
         PerformanceValidation performanceValidation = new PerformanceValidation(10);
@@ -256,7 +260,7 @@ public class PerformanceValidationController {
     @GetMapping(value = "/admin/executeAgent", produces = MediaType.APPLICATION_JSON_VALUE)
     public @ResponseBody
     Map<String, Object> doExecuteOneAgentByJMeter() {
-        Assert.isTrue(isEnvironmentForDevelopment(),"unauthorized");// nb deze methode is aanroepbaar via JMeter, alleen op localhost.
+        Assert.isTrue(mojServerProperties.isPerformanceValidation(),"not activated");// nb deze methode is aanroepbaar via JMeter, alleen indien geconfigureerd.
         boolean isWithProblem = Boolean.parseBoolean(HttpUtil.getParam("problem","false"));
         if (HttpUtil.hasParam("reset_cache")) { // explicit reset of rundata by admin
             agentStartupCache = new AgentStartupCache();

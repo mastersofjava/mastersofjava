@@ -33,6 +33,8 @@ public class MojServerProperties {
 
     private String authServerUrl;
 
+    private boolean performanceValidation;
+
     public String getAuthServerUrl() {
         return StringUtils.isEmpty(authServerUrl)?"":authServerUrl;
     }

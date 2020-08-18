@@ -1,6 +1,7 @@
 moj:
   server:
     assignment-repo: /tmp/assignments
+    performance-validation: true
     languages:
       java-versions:
         - version: 8
