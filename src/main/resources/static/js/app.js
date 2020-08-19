@@ -195,10 +195,9 @@ function initializeCodeMirrors() {
             texts.push(this);
             var isTask = type === 'TASK';
             var isReadOnly = $(this).attr('data-cm-readonly') === 'true';
-
             var cm = CodeMirror.fromTextArea(this, {
                 lineNumbers: true,
-                mode: isTask ? 'text/plain' : "text/x-java",
+                mode: isTask ? 'text/x-markdown' : "text/x-java",
                 matchBrackets: true,
                 readOnly: isReadOnly
             });
