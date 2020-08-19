@@ -5,53 +5,71 @@ $(document).ready(function () {
     clientOnload();
 });
 
-
-
 function connect() {
-    var socket = new WebSocket(
-        ((window.location.protocol === "https:") ? "wss://" : "ws://")
-        + window.location.hostname
-        + ':' + window.location.port
-        + '/control/websocket');
-    window.stompClient = Stomp.over(socket);
-    stompClient.debug = null;
-    stompClient.connect({}, function (frame) {
+    window.stompClient = new StompJs.Client({
+        brokerURL: ((window.location.protocol === "https:") ? "wss://" : "ws://")
+            + window.location.hostname
+            + ':' + window.location.port
+            + "/control/websocket",
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000
+    });
+
+    stompClient.onConnect = function(frame) {
         console.log('Connected to control');
         console.log('Subscribe to /user/queue/controlfeedback');
-        stompClient.subscribe('/user/queue/controlfeedback', function (msg) {
-            console.log("/user/queue/controlfeedback ");
-            showAlert(msg.body);
-            if (msg.body.indexOf('reload')!==-1) {
-                reloadPage();
-            }
-        });
-        stompClient.subscribe('/queue/controlfeedback', function(msg){
-            console.log("/queue/controlfeedback ");
-            console.log(msg);
-            var m = JSON.parse(msg.body);
-            showAlert('['+m.assignment +'] ' + m.cause);
-        });
+        stompClient.subscribe('/user/queue/controlfeedback',
+            function (msg) {
+                console.log("/user/queue/controlfeedback ");
+                showAlert(msg.body);
+                if (msg.body.indexOf('reload')!==-1) {
+                    reloadPage();
+                }
+                msg.ack();
+            },
+            {ack: 'client'});
+        stompClient.subscribe('/queue/controlfeedback',
+            function(msg){
+                console.log("/queue/controlfeedback ");
+                console.log(msg);
+                var m = JSON.parse(msg.body);
+                showAlert('['+m.assignment +'] ' + m.cause);
+                msg.ack();
+            },
+            {ack: 'client'});
         console.log('Subscribe to /control/queue/time');
-        stompClient.subscribe('/queue/time', function (taskTimeMessage) {
-            console.log("/queue/time");
-            var message = JSON.parse(taskTimeMessage.body);
-            if (clock) {
-                clock.sync(message.remainingTime, message.totalTime);
-            }
-        });
+        stompClient.subscribe('/queue/time',
+            function (msg) {
+                console.log("/queue/time");
+                var message = JSON.parse(msg.body);
+                if (clock) {
+                    clock.sync(message.remainingTime, message.totalTime);
+                }
+                msg.ack();
+            },
+            {ack: 'client'});
         console.log('subscribe to /control/queue/start');
-        stompClient.subscribe('/queue/start', function (msg) {
-            console.log("/queue/start");
-            reloadPage();
-        });
+        stompClient.subscribe('/queue/start',
+            function (msg) {
+                console.log("/queue/start");
+                reloadPage();
+                msg.ack();
+            },
+            {ack: 'client'});
         console.log('subscribe to /control/queue/stop');
-        stompClient.subscribe('/queue/stop', function (msg) {
-            console.log("/queue/stop");
-            if (clock) {
-                clock.stop();
-            }
-        });
-    });
+        stompClient.subscribe('/queue/stop',
+            function (msg) {
+                console.log("/queue/stop");
+                if (clock) {
+                    clock.stop();
+                }
+                msg.ack();
+            },
+            {ack: 'client'});
+    };
+
+    stompClient.activate();
 }
 
 function reloadPage() {
@@ -142,7 +160,7 @@ function clientSend(destinationUri, taskMap) {
     console.log('clientSend '+ destinationUri);
     console.log(taskMap);
     if (stompClient.connected) {
-        stompClient.send(destinationUri, {}, JSON.stringify(taskMap));
+        stompClient.publish({destination: destinationUri, body: JSON.stringify(taskMap)})
     } else {
         showAlert('Uw connectie is verlopen, dus uw pagina wordt opnieuw geladen');
         reloadPage();

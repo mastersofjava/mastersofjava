@@ -21,7 +21,7 @@
     <meta name="theme-color" content="#ffffff">
 
     <script type="application/javascript" >
-        isWithValidation = [[${isWithValidation}]];
+        isWithValidation = [[${isWithValidation != null ? isWithValidation : false}]];
     </script>
 </head>
 
@@ -305,7 +305,7 @@
 <script type="text/javascript" th:src="@{/webjars/codemirror/addon/selection/active-line.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/codemirror/addon/hint/show-hint.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/codemirror/mode/clike/clike.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/stomp__stompjs/bundles/stomp.umd.min.js}"></script>
 
 <script type="text/javascript" th:src="@{/js/clock.js}"></script>
 <script type="text/javascript" th:src="@{/js/app.js}"></script>

@@ -231,7 +231,7 @@
                                 &nbsp;&nbsp;<sup th:title="${repositoryLocation.getPath()}">(# locaties beschikbaar op server: [[${locationList.size()}]])</sup>
                         </div>
                         <div class="p-2 col-6 roundGrayBorder" th:if="${locationList.size()>=0}">
-                            <select class="p-2" th:disabled="${locationList.size()==1 || runningSelectedCompetition}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
+                            <select class="p-2" th:disabled="${runningSelectedCompetition}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
                                 <option value="">Selecteer een ander jaar</option>
                                 <option th:each="team : ${locationList}" th:value="${team.getName()}"
                                         th:text="${team.getName()}" th:selected="${team.getName().equals(repositoryLocation.getName())}"></option>
@@ -255,7 +255,7 @@
                             <form method="POST" action="/importAssignments" enctype="multipart/form-data" title="importeer een opdrachtenset">
 
                                 <div class="row p-2 m-2">
-                                    Stap 1. selecteer zip-file:&nbsp;&nbsp;&nbsp; <input id="file" type="file" name="file"/>
+                                    Stap 1. selecteer zip-file:&nbsp;&nbsp;&nbsp; <input id="zipfile" type="file" name="file"/>
                                 </div>
                                 <div class="row p-2 m-2">
                                     Stap 2. &nbsp;<input class="btn btn-primary minWidth200" type="submit" value="upload assignments"/>
@@ -275,7 +275,7 @@
                             <form method="POST" action="/importUsers" enctype="multipart/form-data" title="importeer teamdata">
 
                                 <div class="row p-2 m-2">
-                                    Stap 1. selecteer csv-file:&nbsp;&nbsp;&nbsp;<input id="file" type="file" name="file"/>
+                                    Stap 1. selecteer csv-file:&nbsp;&nbsp;&nbsp;<input id="csvfile" type="file" name="file"/>
                                 </div>
                                 <div class="row p-2 m-2">
                                     Stap 2. &nbsp;<input class="btn btn-primary minWidth200" type="submit" value="upload users"/>
@@ -428,7 +428,7 @@
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/stomp__stompjs/bundles/stomp.umd.min.js}"></script>
 
 <script type="text/javascript" th:src="@{/js/clock.js}"></script>
 <script type="text/javascript" th:src="@{/js/taskcontrol.js}"></script>

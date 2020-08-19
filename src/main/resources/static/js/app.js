@@ -13,15 +13,20 @@ $(document).ready(function () {
 });
 
 function connectCompetition() {
-    var socket = new WebSocket(
-        ((window.location.protocol === "https:") ? "wss://" : "ws://")
-        + window.location.hostname
-        + ':' + window.location.port
-        + "/ws/competition/websocket");
-    stomp = Stomp.over(socket);
-    stomp.debug = null;
-    stomp.connect({}, function (frame) {
+    stomp = new StompJs.Client({
+        brokerURL: ((window.location.protocol === "https:") ? "wss://" : "ws://")
+            + window.location.hostname
+            + ':' + window.location.port
+            + "/ws/competition/websocket",
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000
+    });
+
+    stomp.onConnect = function(frame) {
         $('#status').append('<span>Connected</span>');
+        // Do something, all subscribes must be done is this callback
+        // This is needed because this will be executed after a (re)connect
         stomp.subscribe('/user/queue/competition',
             function (data) {
                 var msg = JSON.parse(data.body);
@@ -35,79 +40,95 @@ function connectCompetition() {
                 if (userHandlers.hasOwnProperty(msg.messageType)) {
                     userHandlers[msg.messageType](msg);
                 }
-            });
+                data.ack();
+            },
+            {ack: 'client'});
         stomp.subscribe("/queue/competition",
             function (data) {
                 var msg = JSON.parse(data.body);
                 if (competitionHandlers.hasOwnProperty(msg.messageType)) {
                     competitionHandlers[msg.messageType](msg);
                 }
-            });
-    });
+                data.ack();
+            },
+            {ack: 'client'});
 
-    userHandlers = {};
-    userHandlers['COMPILE'] = function (msg) {
-        enable();
-        appendOutput(msg.message);
-    };
-    userHandlers['COMPILING_STARTED'] = function (msg) {
-        updateOutputHeaderColorActionStarted();
-    };
-    userHandlers['COMPILING_ENDED'] = function (msg) {
-        updateOutputHeaderColorActionEnded(msg.success);
-    };
-    userHandlers['TEST'] = function (msg) {
-        enable();
-        appendOutput(msg.test + ':\r\n' + msg.message);
-    };
-    userHandlers['TESTING_STARTED'] = function (msg) {
-        updateOutputHeaderColorActionStarted();
-    };
-    userHandlers['TESTING_ENDED'] = function (msg) {
-        updateOutputHeaderColorActionEnded(msg.success);
-    };
-    userHandlers['SUBMIT'] = function (msg) {
-        if (!msg.success && msg.remainingSubmits > 0) {
+        const userHandlers = {};
+        userHandlers['COMPILE'] = function (msg) {
             enable();
-        } else {
-            disable();
-        }
-        updateSubmits(msg.remainingSubmits);
-        updateAlertContainerWithScore(msg);
-    };
-
-    competitionHandlers = {};
-    competitionHandlers['TIMER_SYNC'] = function (msg) {
-        lastMessage = msg;
-        if (clock && isSessionValid(msg)) {
-            clock.sync(msg.remainingTime, msg.totalTime);
-            clock.isPaused = !msg.running;
-            if (msg.remainingTime===0) {
+            appendOutput(msg.message);
+        };
+        userHandlers['COMPILING_STARTED'] = function (msg) {
+            updateOutputHeaderColorActionStarted();
+        };
+        userHandlers['COMPILING_ENDED'] = function (msg) {
+            updateOutputHeaderColorActionEnded(msg.success);
+        };
+        userHandlers['TEST'] = function (msg) {
+            enable();
+            appendOutput(msg.test + ':\r\n' + msg.message);
+        };
+        userHandlers['TESTING_STARTED'] = function (msg) {
+            updateOutputHeaderColorActionStarted();
+        };
+        userHandlers['TESTING_ENDED'] = function (msg) {
+            updateOutputHeaderColorActionEnded(msg.success);
+        };
+        userHandlers['SUBMIT'] = function (msg) {
+            if (!msg.success && msg.remainingSubmits > 0) {
+                enable();
+            } else {
                 disable();
             }
-        } else {
-            console.log('timer msg retrieved:' +msg.sessionId + " " + msg.remainingTime + ' ' +$('#sessions').val());
-        }
-    };
-    competitionHandlers['START_ASSIGNMENT'] = function (msg) {
-        window.setTimeout(function () {
+            updateSubmits(msg.remainingSubmits);
+            updateAlertContainerWithScore(msg);
+        };
+
+        const competitionHandlers = {};
+        competitionHandlers['TIMER_SYNC'] = function (msg) {
+            let lastMessage = msg;
+            if (clock && isSessionValid(msg)) {
+                clock.sync(msg.remainingTime, msg.totalTime);
+                clock.isPaused = !msg.running;
+                if (msg.remainingTime===0) {
+                    disable();
+                }
+            } else {
+                console.log('timer msg retrieved:' +msg.sessionId + " " + msg.remainingTime + ' ' +$('#sessions').val());
+            }
+        };
+        competitionHandlers['START_ASSIGNMENT'] = function (msg) {
+            window.setTimeout(function () {
+                if (isSessionValid(msg)) {
+                    window.location.reload()
+                }
+            }, 10);
+        };
+        competitionHandlers['STOP_ASSIGNMENT'] = function (msg) {
             if (isSessionValid(msg)) {
-                window.location.reload()
+                disable();
+                if (clock) {
+                    clock.stop();
+                }
             }
-        }, 10);
-    };
-    competitionHandlers['STOP_ASSIGNMENT'] = function (msg) {
-        if (isSessionValid(msg)) {
-            disable();
-            if (clock) {
-                clock.stop();
-            }
+        };
+        if (window.isWithValidation) {
+            window.setTimeout('doUserActionTest();',1000);
         }
     };
-    if (window.isWithValidation) {
-        window.setTimeout('doUserActionTest();',1000);
-    }
+
+    stomp.onStompError = function (frame) {
+        // Will be invoked in case of error encountered at Broker
+        // Bad login/passcode typically will cause an error
+        // Complaint brokers will set `message` header with a brief message. Body may contain details.
+        // Compliant brokers will terminate the connection after any error
+        console.log('Broker reported error: ' + frame.headers['message']);
+        console.log('Additional details: ' + frame.body);
+    };
+
+    stomp.activate();
 }
+
 function isSessionValid(msg) {
     return msg.sessionId==null || $('#sessions').val()===msg.sessionId;
 }
@@ -282,7 +303,7 @@ function doUserActionCompile() {
     appendOutput("Compiling ....");
     showOutput();
     activeAction = "COMPILE";
-    stomp.send("/app/submit/compile", {}, JSON.stringify({
+    publish("/app/submit/compile", JSON.stringify({
         'sources': getContent(),
         'assignmentName': assignmentName,
         'uuid': $('#sessions').val(),
@@ -299,7 +320,7 @@ function doUserActionTest() {
     }).get();
     showOutput();
     activeAction = "TEST";
-    stomp.send("/app/submit/test", {}, JSON.stringify({
+    publish("/app/submit/test", JSON.stringify({
         'sources': getContent(),
         'tests': tests,
         'assignmentName': assignmentName,
@@ -351,7 +372,7 @@ function doUserActionSubmit() {
     resetOutput();
     showOutput();
     activeAction = "SUBMIT";
-    stomp.send("/app/submit/submit", {}, JSON.stringify({
+    publish("/app/submit/submit", JSON.stringify({
         'sources': getContent(),
         'uuid': $('#sessions').val(),
         'assignmentName': assignmentName,
@@ -376,4 +397,8 @@ function showSubmitDetails() {
 
 function updateSubmits(count) {
     $('#submits').text(count);
+}
+
+function publish( destination, body ) {
+    stomp.publish({destination: destination, body: body});
 }

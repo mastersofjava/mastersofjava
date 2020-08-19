@@ -11,55 +11,83 @@ $(document).ready(function () {
 
 function connect() {
 
-    var socket = new WebSocket(
-        ((window.location.protocol === "https:") ? "wss://" : "ws://")
-        + window.location.hostname
-        + ':' + window.location.port
-        + '/rankings/websocket');
-    stompClient = Stomp.over(socket);
-    stompClient.debug = null;
-    stompClient.connect({}, function (frame) {
+    stompClient = new StompJs.Client({
+        brokerURL: ((window.location.protocol === "https:") ? "wss://" : "ws://")
+            + window.location.hostname
+            + ':' + window.location.port
+            + "/rankings/websocket",
+        debug: function (str) {
+            console.log(str);
+        },
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000
+    });
+
+    stompClient.onConnect(function (frame) {
         console.log('Connected to rankings');
         console.log('Subscribe to /rankings/queue/rankings');
-        stompClient.subscribe('/queue/rankings', function (messageOutput) {
-            window.location.reload();
-        });
+        stompClient.subscribe('/queue/rankings',
+            function (msg) {
+                window.location.reload();
+                msg.ack();
+            },
+            {ack: 'client'});
     });
+
+    stompClient.activate();
 }
 
 function connectControl() {
-    var socket = new WebSocket(
-        ((window.location.protocol === "https:") ? "wss://" : "ws://")
-        + window.location.hostname
-        + ':' + window.location.port
-        + '/control/websocket');
-    stompControlClient = Stomp.over(socket);
-    stompControlClient.debug = null;
-    stompControlClient.connect({}, function (frame) {
+    stompControlClient = new StompJs.Client({
+        brokerURL: ((window.location.protocol === "https:") ? "wss://" : "ws://")
+            + window.location.hostname
+            + ':' + window.location.port
+            + "/control/websocket",
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000
+    });
+
+    stompControlClient.onConnect = function(frame) {
         console.log('Connected to control');
         console.log('Subscribe to /control/queue/time');
-        stompControlClient.subscribe('/queue/time', function (taskTimeMessage) {
-            var message = JSON.parse(taskTimeMessage.body);
-            if (clock) {
-                clock.sync(message.remainingTime, message.totalTime);
-            }
-        });
+        stompControlClient.subscribe('/queue/time',
+            function (msg) {
+                var message = JSON.parse(msg.body);
+                if (clock) {
+                    clock.sync(message.remainingTime, message.totalTime);
+                }
+                msg.ack();
+            },
+            {ack: 'client'});
         console.log('subscribe to /control/queue/start');
-        stompControlClient.subscribe('/queue/start', function (msg) {
-            window.location.reload();
-        });
+        stompControlClient.subscribe('/queue/start',
+            function (msg) {
+                window.location.reload();
+                msg.ack();
+            },
+            {ack: 'client'});
         console.log('subscribe to /control/queue/stop');
-        stompControlClient.subscribe('/queue/stop', function (msg) {
-            if (clock) {
-                clock.stop();
-            }
-        });
-    });
+        stompControlClient.subscribe('/queue/stop',
+            function (msg) {
+                if (clock) {
+                    clock.stop();
+                }
+                msg.ack();
+            },
+            {ack: 'client'});
+    };
+
+    stompControlClient.activate();
 }
 
 function disconnect() {
     if (stompClient != null) {
-        stompClient.disconnect();
+        stompClient.deactivate();
+    }
+    if( stompControlClient != null ) {
+        stompControlClient.deactivate();
     }
 }
 
