@@ -10,7 +10,26 @@ $(document).ready(function () {
 
     initializeAssignmentClock();
     initializeCodeMirrors();
+    $( window ).resize(function() {
+        doResizeCodingPanel();
+    });
+    window.setTimeout('$( window ).resize();',200);
 });
+
+/**
+ * Ensures responsivity of all CodeMirror tabs (triggered via window resize)
+ * nb. CodeMirror does not support responsivity and the first tab (with assignment description ) should have large font.
+ */
+function doResizeCodingPanel() {
+    var windowSize = $(window).height();
+    var headerSize = $('#content h3').height()+$('ul.nav-tabs').height();
+    var footerSize = $('.footer').height();
+    var codePanelSize = windowSize-headerSize-footerSize-35;
+    window.codePanelList = $('.CodeMirror.cm-s-default.ui-resizable');
+    $(window.codePanelList[0]).css('font-size','18px');// assignment description should have larger font.
+    window.codePanelList.css('height',codePanelSize);
+    console.log('codePanelSize ' +codePanelSize);
+}
 
 function connectCompetition() {
     stomp = new StompJs.Client({
@@ -159,7 +178,7 @@ function codeMirror_insertImagesInAssignmentText() {
 
     var list = $('.CodeMirror-code:visible .CodeMirror-line');
     $(list).each(function() {
-        var isHtml = this.innerHTML.indexOf('&gt;')!=-1&&this.innerHTML.indexOf('&lt;')!=-1;
+        var isHtml = this.innerHTML.indexOf('&gt;')!==-1&&this.innerHTML.indexOf('&lt;')!==-1;
         if (isHtml) {
             var input = this.innerHTML.replace(/&gt;/g,'>').replace(/&lt;/g,'<');
             console.log(input);
@@ -197,6 +216,7 @@ function initializeCodeMirrors() {
                     console.log('shown.bs.tab', e);
                     cm.refresh();
                     if (isTask) codeMirror_insertImagesInAssignmentText();
+                    $(window).resize();
                 });
 
             var $wrapper = $(cm.getWrapperElement());
