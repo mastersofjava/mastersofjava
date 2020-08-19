@@ -76,3 +76,9 @@ button[disabled] {
 .hide {
     display: none;
 }
+.cm-header.cm-header-3 {
+    font-size: 24px;
+}
+.cm-header.cm-header-1 {
+    font-size: 36px;
+}
