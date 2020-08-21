@@ -150,6 +150,9 @@ public class AssignmentRuntime {
                     .build();
         }
         public Long getTimeRemaining() {
+            return computeTimeRemaining();
+        }
+        private Long computeTimeRemaining() {
             long remaining = 0;
             if (this.assignmentDescriptor != null && this.timer != null) {
                 remaining = durationInSeconds - this.timer.getTime(TimeUnit.SECONDS);
@@ -159,7 +162,6 @@ public class AssignmentRuntime {
             }
             return remaining;
         }
-
         private Duration getTimeElapsed() {
             Duration elapsed = null;
             if (this.assignmentDescriptor != null && this.timer != null) {
@@ -174,6 +176,14 @@ public class AssignmentRuntime {
 
         public void setCompetitionSession(CompetitionSession competitionSession) {
             this.competitionSession = competitionSession;
+        }
+        public void restartTimer() {
+            this.timer = StopWatch.createStarted();
+        }
+        public void resetTimer() {
+            this.durationInSeconds = this.assignmentDescriptor.getDuration().toSeconds();
+            this.timer.reset();
+            this.timer.start();
         }
     }
 
@@ -224,7 +234,7 @@ public class AssignmentRuntime {
             log.info("Refreshed running assignment {}", model.assignment.getName());
             return startTimers();
         } else {
-            model.durationInSeconds = model.assignmentDescriptor.getDuration().toSeconds();
+            model.resetTimer();
         }
 
         model.competitionSession.setTimeLeft(model.durationInSeconds);
@@ -410,10 +420,10 @@ public class AssignmentRuntime {
     }
 
     private Future<?> startTimers() {
-        model.timer = StopWatch.createStarted();
+        model.restartTimer();
         Future<?> main = scheduleTimeSync();
-        model.handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(model.competitionSession.getTimeLeft() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
-        model.handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(model.competitionSession.getTimeLeft() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
+       // model.handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(model.competitionSession.getTimeLeft() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
+      //  model.handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(model.competitionSession.getTimeLeft() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
         model.handlers.put(TIMESYNC, main);
         model.handlers.put(STOP, scheduleStop());
         return model.handlers.get(STOP);

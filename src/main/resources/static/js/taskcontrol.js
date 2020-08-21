@@ -78,21 +78,58 @@ function reloadPage() {
     }, 1000);
 }
 
+function isWithRunningAssignment() {
+    return $('#play:visible').length === 1;
+}
+function getActiveAssignmentIfAny() {
+    if (!isWithRunningAssignment()) {
+        return null;
+    }
+    return $('#pills-competitie').attr('title');
+}
+function getSelectedAssignmentIfAny() {
+    return $("input[name='assignment']:checked").val();
+}
+
 function startTask() {
     var taskname = validateAssignmentSelected();
     if (!taskname) {
-        return;
+        return;// user gets feedback to first select an assigment beforehand.
     }
-    clientSend("/app/control/starttask",  {'taskName': taskname});
+    if (!isWithRunningAssignment()) {
+        clientSend("/app/control/starttask",  {'taskName': taskname});
 
-    var tasktime = $("input[name='assignment']:checked").attr('time');
+        var tasktime = $("input[name='assignment']:checked").attr('time');
 
-    console.log('tasktime ' + tasktime);
-    $assignmentClock = $('#assignment-clock');
-    $assignmentClock.attr('data-time', tasktime);
-    $assignmentClock.attr('data-time-left', tasktime);
+        console.log('tasktime ' + tasktime);
+        $assignmentClock = $('#assignment-clock');
+        $assignmentClock.attr('data-time', tasktime);
+        $assignmentClock.attr('data-time-left', tasktime);
+    } else {
+        var activeAssignment = getActiveAssignmentIfAny();
+        var selectedAssignment = getSelectedAssignmentIfAny();
+
+        if (activeAssignment===selectedAssignment) {
+            $('#restartAssignment-modal').find('.openModalViaJs').click();
+        } else {
+            $('#startAssignmentNow-modal').find('.openModalViaJs').click();
+        }
+    }
 }
-
+function startTaskSmartStartNow() {
+    // start directly: ActiveAssignment !== SelectedAssignment
+    clientSend("/app/control/stoptask", {'taskName':getSelectedAssignmentIfAny()});
+}
+function startTaskSmartRestart() {
+    // restart smart: ActiveAssignment === SelectedAssignment
+    clientSend("/app/control/restartAssignment", {
+        'taskName': getSelectedAssignmentIfAny(),
+        'value':getSelectedAssignmentIfAny()
+    });
+}
+/**
+ * this will stop the current running assignment and save all scores.
+ */
 function stopTask() {
     if (validateAssignmentSelected()) {
         clientSend("/app/control/stoptask", {});
@@ -114,16 +151,16 @@ function pauseResume() {
 }
 function validateAssignmentSelected() {
     $('#alert').empty();
-    var taskname = $("input[name='assignment']:checked").val();
+    var taskname = getSelectedAssignmentIfAny();
     if (!taskname) {
         showAlert("No assignment selected");
     }
     return taskname;
 }
-function clearAssignments() {
+function clearCompetition() {
     $('#alert').empty();
+    clientSend("/app/control/clearCompetition",{});
     showAlert("competition has been restarted");
-    clientSend("/app/control/clearCurrentAssignment",{});
 }
 function updateSettingRegistrationFormDisabled(isInput) {
     clientSend("/app/control/updateSettingRegistration", { taskName: 'updateSettingRegistration', value:''+ (isInput==true) });
@@ -185,11 +222,11 @@ function clientSelectSubtable(node, rowIdentifierValue) {
     }
 }
 function clientOnload() {
-    $('[data-toggle="popover"]').popover();
     clientStoreRender();
     $('li.nav-item a.nav-link').click(function() {
         window.setTimeout('clientStoreStateWrite()',200);
     });
+    $('[data-toggle="popover"]').popover();// popovers are not used yet.
 }
 function clientStoreStateWrite() {
 

@@ -65,7 +65,7 @@
 
                 <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
             </div>
-            <div class="tab-pane fade  show active" id="pills-competitie" role="tabpanel" aria-labelledby="pills-competitie-tab">
+            <div class="tab-pane fade  show active" id="pills-competitie" role="tabpanel" aria-labelledby="pills-competitie-tab" th:title="${currentAssignment}">
                 <div th:if="${!running}" >
                     <h6>Selecteer een opdracht en start!</h6>
                 </div>
@@ -76,14 +76,14 @@
                     <h6>Met dit venster kunt u de competitie opdrachten pauzeren, stoppen en herstarten.</h6>
                 </div>
                 <br/>
-                <div class="row" th:if="${isWithAssignmentsLoaded}">
+                <div class="row" th:if="${isWithAssignmentsLoaded}" >
 
                     <div class="form-group col-4" >
                         <th:block th:each="assignment : ${assignments}">
-                            <div class="form-check input-group radio" th:title="${assignment.displayName}">
-                                <label class="form-check-label">
+                            <div class="form-check input-group radio" th:title="${assignment.displayName}  +'='+  ${assignment.duration.toMinutes()+ ' minutes'}">
+                                <label class="form-check-label" th:title="${assignment.displayName}  +'='+ ${assignment.duration.toMinutes()+ ' minutes'}">
                                     <input class="form-check-input" type="radio" name="assignment" th:checked="${assignment.name==currentAssignment}"
-                                           th:text="' ' + ${assignment.name}" th:value="${assignment.name}"
+                                           th:text="' ' + ${assignment.name}" th:title="${assignment.displayName} +'='+  ${assignment.duration.toMinutes()+ ' minutes'}" th:value="${assignment.name}"
                                            th:id="${assignment.name}" th:attr="time=${assignment.duration.toSeconds()}"/>
                                 </label>
                             </div>
@@ -94,13 +94,13 @@
                         <div class="row">
                             <div class="btn-group-vertical col-4">
                                 <div class="p-2 text-center" >
-                                    <button id="start" class="btn btn-success minWidth150" onclick="startTask();"><span class="fa fa-gamepad pr-1" ></span>Start Opdracht</button>
+                                    <button id="start" class="btn btn-success minWidth150" onclick="startTask();" title="Hoofdbutton voor het runnen van de competitie"><span class="fa fa-gamepad pr-1" ></span>Start Opdracht</button>
                                 </div>
                                 <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
-                                    <button id="pause" class="btn btn-success minWidth150" onclick="pauseResume();">Pause/Resume</button>
+                                    <button id="play" class="btn btn-muted minWidth150" onclick="window.open('/play','competitie');" title="Speel de huidige opdracht zelf mee">Speel mee</button>
                                 </div>
                                 <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
-                                    <button id="play" class="btn btn-success minWidth150" onclick="window.open('/','competitie');">Speel nu</button>
+                                    <button id="pause" class="btn btn-muted minWidth150" onclick="pauseResume();" title="Pauzeren of activeren van de tijd"  >Pause/Resume</button>
                                 </div>
                             </div>
 
@@ -112,13 +112,13 @@
                         <div class="row">
                             <div class="btn-group-vertical col-4" >
                                 <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
-                                    <button id="stop" class="btn btn-warning minWidth150" onclick="stopTask();" data-container="body" data-toggle="popover" data-placement="left">Finish Assignment</button>
+                                    <button id="stop" class="btn btn-muted minWidth150" onclick="stopTask();" title="Stop met huidige assignment en bewaar scores">Finish Assignment</button>
                                 </div>
                                 <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
-                                    <button id="restart" class="btn btn-warning minWidth150" onclick="restartAssignment();" >Reset Assignment</button>
+                                    <button id="restart" class="btn btn-muted minWidth150" onclick="restartAssignment();" title="Reset the geselecteerde opdracht, verwijder ook de bestaande scores hiervan" >Reset Assignment</button>
                                 </div>
                                 <div class="p-2 text-center" th:if="${runningSelectedCompetition||isWithCompetitionStarted}">
-                                    <button id="clear" class="btn btn-warning minWidth150" onclick="clearAssignments();" data-container="body" data-toggle="popover" data-placement="right">Reset Competition</button>
+                                    <button id="clear" class="btn btn-muted minWidth150" onclick="clearCompetition();"  title="Herstart deze gehele competitie, wis ook de scores">Reset Competition</button>
                                 </div>
                             </div>
 
@@ -293,8 +293,6 @@
                         <div class="p-2 col-6 roundGrayBorder">
                             <a class="btn btn-success" href="/getGameMasterState" target="getGameMasterState">Bekijk systeemstatus (export)</a><br/><br/>
                             <a class="btn btn-success" href="/admin/systemState" target="systemState">Bekijk competitie uitvoering</a><br/><br/>
-                            <a class="btn btn-success" th:if="${keycloackUrl.length()>0}"  th:href="${keycloackUrl}" target="Keykloack">Keykloack</a><br/><br/>
-
                         </div>
                     </div>
                     <br>
@@ -376,6 +374,47 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="restartAssignment-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Herstarten van de opdracht</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Weet u zeker dat u deze opdracht wil herstarten (en hiermee ook de scores van deze opdracht wil resetten)?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleer</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="return startTaskSmartRestart()">Doorgaan</button>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="hide openModalViaJs" data-toggle='modal' data-target='#restartAssignment-modal'>open restartAssignment modal via js</button>
+</div>
+<div class="modal fade" id="startAssignmentNow-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Afsluiten huidige opdracht en herstarten nieuwe</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Weet u zeker dat u deze runnende opdracht eerder wil sluiten (de scores hiervan blijven bewaard) en direct een nieuwe opdracht wil starten?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleer</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="return startTaskSmartStartNow()">Doorgaan</button>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="hide openModalViaJs" data-toggle='modal' data-target='#startAssignmentNow-modal'>open startAssignmentNow modal via js</button>
+
+</div>
 <div class="modal fade" id="deleteCompetition-modal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -422,7 +461,7 @@
             </div>
         </div>
     </div>
-    <button type="button" class="hide openModalViaJs" data-toggle='modal' data-target='#deltaSolution-modal'>open modal via js</button>
+    <button type="button" class="hide openModalViaJs" data-toggle='modal' data-target='#deltaSolution-modal'>open deltaSolution modal via js</button>
 </div>
 
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>

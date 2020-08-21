@@ -106,10 +106,6 @@ public class WebConfiguration {
                     .anyRequest().authenticated()
                     .and().headers().frameOptions().disable()
                     .and().csrf().disable();
-
-            //http.sessionManagement().maximumSessions(1).sessionRegistry(sessionRegistry);
         }
-
-
     }
 }

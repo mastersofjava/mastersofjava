@@ -264,8 +264,10 @@ public class CompetitionRuntime {
         }
         return competitionModel.assignmentExecutionModel.getState();
     }
-
     public void startAssignment(String name) {
+        startAssignment(name, -1);
+    }
+    public void startAssignment(String name, long timeLeft) {
 
         Optional<OrderedAssignment> assignment = competitionModel.competition.getAssignments().stream()
                 .filter(a -> a.getAssignment().getName().equals(name))
@@ -292,6 +294,10 @@ public class CompetitionRuntime {
             getCompetitionSession().setAssignmentName(name);
             getCompetitionSession().setDateTimeStart(Instant.now());
             getCompetitionSession().setDateTimeLastUpdate(Instant.now());
+            if (timeLeft>0) {
+                assignmentRuntime.getModel().resetTimer();
+                getCompetitionSession().setTimeLeft(timeLeft);
+            }
             competitionSessionRepository.save(getCompetitionSession());
         } catch( AssignmentStartException ase ) {
             competitionModel.completedAssignments.remove(assignment.get());

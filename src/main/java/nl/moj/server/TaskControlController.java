@@ -63,6 +63,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.annotation.security.RolesAllowed;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -115,24 +116,35 @@ public class TaskControlController {
     }
 
     @MessageMapping("/control/starttask")
-    public void startTask(TaskMessage message) {
+    @SendToUser("/queue/controlfeedback")
+    public String startTask(TaskMessage message) {
         competition.startAssignment(message.getTaskName());
+        return "started assignment '"+message.getTaskName()+"', reloading page";
     }
 
     @MessageMapping("/control/stoptask")
-    public String stopTask() {
+    @SendToUser("/queue/controlfeedback")
+    public String stopTask(TaskMessage message) {
         competition.stopCurrentAssignment();
         ActiveAssignment state = competition.getActiveAssignment();
-        return "stopped assignment '"+state.getAssignment().getName()+"' running, reloading page";
+        boolean isWithNewAssignment = message!=null && !StringUtils.isEmpty(message.taskName);
+        if (isWithNewAssignment) {
+            competition.startAssignment(message.taskName);
+        }
+        String name = "default";
+        if(state!=null && state.getAssignment()!=null) {
+            name = state.getAssignment().getName();
+        }
+        return "stopped assignment '"+name+"' running, reloading page";
     }
 
-    @MessageMapping("/control/clearCurrentAssignment")
+    @MessageMapping("/control/clearCompetition")
     @SendToUser("/queue/controlfeedback")
     public String doClearCompetition() {
         log.warn("clearCompetition entered");
         gamemasterTableComponents.deleteCurrentSessionResources();
         if (competition.getCompetitionSession().isRunning() && competition.getActiveAssignment()!=null) {
-            stopTask();
+            stopTask(null);
         }
         return competitionCleaningService.doCleanComplete(competition.getCompetitionSession());
     }
@@ -168,12 +180,19 @@ public class TaskControlController {
         }
         Assignment assignment = assignmentRepository.findByName(message.taskName);
         List<AssignmentStatus> ready4deletionList = assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competition.getCompetitionSession());
-
-        if (ready4deletionList.isEmpty()) {
-            return "Assignment not started yet: "  + message.taskName;
+        if (!ready4deletionList.isEmpty()) {
+            for (AssignmentStatus status: ready4deletionList) {
+                assignmentStatusRepository.deleteById(status.getId());// correct cleaning: first delete all status items, afterwards delete all results
+            }
         }
-        for (AssignmentStatus status: ready4deletionList) {
-            assignmentStatusRepository.deleteById(status.getId());// correct cleaning: first delete all status items, afterwards delete all results
+
+        boolean isWithRestartDirectly = !StringUtils.isEmpty(message.getValue());
+        if (isWithRestartDirectly) {
+            long timeLeft = assignmentRuntime.getModel().getState().getAssignmentDescriptor().getDuration().toSeconds();
+            competition.startAssignment(message.getValue(),timeLeft);
+        }
+        if (ready4deletionList.isEmpty() && !isWithRestartDirectly) {
+            return "Assignment not started yet: "  + message.taskName;
         }
         return "Assignment resetted: " + message.taskName + ", reload page";
     }
@@ -329,7 +348,6 @@ public class TaskControlController {
             }
             assignmentRuntime.reloadOriginalAssignmentFiles();
 
-
             return "Assignments scanned from location "+path+" ("+assignmentList.size()+"), reloading to show them.";
         } catch (AssignmentServiceException ase) {
             log.error("Scanning assignments failed.", ase);
@@ -376,9 +394,9 @@ public class TaskControlController {
             model.addAttribute("timeLeft", 0);
             model.addAttribute("time", 0);
             model.addAttribute("running", false);
-            model.addAttribute("runningSelectedCompetition", false);
+            model.addAttribute("runningSelectedCompetition", HttpUtil.hasParam("running"));
             model.addAttribute("clockStyle", "active");
-            model.addAttribute("currentAssignment", "-");
+
             model.addAttribute("assignmentDetailCanvas", "(U moet eerst de opdrachten inladen)");
             model.addAttribute("gameDetailCanvas", "(U moet eerst de opdrachten inladen)");
             model.addAttribute("opdrachtConfiguraties","(U moet eerst de opdrachten inladen)");
@@ -394,6 +412,14 @@ public class TaskControlController {
             model.addAttribute("currentUserName", HttpUtil.getCurrentHttpRequestUserName());
 
             model.addAttribute("nrOfRunningCompetitions", activeCompetitions.size());
+
+            model.addAttribute("currentAssignment", "-");
+            if (HttpUtil.hasParam("running")) {
+                String assignment = HttpUtil.getParam("running","");
+                if (!assignment.isEmpty()) {
+                    model.addAttribute("currentAssignment", assignment);
+                }
+            }
         }
         private void insertGamestatus(Model model) {
             log.info("insertGamestatus " +competition.getCurrentRunningAssignment()+ " " +competition.getCompetitionSession().isRunning());
@@ -409,7 +435,7 @@ public class TaskControlController {
             model.addAttribute("timeLeft", state.getTimeRemaining());
             model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addAttribute("running", state.isRunning());
-            boolean isRunningSelected = competitionModel.isRunning();
+            boolean isRunningSelected = competitionModel.isRunning()|| HttpUtil.hasParam("running");
 
             model.addAttribute("runningSelectedCompetition", isRunningSelected);
             model.addAttribute("clockStyle", (competitionModel.getAssignmentExecutionModel().isPaused()?"disabled":"active"));
@@ -468,6 +494,7 @@ public class TaskControlController {
         }
     }
 
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     @GetMapping("/control")
     public String taskControl(Model model, @AuthenticationPrincipal Authentication user, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
                               @ModelAttribute("newPasswordRequest") NewPasswordRequest npr) {

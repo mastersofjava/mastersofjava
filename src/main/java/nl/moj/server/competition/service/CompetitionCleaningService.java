@@ -46,7 +46,7 @@ public class CompetitionCleaningService {
     public String doCleanComplete(CompetitionSession competitionSession) {
         competitionRuntime.getCompetitionState().getCompletedAssignments().clear();
         if (assignmentStatusRepository.count()==0) {
-            return "competition not started yet";
+            return "competition cleaned (no scores available anymore)";
         }
         log.info("delete contents of session " + competitionSession.getId());
 

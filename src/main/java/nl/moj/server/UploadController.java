@@ -44,9 +44,14 @@ public class UploadController {
         private void initCache() {
             fileList.clear();
             for (File rootFile: mojServerProperties.getAssignmentRepo().getParent().toFile().listFiles()) {
-                for (File assignment: rootFile.listFiles()) {
-                    if (assignment.isDirectory()) {
-                        fileList.add(assignment);
+                if (rootFile == null||rootFile.isFile()||!rootFile.exists()) {
+                    continue;
+                }
+                if (rootFile.isDirectory()) {
+                    for (File assignment: rootFile.listFiles()) {
+                        if (assignment.isDirectory()) {
+                            fileList.add(assignment);
+                        }
                     }
                 }
             }
@@ -149,7 +154,7 @@ public class UploadController {
      * this method ensures that one can place images in the assets of an assignment.
      * sample usage would be: <img src='/public/assignment_image/moj-HexagonalChess/public_Hexagonal_chess.svg'>
      * @param assignment - the assignment name
-     * @param file_name - the file name of the image that should be render
+     * @param file_name - the file name of the image that should be rendered
      * @param response - the available httpResponse
      */
     @GetMapping("/public/assignment_image/{assignment}/{file_name}")
