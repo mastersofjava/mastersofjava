@@ -89,3 +89,7 @@ body .cm-s-default .cm-variable-2 {
 .cm-s-default .cm-header {
     color:black;
 }
+.CodeMirror.TASK {
+    font-family: Arial, monospace;
+    font-size: 18px;
+}

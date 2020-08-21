@@ -26,7 +26,6 @@ function doResizeCodingPanel() {
     var footerSize = $('.footer').height();
     var codePanelSize = windowSize-headerSize-footerSize-35;
     window.codePanelList = $('.CodeMirror.cm-s-default.ui-resizable');
-    $(window.codePanelList[0]).css('font-size','18px');// assignment description should have larger font.
     window.codePanelList.css('height',codePanelSize);
     console.log('codePanelSize ' +codePanelSize);
 }
@@ -233,6 +232,7 @@ function initializeCodeMirrors() {
                 tabLink.trigger('shown.bs.tab');
             }
         });
+    $('.CodeMirror')[0].className += ' TASK';
 }
 
 function initializeAssignmentClock() {
