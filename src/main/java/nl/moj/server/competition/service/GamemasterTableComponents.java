@@ -81,8 +81,21 @@ public class GamemasterTableComponents {
             return state;
         }
     }
+    public enum AssignmentStates {
+        COMPLETED,
+        CURRENT;
+    }
+    public List<String> createCompletedAssigmentList(List<DtoAssignmentState> stateList) {
+        List<String> result = new ArrayList<>();
+        for (DtoAssignmentState orderedAssignment: stateList) {
+            if (AssignmentStates.COMPLETED.name().equals(orderedAssignment.state)) {
+                result.add(orderedAssignment.name);
+            }
+        }
+        return result;
+    }
 
-    public List<DtoAssignmentState> createAssignmentStatusMap() {
+    public List<DtoAssignmentState> createAssignmentStatusList() {
         List<OrderedAssignment> orderedList = competitionRuntime.getCompetition().getAssignmentsInOrder();
         if (orderedList.isEmpty()) {
             return Collections.emptyList();
@@ -112,10 +125,10 @@ public class GamemasterTableComponents {
         }
         String status = "-";
         if (isSelectedAndNotCompleted ) {
-            status = "CURRENT";
+            status = AssignmentStates.CURRENT.name();
         } else
         if (isCompleted) {
-            status = "COMPLETED";
+            status = AssignmentStates.COMPLETED.name();
         }
         return status;
     }
@@ -493,13 +506,16 @@ public class GamemasterTableComponents {
             return Long.parseLong(data[5])/(1000*1000);
         }
     }
-
     public String toSimpleBootstrapTableForAssignmentStatus() {
-        StringBuilder sb = new StringBuilder();
-        List<DtoAssignmentState> list = createAssignmentStatusMap();
+        List<DtoAssignmentState> list = createAssignmentStatusList();
         if (list.isEmpty()) {
             return "";
         }
+        return toSimpleBootstrapTableForAssignmentStatus(list);
+    }
+    public String toSimpleBootstrapTableForAssignmentStatus(List<DtoAssignmentState> list) {
+        StringBuilder sb = new StringBuilder();
+
 
         sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Opdracht</th><th>Status</th><th>Starttijd</th><th>Highscore</th></tr></thead>");
 

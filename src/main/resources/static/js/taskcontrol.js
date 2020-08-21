@@ -90,13 +90,17 @@ function getActiveAssignmentIfAny() {
 function getSelectedAssignmentIfAny() {
     return $("input[name='assignment']:checked").val();
 }
-
+function isWithCompletedSelectedAssignment() {
+    return $("input[name='assignment']:checked").closest('.completed').length===1;
+}
 function startTask() {
     var taskname = validateAssignmentSelected();
     if (!taskname) {
         return;// user gets feedback to first select an assigment beforehand.
     }
-    if (!isWithRunningAssignment()) {
+    var isDefaultStart = !isWithRunningAssignment() && !isWithCompletedSelectedAssignment();
+
+    if (isDefaultStart) {
         clientSend("/app/control/starttask",  {'taskName': taskname});
 
         var tasktime = $("input[name='assignment']:checked").attr('time');
@@ -109,7 +113,7 @@ function startTask() {
         var activeAssignment = getActiveAssignmentIfAny();
         var selectedAssignment = getSelectedAssignmentIfAny();
 
-        if (activeAssignment===selectedAssignment) {
+        if (activeAssignment===selectedAssignment||isWithCompletedSelectedAssignment()) {
             $('#restartAssignment-modal').find('.openModalViaJs').click();
         } else {
             $('#startAssignmentNow-modal').find('.openModalViaJs').click();

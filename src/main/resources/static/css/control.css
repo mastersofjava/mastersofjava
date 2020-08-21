@@ -187,3 +187,6 @@ input[file] {
     left:40px;
     top:100px;
 }
+div.completed {
+    font-style: italic;
+}

@@ -80,11 +80,16 @@
 
                     <div class="form-group col-4" >
                         <th:block th:each="assignment : ${assignments}">
-                            <div class="form-check input-group radio" th:title="${assignment.displayName}  +'='+  ${assignment.duration.toMinutes()+ ' minutes'}">
-                                <label class="form-check-label" th:title="${assignment.displayName}  +'='+ ${assignment.duration.toMinutes()+ ' minutes'}">
+                            <div class="form-check input-group radio"
+                                 th:classappend="${completedAssignments.contains(assignment.name)?'completed':''}"
+                                 th:title="${assignment.displayName}  +'='+  ${assignment.duration.toMinutes()+ ' minutes'}">
+                                <label class="form-check-label"  th:title="${assignment.displayName}  +'='+ ${assignment.duration.toMinutes()+ ' minutes'}">
                                     <input class="form-check-input" type="radio" name="assignment" th:checked="${assignment.name==currentAssignment}"
                                            th:text="' ' + ${assignment.name}" th:title="${assignment.displayName} +'='+  ${assignment.duration.toMinutes()+ ' minutes'}" th:value="${assignment.name}"
                                            th:id="${assignment.name}" th:attr="time=${assignment.duration.toSeconds()}"/>
+                                    <span th:if="${completedAssignments.contains(assignment.name)}">
+                                        (gecompleteerd)
+                                    </span>
                                 </label>
                             </div>
                         </th:block>

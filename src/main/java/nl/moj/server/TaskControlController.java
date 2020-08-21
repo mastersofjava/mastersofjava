@@ -445,10 +445,12 @@ public class TaskControlController {
             List<AssignmentDescriptor> assignmentDescriptorList = competition.getAssignmentInfoOrderedForCompetition();
 
             boolean isWithAssignmentsLoaded = !assignmentDescriptorList.isEmpty();
-
+            List<String> completedAssignments = new ArrayList<>();
             if (isWithAssignmentsLoaded) {
+                List<GamemasterTableComponents.DtoAssignmentState> statusList = gamemasterTableComponents.createAssignmentStatusList();
+                completedAssignments.addAll(gamemasterTableComponents.createCompletedAssigmentList(statusList));
                 String assignmentDetailCanvas = gamemasterTableComponents.toSimpleBootstrapTable(assignmentDescriptorList);
-                String gameDetailCanvas = gamemasterTableComponents.toSimpleBootstrapTableForAssignmentStatus();
+                String gameDetailCanvas = gamemasterTableComponents.toSimpleBootstrapTableForAssignmentStatus(statusList);
                 model.addAttribute("isWithCompetitionStarted",gameDetailCanvas.contains("STARTED"));
                 model.addAttribute("isWithConfigurableTestScore",assignmentDetailCanvas.contains("(*2)"));
                 model.addAttribute("isWithHiddenTests",assignmentDetailCanvas.contains("(*1)"));
@@ -458,6 +460,7 @@ public class TaskControlController {
             }
             model.addAttribute("assignments",assignmentDescriptorList);
             model.addAttribute("isWithAssignmentsLoaded", isWithAssignmentsLoaded);
+            model.addAttribute("completedAssignments", completedAssignments);
         }
 
         private void validateRoleAuthorization() {
