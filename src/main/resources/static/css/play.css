@@ -82,3 +82,10 @@ button[disabled] {
 .cm-header.cm-header-1 {
     font-size: 36px;
 }
+body .cm-s-default .cm-variable-2 {
+    color:black;
+    font-style: italic;
+}
+.cm-s-default .cm-header {
+    color:black;
+}
