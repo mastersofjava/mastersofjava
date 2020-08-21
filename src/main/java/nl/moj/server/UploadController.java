@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.competition.service.CompetitionService;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.teams.model.Role;
 import nl.moj.server.util.ZipFileReader;
 import org.apache.commons.io.FileUtils;
@@ -35,11 +34,11 @@ public class UploadController {
 
     private final MojServerProperties mojServerProperties;
 
-    private AssignmentRepository assignmentRepository = new AssignmentRepository();
+    private AssignmentLocationCache assignmentLocationCache;
 
-    private class AssignmentRepository {
+    private class AssignmentLocationCache {
         private List<File> fileList = new ArrayList<>();
-        public AssignmentRepository() {
+        public AssignmentLocationCache() {
             initCache();
         }
         private void initCache() {
@@ -52,7 +51,7 @@ public class UploadController {
                 }
             }
         }
-        public File getAssignment(String name) {
+        public File getAssignmentLocation(String name) {
             for (File file: fileList) {
                 if (file.getName().equals(name)) {
                     return file;
@@ -69,6 +68,11 @@ public class UploadController {
         log.info("import file " + file + " size " + file.getBytes().length + " " + file.getOriginalFilename() + " " + file.getContentType());
     }
 
+    /**
+     * import users (for demostrating large groups of users)
+     * @param file (csv file with names)
+     * @param redirectAttributes - admin feedback redirected on control page.
+     */
     @PostMapping(value = "/importUsers", consumes = {"multipart/form-data"})
     @RolesAllowed({Role.ADMIN})
     public String handleFileUpload(@RequestParam("file") MultipartFile file,
@@ -100,6 +104,11 @@ public class UploadController {
         Assert.isTrue(StringUtils.isNumeric(parts[0]) && name.contains("assignments"), "incorrect name format:" + name);
     }
 
+    /**
+     * with this method one can upload/overwrite assignments on a server.
+     * @param file - zip file, should be a valid assignment storage.
+     * @param redirectAttributes - admin feedback redirected on control page.
+     */
     @PostMapping(value = "/importAssignments", consumes = {"multipart/form-data"})
     @RolesAllowed({Role.ADMIN})
     public String importAssignments(@RequestParam("file") MultipartFile file,
@@ -129,6 +138,13 @@ public class UploadController {
         return "redirect:/control";
     }
 
+    private AssignmentLocationCache getAssignmentLocationCache() {
+        if (assignmentLocationCache==null) {
+            assignmentLocationCache = new AssignmentLocationCache();
+        }
+        return assignmentLocationCache;
+    }
+
     /**
      * this method ensures that one can place images in the assets of an assignment.
      * sample usage would be: <img src='/public/assignment_image/moj-HexagonalChess/public_Hexagonal_chess.svg'>
@@ -139,7 +155,7 @@ public class UploadController {
     @GetMapping("/public/assignment_image/{assignment}/{file_name}")
     public void insertAssignmentImage(@PathVariable("assignment") String assignment, @PathVariable("file_name") String file_name, HttpServletResponse response) {
         Assert.isTrue(file_name.contains("public"),"invalid request1");
-        File assignmentFile = assignmentRepository.getAssignment(assignment);
+        File assignmentFile = getAssignmentLocationCache().getAssignmentLocation(assignment);
         Assert.isTrue(assignmentFile !=null && assignmentFile.isDirectory(),"invalid request2");
         File sourceFile = new File(assignmentFile, "/assets/" +file_name);
         response.setContentType( getImageContentType(file_name));
