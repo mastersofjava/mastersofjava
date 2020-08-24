@@ -129,7 +129,8 @@ public class TaskControlController {
         ActiveAssignment state = competition.getActiveAssignment();
         boolean isWithNewAssignment = message!=null && !StringUtils.isEmpty(message.taskName);
         if (isWithNewAssignment) {
-            competition.startAssignment(message.taskName);
+            long timeLeft = assignmentRuntime.getModel().getState().getAssignmentDescriptor().getDuration().toSeconds();
+            competition.startAssignment(message.taskName,timeLeft);
         }
         String name = "default";
         if(state!=null && state.getAssignment()!=null) {
@@ -189,7 +190,7 @@ public class TaskControlController {
         boolean isWithRestartDirectly = !StringUtils.isEmpty(message.getValue());
         if (isWithRestartDirectly) {
             long timeLeft = assignmentRuntime.getModel().getState().getAssignmentDescriptor().getDuration().toSeconds();
-            competition.startAssignment(message.getValue(),timeLeft);
+            competition.startAssignment(message.getValue(),timeLeft);// start fresh
         }
         if (ready4deletionList.isEmpty() && !isWithRestartDirectly) {
             return "Assignment not started yet: "  + message.taskName;
