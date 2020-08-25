@@ -49,6 +49,9 @@ public class HttpUtil {
         return isWithAdminRole(user) && request.getParameterMap().containsKey("assignment");
     }
     public static UUID getSelectedUserSession(UUID defaultVal) {
+        if (getCurrentHttpRequest()==null) {
+            return defaultVal;
+        }
         UUID val = (UUID)getCurrentHttpRequest().getSession().getAttribute("selectedUserSession");
         if (val==null) {
             val = defaultVal;

@@ -110,7 +110,7 @@ public class GameController {
     public String index(Model model, @AuthenticationPrincipal Principal user,@ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
         log.info("user " +user);
         if (user==null) {
-            model.addAttribute("isControlRole", isAdminUser(user));
+            model.addAttribute("isControlRole", false);
             return "play";
         }
 		// The admin user should be created with the bootstrap

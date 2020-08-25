@@ -6,7 +6,10 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
+import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +31,6 @@ import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 
 @ExtendWith(MockitoExtension.class)
-@Ignore
 class IndexControllerTest {
 
 	@Mock
@@ -43,13 +45,22 @@ class IndexControllerTest {
     private AssignmentRepository assignmentRepository;
     @Mock 
     private CompetitionService competitionService;
-	
+	@Mock
+	private CompetitionSessionRepository competitionSessionRepository;
+
     @InjectMocks
     private GameController indexController;
     
 	@Test
 	void testIndexNoUser() {
-		assertEquals("redirect:/sso/login", indexController.index(null, null, null));
+		assertEquals("play", indexController.index(Mockito.mock(Model.class), null, null));
+	}
+
+	private CompetitionSession createGameSession() {
+		CompetitionSession session = new CompetitionSession();
+		session.setUuid(UUID.randomUUID());
+		session.setId(1L);
+		return session;
 	}
 
 	@Test
@@ -59,11 +70,13 @@ class IndexControllerTest {
 		Collection<GrantedAuthority> grantedAuthorities = List.of(grantedAuthority);
 		
 		org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken user = Mockito.mock(org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken.class);
+
+		when(competition.getCompetitionSession()).thenReturn(createGameSession());
 		when(user.getName()).thenReturn("userName");
 		when(user.getAuthorities()).thenReturn(grantedAuthorities);
 		when(teamRepository.findByName(Mockito.anyString())).thenReturn(null);
-		
-		assertEquals("index", indexController.index(Mockito.mock(Model.class), user, null));
+
+		assertEquals("play", indexController.index(Mockito.mock(Model.class), user, null));
 
 		Mockito.verify(competitionService).createNewTeam(Mockito.any(SignupForm.class), Mockito.eq(Role.USER));
 	}
@@ -75,6 +88,7 @@ class IndexControllerTest {
 		Collection<GrantedAuthority> grantedAuthorities = List.of(grantedAuthority);
 		
 		org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken user = Mockito.mock(org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken.class);
+		when(competition.getCompetitionSession()).thenReturn(createGameSession());
 		when(user.getName()).thenReturn("userName");
 		when(user.getAuthorities()).thenReturn(grantedAuthorities);
 		
@@ -84,7 +98,7 @@ class IndexControllerTest {
 				.build();
 		when(teamRepository.findByName(Mockito.anyString())).thenReturn(team );
 		
-		assertEquals("index", indexController.index(Mockito.mock(Model.class), user, null));
+		assertEquals("play", indexController.index(Mockito.mock(Model.class), user, null));
 
 		Mockito.verify(competitionService, never()).createNewTeam(Mockito.any(SignupForm.class), Mockito.eq(Role.USER));
 	}
@@ -96,6 +110,7 @@ class IndexControllerTest {
 		Collection<GrantedAuthority> grantedAuthorities = List.of(grantedAuthority);
 		
 		org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken user = Mockito.mock(org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken.class);
+		when(competition.getCompetitionSession()).thenReturn(createGameSession());
 		when(user.getName()).thenReturn("userName");
 		when(user.getAuthorities()).thenReturn(grantedAuthorities);
 		
@@ -105,7 +120,7 @@ class IndexControllerTest {
 				.build();
 		when(teamRepository.findByName(Mockito.anyString())).thenReturn(team );
 		
-		assertEquals("index", indexController.index(Mockito.mock(Model.class), user, null));
+		assertEquals("play", indexController.index(Mockito.mock(Model.class), user, null));
 
 		Mockito.verify(competitionService, never()).createNewTeam(Mockito.any(SignupForm.class), Mockito.eq(Role.USER));
 	}
