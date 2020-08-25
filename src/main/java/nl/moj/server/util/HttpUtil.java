@@ -1,6 +1,6 @@
 package nl.moj.server.util;
 
-import nl.moj.server.teams.model.Role;
+import nl.moj.server.authorization.Role;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextImpl;
@@ -59,6 +59,8 @@ public class HttpUtil {
         Object val = (Object)getCurrentHttpRequest().getSession().getAttribute(attributeName);
         return val==null?defaultVal:val;
     }
+
+    // TODO this does not scale as the app layer should be stateless.
     public static void setSelectedUserSession(UUID sessionId) {
         getCurrentHttpRequest().getSession().setAttribute("selectedUserSession",sessionId);
     }

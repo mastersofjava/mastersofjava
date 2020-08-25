@@ -130,9 +130,6 @@ function connectCompetition() {
                 }
             }
         };
-        if (window.isWithValidation) {
-            window.setTimeout('doUserActionTest();',1000);
-        }
     };
 
     stomp.onStompError = function (frame) {

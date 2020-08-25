@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,6 @@ import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.io.IOUtils;
@@ -58,7 +58,7 @@ public class TeamService {
     }
 
     public List<Team> getTeams() {
-        return teamRepository.findAllByRole(Role.USER);
+        return teamRepository.findAll();
     }
 
     public List<AssignmentFile> getTeamAssignmentFiles(CompetitionSession session, Assignment assignment, Team team) {
@@ -79,6 +79,19 @@ public class TeamService {
                     }
                 });
         return teamFiles;
+    }
+
+    public Team createTeam(String name, String company, String country) {
+        Team t = teamRepository.findByName(name);
+        if( t == null ) {
+            t = teamRepository.save(Team.builder()
+                    .company(company)
+                    .name(name)
+                    .country(country)
+                    .uuid(UUID.randomUUID())
+                    .build());
+        }
+        return t;
     }
 
     private byte[] readPathContent(Path p) {

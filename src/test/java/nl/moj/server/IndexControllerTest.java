@@ -19,10 +19,8 @@ import org.springframework.ui.Model;
 
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.service.CompetitionService;
-import nl.moj.server.login.SignupForm;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
@@ -65,7 +63,7 @@ class IndexControllerTest {
 		
 		assertEquals("index", indexController.index(Mockito.mock(Model.class), user, null));
 
-		Mockito.verify(competitionService).createNewTeam(Mockito.any(SignupForm.class), Mockito.eq(Role.USER));
+		Mockito.verify(competitionService).addTeam(Mockito.any(Team.class));
 	}
 	
 	@Test
@@ -80,33 +78,11 @@ class IndexControllerTest {
 		
 		Team team = Team.builder()
 				.name("userName")
-				.role(Role.USER)
 				.build();
 		when(teamRepository.findByName(Mockito.anyString())).thenReturn(team );
 		
 		assertEquals("index", indexController.index(Mockito.mock(Model.class), user, null));
 
-		Mockito.verify(competitionService, never()).createNewTeam(Mockito.any(SignupForm.class), Mockito.eq(Role.USER));
-	}
-	
-	@Test
-	void testIndexAdminTeam() {
-		GrantedAuthority grantedAuthority = Mockito.mock(GrantedAuthority.class);
-		when(grantedAuthority.getAuthority()).thenReturn("ROLE_USER");
-		Collection<GrantedAuthority> grantedAuthorities = List.of(grantedAuthority);
-		
-		org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken user = Mockito.mock(org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken.class);
-		when(user.getName()).thenReturn("userName");
-		when(user.getAuthorities()).thenReturn(grantedAuthorities);
-		
-		Team team = Team.builder()
-				.name("userName")
-				.role(Role.USER)
-				.build();
-		when(teamRepository.findByName(Mockito.anyString())).thenReturn(team );
-		
-		assertEquals("index", indexController.index(Mockito.mock(Model.class), user, null));
-
-		Mockito.verify(competitionService, never()).createNewTeam(Mockito.any(SignupForm.class), Mockito.eq(Role.USER));
+		Mockito.verify(competitionService, never()).addTeam(Mockito.any(Team.class));
 	}
 }

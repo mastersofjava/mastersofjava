@@ -41,7 +41,6 @@ import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.submit.SubmitResult;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.PathUtil;
@@ -86,7 +85,7 @@ public abstract class BaseRuntimeTest {
     @Before
     public void init() throws Exception {
         try {
-            bootstrapService.bootstrap("admin");
+            bootstrapService.bootstrap();
             dbUtil.cleanup();
             competition = createCompetition();
             competitionRuntime.startSession(competition);
@@ -107,7 +106,6 @@ public abstract class BaseRuntimeTest {
         Team team = new Team();
         team.setUuid(UUID.randomUUID());
         team.setName(team.getUuid().toString());
-        team.setRole(Role.USER);
         return teamRepository.save(team);
     }
 

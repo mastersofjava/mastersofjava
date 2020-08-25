@@ -44,9 +44,6 @@ public class Team {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
-    @Column(name = "role")
-    private String role;
-
     @Column(name = "country")
     private String country;
 
@@ -61,7 +58,7 @@ public class Team {
     }
 
     public boolean isDisabled() {
-        return !"ARCHIVE".equals(indication) && !"DISQUALIFY".equals(indication) && !Role.ANONYMOUS.equals(role);
+        return !"ARCHIVE".equals(indication) && !"DISQUALIFY".equals(indication);
     }
 
 }
