@@ -2,9 +2,8 @@ package nl.moj.server;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.competition.service.CompetitionService;
+import nl.moj.server.authorization.Role;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.util.ZipFileReader;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -22,7 +21,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -30,25 +28,25 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UploadController {
 
-    private final CompetitionService competitionService;
-
     private final MojServerProperties mojServerProperties;
 
     private AssignmentLocationCache assignmentLocationCache;
 
     private class AssignmentLocationCache {
         private List<File> fileList = new ArrayList<>();
+
         public AssignmentLocationCache() {
             initCache();
         }
+
         private void initCache() {
             fileList.clear();
-            for (File rootFile: mojServerProperties.getAssignmentRepo().getParent().toFile().listFiles()) {
-                if (rootFile == null||rootFile.isFile()||!rootFile.exists()) {
+            for (File rootFile : mojServerProperties.getAssignmentRepo().getParent().toFile().listFiles()) {
+                if (rootFile == null || rootFile.isFile() || !rootFile.exists()) {
                     continue;
                 }
                 if (rootFile.isDirectory()) {
-                    for (File assignment: rootFile.listFiles()) {
+                    for (File assignment : rootFile.listFiles()) {
                         if (assignment.isDirectory()) {
                             fileList.add(assignment);
                         }
@@ -56,8 +54,9 @@ public class UploadController {
                 }
             }
         }
+
         public File getAssignmentLocation(String name) {
-            for (File file: fileList) {
+            for (File file : fileList) {
                 if (file.getName().equals(name)) {
                     return file;
                 }
@@ -73,37 +72,12 @@ public class UploadController {
         log.info("import file " + file + " size " + file.getBytes().length + " " + file.getOriginalFilename() + " " + file.getContentType());
     }
 
-    /**
-     * import users (for demostrating large groups of users)
-     * @param file (csv file with names)
-     * @param redirectAttributes - admin feedback redirected on control page.
-     */
-    @PostMapping(value = "/importUsers", consumes = {"multipart/form-data"})
-    @RolesAllowed({Role.ADMIN})
-    public String handleFileUpload(@RequestParam("file") MultipartFile file,
-                                   RedirectAttributes redirectAttributes) {
-        try {
-            validateImportedSmallFile(file);
-            String[] lines = new String(file.getBytes()).split("\n");
-            log.info("lines " + lines.length);
-            competitionService.importTeams(Arrays.asList(lines));
-            redirectAttributes.addFlashAttribute("message",
-                    "You successfully uploaded " + file.getOriginalFilename() + "!");
-        } catch (Exception ex) {
-            log.error(ex.getMessage(), ex);
-            redirectAttributes.addFlashAttribute("error",
-                    "Upload failed!");
-        }
-
-        return "redirect:/control";
-    }
-
-
     private void validateValidZipFileForLocation(MultipartFile file) {
         Assert.isTrue(file.getContentType().contains("zip"), "invalid contenttype " + file.getContentType());
         mojServerProperties.getAssignmentRepo().toFile().mkdirs();
         Assert.isTrue(mojServerProperties.getAssignmentRepo().toFile().exists(), "location invalid " + mojServerProperties.getAssignmentRepo());
     }
+
     private void validateValidAssignmentStorage(String name) {
         String[] parts = name.split("-");
         Assert.isTrue(StringUtils.isNumeric(parts[0]) && name.contains("assignments"), "incorrect name format:" + name);
@@ -111,7 +85,8 @@ public class UploadController {
 
     /**
      * with this method one can upload/overwrite assignments on a server.
-     * @param file - zip file, should be a valid assignment storage.
+     *
+     * @param file               - zip file, should be a valid assignment storage.
      * @param redirectAttributes - admin feedback redirected on control page.
      */
     @PostMapping(value = "/importAssignments", consumes = {"multipart/form-data"})
@@ -144,7 +119,7 @@ public class UploadController {
     }
 
     private AssignmentLocationCache getAssignmentLocationCache() {
-        if (assignmentLocationCache==null) {
+        if (assignmentLocationCache == null) {
             assignmentLocationCache = new AssignmentLocationCache();
         }
         return assignmentLocationCache;
@@ -153,17 +128,18 @@ public class UploadController {
     /**
      * this method ensures that one can place images in the assets of an assignment.
      * sample usage would be: <img src='/public/assignment_image/moj-HexagonalChess/public_Hexagonal_chess.svg'>
+     *
      * @param assignment - the assignment name
-     * @param file_name - the file name of the image that should be rendered
-     * @param response - the available httpResponse
+     * @param file_name  - the file name of the image that should be rendered
+     * @param response   - the available httpResponse
      */
     @GetMapping("/public/assignment_image/{assignment}/{file_name}")
     public void insertAssignmentImage(@PathVariable("assignment") String assignment, @PathVariable("file_name") String file_name, HttpServletResponse response) {
-        Assert.isTrue(file_name.contains("public"),"invalid request1");
+        Assert.isTrue(file_name.contains("public"), "invalid request1");
         File assignmentFile = getAssignmentLocationCache().getAssignmentLocation(assignment);
-        Assert.isTrue(assignmentFile !=null && assignmentFile.isDirectory(),"invalid request2");
-        File sourceFile = new File(assignmentFile, "/assets/" +file_name);
-        response.setContentType( getImageContentType(file_name));
+        Assert.isTrue(assignmentFile != null && assignmentFile.isDirectory(), "invalid request2");
+        File sourceFile = new File(assignmentFile, "/assets/" + file_name);
+        response.setContentType(getImageContentType(file_name));
         try {
             FileUtils.copyFile(sourceFile, response.getOutputStream());
         } catch (Exception ex) {

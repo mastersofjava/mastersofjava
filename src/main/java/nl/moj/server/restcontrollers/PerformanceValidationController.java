@@ -11,7 +11,7 @@ import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.service.SubmitService;
-import nl.moj.server.teams.model.Role;
+import nl.moj.server.authorization.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.HttpUtil;
@@ -72,7 +72,7 @@ public class PerformanceValidationController {
         private int  solutionErrors=0;
         private void ensureCacheTeamList() {
             if (teamList==null) {
-                teamList = teamRepository.findAllByRole(Role.USER);
+                teamList = teamRepository.findAll();
             }
         }
         private void resetStateForNewTestRun() {

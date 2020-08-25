@@ -19,10 +19,6 @@
     <link rel="mask-icon" th:href="@{/images/safari-pinned-tab.svg}" color="#5bbad5">
     <meta name="msapplication-TileColor" content="#da532c">
     <meta name="theme-color" content="#ffffff">
-
-    <script type="application/javascript" >
-        isWithValidation = [[${isWithValidation != null ? isWithValidation : false}]];
-    </script>
 </head>
 
 <body class="p-2">
@@ -110,11 +106,6 @@
             </div>
             <div class="p-2 align-self-center">
                 <h2 th:if="${team!=null}">Team: [[${team}]]</h2>
-
-
-                <div class="p-2 align-self-center alignCenter">
-					<a th:href="@{/control}" class="btn btn-danger" th:classappend="${(isControlRole||isControlRole==null)?'':'hide'}">control</a>
-                </div>
             </div>
             <div class="p-2 text-center">
                 <br/>

@@ -20,18 +20,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.UUID;
 
-import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.config.properties.Directories;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.teams.model.Role;
-import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 
 @Service
@@ -40,7 +35,6 @@ import nl.moj.server.teams.repository.TeamRepository;
 public class BootstrapService {
 
     private MojServerProperties mojServerProperties;
-    private TeamRepository teamRepository;
 
     private static String[] LIBS = {
             "asciiart-core-1.1.0.jar",
@@ -60,12 +54,11 @@ public class BootstrapService {
 
 
     public boolean isBootstrapNeeded() {
-        return !adminExists() || !dataValid();
+        return !dataValid();
     }
 
-    public void bootstrap(String adminUser) throws IOException {
+    public void bootstrap() throws IOException {
         updateData();
-        createAdminUser(adminUser);
     }
 
     private void updateData() throws IOException {
@@ -98,24 +91,6 @@ public class BootstrapService {
         }
     }
 
-    private void createAdminUser(String username) {
-        log.info("Creating administrator.");
-        // create a new admin user
-        List<Team> admins = teamRepository.findAllByRole(Role.ADMIN);
-        if (!admins.isEmpty()) {
-            admins.forEach(a -> teamRepository.delete(a));
-        }
-        Team admin = Team.builder()
-                .company("Masters of Java")
-                .name(username)
-                .uuid(UUID.randomUUID())
-                .country("NL")
-                .role(Role.ADMIN)
-                .build();
-
-        teamRepository.save(admin);
-    }
-
     private boolean dataValid() {
         Directories directories = mojServerProperties.getDirectories();
         Path libs = directories.getBaseDirectory().resolve(directories.getLibDirectory());
@@ -131,7 +106,4 @@ public class BootstrapService {
         return valid;
     }
 
-    private boolean adminExists() {
-        return teamRepository.exists(Example.of(Team.builder().role(Role.ADMIN).build()));
-    }
 }

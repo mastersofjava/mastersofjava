@@ -14,7 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.teams.model;
+package nl.moj.server.authorization;
 
 import java.util.List;
 import java.util.stream.Collectors;

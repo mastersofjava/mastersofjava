@@ -32,10 +32,8 @@ import nl.moj.server.rankings.model.RankingHeader;
 import nl.moj.server.runtime.model.AssignmentResult;
 import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -62,7 +60,7 @@ public class RankingsService {
                     assignmentResultsPerYear.add(result);
                 }
             }
-            teamRepository.findAllByRole(Role.USER).forEach(team -> {
+            teamRepository.findAll().forEach(team -> {
                 Ranking rank = Ranking.builder()
                         .team(team.getName())
                         .totalScore(calculateTotalScore(assignmentResultsPerYear, team))

@@ -20,7 +20,6 @@ import nl.moj.server.rankings.model.Ranking;
 import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
@@ -401,16 +400,9 @@ public class GamemasterTableComponents {
             private String rowClass = isShowAllUsers?"cursorPointer":"";
             private Team team;
             private Long totalScore;
-            private void ensureUserRoleIndication() {
-                if (!team.getRole().equals(Role.USER)) {
-                    specialRoleIndication = "("+team.getRole().replace("ROLE_","")+")";
-                }
-            }
+
             public TableComponentForTeam(Team team) {
                 this.team = team;
-
-                ensureUserRoleIndication();
-
                 totalScore = rankingMap.getOrDefault(team.getName(),0L);
             }
 
@@ -429,11 +421,6 @@ public class GamemasterTableComponents {
                     String inputField = "<i>registreer contactgegevens:</i><br/><input type='text' placeholder='registreer contactgegevens' onchange=\"updateTeamStatus($(this).closest('tbody').attr('id'),this.value)\" value='"+team.getCompany()+"' class='minWidth200 font10px'/>";
                     String deleteButton = "<button class='font10px cursorPointer smallBlackBorder minWidth100' onclick=\"updateTeamStatus($(this).closest('tbody').attr('id'),'ARCHIVE');$(this).closest('tbody').addClass('hide')\">archive team</button><br/>";
                     String disqualifyButton = "<button class='font10px cursorPointer smallBlackBorder minWidth100' onclick=\"updateTeamStatus($(this).closest('tbody').attr('id'),'DISQUALIFY');$(this).closest('tbody').addClass('hide')\">disqualify</button><br/>";
-                    if (team.getRole().equals(Role.ADMIN)) {
-                        deleteButton = "";
-                        inputField = "";
-                        disqualifyButton = "";
-                    }
                     sb.append("<tr class='subrows hide font10px'><td colspan=2>");
                     sb.append(inputField);
                     sb.append("</td><td colspan=2 class='alignCenter'>"+deleteButton+disqualifyButton+"</td></tr>");
