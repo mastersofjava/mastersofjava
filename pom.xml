@@ -22,7 +22,6 @@
 
 	<properties>
 		<java.version>11</java.version>
-		<skipTests>true</skipTests>
 		<spring-boot.repackage.skip>false</spring-boot.repackage.skip>
 	</properties>
 
