@@ -182,6 +182,9 @@ public class AssignmentRuntime {
         }
         public void resetTimer() {
             this.durationInSeconds = this.assignmentDescriptor.getDuration().toSeconds();
+            if (timer==null) {
+                return;
+            }
             this.timer.reset();
             this.timer.start();
         }
