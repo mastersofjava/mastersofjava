@@ -52,6 +52,7 @@ import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
+import nl.moj.server.util.HttpUtil;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
@@ -306,7 +307,9 @@ public class CompileService {
                 List<String> cmd = new ArrayList<>();
                 cmd.add(javaVersion.getCompiler().toString());
                 cmd.add("-Xlint:all");
-                if (javaVersion.getVersion() >= 12) {
+                boolean isWebModus = HttpUtil.getCurrentHttpRequest()!=null;
+                // online in webmodus preview features are enabled (during testing preview features are disabled).
+                if (javaVersion.getVersion() >= 12 && isWebModus) {
                     cmd.add("--enable-preview");
                     cmd.add("--release");
                     cmd.add("" + javaVersion.getVersion());
@@ -366,6 +369,7 @@ public class CompileService {
                         .append('\n')
                         .append(mojServerProperties.getLimits().getCompileOutputLimits().getTimeoutMessage());
             }
+            compileAttempt.setDateTimeEnd(Instant.now());//always provide a attempt end timeslot before saving (because cannot be null)
             // TODO can this be done nicer?
             if (compileOutput.length() > 0) {
                 // if we still have some output left and exitvalue = 0
