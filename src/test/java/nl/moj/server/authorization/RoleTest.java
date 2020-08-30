@@ -1,10 +1,9 @@
-package nl.moj.server.teams.model;
+package nl.moj.server.authorization;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 
-import nl.moj.server.authorization.Role;
 import org.junit.jupiter.api.Test;
 
 class RoleTest {
