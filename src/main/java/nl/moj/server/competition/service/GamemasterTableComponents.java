@@ -523,8 +523,8 @@ public class GamemasterTableComponents {
             if (isStateCurrent) {
                 viewState = "<a href='./'>"+viewState+"</a>";
             }
-            String viewName = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"' title='view assignment'>"+orderedAssignment.name+"</a>";
-            String viewOrder = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"&solution' title='view solution'>"+counter+"</a>";
+            String viewName = orderedAssignment.name;
+            String viewOrder = ""+counter;
 
             if (highscoreMap.containsKey(orderedAssignment.name)) {
                 viewTime = "<span class='hide'>STARTED</span>" + highscoreMap.get(orderedAssignment.name).getStartTime();
