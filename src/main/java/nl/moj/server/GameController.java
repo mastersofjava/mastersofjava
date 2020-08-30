@@ -100,7 +100,7 @@ public class GameController {
         Team team = user.getTeam();
         // if there is no team for this user, create on, we found a new
         // signup from the IDP (IDentity Provider).
-		if (user.getTeam() == null ) {
+		if (team == null ) {
 		    // send to team create screen!
             log.info("No team for user {}, redirecting to team creation.", user.getUuid());
             model.addAttribute("teamForm", new TeamForm());
