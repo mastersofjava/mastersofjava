@@ -16,39 +16,27 @@
 */
 package nl.moj.server;
 
-import java.io.File;
-import java.security.Principal;
-import java.util.ArrayList;
-import java.util.List;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.assignment.repository.AssignmentRepository;
+import nl.moj.server.authorization.Role;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.competition.service.CompetitionService;
 import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.JavaAssignmentFileResolver;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
-import nl.moj.server.authorization.Role;
 import nl.moj.server.teams.controller.TeamForm;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import nl.moj.server.util.HttpUtil;
-import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationEntryPoint;
-import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -56,10 +44,11 @@ import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.annotation.security.RolesAllowed;
-import javax.servlet.http.HttpServletRequest;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -110,15 +99,12 @@ public class GameController {
         User user = userService.createOrUpdate(principal);
         Team team = user.getTeam();
         // if there is no team for this user, create on, we found a new
-        // signup from the IDP.
-		if (user.getTeam() == null ) {
+        // signup from the IDP (IDentity Provider).
+		if (team == null ) {
 		    // send to team create screen!
             log.info("No team for user {}, redirecting to team creation.", user.getUuid());
             model.addAttribute("teamForm", new TeamForm());
             return "createteam";
-//			team = registerNewTeam(user);
-//			user = userService.addUserToTeam(user,team);
-//			log.info("Registered team {} with uuid {} for user {}", team.getName(), team.getUuid(), user.getUuid());
         }
 
         CompetitionSession competitionSession = getSelectedCompetitionSession();
@@ -137,10 +123,6 @@ public class GameController {
         addModelDataForUserWithAssignment(model, team, competitionRuntime.getActiveAssignment());
         return "play";
     }
-
-	private Team registerNewTeam(User user) {
-        return teamService.createTeam("None", "Unknown", "Team "+user.getGivenName());
-	}
 
     private void insertCompetitionSelector(Model model, TaskControlController.SelectSessionForm ssf,UUID sessionUUID) {
         List<CompetitionSession> sessions = competitionSessionRepository.findAll();
@@ -225,36 +207,8 @@ public class GameController {
 
         }
 
-        private List<AssignmentFile> filterUnitTestsFromInputFiles() {
-            List<AssignmentFile> tests = new ArrayList<>();
-            for (AssignmentFile inputFile: inputFiles) {
-                String name = inputFile.getFile().toFile().getName().toLowerCase();
-                boolean isTestCase = name.endsWith(".java") && name.contains("test") && inputFile.isReadOnly();
-                if (isTestCase) {
-                    tests.add(inputFile);
-                }
-            }
-            return tests;
-        }
 
-        public void saveAdminState( Assignment assignment) {
-            model.addAttribute("finished",false);
-            model.addAttribute("submitDisabled", false);
-            model.addAttribute("submittime", 0);
-            model.addAttribute("finalscore", 0);
-            model.addAttribute("maxSubmits", 1);
-            model.addAttribute("submits", 1);
-            model.addAttribute("assignment", assignment.getName());
-            model.addAttribute("timeLeft", 0);
-            model.addAttribute("time", 0);
-            model.addAttribute("tests", filterUnitTestsFromInputFiles());
-            model.addAttribute("running", true);
-            model.addAttribute("labels", new ArrayList<>());
-            model.addAttribute("bonus", "");
-            model.addAttribute("assignmentName", assignment.getName());
-        }
-
-        public void saveAssignmentDetails(ActiveAssignment state) {
+        private void saveAssignmentDetails(ActiveAssignment state) {
             List<String> scoreLabels = state.getAssignmentDescriptor().readScoreLables();
 
             model.addAttribute("assignmentName", state.getAssignmentDescriptor().getName());

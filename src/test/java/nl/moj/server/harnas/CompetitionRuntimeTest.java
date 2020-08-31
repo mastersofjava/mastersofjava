@@ -29,7 +29,6 @@ public class CompetitionRuntimeTest extends BaseRuntimeTest {
 
         assertThat(competitionRuntime.getCompetition().getShortName()).isSameAs("TestCase");
         assertThat(competitionRuntime.getSessions().size()).isEqualTo(1);
-        assertThat(competitionRuntime.getRunningCompetitionsQuickviewMap().size()).isEqualTo(0);
         assertThat(competitionRuntime.getAssignmentInfo().size()).isEqualTo(4);
         assertThat(competitionRuntime.getAssignmentInfoOrderedForCompetition().size()).isEqualTo(4);
         UUID assignmentUuid = competitionRuntime.getCompetition().getAssignments().get(0).getAssignment().getUuid();
