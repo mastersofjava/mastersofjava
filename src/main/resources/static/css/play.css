@@ -1,5 +1,5 @@
 body {
-    margin-bottom: 50px;
+    margin-bottom: 80px;
 }
 
 .btn:hover {
@@ -89,7 +89,16 @@ body .cm-s-default .cm-variable-2 {
 .cm-s-default .cm-header {
     color:black;
 }
-.CodeMirror.TASK {
+
+.CodeMirror.task {
     font-family: Arial, monospace;
     font-size: 18px;
+}
+
+div.file-content {
+    overflow-y: scroll;
+}
+
+.markdown {
+    margin-bottom: 20px;
 }

@@ -10,6 +10,7 @@
     <link rel="stylesheet" th:href="@{/webjars/codemirror/addon/hint/show-hint.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/codemirror/lib/codemirror.css}"/>
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/css/markdown.css}"/>
     <link rel="stylesheet" th:href="@{/css/play.css}"/>
 
     <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/apple-touch-icon.png}">
@@ -21,7 +22,7 @@
     <meta name="theme-color" content="#ffffff">
 </head>
 
-<body class="p-2">
+<body class="m-2">
 <div class="container-fluid">
     <!-- content -->
     <div class="row">
@@ -85,8 +86,10 @@
                         <div class="tab-pane" th:classappend="${status.index==0?'show active':''}" role="tabpanel"
                              th:each="file,status : ${files}" th:id="${'tab-'+file.uuid}">
                             <div class="tab-pane-content">
-                                <div class="file-content" th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}">
-                                    [[${file.getContentAsString()}]]
+                                <!-- |[[${file.getMediaTypeString()}]]| -->
+                                <div class="file-content" th:switch="${file.getMediaTypeString()}" th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}">
+                                    <div class="markdown markdown-body" th:case="'text/x-web-markdown'" th:utext="${file.getContentAsString()}"></div>
+                                    <pre class="text" th:case="*" th:utext="${file.getContentAsString()}"></pre>
                                 </div>
                                 <textarea th:if="${file.fileType != T(nl.moj.server.runtime.model.AssignmentFileType).TASK}"
                                         th:attr="data-cm=${'cm-'+file.uuid},data-cm-id=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"

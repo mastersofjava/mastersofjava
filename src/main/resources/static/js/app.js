@@ -5,10 +5,12 @@ var activeAction = null;
 var failed = false;
 
 $(document).ready(function () {
+    console.log("Connecting websockets!")
     connectCompetition();
     connectButtons();
 
     initializeAssignmentClock();
+    initializeMarkdown();
     initializeCodeMirrors();
     $( window ).resize(function() {
         doResizeCodingPanel();
@@ -182,6 +184,20 @@ function codeMirror_insertImagesInAssignmentText() {
         }
     });
 }
+
+function initializeMarkdown() {
+    $('div.markdown').each(
+        function(idx) {
+            $(this).html(function(idx,content) {
+                return marked(content)
+            })
+        }
+    )
+    let pos = $('#tabs .tab-content').position();
+    let height = window.innerHeight - pos.top - 80;
+    $('div.file-content').css('height', height + 'px');
+}
+
 function initializeCodeMirrors() {
     texts = [];
     cmList = [];
@@ -229,7 +245,6 @@ function initializeCodeMirrors() {
                 tabLink.trigger('shown.bs.tab');
             }
         });
-    $('.CodeMirror')[0].className += ' TASK';
 }
 
 function initializeAssignmentClock() {

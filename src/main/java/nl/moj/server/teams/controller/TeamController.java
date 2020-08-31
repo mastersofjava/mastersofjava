@@ -24,13 +24,11 @@ public class TeamController {
     @PostMapping("/team")
     public String createTeam(@AuthenticationPrincipal Principal principal, @ModelAttribute("teamForm") TeamForm form) {
         User user = userService.createOrUpdate(principal);
-
         if (user.getTeam() == null ) {
 			Team team = teamService.createTeam(form.getName(),form.getCompany(), form.getCountry());
 			user = userService.addUserToTeam(user,team);
 			log.info("Registered team {} with uuid {} for user {}", team.getName(), team.getUuid(), user.getUuid());
         }
-
-        return "play";
+        return "redirect:/play";
     }
 }
