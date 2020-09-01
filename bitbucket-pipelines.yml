@@ -8,8 +8,10 @@ image: maven:3.5-jdk-11-slim
 pipelines:
   default:
   - step:
+      caches:
+        - maven
       script:
-      - echo "No default pipeline configured."
+        - mvn -B clean install
   branches:
     master:
     - step:
