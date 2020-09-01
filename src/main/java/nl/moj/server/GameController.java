@@ -92,7 +92,6 @@ public class GameController {
         return result;
     }
 
-    @RolesAllowed({Role.USER})
     @GetMapping("/play")
     public String index(Model model, @AuthenticationPrincipal Principal principal,@ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
 
