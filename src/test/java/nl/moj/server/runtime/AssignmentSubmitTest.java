@@ -42,13 +42,6 @@ import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
 import org.springframework.util.Assert;
 
-import nl.moj.server.competition.model.OrderedAssignment;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.submit.SubmitResult;
-import nl.moj.server.submit.model.SourceMessage;
-import nl.moj.server.submit.service.SubmitService;
-
 /**
  * During integration testing this class is executed twice, one for sequential and one for parallel.
  * This test validates the Assignment Submit.
@@ -133,7 +126,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
                 .get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
     }
     private void stopSelectedAssignment() {
-        competitionRuntime.stopCurrentAssignment();
+        competitionRuntime.stopCurrentSession();
     }
     private void assertValidSubmit( SubmitResult submitResult) {
         assertThat(submitResult.isSuccess()).isTrue();

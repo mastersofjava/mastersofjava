@@ -25,22 +25,12 @@ import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.login.SignupForm;
 import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.teams.service.TeamService;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.json.JsonParser;
-import org.springframework.boot.json.JsonParserFactory;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -51,8 +41,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -63,10 +51,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CompetitionService {
     private static final String YEAR_PREFIX = "20";
-
-    private final TeamRepository teamRepository;
-
-    private final PasswordEncoder encoder;
 
     private final MojServerProperties mojServerProperties;
 
@@ -80,36 +64,11 @@ public class CompetitionService {
 
     private final CompetitionSessionRepository competitionSessionRepository;
 
-    public PasswordEncoder getEncoder() {
-        return encoder;
-    }
+    private final TeamService teamService;
 
-    public void createNewTeam(SignupForm form) {
-        createNewTeam(form, Role.USER);
-    }
-    public void createNewTeam(SignupForm form, String role) {
-        SecurityContext context = SecurityContextHolder.getContext();
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(form.getName(), form
-                .getPassword(), Arrays.asList(new SimpleGrantedAuthority(Role.USER)));
-
-        Team team = Team.builder()
-                .company(form.getCompany())
-                .country(form.getCountry())
-                .name(form.getName())
-                .role(role)
-                .uuid(UUID.randomUUID())
-                .build();
-
-        context.setAuthentication(authentication);
-        saveNewTeam(team);
-    }
-
-    private void saveNewTeam(Team team) {
-        teamRepository.save(team);
-
-        Path teamdir = mojServerProperties.getDirectories().getBaseDirectory()
-                .resolve(mojServerProperties.getDirectories().getTeamDirectory())
-                .resolve(team.getName());
+    // TODO: Sort out if we can do this lazily when the team first submits.
+    public void addTeam(Team team) {
+        Path teamdir = teamService.getTeamDirectory(competitionRuntime.getCompetitionSession(), team);
         if (!Files.exists(teamdir)) {
             try {
                 Files.createDirectory(teamdir);
@@ -117,103 +76,6 @@ public class CompetitionService {
                 log.error("error creating teamdir", e);
             }
         }
-    }
-
-    public class UserImporter {
-        private List<String> lines;
-        private List<Team> teamList = new ArrayList<>();
-        private Map<String,String> teamScoresMap = new TreeMap<>();
-
-        public UserImporter(List<String> lines) {
-            this.lines = lines;
-            parseLines();
-        }
-        private class TeamParser {
-            private Team parse(String trLine) {
-                String role = Role.USER;
-                String[] parts = trLine.split("\\|");
-                if (parts.length>=3 && parts[2].equals(Role.GAME_MASTER)) {
-                    role = Role.GAME_MASTER;
-                }
-                if (parts.length>=3 && parts[2].equals(Role.ANONYMOUS)) {
-                    role = Role.ANONYMOUS;
-                }
-                String name = parts[0];
-                String lastPart = parts[parts.length-1];
-                boolean isWithUpdateScores =  lastPart.startsWith("{")&&lastPart.endsWith("}");
-                if (isWithUpdateScores) {
-                    teamScoresMap.put(name, lastPart);
-                }
-                return Team.builder()
-                        .company(parts[1])
-                        .country("Nederland")
-                        .name(name)
-                        .role(role)
-                        .uuid(UUID.randomUUID())
-                        .build();
-            }
-        }
-
-        private void parseLines() {
-            for (String line: lines) {
-                String trLine = line.trim();
-
-                if (trLine.isEmpty()||trLine.startsWith("##")) {
-                    continue;
-                }
-                TeamParser parser = new TeamParser();
-                Team team = parser.parse(trLine);
-                if (team.getName().equalsIgnoreCase("admin")) {
-                    continue;
-                }
-                teamList.add(team);
-            }
-        }
-        private void updateScoresForTeam(Team team, String jsonString) {
-            JsonParser parser = JsonParserFactory.getJsonParser();
-            Map<String, Object> scoreInputMap = parser.parseMap(jsonString);// numbers are parsed as Integers
-            List<AssignmentStatus> statusList = assignmentStatusRepository.findByCompetitionSessionAndTeam(competitionRuntime.getCompetitionSession(), team);
-
-            int counter = 0;
-            for (AssignmentStatus status: statusList) {
-                String id = status.getAssignment().getId().toString();
-                boolean isUserHasNewScoreImport = scoreInputMap.get(id)!=null;
-
-                if (!isUserHasNewScoreImport || status.getAssignmentResult()==null) {
-                    continue;
-                }
-                long newScore = (Integer) scoreInputMap.get(id);
-
-                status.getAssignmentResult().setFinalScore(newScore);
-                assignmentResultRepository.save(status.getAssignmentResult());
-                counter++;
-            }
-            log.info("imported scores: team " + team.getName() + "=" +jsonString + " (updates counted: " +counter+", statusList: " +statusList.size()+ ")");
-        }
-
-        public void addOrUpdateAllImportableTeams() {
-            for (Team teamInput: this.teamList) {
-                Team team = teamRepository.findByName(teamInput.getName());
-                boolean isNew = team==null;
-                log.info("imported team: " + teamInput.getName() + " " +teamInput.getCompany() + " " + teamInput.getRole()  + " isNew " + isNew);
-
-                if (isNew) {
-                    saveNewTeam(teamInput);
-                } else {// update just the role and company
-                    team.setRole(teamInput.getRole());
-                    team.setCompany(teamInput.getCompany());
-                    teamRepository.save(team);
-                    if (teamScoresMap.containsKey(team.getName())) {
-                        updateScoresForTeam(team,teamScoresMap.get(team.getName()));
-                    }
-                }
-            }
-        }
-    }
-
-    public void importTeams(List<String> lines) {
-        UserImporter importer = new UserImporter( lines);
-        importer.addOrUpdateAllImportableTeams();
     }
 
     public String getSelectedYearLabel() {

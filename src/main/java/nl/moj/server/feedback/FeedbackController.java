@@ -29,7 +29,7 @@ import nl.moj.server.competition.model.Competition;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.teams.model.Role;
+import nl.moj.server.authorization.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.CollectionUtil;
@@ -62,7 +62,7 @@ public class FeedbackController {
         }
 
         ModelAndView model = new ModelAndView("testfeedback");
-        List<Team> allTeams = teamRepository.findAllByRole(Role.USER);
+        List<Team> allTeams = teamRepository.findAll();
         orderTeamsByName(allTeams, resultsProvider);
 
         List<List<Team>> partitionedTeams = CollectionUtil.partition(allTeams, 3);

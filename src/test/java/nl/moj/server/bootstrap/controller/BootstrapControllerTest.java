@@ -47,13 +47,13 @@ class BootstrapControllerTest {
 	void testIsAlreadyBootstrappedDoBootstrap() {
 		when(bootstrapService.isBootstrapNeeded()).thenReturn(false);
 		
-		assertEquals("redirect:/control", controller.doBootstrap(null, null, null));
+		assertEquals("redirect:/control", controller.doBootstrap(null));
 	}
 	
 	@Test
 	void testDoBootstrap() throws IOException {
 		when(bootstrapService.isBootstrapNeeded()).thenReturn(true);
-		assertEquals("redirect:/control", controller.doBootstrap(mock(Principal.class), mock(RedirectAttributes.class), null));
+		assertEquals("redirect:/control", controller.doBootstrap(mock(RedirectAttributes.class)));
 	}
 	
 	@Test
@@ -61,8 +61,8 @@ class BootstrapControllerTest {
 		when(bootstrapService.isBootstrapNeeded()).thenReturn(true);
 		doThrow(IOException.class)
 			.when(bootstrapService)
-			.bootstrap(null); 
+			.bootstrap();
 		
-		assertEquals("redirect:/bootstrap", controller.doBootstrap(mock(Principal.class), mock(RedirectAttributes.class), null));
+		assertEquals("redirect:/bootstrap", controller.doBootstrap(mock(RedirectAttributes.class)));
 	}
 }

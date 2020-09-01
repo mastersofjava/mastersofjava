@@ -50,9 +50,9 @@ import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SourceMessage;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
+import nl.moj.server.util.HttpUtil;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
@@ -74,7 +74,7 @@ public class CompileService {
 
     public CompileService(MojServerProperties mojServerProperties,
                           CompileAttemptRepository compileAttemptRepository, AssignmentStatusRepository assignmentStatusRepository,
-                          TeamService teamService,AssignmentService assignmentService, AssignmentRepository assignmentRepository) {
+                          TeamService teamService, AssignmentService assignmentService, AssignmentRepository assignmentRepository) {
         this.mojServerProperties = mojServerProperties;
         this.compileAttemptRepository = compileAttemptRepository;
         this.assignmentStatusRepository = assignmentStatusRepository;
@@ -85,29 +85,20 @@ public class CompileService {
 
     public CompletableFuture<CompileResult> scheduleCompile(Team team, SourceMessage message, Executor executor, ActiveAssignment state) {
         // determine compiler version to use.
-        Assert.isTrue(state!=null,"Active Assignment is missing.");
+        Assert.isTrue(state != null, "Active Assignment is missing.");
         AssignmentDescriptor input = state.getAssignmentDescriptor();
-        final CompileInputWrapper compileInputWrapper;
-        if (input==null && team.getRole().equals(Role.ADMIN)) {
-            log.info("team " + team.getName() + " " + team.getRole() );
-            log.info("input.sources " + message.getSources().size() + " " + message.getTests().size() + " " + message.getSources().keySet() + " " +message.getAssignmentName());
-            compileInputWrapper = new CompileInputWrapper(message.getAssignmentName());
-            input = compileInputWrapper.assignmentDescriptor;
-            compileInputWrapper.state = state;
-        } else {
-            compileInputWrapper = new CompileInputWrapper(state);
-        }
-        Assert.isTrue(input!=null,"assignment descriptor is missing.");
+        final CompileInputWrapper compileInputWrapper = new CompileInputWrapper(state);
+        Assert.isTrue(input != null, "assignment descriptor is missing.");
         var javaVersion = mojServerProperties.getLanguages()
                 .getJavaVersion(input
                         .getJavaVersion());
 
-        log.info("supplyAsync.javaCompile " + message.getAssignmentName() + " " +javaVersion  );
+        log.info("supplyAsync.javaCompile " + message.getAssignmentName() + " " + javaVersion);
         // compile code.
         return CompletableFuture.supplyAsync(() -> javaCompile(javaVersion, team, message, compileInputWrapper), executor);
     }
 
-    public class CompileInputWrapper {
+    public static class CompileInputWrapper {
         List<AssignmentFile> resources;
         List<AssignmentFile> readonlyAssignmentFiles;
         List<AssignmentFile> allAssignmentFiles;
@@ -116,14 +107,7 @@ public class CompileService {
         Instant startTimeSinceQueue;
         private UUID compileAttemptId;
         private ActiveAssignment state;
-        CompileInputWrapper(String assignmentName) {
-            assignment = assignmentRepository.findByName(assignmentName);
-            assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
-            List<AssignmentFile> fileList = assignmentService.getAssignmentFiles(assignment);
-            resources = getResourcesToCopy(fileList);
-            readonlyAssignmentFiles = getReadonlyAssignmentFilesToCompile(fileList);
-            allAssignmentFiles = fileList;
-        }
+
         CompileInputWrapper(ActiveAssignment state) {
             this.state = state;
             //AssignmentFileType: RESOURCE, TEST_RESOURCE, HIDDEN_TEST_RESOURCE
@@ -134,16 +118,19 @@ public class CompileService {
             assignmentDescriptor = state.getAssignmentDescriptor();
             allAssignmentFiles = state.getAssignmentFiles();
         }
+
         public void destroy() {
             assignment = null;
             assignmentDescriptor = null;
             resources = null;
             readonlyAssignmentFiles = null;
-            allAssignmentFiles=null;
+            allAssignmentFiles = null;
         }
+
         private List<AssignmentFile> getReadonlyAssignmentFilesToCompile(ActiveAssignment state) {
             return getReadonlyAssignmentFilesToCompile(state.getAssignmentFiles());
         }
+
         /**
          * AssignmentFileType: READONLY, TEST, HIDDEN_TEST, HIDDEN
          */
@@ -156,9 +143,11 @@ public class CompileService {
                             f.getFileType() == AssignmentFileType.HIDDEN)
                     .collect(Collectors.toList());
         }
+
         private List<AssignmentFile> getResourcesToCopy(ActiveAssignment state) {
             return getResourcesToCopy(state.getAssignmentFiles());
         }
+
         /**
          * AssignmentFileType: RESOURCE, TEST_RESOURCE, HIDDEN_TEST_RESOURCE
          */
@@ -170,6 +159,7 @@ public class CompileService {
                             f.getFileType() == AssignmentFileType.HIDDEN_TEST_RESOURCE)
                     .collect(Collectors.toList());
         }
+
         private AssignmentFile getOriginalAssignmentFile(String uuid) {
             return allAssignmentFiles
                     .stream()
@@ -178,6 +168,7 @@ public class CompileService {
                     .orElseThrow(() -> new RuntimeException("Could not find original assignment file for UUID " + uuid));
         }
     }
+
     public class TeamProjectPathModel {
         private Path teamAssignmentDir;
         private Path sourcesDir;
@@ -195,35 +186,37 @@ public class CompileService {
             try {
                 if (teamAssignmentDir.toFile().exists()) {
 
-                    Collection<File> fileList = FileUtils.listFiles(teamAssignmentDir.toFile(), new String[] {"java","class"}, true);
+                    Collection<File> fileList = FileUtils.listFiles(teamAssignmentDir.toFile(), new String[]{"java", "class"}, true);
 
-                    for (File file: fileList) {
+                    for (File file : fileList) {
                         if (file.exists()) {
                             FileUtils.deleteQuietly(file);
                             File project = file.getParentFile().getParentFile();
                             FileUtils.deleteQuietly(project);
                         }
                     }
-                    isValidCleanStart = !teamAssignmentDir.toFile().exists() || teamAssignmentDir.toFile().list().length==0;
+                    isValidCleanStart = !teamAssignmentDir.toFile().exists() || teamAssignmentDir.toFile().list().length == 0;
                 } else {
                     isValidCleanStart = true;
                 }
             } catch (Exception e) {
-                log.error("error while cleaning teamdir: " +teamAssignmentDir.toFile(), e);
+                log.error("error while cleaning teamdir: " + teamAssignmentDir.toFile(), e);
             }
-            boolean isValidSources= sourcesDir.toFile().mkdirs();
-            boolean isValidClasses= classesDir.toFile().mkdirs();
-            isValidCleanStart &= isValidSources &&  isValidClasses;
-            log.info("cleanedDirectory: {} isValidCleanStart {}", teamAssignmentDir , isValidCleanStart);
+            boolean isValidSources = sourcesDir.toFile().mkdirs();
+            boolean isValidClasses = classesDir.toFile().mkdirs();
+            isValidCleanStart &= isValidSources && isValidClasses;
+            log.info("cleanedDirectory: {} isValidCleanStart {}", teamAssignmentDir, isValidCleanStart);
             log.info("sources created? -> {} isValidSources {}", sourcesDir, isValidSources);
             log.info("classes created? -> {} isValidClasses {}", classesDir, isValidClasses);
             return isValidCleanStart;
         }
+
         public void destroy() {
             sourcesDir = null;
             classesDir = null;
             teamAssignmentDir = null;
         }
+
         private void prepareResources(List<AssignmentFile> resources) {
             resources.forEach(r -> {
                 try {
@@ -236,10 +229,11 @@ public class CompileService {
                     FileUtils.copyFile(r.getAbsoluteFile().toFile(), target);
                 } catch (IOException e) {
                     log.error("error while writing resources to classes dir", e);
-                    this.errorMessage =  e.getMessage();
+                    this.errorMessage = e.getMessage();
                 }
             });
         }
+
         private void prepareInputSources(SourceMessage message, CompileInputWrapper compileInputWrapper) {
             message.getSources().forEach((uuid, v) -> {
                 try {
@@ -254,13 +248,13 @@ public class CompileService {
                     compileInputWrapper.readonlyAssignmentFiles.add(orig.toBuilder()
                             .absoluteFile(f.toPath())
                             .build());
-                } catch (IOException|RuntimeException e) {
+                } catch (IOException | RuntimeException e) {
                     log.error("error while writing sourcefiles to sources dir", e);
                     this.errorMessage = e.getMessage();
                 }
 
             });
-            Assert.isTrue(this.errorMessage==null,this.errorMessage);
+            Assert.isTrue(this.errorMessage == null, this.errorMessage);
         }
     }
 
@@ -268,7 +262,7 @@ public class CompileService {
         String safePathForEarchOperatingSystem = file.toString();
         if (safePathForEarchOperatingSystem.contains(" ") && OS_WINDOWS) {
             // if with space then make safe for javac execution (otherwise windows execution would go wrong)
-            safePathForEarchOperatingSystem = "\"" +safePathForEarchOperatingSystem + "\"";
+            safePathForEarchOperatingSystem = "\"" + safePathForEarchOperatingSystem + "\"";
         }
         return safePathForEarchOperatingSystem;
     }
@@ -277,7 +271,7 @@ public class CompileService {
         compileInputWrapper.startTimeSinceQueue = Instant.now();
         // TODO should not be here.
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(compileInputWrapper.assignment, compileInputWrapper.state.getCompetitionSession(), team);
-        log.info("javaCompile: {} for team {} ", compileInputWrapper.assignment.getName() , team.getName());
+        log.info("javaCompile: {} for team {} ", compileInputWrapper.assignment.getName(), team.getName());
         compileInputWrapper.compileAttemptId = UUID.randomUUID();
         CompileAttempt compileAttempt = CompileAttempt.builder()
                 .assignmentStatus(as)
@@ -286,7 +280,7 @@ public class CompileService {
                 .build();
         List<AssignmentFile> resources = compileInputWrapper.resources;
         List<AssignmentFile> assignmentFiles = compileInputWrapper.readonlyAssignmentFiles;
-        log.info("resources: {}, assignmentFiles: {}" ,resources.size(), assignmentFiles.size());
+        log.info("resources: {}, assignmentFiles: {}", resources.size(), assignmentFiles.size());
 
         TeamProjectPathModel pathModel = new TeamProjectPathModel(team, compileInputWrapper.assignment, compileInputWrapper.state);
         pathModel.cleanCompileLocationForTeam();
@@ -296,7 +290,7 @@ public class CompileService {
             pathModel.prepareInputSources(message, compileInputWrapper);
         } catch (Exception e) {
             log.error("error while preparing sources.", e);
-            return createCompileResult(compileInputWrapper, "error while preparing sources: "+pathModel.errorMessage, false);
+            return createCompileResult(compileInputWrapper, "error while preparing sources: " + pathModel.errorMessage, false);
         }
 
         // C) Java compiler options
@@ -313,10 +307,12 @@ public class CompileService {
                 List<String> cmd = new ArrayList<>();
                 cmd.add(javaVersion.getCompiler().toString());
                 cmd.add("-Xlint:all");
-                if (javaVersion.getVersion()>=12) {
+                boolean isWebModus = HttpUtil.getCurrentHttpRequest()!=null;
+                // online in webmodus preview features are enabled (during testing preview features are disabled).
+                if (javaVersion.getVersion() >= 12 && isWebModus) {
                     cmd.add("--enable-preview");
                     cmd.add("--release");
-                    cmd.add("" +javaVersion.getVersion());
+                    cmd.add("" + javaVersion.getVersion());
                 }
 
                 cmd.add("-encoding");
@@ -329,7 +325,7 @@ public class CompileService {
                 cmd.add("-d");
                 cmd.add(toSafeFilePathInputForEachOperatingSystem(pathModel.classesDir.toAbsolutePath().toFile()));
                 assignmentFiles.forEach(a -> {
-                    Assert.isTrue(a.getAbsoluteFile().toFile().exists(),"file does not exist: " +a.getAbsoluteFile().toFile());
+                    Assert.isTrue(a.getAbsoluteFile().toFile().exists(), "file does not exist: " + a.getAbsoluteFile().toFile());
                     cmd.add(toSafeFilePathInputForEachOperatingSystem(a.getAbsoluteFile().toFile()));
                 });
 
@@ -348,13 +344,13 @@ public class CompileService {
                 OutputStream error = commandExecutor.pumps().getErr();
                 OutputStream out = commandExecutor.pumps().getOut();
                 commandExecutor.pumps().flush();
-                if (is!=null) {
+                if (is != null) {
                     is.close();
                 }
-                if (error!=null) {
+                if (error != null) {
                     error.close();
                 }
-                if (out!=null) {
+                if (out != null) {
                     out.close();
                 }
                 log.debug("commandExecutor stop ");
@@ -373,34 +369,34 @@ public class CompileService {
                         .append('\n')
                         .append(mojServerProperties.getLimits().getCompileOutputLimits().getTimeoutMessage());
             }
-            boolean isAlwaysNeeded = !team.getRole().equals(Role.ADMIN); // if admin then no registration is needed, when not in competition (only validating the assignment).
+            compileAttempt.setDateTimeEnd(Instant.now());//always provide a attempt end timeslot before saving (because cannot be null)
             // TODO can this be done nicer?
             if (compileOutput.length() > 0) {
                 // if we still have some output left and exitvalue = 0
                 if (compileOutput.length() > 0 && exitvalue == 0 && !timedOut) {
-                    compileAttempt = registerWhenNeeded(compileAttempt.toBuilder()
+                    compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
                             .success(true)
-                            .build(), isAlwaysNeeded);
+                            .build());
                 } else {
                     String output = stripTeamPathInfo(compileOutput.getBuffer(), FileUtils.getFile(pathModel.teamAssignmentDir.toFile(), "sources"));
-                    compileAttempt = registerWhenNeeded(compileAttempt.toBuilder()
+                    compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
                             .success(false)
                             .compilerOutput(output)
-                            .build(), isAlwaysNeeded);
+                            .build());
                 }
             } else {
                 log.debug(compileOutput.toString());
                 String output = stripTeamPathInfo(compileErrorOutput.getBuffer(), FileUtils.getFile(pathModel.teamAssignmentDir.toFile(), "sources"));
                 if ((exitvalue == 0) && !timedOut) {
-                    compileAttempt = registerWhenNeeded(compileAttempt.toBuilder()
+                    compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
                             .compilerOutput("OK")
                             .success(true)
-                            .build(), isAlwaysNeeded);
+                            .build());
                 } else {
-                    compileAttempt = registerWhenNeeded(compileAttempt.toBuilder()
+                    compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
                             .success(false)
                             .compilerOutput(output)
-                            .build(), isAlwaysNeeded);
+                            .build());
                 }
             }
         } catch (Exception e) {
@@ -408,6 +404,7 @@ public class CompileService {
         }
         return createCompileResult(compileInputWrapper, compileAttempt.getCompilerOutput(), compileAttempt.isSuccess());
     }
+
     private CompileResult createCompileResult(CompileInputWrapper compileInputWrapper, String outputMessage, boolean isSuccess) {
         return CompileResult.builder()
                 .compileAttemptUuid(compileInputWrapper.compileAttemptId)
@@ -417,23 +414,13 @@ public class CompileService {
                 .success(isSuccess)
                 .build();
     }
-    private CompileAttempt registerWhenNeeded(CompileAttempt input, boolean isAlwaysNeeded) {
-        CompileAttempt result = input;
-        result.setDateTimeEnd(Instant.now());
-        if (input.getAssignmentStatus()!=null||isAlwaysNeeded) {
-            result = compileAttemptRepository.save(input);
-        }
-        return result;
-    }
-
 
     private String stripTeamPathInfo(StringBuilder result, File prefix) {
-        if( result != null ) {
-            return result.toString().replace(prefix.getAbsolutePath() + File.separator ,"");
+        if (result != null) {
+            return result.toString().replace(prefix.getAbsolutePath() + File.separator, "");
         }
         return "";
     }
-
 
 
     private List<File> makeClasspath(Path classesDir) {

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Masters of Java</title>
+
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/solid.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/fontawesome.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/css/team.css}"/>
+
+    <link rel="apple-touch-icon" sizes="180x180" th:href="@{/images/apple-touch-icon.png}">
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon-32x32.png}">
+    <link rel="icon" type="image/png" sizes="16x16" th:href="@{/images/favicon-16x16.png}">
+    <link rel="manifest" th:href="@{/manifest.json}">
+    <link rel="mask-icon" th:href="@{/images/safari-pinned-tab.svg}" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+</head>
+
+<body class="p-2">
+<div class="container">
+    <!-- content -->
+    <div class="row justify-content-center">
+        <div class="col-6">
+            <div class="text-center mb-5 mt-5">
+                <img class="logo" th:src="@{/public/images/moj_logo.png}"/>
+            </div>
+            <div class="text-center">
+                <h1>Team Creation</h1>
+            </div>
+            <div>
+                <p>This seems to be the first time you start the game. Please specify your team details.</p>
+            </div>
+            <form class="form" th:method="post" th:action="@{/team}" th:object="${teamForm}">
+                <div class="form-group">
+                    <label for="team_name">Name</label>
+                    <input type="text" class="form-control" th:field="*{name}" id="team_name" aria-describedby="teamHelp" placeholder="Enter team name you are competing for."/>
+                    <small id="teamHelp" class="form-text text-muted">This is shown in the competition as your team.</small>
+                </div>
+                <div class="form-group">
+                    <label for="team_name">Company</label>
+                    <input type="text" class="form-control" th:field="*{company}" id="team_company" placeholder="The company you are competing for."/>
+                </div>
+                <div class="form-group">
+                    <label for="team_name">Country</label>
+                    <input type="text" class="form-control" th:field="*{country}" id="team_country" aria-describedby="teamHelp" placeholder="The country you reside in."/>
+                </div>
+                <button type="submit" class="btn btn-primary" name="submit">Create</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/jquery-ui/jquery-ui.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+
+</body>
+</html>

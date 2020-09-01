@@ -52,6 +52,10 @@ public class AssignmentFile {
 
     private final boolean readOnly;
 
+    public String getMediaTypeString() {
+        return mediaType.getBaseType().toString();
+    }
+
     public String getContentAsString() {
         return new String(getContent(), StandardCharsets.UTF_8);
     }

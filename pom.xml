@@ -22,7 +22,6 @@
 
 	<properties>
 		<java.version>11</java.version>
-		<skipTests>true</skipTests>
 		<spring-boot.repackage.skip>false</spring-boot.repackage.skip>
 	</properties>
 
@@ -133,6 +132,13 @@
 			<artifactId>jackson-dataformat-yaml</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>io.github.java-diff-utils</groupId>
+			<artifactId>java-diff-utils</artifactId>
+			<version>4.5</version>
+		</dependency>
+
+
 		<!-- testing -->
 		<dependency>
 			<groupId>org.assertj</groupId>
@@ -186,16 +192,15 @@
 			<artifactId>codemirror</artifactId>
 			<version>5.40.2</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.webjars</groupId>
 			<artifactId>font-awesome</artifactId>
 			<version>5.3.1</version>
 		</dependency>
 		<dependency>
-			<groupId>io.github.java-diff-utils</groupId>
-			<artifactId>java-diff-utils</artifactId>
-			<version>4.5</version>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>marked</artifactId>
+			<version>1.1.1</version>
 		</dependency>
 	</dependencies>
 

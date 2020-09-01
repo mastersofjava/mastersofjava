@@ -1,4 +1,4 @@
-package nl.moj.server.teams.model;
+package nl.moj.server.authorization;
 
 import static org.junit.jupiter.api.Assertions.*;
 

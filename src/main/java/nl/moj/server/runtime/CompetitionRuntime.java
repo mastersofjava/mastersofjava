@@ -283,7 +283,7 @@ public class CompetitionRuntime {
         }
         if (isWithAssignmentRunning() && !competitionModel.getCompetitionSession().isRunning() ) {
             log.debug("stopping current assignment to start assignment '{}'", name);
-            stopCurrentAssignment();
+            stopCurrentSession();
         }
 
         try {
@@ -308,7 +308,7 @@ public class CompetitionRuntime {
     private boolean isWithAssignmentRunning() {
         return competitionModel.assignmentExecutionModel!=null && competitionModel.assignmentExecutionModel.getOrderedAssignment() != null;
     }
-    public void stopCurrentAssignment() {
+    public void stopCurrentSession() {
         if (isWithAssignmentRunning()) {
             log.info("Stopping current assignment {} uuid {}.", competitionModel.assignmentExecutionModel.getOrderedAssignment()
                             .getAssignment()

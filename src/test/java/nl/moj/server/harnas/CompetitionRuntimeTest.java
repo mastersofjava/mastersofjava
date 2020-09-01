@@ -23,17 +23,12 @@ public class CompetitionRuntimeTest extends BaseRuntimeTest {
     @Autowired
     private CompetitionRuntime competitionRuntime;
 
-    @Autowired
-    private AssignmentRuntime assignmentRuntime;
-
-
     @Test
     public void useCompetitionRuntimeDuringSampleStartup() throws Exception {
         assertThat(competitionRuntime.getActiveCompetitionsMap().size()).isGreaterThan(1);/// flacky value
 
         assertThat(competitionRuntime.getCompetition().getShortName()).isSameAs("TestCase");
         assertThat(competitionRuntime.getSessions().size()).isEqualTo(1);
-        assertThat(competitionRuntime.getRunningCompetitionsQuickviewMap().size()).isEqualTo(0);
         assertThat(competitionRuntime.getAssignmentInfo().size()).isEqualTo(4);
         assertThat(competitionRuntime.getAssignmentInfoOrderedForCompetition().size()).isEqualTo(4);
         UUID assignmentUuid = competitionRuntime.getCompetition().getAssignments().get(0).getAssignment().getUuid();
@@ -45,7 +40,8 @@ public class CompetitionRuntimeTest extends BaseRuntimeTest {
     public void handleLateSignup() throws Exception {
         String name = competitionRuntime.getCompetition().getAssignments().get(0).getAssignment().getName();
         competitionRuntime.startAssignment(name);
-        AssignmentStatus status = competitionRuntime.handleLateSignup(addTeam(), competitionRuntime.getCompetitionSession().getUuid(), competitionRuntime.getCurrentRunningAssignment().getAssignment().getName());
+        UUID uuid = competitionRuntime.getCompetitionSession().getUuid();
+        AssignmentStatus status = competitionRuntime.handleLateSignup(addTeam(), uuid, name);
         assertThat(status).isNotNull();
         OrderedAssignment assignment = competitionRuntime.determineNextAssignmentIfAny();
         assertThat(assignment.getAssignment()).isNotEqualTo(competitionRuntime.getCompetition().getAssignments().get(0).getAssignment());

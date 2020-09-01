@@ -16,18 +16,18 @@
 */
 package nl.moj.server.bootstrap.controller;
 
+import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.security.Principal;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.authorization.Role;
 import nl.moj.server.bootstrap.service.BootstrapService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -46,13 +46,14 @@ public class BootstrapController {
         return determineRedirect(request);
     }
 
+    @RolesAllowed({Role.ADMIN})
     @PostMapping("/bootstrap")
-    public String doBootstrap(Principal user, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+    public String doBootstrap(RedirectAttributes redirectAttributes) {
         if (bootstrapService.isBootstrapNeeded()) {
                 try {
-                    bootstrapService.bootstrap(user.getName());
+                    bootstrapService.bootstrap();
                 } catch (IOException ioe) {
-                    log.error("Bootstrap failed.", ioe.getMessage());
+                    log.error("Bootstrap failed: {}", ioe.getMessage(), ioe);
                     return redirectFailure(redirectAttributes, "Bootstrap failed, see console logs for more information.");
                 }
         }

@@ -42,7 +42,7 @@ import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Role;
+import nl.moj.server.authorization.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.HttpUtil;
@@ -125,7 +125,7 @@ public class TaskControlController {
     @MessageMapping("/control/stoptask")
     @SendToUser("/queue/controlfeedback")
     public String stopTask(TaskMessage message) {
-        competition.stopCurrentAssignment();
+        competition.stopCurrentSession();
         ActiveAssignment state = competition.getActiveAssignment();
         boolean isWithNewAssignment = message!=null && !StringUtils.isEmpty(message.taskName);
         if (isWithNewAssignment) {
@@ -143,11 +143,9 @@ public class TaskControlController {
     @SendToUser("/queue/controlfeedback")
     public String doClearCompetition() {
         log.warn("clearCompetition entered");
-        gamemasterTableComponents.deleteCurrentSessionResources();
-        if (competition.getCompetitionSession().isRunning() && competition.getActiveAssignment()!=null) {
-            stopTask(null);
-        }
-        return competitionCleaningService.doCleanComplete(competition.getCompetitionSession());
+        competition.stopCurrentSession();
+        competition.startSession(competition.getCompetition());
+        return "competition restarted, reloading page";
     }
 
     @MessageMapping("/control/pauseResume")
@@ -177,7 +175,7 @@ public class TaskControlController {
         boolean isStopCurrentAssignment=state!=null && state.getAssignment()!=null && state.getAssignment().getName().equals(message.taskName);
 
         if (isStopCurrentAssignment) {
-            competition.stopCurrentAssignment();
+            competition.stopCurrentSession();
         }
         Assignment assignment = assignmentRepository.findByName(message.taskName);
         List<AssignmentStatus> ready4deletionList = assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competition.getCompetitionSession());
@@ -291,8 +289,6 @@ public class TaskControlController {
         }
         UserStatusUpdate updateType = UserStatusUpdate.getEnum(message.getValue());
         if (!updateType.isAllowedToPlay) {
-            // anonymous users cannot login anymore, via import files one can be activated again.
-            team.setRole(Role.ANONYMOUS);
             team.setIndication(message.value);
         } else {
             team.setCompany(message.value);
