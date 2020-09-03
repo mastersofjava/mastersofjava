@@ -29,6 +29,7 @@ import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.assignment.service.AssignmentServiceException;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.CompetitionCleaningService;
@@ -144,7 +145,8 @@ public class TaskControlController {
     public String doClearCompetition() {
         log.warn("clearCompetition entered");
         competition.stopCurrentSession();
-        competition.startSession(competition.getCompetition());
+        competitionCleaningService.doCleanComplete(competition.getCompetitionSession());
+        competition.getCompetitionState().getCompletedAssignments().clear();
         return "competition restarted, reloading page";
     }
 
@@ -170,7 +172,6 @@ public class TaskControlController {
     @SendToUser("/queue/controlfeedback")
     public String restartAssignment(TaskMessage message) {
         log.warn("restartAssignment entered = {} " , message.taskName);
-        competition.getCompetitionState().getCompletedAssignments().clear();
         ActiveAssignment state = competition.getActiveAssignment();
         boolean isStopCurrentAssignment=state!=null && state.getAssignment()!=null && state.getAssignment().getName().equals(message.taskName);
 
@@ -186,12 +187,21 @@ public class TaskControlController {
         }
 
         boolean isWithRestartDirectly = !StringUtils.isEmpty(message.getValue());
+        long timeLeft = assignmentRuntime.getModel().getState().getAssignmentDescriptor().getDuration().toSeconds();
         if (isWithRestartDirectly) {
-            long timeLeft = assignmentRuntime.getModel().getState().getAssignmentDescriptor().getDuration().toSeconds();
             competition.startAssignment(message.getValue(),timeLeft);// start fresh
-        }
-        if (ready4deletionList.isEmpty() && !isWithRestartDirectly) {
-            return "Assignment not started yet: "  + message.taskName;
+            return "Assignment restarted directly: " + message.taskName + ", reload page";
+        } else {
+            competition.getCompetitionSession().setTimeLeft(null);
+            competition.getCompetitionSession().setDateTimeLastUpdate(null);
+            competition.getCompetitionSession().setRunning(false);
+            competitionSessionRepository.save(competition.getCompetitionSession());
+            List<OrderedAssignment> operatableList = new ArrayList<>(competition.getCompetitionState().getCompletedAssignments());
+            for (OrderedAssignment orderedAssignment: operatableList) {
+                if (orderedAssignment.getAssignment().getName().equals(assignment.getName())) {
+                    competition.getCompetitionState().getCompletedAssignments().remove(orderedAssignment);
+                }
+            }
         }
         return "Assignment resetted: " + message.taskName + ", reload page";
     }
@@ -214,7 +224,7 @@ public class TaskControlController {
     }
     @MessageMapping("/control/competitionDelete")
     @SendToUser("/queue/controlfeedback")
-   // @Transactional
+    // @Transactional
     public String doDeleteCompetition(TaskControlController.TaskMessage message) {
         boolean isUpdateCurrentCompetition =  message.getUuid().equals(competition.getCompetition().getUuid().toString());
         log.info("deleteCompetition isCurrentCompetition {} ", isUpdateCurrentCompetition);
