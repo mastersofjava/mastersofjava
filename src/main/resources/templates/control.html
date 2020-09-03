@@ -120,7 +120,7 @@
                                     <button id="stop" class="btn btn-muted minWidth150" onclick="stopTask();" title="Stop met huidige assignment en bewaar scores">Finish Assignment</button>
                                 </div>
                                 <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
-                                    <button id="restart" class="btn btn-muted minWidth150" onclick="restartAssignment();" title="Reset the geselecteerde opdracht, verwijder ook de bestaande scores hiervan" >Reset Assignment</button>
+                                    <button id="restart" class="btn btn-muted minWidth150" onclick="restartAssignment();" title="Reset de geselecteerde opdracht, verwijder ook de bestaande scores hiervan" >Reset Assignment</button>
                                 </div>
                                 <div class="p-2 text-center" th:if="${runningSelectedCompetition||isWithCompetitionStarted}">
                                     <button id="clear" class="btn btn-muted minWidth150" onclick="clearCompetition();"  title="Herstart deze gehele competitie, wis ook de scores">Reset Competition</button>
@@ -270,26 +270,7 @@
                         </div>
                     </div>
                     <br/><br/>
-                    <div class="row">
-                        <div class="p-2 col-5 roundGrayBorder">
-                            <h6>Importeer teamdata</h6>
-                            &nbsp;&nbsp;<sup>voor het bijwerken van deelnemers</sup>
-                        </div>
-                        <div class="p-2 col-6 roundGrayBorder">
 
-                            <form method="POST" action="/importUsers" enctype="multipart/form-data" title="importeer teamdata">
-
-                                <div class="row p-2 m-2">
-                                    Stap 1. selecteer csv-file:&nbsp;&nbsp;&nbsp;<input id="csvfile" type="file" name="file"/>
-                                </div>
-                                <div class="row p-2 m-2">
-                                    Stap 2. &nbsp;<input class="btn btn-primary minWidth200" type="submit" value="upload users"/>
-                                </div>
-                            </form>
-
-                        </div>
-                    </div>
-                    <br/><br/>
                     <div class="row">
                         <div class="p-2 col-5 roundGrayBorder">
                             <h6>Exporteer systeemstatus</h6>

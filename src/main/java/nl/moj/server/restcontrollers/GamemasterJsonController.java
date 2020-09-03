@@ -112,6 +112,7 @@ public class GamemasterJsonController {
         return resultCached;
     }
     @GetMapping(value = "/admin/systemState", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RolesAllowed({Role.ADMIN})
     public @ResponseBody
     Map<Long, CompetitionRuntime.CompetitionExecutionModel> getSystemState() {
         return competitionRuntime.getActiveCompetitionsMap();
