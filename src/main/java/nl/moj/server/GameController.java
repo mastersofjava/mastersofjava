@@ -45,7 +45,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
-import javax.annotation.security.RolesAllowed;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +66,7 @@ public class GameController {
         UUID globalUUID = competitionRuntime.getCompetitionSession().getUuid();
         return HttpUtil.getSelectedUserSession(globalUUID);
     }
+
     public CompetitionSession getSelectedCompetitionSession() {
         UUID globalUUID = competitionRuntime.getCompetitionSession().getUuid();
         UUID httpUUID = getSelectedSessionId();
@@ -75,12 +75,13 @@ public class GameController {
         }
         return competitionSessionRepository.findByUuid(httpUUID);
     }
+
     public CompetitionRuntime getCompetitionRuntimeForGameStart() {
-        Assert.isTrue(competitionRuntime!=null,"runtime not ready");
-        Assert.isTrue(competitionRuntime.getCompetitionSession()!=null,"runtime.session not ready");
+        Assert.isTrue(competitionRuntime != null, "runtime not ready");
+        Assert.isTrue(competitionRuntime.getCompetitionSession() != null, "runtime.session not ready");
         UUID globalUUID = competitionRuntime.getCompetitionSession().getUuid();
         UUID httpUUID = HttpUtil.getSelectedUserSession(globalUUID);
-        log.debug("httpUUID " + httpUUID+ " globalUUID " + globalUUID);
+        log.debug("httpUUID " + httpUUID + " globalUUID " + globalUUID);
         CompetitionRuntime result = competitionRuntime;
         if (!competitionRuntime.getCompetitionSession().getUuid().equals(httpUUID)) {
             CompetitionSession temp = competitionSessionRepository.findByUuid(httpUUID);
@@ -93,14 +94,14 @@ public class GameController {
     }
 
     @GetMapping("/play")
-    public String index(Model model, @AuthenticationPrincipal Principal principal,@ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
+    public String index(Model model, @AuthenticationPrincipal Principal principal, @ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
 
         User user = userService.createOrUpdate(principal);
         Team team = user.getTeam();
         // if there is no team for this user, create on, we found a new
         // signup from the IDP (IDentity Provider).
-		if (team == null ) {
-		    // send to team create screen!
+        if (team == null) {
+            // send to team create screen!
             log.info("No team for user {}, redirecting to team creation.", user.getUuid());
             model.addAttribute("teamForm", new TeamForm());
             return "createteam";
@@ -113,9 +114,9 @@ public class GameController {
         boolean isAvailableAssignment = competitionRuntime.isActiveCompetition(competitionSession.getCompetition());
         if (isAvailableAssignment) {
             CompetitionRuntime runtime = getCompetitionRuntimeForGameStart();
-            isAvailableAssignment = runtime.getCompetitionModel().getAssignmentExecutionModel().getOrderedAssignment()!=null;
+            isAvailableAssignment = runtime.getCompetitionModel().getAssignmentExecutionModel().getOrderedAssignment() != null;
         }
-        if (!isAvailableAssignment ) {
+        if (!isAvailableAssignment) {
             model.addAttribute("team", team.getName());
             return "play";
         }
@@ -123,21 +124,22 @@ public class GameController {
         return "play";
     }
 
-    private void insertCompetitionSelector(Model model, TaskControlController.SelectSessionForm ssf,UUID sessionUUID) {
+    private void insertCompetitionSelector(Model model, TaskControlController.SelectSessionForm ssf, UUID sessionUUID) {
         List<CompetitionSession> sessions = competitionSessionRepository.findAll();
         List<CompetitionSession> activeSessions = new ArrayList<>();
-        for (CompetitionSession session: sessions) {
+        for (CompetitionSession session : sessions) {
             if (session.isAvailable()) {
                 activeSessions.add(session);
             }
         }
         model.addAttribute("sessions", activeSessions);
-        UUID input = HttpUtil.getSelectedUserSession( sessionUUID);
-        log.debug("input " + input + " activeSessions " +activeSessions.size());
-        if (ssf!=null) {
+        UUID input = HttpUtil.getSelectedUserSession(sessionUUID);
+        log.debug("input " + input + " activeSessions " + activeSessions.size());
+        if (ssf != null) {
             ssf.setSession(input);
         }
     }
+
     private boolean isAdminUser(Principal user) {
         return Role.isWithControleRole((org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken) user);
     }
@@ -158,9 +160,9 @@ public class GameController {
         }
 
         AssignmentStatusHelper ash = new AssignmentStatusHelper(as, state.getAssignmentDescriptor());
-		CodePageModelWrapper codePage = new CodePageModelWrapper(model,
-				team);
-		codePage.saveFiles(competitionRuntime.getCompetitionSession(), state.getAssignment(), team);
+        CodePageModelWrapper codePage = new CodePageModelWrapper(model,
+                team);
+        codePage.saveFiles(competitionRuntime.getCompetitionSession(), state.getAssignment(), team);
         codePage.saveAssignmentDetails(state);
         codePage.saveTeamState(ash);
     }
@@ -170,21 +172,18 @@ public class GameController {
         private List<AssignmentFile> inputFiles;
 
         public CodePageModelWrapper(Model model, Team team) {
-            this.model = model ;
+            this.model = model;
             model.addAttribute("team", team.getName());
         }
+
         public void saveFiles(CompetitionSession session, Assignment assignment, Team team) {
-            Assert.isTrue(team!=null,"invalid team");
+            Assert.isTrue(team != null, "invalid team");
             List<AssignmentFile> teamAssignmentFiles = teamService.getTeamAssignmentFiles(session, assignment, team);
             model.addAttribute("files", prepareInputFilesOnScreen(teamAssignmentFiles));
         }
+
         private List<AssignmentFile> prepareInputFilesOnScreen(List<AssignmentFile> teamAssignmentFiles) {
-            inputFiles = new ArrayList<>();
-            for (AssignmentFile file: teamAssignmentFiles) {
-                if (file.isReadOnly()) {
-                    inputFiles.add(file);
-                }
-            }
+            inputFiles = new ArrayList<>(teamAssignmentFiles);
             // order the task file(s) at the beginning.
             inputFiles.sort((arg0, arg1) -> {
                 if (arg0.getFileType().equals(AssignmentFileType.TASK)) {
@@ -213,7 +212,7 @@ public class GameController {
             model.addAttribute("assignmentName", state.getAssignmentDescriptor().getName());
             model.addAttribute("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addAttribute("labels", scoreLabels);
-            model.addAttribute("bonus", "Success bonus: " +state.getAssignmentDescriptor().getScoringRules().getSuccessBonus());
+            model.addAttribute("bonus", "Success bonus: " + state.getAssignmentDescriptor().getScoringRules().getSuccessBonus());
             model.addAttribute("timeLeft", state.getTimeRemaining());
             model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addAttribute("tests", state.getTestFiles());
@@ -221,6 +220,7 @@ public class GameController {
 
         }
     }
+
     private class AssignmentStatusHelper {
 
         private AssignmentStatus assignmentStatus;
@@ -229,8 +229,8 @@ public class GameController {
         public AssignmentStatusHelper(AssignmentStatus assignmentStatus, AssignmentDescriptor assignmentDescriptor) {
             this.assignmentStatus = assignmentStatus;
             this.assignmentDescriptor = assignmentDescriptor;
-            Assert.isTrue(this.assignmentStatus!=null,"assignmentStatus not ready");
-            Assert.isTrue(this.assignmentDescriptor!=null,"assignmentDescriptor not ready");
+            Assert.isTrue(this.assignmentStatus != null, "assignmentStatus not ready");
+            Assert.isTrue(this.assignmentDescriptor != null, "assignmentDescriptor not ready");
 
         }
 
@@ -258,6 +258,7 @@ public class GameController {
             return assignmentStatus.getAssignmentResult().getFinalScore();
         }
     }
+
     @Data
     public static class SelectSessionForm {
         private UUID session;

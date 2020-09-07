@@ -191,11 +191,11 @@ function initializeMarkdown() {
             $(this).html(function(idx,content) {
                 return marked(content)
             })
+            let pos = $('#tabs .tab-content').position();
+            let height = window.innerHeight - pos.top - 80;
+            $('div.file-content').css('height', height + 'px');
         }
     )
-    let pos = $('#tabs .tab-content').position();
-    let height = window.innerHeight - pos.top - 80;
-    $('div.file-content').css('height', height + 'px');
 }
 
 function initializeCodeMirrors() {

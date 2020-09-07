@@ -24,6 +24,7 @@ import nl.moj.server.compiler.service.CompileResult;
 import nl.moj.server.message.model.*;
 import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.test.service.TestResult;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
@@ -64,7 +65,6 @@ public class MessageService {
                 .message(tr.getTestOutput() == null ? "" : tr.getTestOutput())
                 .build();
         log.info("Sending test assignmentScores: {}", msg);
-        // TODO User is linked to the principal.getName() which is the user.getName() atm, but should be the uuid.
         sendToActiveUsers(team, msg);
         template.convertAndSend(DEST_TESTRESULTS, msg);
     }

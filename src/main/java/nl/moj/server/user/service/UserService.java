@@ -59,14 +59,13 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
     }
 
     public User findUser(Principal principal) {
-        log.debug("Finding user using principal value '{}'.", principal.getName());
         if (principal instanceof KeycloakAuthenticationToken) {
             KeycloakAuthenticationToken kat = (KeycloakAuthenticationToken) principal;
             AccessToken token = kat.getAccount().getKeycloakSecurityContext().getToken();
             UUID uuid = UUID.fromString(token.getSubject());
             return userRepository.findByUuid(uuid);
         }
-        throw new IllegalArgumentException("Principal not a KeycloakAuthenticationToken, unable to create/update the user.");
+        throw new IllegalArgumentException("Principal not a KeycloakAuthenticationToken, unable to find the user.");
     }
 
     public User addUserToTeam(User user, Team team) {
