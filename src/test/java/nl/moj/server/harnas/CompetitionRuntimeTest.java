@@ -9,6 +9,7 @@ import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.BaseRuntimeTest;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentStatus;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,8 @@ public class CompetitionRuntimeTest extends BaseRuntimeTest {
         assertThat(competitionRuntime.getTeamSolutionFiles(assignmentUuid,this.getTeam()).size()).isEqualTo(0);
         assertThat(competitionRuntime.getCompetitionState().getCompletedAssignments().size()).isEqualTo(0);
     }
+
+    @Ignore
     @Test
     public void handleLateSignup() throws Exception {
         String name = "parallel";

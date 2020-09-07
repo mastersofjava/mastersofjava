@@ -233,6 +233,7 @@ public class AssignmentRuntime {
         if (isRestart) {
             model.durationInSeconds = model.competitionSession.getTimeLeft();
             log.info("Refreshed running assignment {}", model.assignment.getName());
+            messageService.sendStartToTeams(model.assignment.getName(), model.competitionSession.getUuid().toString());
             return startTimers();
         } else {
             model.resetTimer();
@@ -263,9 +264,13 @@ public class AssignmentRuntime {
         return model;
     }
 
+
+    private void sendStopToTeams(AssignmentExecutionModel model) {
+        messageService.sendStopToTeams(model.assignment.getName(),model.competitionSession.getUuid().toString());
+    }
     @Transactional
     public void stopAssignment(AssignmentExecutionModel model) {
-        messageService.sendStopToTeams(model.competitionSession.getUuid().toString(), model.assignment.getName());
+        sendStopToTeams(model);
         teamService.getTeams().forEach(t -> {
             ActiveAssignment state = model.getState();
             AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),
