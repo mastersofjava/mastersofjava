@@ -14,7 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.submit;
+package nl.moj.server.submit.service;
 
 import java.time.Instant;
 import java.util.UUID;

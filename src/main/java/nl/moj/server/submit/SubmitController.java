@@ -16,18 +16,19 @@
 */
 package nl.moj.server.submit;
 
-import java.security.Principal;
-
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.submit.model.SourceMessage;
+import nl.moj.server.submit.service.SubmitRequest;
 import nl.moj.server.submit.service.SubmitService;
-import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.user.model.User;
+import nl.moj.server.user.service.UserService;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+
+import java.security.Principal;
 
 @Controller
 @MessageMapping("/submit")
@@ -36,24 +37,31 @@ import org.springframework.stereotype.Controller;
 public class SubmitController {
 
     private SubmitService submitService;
-
-    private TeamRepository teamRepository;
+    private UserService userService;
 
     @MessageMapping("/compile")
-    public void compile(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
+    public void compile(SourceMessage message, @AuthenticationPrincipal Principal principal, MessageHeaders headers)
             throws Exception {
-        Team team = teamRepository.findByName(user.getName());
-        submitService.compile(team, message);
+        User user = userService.findUser(principal);
+        submitService.compile(SubmitRequest.builder()
+                .team(user.getTeam())
+                .user(user)
+                .sourceMessage(message)
+                .build());
     }
 
     @MessageMapping("/test")
-    public void test(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
+    public void test(SourceMessage message, @AuthenticationPrincipal Principal principal, MessageHeaders headers)
             throws Exception {
-        Team team = teamRepository.findByName(user.getName());
+        User user = userService.findUser(principal);
         try {
-            submitService.test(team, message);
+            submitService.test(SubmitRequest.builder()
+                    .team(user.getTeam())
+                    .user(user)
+                    .sourceMessage(message)
+                    .build());
         } catch (Exception ex) {
-            log.error(ex.getMessage(),ex);
+            log.error(ex.getMessage(), ex);
         }
     }
 
@@ -63,14 +71,18 @@ public class SubmitController {
      * closing.
      *
      * @param message
-     * @param user
+     * @param principal
      * @param mesg
      * @throws Exception
      */
     @MessageMapping("/submit")
-    public void submit(SourceMessage message, @AuthenticationPrincipal Principal user, MessageHeaders mesg)
+    public void submit(SourceMessage message, @AuthenticationPrincipal Principal principal, MessageHeaders mesg)
             throws Exception {
-        Team team = teamRepository.findByName(user.getName());
-        submitService.submit(team, message);
+        User user = userService.findUser(principal);
+        submitService.submit(SubmitRequest.builder()
+                .team(user.getTeam())
+                .user(user)
+                .sourceMessage(message)
+                .build());
     }
 }

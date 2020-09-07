@@ -28,7 +28,8 @@ import java.util.concurrent.TimeUnit;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.submit.SubmitResult;
+import nl.moj.server.submit.service.SubmitRequest;
+import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.service.SubmitService;
 import org.junit.ClassRule;
@@ -118,11 +119,21 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         competitionRuntime.startAssignment(oa.getAssignment().getName());
     }
     private SubmitResult doValidate(SourceMessage src,Duration timeout) throws Exception {
-        return submitService.test(getTeam(), src)
+        return submitService.test(SubmitRequest
+                .builder()
+                .user(getUser())
+                .team(getTeam())
+                .sourceMessage(src)
+                .build())
                 .get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
     }
     private SubmitResult doSubmit(SourceMessage src,Duration timeout) throws Exception {
-        return submitService.submit(getTeam(), src)
+        return submitService.submit(SubmitRequest
+                .builder()
+                .user(getUser())
+                .team(getTeam())
+                .sourceMessage(src)
+                .build())
                 .get(timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);
     }
     private void stopSelectedAssignment() {

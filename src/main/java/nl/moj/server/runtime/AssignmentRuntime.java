@@ -33,9 +33,11 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.sound.Sound;
 import nl.moj.server.sound.SoundService;
-import nl.moj.server.submit.SubmitResult;
+import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
+import nl.moj.server.user.model.User;
+import nl.moj.server.user.service.UserService;
 import nl.moj.server.util.PathUtil;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.scheduling.TaskScheduler;
@@ -52,15 +54,10 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -83,6 +80,7 @@ public class AssignmentRuntime {
     private final SoundService soundService;
     private final TaskScheduler taskScheduler;
     private final AssignmentStatusRepository assignmentStatusRepository;
+    private final UserService userService;
 
     // TODO refactor so we do not need to use ApplicationContext to find a self reference
    // private ApplicationContext ctx;
@@ -281,6 +279,7 @@ public class AssignmentRuntime {
                             .remainingSubmits(0)
                             .score(ar.getFinalScore())
                             .build());
+
                 }
             } else {
                 log.warn("Could not finalize score for team {}@{}, no assignment status found.", t.getName(), t.getUuid());

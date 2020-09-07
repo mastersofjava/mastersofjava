@@ -41,11 +41,9 @@ import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.submit.SubmitResult;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
-import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.repository.TestAttemptRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -67,22 +65,22 @@ public class SubmitService {
     private final AssignmentService assignmentService;
     private final CompetitionSessionRepository competitionSessionRepository;
 
-    public CompletableFuture<SubmitResult> compile(Team team, SourceMessage message) {
-        messageService.sendComplilingStarted(team);
-        return compileInternal(team, message, getActiveAssignment(team, message)).thenApply(r -> {
-            messageService.sendComplilingEnded(team, r.isSuccess());
+    public CompletableFuture<SubmitResult> compile(SubmitRequest submitRequest) {
+        messageService.sendCompilingStarted(submitRequest.getTeam());
+        return compileInternal(submitRequest, getActiveAssignment(submitRequest)).thenApply(r -> {
+            messageService.sendCompilingEnded(submitRequest.getTeam(),r.isSuccess());
             return r;
         });
     }
 
-    private CompletableFuture<SubmitResult> compileInternal(Team team, SourceMessage message, ActiveAssignment assignment) {
-        return executionService.compile(team, message, assignment)
+    private CompletableFuture<SubmitResult> compileInternal(SubmitRequest submitRequest, ActiveAssignment assignment) {
+        return executionService.compile(submitRequest, assignment)
                 .thenApply(r -> {
-                    log.info("DONE with compile execution team {}", team.getName());
-                    messageService.sendCompileFeedback(team, r);
+                    log.info("DONE with compile execution team {}", submitRequest.getTeam().getName());
+                    messageService.sendCompileFeedback(submitRequest.getTeam(), r);
 
                     return SubmitResult.builder()
-                            .team(team.getUuid())
+                            .team(submitRequest.getTeam().getUuid())
                             .dateTimeStart(r.getDateTimeStart())
                             .dateTimeEnd(r.getDateTimeEnd())
                             .success(r.isSuccess())
@@ -91,19 +89,19 @@ public class SubmitService {
                 });
     }
 
-    public CompletableFuture<SubmitResult> test(Team team, SourceMessage message) {
-        return test(team, message, false);
+    public CompletableFuture<SubmitResult> test(SubmitRequest submitRequest) {
+        return test(submitRequest, false);
     }
 
-    public CompletableFuture<SubmitResult> test(Team team, SourceMessage message, boolean submit) {
-        messageService.sendTestingStarted(team);
-        return testInternal(team, message, submit, getActiveAssignment(team,message)).thenApply(r -> {
-            messageService.sendTestingEnded(team, r.isSuccess());
+    public CompletableFuture<SubmitResult> test(SubmitRequest submitRequest, boolean isSubmit) {
+        messageService.sendTestingStarted(submitRequest.getTeam());
+        return testInternal(submitRequest, isSubmit, getActiveAssignment(submitRequest)).thenApply(r -> {
+            messageService.sendTestingEnded(submitRequest.getTeam(), r.isSuccess());
             return r;
         });
     }
-    private ActiveAssignment getActiveAssignment(Team team, SourceMessage message) {
-        ActiveAssignment activeAssignment = getActiveAssignmentValidate(team, message);
+    private ActiveAssignment getActiveAssignment(SubmitRequest submitRequest) {
+        ActiveAssignment activeAssignment = getActiveAssignmentValidate(submitRequest);
         Assert.isTrue(activeAssignment!=null, "activeAssignment missing");
         Assert.isTrue(activeAssignment.getCompetitionSession()!=null, "CompetitionSession missing");
         return activeAssignment;
@@ -114,42 +112,42 @@ public class SubmitService {
        are getting processed and which are not. This way submit are also no longer dependent on a running session as this
        also should be determined on a higher level.
      */
-    private ActiveAssignment getActiveAssignmentValidate(Team team, SourceMessage message) {
-        if (message.getUuid()==null) {
+    private ActiveAssignment getActiveAssignmentValidate(SubmitRequest submitRequest) {
+        if (submitRequest.getSourceMessage().getUuid()==null) {
             return competitionRuntime.getActiveAssignment();
         }
-        UUID uuid = UUID.fromString(message.getUuid());
+        UUID uuid = UUID.fromString(submitRequest.getSourceMessage().getUuid());
         Competition competition = competitionRuntime.selectCompetitionByUUID(uuid);
 
         ActiveAssignment activeAssignment = null;
         if (competition!=null) {
             activeAssignment = competitionRuntime.selectCompetitionRuntimeForGameStart(competition).getActiveAssignment();
         }
-        if (activeAssignment!=null && message.getAssignmentName().equals(activeAssignment.getAssignment().getName())) {
+        if (activeAssignment!=null && submitRequest.getSourceMessage().getAssignmentName().equals(activeAssignment.getAssignment().getName())) {
             return activeAssignment;
         }
         CompetitionSession competitionSession = competitionRuntime.getCompetitionSession();
-        boolean isGlobalUuid = message.getUuid().equals(competitionSession.getUuid().toString());
+        boolean isGlobalUuid = submitRequest.getSourceMessage().getUuid().equals(competitionSession.getUuid().toString());
         if (!isGlobalUuid) {
             competitionSession = competitionSessionRepository.findByUuid(uuid);
         }
-        Assignment assignment = assignmentRepository.findByName(message.getAssignmentName() );
+        Assignment assignment = assignmentRepository.findByName(submitRequest.getSourceMessage().getAssignmentName() );
         List<AssignmentFile> fileList = assignmentService.getAssignmentFiles(assignment);
         AssignmentDescriptor assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
-        long timeLeft = Long.parseLong(message.getTimeLeft());
+        long timeLeft = Long.parseLong(submitRequest.getSourceMessage().getTimeLeft());
         long timeElapsed = assignmentDescriptor.getDuration().toSeconds()-timeLeft;
         boolean isWithSubmitValidation = competitionSession.isRunning();
         // TODO @kaben No clue what this does and how to test this!
         if (!isWithSubmitValidation)  {
             // after competition completion, we still allow arriving submits for 5 minutes (because of performance reasons)
             long maxSubmitDelayAfterFinish = competitionSession.getDateTimeLastUpdate().plusSeconds(5*60).toEpochMilli();
-            long timeDelta = message.getArrivalTime() - maxSubmitDelayAfterFinish;
+            long timeDelta = submitRequest.getSourceMessage().getArrivalTime() - maxSubmitDelayAfterFinish;
 
-            if (isWithDelayedSubmitValidation(competitionSession, message)) {
+            if (isWithDelayedSubmitValidation(competitionSession, submitRequest.getSourceMessage())) {
                 isWithSubmitValidation = true;
-                log.info("Team " + team.getName() + " submitted before max submit time ( milliseconds left : "+timeDelta+", attempt will be used).");
+                log.info("Team " + submitRequest.getTeam().getName() + " submitted before max submit time ( milliseconds left : "+timeDelta+", attempt will be used).");
             } else {
-                log.info("Warning: Team " + team.getName() + " submitted far after max submit time ( milliseconds too late: "+timeDelta+", attempt will be ignored).");
+                log.info("Warning: Team " + submitRequest.getTeam().getName() + " submitted far after max submit time ( milliseconds too late: "+timeDelta+", attempt will be ignored).");
             }
         }
         activeAssignment  = ActiveAssignment.builder()
@@ -169,25 +167,25 @@ public class SubmitService {
         return timeDelta<0;
     }
 
-    private CompletableFuture<SubmitResult> testInternal(Team team, SourceMessage message, boolean submit, ActiveAssignment activeAssignment) {
+    private CompletableFuture<SubmitResult> testInternal(SubmitRequest submitRequest, boolean isSubmit, ActiveAssignment activeAssignment) {
         //compile
-        return compileInternal(team, message, activeAssignment)
+        return compileInternal(submitRequest, activeAssignment)
                 .thenCompose(submitResult -> {
                     Assert.isTrue( activeAssignment.getAssignment()!=null, "not ready for test");
 
                     if (submitResult.isSuccess()) {
                         // filter selected test cases
                         var testCases = activeAssignment.getTestFiles().stream()
-                                .filter(t -> message.getTests().contains(t.getUuid().toString()))
+                                .filter(t -> submitRequest.getSourceMessage().getTests().contains(t.getUuid().toString()))
                                 .collect(Collectors.toList());
 
-                        if (submit) {
+                        if (isSubmit) {
                             testCases = activeAssignment.getSubmitTestFiles();// contains hidden tests.
                         }
                         // run selected testcases
-                        return executionService.test(team, testCases, activeAssignment).thenApply(r -> {
+                        return executionService.test(submitRequest, testCases, activeAssignment).thenApply(r -> {
 
-                            r.getResults().forEach(tr -> messageService.sendTestFeedback(team, tr));
+                            r.getResults().forEach(tr -> messageService.sendTestFeedback(submitRequest.getTeam(), tr));
 
                             return submitResult.toBuilder()
                                     .dateTimeEnd(r.getDateTimeEnd())
@@ -202,14 +200,14 @@ public class SubmitService {
     }
 
     @Transactional
-    public CompletableFuture<SubmitResult> submit(Team team, SourceMessage message) {
-        final ActiveAssignment activeAssignment = getActiveAssignment(team, message );
+    public CompletableFuture<SubmitResult> submit(SubmitRequest submitRequest) {
+        final ActiveAssignment activeAssignment = getActiveAssignment(submitRequest);
         final AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment
-                .getAssignment(), activeAssignment.getCompetitionSession(), team);
+                .getAssignment(), activeAssignment.getCompetitionSession(), submitRequest.getTeam());
         boolean isSubmitAllowed = isSubmitAllowedForTeam(as, activeAssignment);
 
         if (isSubmitAllowed) {
-            messageService.sendSubmitStarted(team);
+            messageService.sendSubmitStarted(submitRequest.getTeam());
             SubmitAttempt sa = SubmitAttempt.builder()
                     .assignmentStatus(as)
                     .dateTimeStart(Instant.now())
@@ -218,7 +216,7 @@ public class SubmitService {
                     .build();
             as.getSubmitAttempts().add(sa);
 
-            return testInternal(team, message, true,activeAssignment).thenApply(sr -> {
+            return testInternal(submitRequest, true,activeAssignment).thenApply(sr -> {
                 int remainingSubmits = getRemainingSubmits(as, activeAssignment);
                 try {
                     if( sr.getCompileResult() != null) {
@@ -248,12 +246,12 @@ public class SubmitService {
 
                 return sr.toBuilder().remainingSubmits(remainingSubmits).build();
             }).thenApply(sr -> {
-                messageService.sendSubmitFeedback(team, sr);
-                messageService.sendSubmitEnded(team, sr.isSuccess(), sr.getScore());
+                messageService.sendSubmitFeedback(submitRequest.getTeam(), sr);
+                messageService.sendSubmitEnded(submitRequest.getTeam(), sr.isSuccess(), sr.getScore());
                 return sr;
             });
         }
-        log.warn("no submit allowed for team {}", team.getName() );
+        log.warn("Submit is not allowed for team '{}' named '{}'", submitRequest.getTeam().getUuid(), submitRequest.getTeam().getName());
         return CompletableFuture.completedFuture(SubmitResult.builder().build());
     }
 

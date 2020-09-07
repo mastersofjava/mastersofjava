@@ -17,10 +17,12 @@
 package nl.moj.server.teams.model;
 
 import javax.persistence.*;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import nl.moj.server.user.model.User;
 
 @Entity
 @Table(name = "teams")
@@ -52,6 +54,12 @@ public class Team {
 
     @Column(name = "indication")
     private String indication;
+
+    @OneToMany
+    @JoinTable(name = "team_users",
+            joinColumns = @JoinColumn(name = "team_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
+    private List<User> users;
 
     public String getShortName() {
         return name.length() > 20 ? name.substring(0, 20) + "..." : name;
