@@ -3,6 +3,7 @@ package nl.moj.server.harnas;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.BaseRuntimeTest;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @SpringBootTest
 @Slf4j
 public class CompetitionRuntimeTest extends BaseRuntimeTest {
+
     @Autowired
     private CompetitionRuntime competitionRuntime;
 
@@ -38,12 +40,15 @@ public class CompetitionRuntimeTest extends BaseRuntimeTest {
     }
     @Test
     public void handleLateSignup() throws Exception {
-        String name = competitionRuntime.getCompetition().getAssignments().get(0).getAssignment().getName();
+        String name = "parallel";
+        OrderedAssignment assignment = getAssignment(name);
         competitionRuntime.startAssignment(name);
         UUID uuid = competitionRuntime.getCompetitionSession().getUuid();
         AssignmentStatus status = competitionRuntime.handleLateSignup(addTeam(), uuid, name);
         assertThat(status).isNotNull();
-        OrderedAssignment assignment = competitionRuntime.determineNextAssignmentIfAny();
-        assertThat(assignment.getAssignment()).isNotEqualTo(competitionRuntime.getCompetition().getAssignments().get(0).getAssignment());
+
+        // TODO what is this doing here?
+        OrderedAssignment next = competitionRuntime.determineNextAssignmentIfAny();
+        assertThat(next.getAssignment()).isNotEqualTo(assignment.getAssignment());
     }
 }
