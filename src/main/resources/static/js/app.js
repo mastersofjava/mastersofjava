@@ -24,10 +24,13 @@ $(document).ready(function () {
  */
 function doResizeCodingPanel() {
     var windowSize = $(window).height();
+    window.codePanelList = $('.CodeMirror.cm-s-default.ui-resizable');
+    if (window.codePanelList.length===0) {
+        return;//skip
+    }
     var headerSize = $('#content h3').height()+$('ul.nav-tabs').height();
     var footerSize = $('.footer').height();
     var codePanelSize = windowSize-headerSize-footerSize-35;
-    window.codePanelList = $('.CodeMirror.cm-s-default.ui-resizable');
     window.codePanelList.css('height',codePanelSize);
     console.log('codePanelSize ' +codePanelSize);
 }
