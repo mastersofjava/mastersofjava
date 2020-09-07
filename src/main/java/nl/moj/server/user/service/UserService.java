@@ -3,7 +3,6 @@ package nl.moj.server.user.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.repository.UserRepository;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
@@ -12,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -76,6 +77,7 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
     }
 
     public Set<User> getActiveUsers() {
+        // TODO check if we cannot use the SessionRegistry for this.
         return Collections.unmodifiableSet(ACTIVE_USERS);
     }
 

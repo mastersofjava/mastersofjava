@@ -46,6 +46,8 @@ import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.authorization.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.user.model.User;
+import nl.moj.server.user.service.UserService;
 import nl.moj.server.util.HttpUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -106,6 +108,8 @@ public class TaskControlController {
     private final CompetitionService competitionService;
 
     private final SessionRegistry sessionRegistry;
+
+    private final UserService userService;
 
     @ModelAttribute(name = "locationList")
     public List<File> locationList() {
@@ -388,12 +392,14 @@ public class TaskControlController {
         private String selectedYearLabel;
         private boolean isWithAdminRole;
         private boolean isWithSecretCurrentYear;
-        private AdminPageStatus(Authentication user) {
-            roles = user.getAuthorities().stream()
+        private User user;
+        private AdminPageStatus(Authentication principal,User user) {
+            this.user = user;
+            this.roles = principal.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
-            selectedYearLabel = competitionService.getSelectedYearLabel();
-            isWithAdminRole = roles.contains(Role.ADMIN);
-            isWithSecretCurrentYear = selectedYearLabel.contains("2020");
+            this.selectedYearLabel = competitionService.getSelectedYearLabel();
+            this.isWithAdminRole = roles.contains(Role.ADMIN);
+            this.isWithSecretCurrentYear = selectedYearLabel.contains("2020");
 
         }
         private void insertPageDefaults(Model model) {
@@ -418,7 +424,7 @@ public class TaskControlController {
             model.addAttribute("competitionName", competition.getCompetition().getShortName());
             model.addAttribute("isWithCompetitionStarted",false);
             model.addAttribute("nrOfUsersOnline", sessionRegistry.getAllPrincipals().size());
-            model.addAttribute("currentUserName", HttpUtil.getCurrentHttpRequestUserName());
+            model.addAttribute("currentUserName", user.getName());
 
             model.addAttribute("nrOfRunningCompetitions", activeCompetitions.size());
 
@@ -508,9 +514,12 @@ public class TaskControlController {
 
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     @GetMapping("/control")
-    public String taskControl(Model model, @AuthenticationPrincipal Authentication user, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
+    public String taskControl(Model model, @AuthenticationPrincipal Authentication principal, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
                               @ModelAttribute("newPasswordRequest") NewPasswordRequest npr) {
-        AdminPageStatus pageStatus = new AdminPageStatus(user);
+        // TODO maybe move this creat or update stuff to a filter.
+        User user = userService.createOrUpdate(principal);
+
+        AdminPageStatus pageStatus = new AdminPageStatus(principal, user);
         pageStatus.validateRoleAuthorization();
         pageStatus.insertPageDefaults(model);
         if (pageStatus.isDuringCompetitionAssignment()) {
