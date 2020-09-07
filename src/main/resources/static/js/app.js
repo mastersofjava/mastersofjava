@@ -10,30 +10,13 @@ $(document).ready(function () {
     connectButtons();
 
     initializeAssignmentClock();
-    initializeMarkdown();
+    initializeTextPanes();
     initializeCodeMirrors();
     $( window ).resize(function() {
-        doResizeCodingPanel();
+        resizeContent()
     });
     window.setTimeout('$( window ).resize();',200);
 });
-
-/**
- * Ensures responsivity of all CodeMirror tabs (triggered via window resize)
- * nb. CodeMirror does not support responsivity and the first tab (with assignment description ) should have large font.
- */
-function doResizeCodingPanel() {
-    var windowSize = $(window).height();
-    window.codePanelList = $('.CodeMirror.cm-s-default.ui-resizable');
-    if (window.codePanelList.length===0) {
-        return;//skip
-    }
-    var headerSize = $('#content h3').height()+$('ul.nav-tabs').height();
-    var footerSize = $('.footer').height();
-    var codePanelSize = windowSize-headerSize-footerSize-35;
-    window.codePanelList.css('height',codePanelSize);
-    console.log('codePanelSize ' +codePanelSize);
-}
 
 function connectCompetition() {
     stomp = new StompJs.Client({
@@ -188,17 +171,27 @@ function codeMirror_insertImagesInAssignmentText() {
     });
 }
 
-function initializeMarkdown() {
+function initializeTextPanes() {
     $('div.markdown').each(
         function(idx) {
             $(this).html(function(idx,content) {
                 return marked(content)
             })
-            let pos = $('#tabs .tab-content').position();
-            let height = window.innerHeight - pos.top - 80;
-            $('div.file-content').css('height', height + 'px');
         }
     )
+}
+
+function resizeContent() {
+    let pos = $('#tabs .tab-content').position();
+    let height = window.innerHeight - pos.top - 80;
+
+    $('#tabs .content').each(function(idx){
+        $(this).css('height', height + 'px');
+    })
+
+    $('#tabs .CodeMirror.ui-resizable').each(function(idx){
+        $(this).css('height', height + 'px');
+    })
 }
 
 function initializeCodeMirrors() {
@@ -227,7 +220,6 @@ function initializeCodeMirrors() {
 
             var tabLink = $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
                 function (e) {
-                    console.log('shown.bs.tab', e);
                     cm.refresh();
                     if (isTask) codeMirror_insertImagesInAssignmentText();
                     $(window).resize();
@@ -240,10 +232,6 @@ function initializeCodeMirrors() {
                     tabLink.trigger('shown.bs.tab');
                 }
             });
-
-            var pos = $('#tabs .tab-content').position();
-            var height = window.innerHeight - pos.top - 80;
-            $wrapper.css('height', height + 'px');
             if (isTask) {
                 tabLink.trigger('shown.bs.tab');
             }

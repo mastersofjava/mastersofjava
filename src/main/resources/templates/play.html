@@ -86,8 +86,7 @@
                         <div class="tab-pane" th:classappend="${status.index==0?'show active':''}" role="tabpanel"
                              th:each="file,status : ${files}" th:id="${'tab-'+file.uuid}">
                             <div class="tab-pane-content">
-                                <!-- |[[${file.getMediaTypeString()}]]| -->
-                                <div class="file-content" th:switch="${file.getMediaTypeString()}" th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}">
+                                <div class="content" th:switch="${file.getMediaTypeString()}" th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}">
                                     <div class="markdown markdown-body" th:case="'text/x-web-markdown'" th:utext="${file.getContentAsString()}"></div>
                                     <pre class="text" th:case="*" th:utext="${file.getContentAsString()}"></pre>
                                 </div>
@@ -97,7 +96,7 @@
                             </div>
                         </div>
                         <div class="tab-pane fade" role="tabpanel" id="output-tab">
-                            <div id="output-content" class="output-content">
+                            <div id="output-content" class="content">
                             </div>
                         </div>
                     </div>
