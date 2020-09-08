@@ -17,6 +17,7 @@
 package nl.moj.server.teams.model;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -64,7 +65,8 @@ public class Team {
     @JoinTable(name = "team_users",
             joinColumns = @JoinColumn(name = "team_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
-    private List<User> users;
+    @Builder.Default
+    private List<User> users = new ArrayList<>();
 
     public String getShortName() {
         return name.length() > 20 ? name.substring(0, 20) + "..." : name;
