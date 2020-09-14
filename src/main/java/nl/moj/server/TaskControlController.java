@@ -136,6 +136,11 @@ public class TaskControlController {
         if (isWithNewAssignment) {
             long timeLeft = assignmentRuntime.getModel().getState().getAssignmentDescriptor().getDuration().toSeconds();
             competition.startAssignment(message.taskName,timeLeft);
+        } else {
+            competition.getCompetitionSession().setTimeLeft(null);
+            competition.getCompetitionSession().setDateTimeLastUpdate(null);
+            competition.getCompetitionSession().setRunning(false);
+            competitionSessionRepository.save(competition.getCompetitionSession());
         }
         String name = "default";
         if(state!=null && state.getAssignment()!=null) {
