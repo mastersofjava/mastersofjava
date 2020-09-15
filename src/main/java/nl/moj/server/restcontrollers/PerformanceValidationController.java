@@ -8,7 +8,8 @@ import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.JavaAssignmentFileResolver;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.submit.SubmitResult;
+import nl.moj.server.submit.service.SubmitRequest;
+import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.service.SubmitService;
 import nl.moj.server.authorization.Role;
@@ -203,7 +204,8 @@ public class PerformanceValidationController {
             for (Team team: getTeamInputList()) {
                 try {
                     agentStartupCache.executionTest++;
-                    SubmitResult submitResult = submitService.test(team, codeInputSolution).get(180, TimeUnit.SECONDS);
+                    // TODO is it ok to miss the user here in the request?
+                    SubmitResult submitResult = submitService.test(SubmitRequest.builder().team(team).sourceMessage(codeInputSolution).build()).get(180, TimeUnit.SECONDS);
                     outputParameters.put("test", submitResult.isSuccess());
                     if (!submitResult.isSuccess()) {
                         agentStartupCache.solutionErrors++;

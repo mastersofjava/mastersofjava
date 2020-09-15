@@ -59,15 +59,15 @@ public class TestService {
     private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
             Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-    private MojServerProperties mojServerProperties;
+    private final MojServerProperties mojServerProperties;
 
-    private TestCaseRepository testCaseRepository;
+    private final TestCaseRepository testCaseRepository;
 
-    private TestAttemptRepository testAttemptRepository;
+    private final TestAttemptRepository testAttemptRepository;
 
-    private AssignmentStatusRepository assignmentStatusRepository;
+    private final AssignmentStatusRepository assignmentStatusRepository;
 
-    private TeamService teamService;
+    private final TeamService teamService;
 
     public TestService(MojServerProperties mojServerProperties, CompetitionRuntime competition,
                        TestCaseRepository testCaseRepository, TestAttemptRepository testAttemptRepository,
@@ -84,14 +84,14 @@ public class TestService {
         return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, activeAssignment), executor);
     }
 
-    public CompletableFuture<TestResults> scheduleTests(Team team, List<AssignmentFile> tests, Executor executor, ActiveAssignment activeAssignment) {
+    public CompletableFuture<TestResults> scheduleTests(TestRequest testRequest, List<AssignmentFile> tests, Executor executor, ActiveAssignment activeAssignment) {
         log.info("activeAssignment: " + activeAssignment + " tests: " +tests.size());
         List<CompletableFuture<TestResult>> testFutures = new ArrayList<>();
 
         TestAttempt ta = null;
         try {
             AssignmentStatus optionalStatus = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
-                    activeAssignment.getCompetitionSession(), team);
+                    activeAssignment.getCompetitionSession(), testRequest.getTeam());
             ta = registerIfNeeded(TestAttempt.builder()
                     .assignmentStatus(optionalStatus)
                     .dateTimeStart(Instant.now())
@@ -105,7 +105,7 @@ public class TestService {
             throw new RuntimeException(ex);
         }
         final TestAttempt testAttempt = ta;
-        tests.forEach(t -> testFutures.add(scheduleTest(team, testAttempt, t, executor, activeAssignment)));
+        tests.forEach(t -> testFutures.add(scheduleTest(testRequest.getTeam(), testAttempt, t, executor, activeAssignment)));
 
         return CompletableFutures.allOf(testFutures).thenApply(r -> {
             testAttempt.setDateTimeEnd(Instant.now());

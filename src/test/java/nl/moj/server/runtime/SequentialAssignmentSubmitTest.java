@@ -27,10 +27,12 @@ import java.util.concurrent.TimeUnit;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.submit.SubmitResult;
+import nl.moj.server.submit.service.SubmitRequest;
+import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.service.SubmitService;
 import nl.moj.server.teams.model.Team;
+import nl.moj.server.user.model.User;
 import nl.moj.server.util.CompletableFutures;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -74,7 +76,9 @@ public class SequentialAssignmentSubmitTest extends BaseRuntimeTest {
     public void sequentialExecutionShouldHaveNoOverlappingExecutionWindows() {
 
         Team team1 = getTeam();
+        User user1 = getUser();
         Team team2 = addTeam();
+        User user2 = addUser(team2);
 
         OrderedAssignment oa = getAssignment("sequential");
 
@@ -90,7 +94,19 @@ public class SequentialAssignmentSubmitTest extends BaseRuntimeTest {
             SourceMessage src1 = createWithDelay("100", state);
             SourceMessage src2 = createWithDelay("50", state);
 
-            CompletableFuture<List<SubmitResult>> prepareForSubmit = CompletableFutures.allOf(submitService.test(team1, src1), submitService.test(team2, src2));
+            CompletableFuture<List<SubmitResult>> prepareForSubmit = CompletableFutures.allOf(
+                    submitService.test(SubmitRequest
+                    .builder()
+                    .user(user1)
+                    .team(team1)
+                    .sourceMessage(src1)
+                    .build()),
+                    submitService.test(SubmitRequest
+                    .builder()
+                    .user(user2)
+                    .team(team2)
+                    .sourceMessage(src2)
+                    .build()));
             // run them all at once and wait for the results.
             List<SubmitResult> results = prepareForSubmit.get(timeout.plusSeconds(20).toSeconds(), TimeUnit.SECONDS);
 

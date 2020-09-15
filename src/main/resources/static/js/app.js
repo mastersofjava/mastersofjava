@@ -10,30 +10,13 @@ $(document).ready(function () {
     connectButtons();
 
     initializeAssignmentClock();
-    initializeMarkdown();
+    initializeTextPanes();
     initializeCodeMirrors();
-    $( window ).resize(function() {
-        doResizeCodingPanel();
+    $(window).resize(function () {
+        resizeContent()
     });
-    window.setTimeout('$( window ).resize();',200);
+    window.setTimeout('$( window ).resize();', 200);
 });
-
-/**
- * Ensures responsivity of all CodeMirror tabs (triggered via window resize)
- * nb. CodeMirror does not support responsivity and the first tab (with assignment description ) should have large font.
- */
-function doResizeCodingPanel() {
-    var windowSize = $(window).height();
-    window.codePanelList = $('.CodeMirror.cm-s-default.ui-resizable');
-    if (window.codePanelList.length===0) {
-        return;//skip
-    }
-    var headerSize = $('#content h3').height()+$('ul.nav-tabs').height();
-    var footerSize = $('.footer').height();
-    var codePanelSize = windowSize-headerSize-footerSize-35;
-    window.codePanelList.css('height',codePanelSize);
-    console.log('codePanelSize ' +codePanelSize);
-}
 
 function connectCompetition() {
     stomp = new StompJs.Client({
@@ -46,8 +29,8 @@ function connectCompetition() {
         heartbeatOutgoing: 4000
     });
 
-    stomp.onConnect = function(frame) {
-        $('#status').append('<span>Connected</span>');
+    stomp.onConnect = function (frame) {
+        $('#status').html('<span>Connected</span>');
         // Do something, all subscribes must be done is this callback
         // This is needed because this will be executed after a (re)connect
         stomp.subscribe('/user/queue/competition',
@@ -55,9 +38,9 @@ function connectCompetition() {
                 var msg = JSON.parse(data.body);
                 console.log('received', msg);
 
-                if ('TEST'===msg.messageType && msg.test) {
-                    var colorStr = msg.success? 'lightgreen':'pink';
-                    $('#tabLink_'+msg.test).css('background-color',colorStr);
+                if ('TEST' === msg.messageType && msg.test) {
+                    var colorStr = msg.success ? 'lightgreen' : 'pink';
+                    $('#tabLink_' + msg.test).css('background-color', colorStr);
                 }
 
                 if (userHandlers.hasOwnProperty(msg.messageType)) {
@@ -113,11 +96,11 @@ function connectCompetition() {
             if (clock && isSessionValid(msg)) {
                 clock.sync(msg.remainingTime, msg.totalTime);
                 clock.isPaused = !msg.running;
-                if (msg.remainingTime===0) {
+                if (msg.remainingTime === 0) {
                     disable();
                 }
             } else {
-                console.log('timer msg retrieved:' +msg.sessionId + " " + msg.remainingTime + ' ' +$('#sessions').val());
+                console.log('timer msg retrieved:' + msg.sessionId + " " + msg.remainingTime + ' ' + $('#sessions').val());
             }
         };
         competitionHandlers['START_ASSIGNMENT'] = function (msg) {
@@ -150,7 +133,7 @@ function connectCompetition() {
 }
 
 function isSessionValid(msg) {
-    return msg.sessionId==null || $('#sessions').val()===msg.sessionId;
+    return msg.sessionId == null || $('#sessions').val() === msg.sessionId;
 }
 
 function connectButtons() {
@@ -178,30 +161,39 @@ function connectButtons() {
 function codeMirror_insertImagesInAssignmentText() {
 
     var list = $('.CodeMirror-code:visible .CodeMirror-line');
-    $(list).each(function() {
-        var isHtml = this.innerHTML.indexOf('&gt;')!==-1&&this.innerHTML.indexOf('&lt;')!==-1;
+    $(list).each(function () {
+        var isHtml = this.innerHTML.indexOf('&gt;') !== -1 && this.innerHTML.indexOf('&lt;') !== -1;
         if (isHtml) {
-            var input = this.innerHTML.replace(/&gt;/g,'>').replace(/&lt;/g,'<');
+            var input = this.innerHTML.replace(/&gt;/g, '>').replace(/&lt;/g, '<');
             console.log(input);
             this.innerHTML = input;
         }
     });
 }
 
-function initializeMarkdown() {
+function initializeTextPanes() {
     $('div.markdown').each(
-        function(idx) {
-            $(this).html(function(idx,content) {
+        function (idx) {
+            $(this).html(function (idx, content) {
                 return marked(content)
             })
         }
-    );
-    if ($('#tabs .tab-content').length===0) {
-        return; //skip
-    }
+    )
+}
+
+function resizeContent() {
     let pos = $('#tabs .tab-content').position();
-    let height = window.innerHeight - pos.top - 80;
-    $('div.file-content').css('height', height + 'px');
+    if (pos) {
+        let height = window.innerHeight - pos.top - 80;
+
+        $('#tabs .content').each(function (idx) {
+            $(this).css('height', height + 'px');
+        })
+
+        $('#tabs .CodeMirror.ui-resizable').each(function (idx) {
+            $(this).css('height', height + 'px');
+        })
+    }
 }
 
 function initializeCodeMirrors() {
@@ -230,7 +222,6 @@ function initializeCodeMirrors() {
 
             var tabLink = $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
                 function (e) {
-                    console.log('shown.bs.tab', e);
                     cm.refresh();
                     if (isTask) codeMirror_insertImagesInAssignmentText();
                     $(window).resize();
@@ -243,10 +234,6 @@ function initializeCodeMirrors() {
                     tabLink.trigger('shown.bs.tab');
                 }
             });
-
-            var pos = $('#tabs .tab-content').position();
-            var height = window.innerHeight - pos.top - 80;
-            $wrapper.css('height', height + 'px');
             if (isTask) {
                 tabLink.trigger('shown.bs.tab');
             }
@@ -276,7 +263,7 @@ function updateOutputHeaderColorActionStarted() {
 function updateOutputHeaderColorActionEnded(success) {
     var $output = $('#output');
     $output.removeClass('failure success action-started');
-    if( success ) {
+    if (success) {
         $output.addClass('success');
     } else {
         $output.addClass('failure');
@@ -417,9 +404,11 @@ function doUserActionSubmit() {
     }));
     showSubmitDetails();
 }
+
 function getTimeleft() {
-    return ''+ $('#assignment-clock').data()['timeLeft'];
+    return '' + $('#assignment-clock').data()['timeLeft'];
 }
+
 function showOutput() {
     $('#output').tab('show');
 }
@@ -436,6 +425,6 @@ function updateSubmits(count) {
     $('#submits').text(count);
 }
 
-function publish( destination, body ) {
+function publish(destination, body) {
     stomp.publish({destination: destination, body: body});
 }

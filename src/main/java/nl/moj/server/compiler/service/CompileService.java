@@ -83,7 +83,7 @@ public class CompileService {
         this.assignmentService = assignmentService;
     }
 
-    public CompletableFuture<CompileResult> scheduleCompile(Team team, SourceMessage message, Executor executor, ActiveAssignment state) {
+    public CompletableFuture<CompileResult> scheduleCompile(CompileRequest compileRequest, Executor executor, ActiveAssignment state) {
         // determine compiler version to use.
         Assert.isTrue(state != null, "Active Assignment is missing.");
         AssignmentDescriptor input = state.getAssignmentDescriptor();
@@ -93,9 +93,9 @@ public class CompileService {
                 .getJavaVersion(input
                         .getJavaVersion());
 
-        log.info("supplyAsync.javaCompile " + message.getAssignmentName() + " " + javaVersion);
+        log.info("supplyAsync.javaCompile " + compileRequest.getSourceMessage().getAssignmentName() + " " + javaVersion);
         // compile code.
-        return CompletableFuture.supplyAsync(() -> javaCompile(javaVersion, team, message, compileInputWrapper), executor);
+        return CompletableFuture.supplyAsync(() -> javaCompile(javaVersion, compileRequest, compileInputWrapper), executor);
     }
 
     public static class CompileInputWrapper {
@@ -267,11 +267,11 @@ public class CompileService {
         return safePathForEarchOperatingSystem;
     }
 
-    private CompileResult javaCompile(Languages.JavaVersion javaVersion, Team team, SourceMessage message, CompileInputWrapper compileInputWrapper) {
+    private CompileResult javaCompile(Languages.JavaVersion javaVersion, CompileRequest compileRequest, CompileInputWrapper compileInputWrapper) {
         compileInputWrapper.startTimeSinceQueue = Instant.now();
         // TODO should not be here.
-        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(compileInputWrapper.assignment, compileInputWrapper.state.getCompetitionSession(), team);
-        log.info("javaCompile: {} for team {} ", compileInputWrapper.assignment.getName(), team.getName());
+        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(compileInputWrapper.assignment, compileInputWrapper.state.getCompetitionSession(), compileRequest.getTeam());
+        log.info("javaCompile: {} for team {} ", compileInputWrapper.assignment.getName(), compileRequest.getTeam().getName());
         compileInputWrapper.compileAttemptId = UUID.randomUUID();
         CompileAttempt compileAttempt = CompileAttempt.builder()
                 .assignmentStatus(as)
@@ -282,12 +282,12 @@ public class CompileService {
         List<AssignmentFile> assignmentFiles = compileInputWrapper.readonlyAssignmentFiles;
         log.info("resources: {}, assignmentFiles: {}", resources.size(), assignmentFiles.size());
 
-        TeamProjectPathModel pathModel = new TeamProjectPathModel(team, compileInputWrapper.assignment, compileInputWrapper.state);
+        TeamProjectPathModel pathModel = new TeamProjectPathModel(compileRequest.getTeam(), compileInputWrapper.assignment, compileInputWrapper.state);
         pathModel.cleanCompileLocationForTeam();
         // copy resources
         pathModel.prepareResources(compileInputWrapper.resources);
         try {
-            pathModel.prepareInputSources(message, compileInputWrapper);
+            pathModel.prepareInputSources(compileRequest.getSourceMessage(), compileInputWrapper);
         } catch (Exception e) {
             log.error("error while preparing sources.", e);
             return createCompileResult(compileInputWrapper, "error while preparing sources: " + pathModel.errorMessage, false);
@@ -358,7 +358,7 @@ public class CompileService {
 
             } catch (TimeoutException e) {
                 // process is automatically destroyed
-                log.debug("Compile timed out and got killed for team {}.", team.getName());
+                log.debug("Compile timed out and got killed for team {}.", compileRequest.getTeam().getName());
                 timedOut = true;
             } catch (SecurityException se) {
                 log.error(se.getMessage(), se);

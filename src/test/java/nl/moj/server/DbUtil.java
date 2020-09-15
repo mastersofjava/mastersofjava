@@ -24,6 +24,7 @@ import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -35,6 +36,7 @@ public class DbUtil {
     private TeamRepository teamRepository;
     private CompetitionSessionRepository competitionSessionRepository;
     private AssignmentStatusRepository assignmentStatusRepository;
+    private UserRepository userRepository;
 
     @Transactional
     public void cleanup() {
@@ -43,5 +45,6 @@ public class DbUtil {
         competitionRepository.deleteAll();
         assignmentRepository.deleteAll();
         teamRepository.deleteAll();
+        userRepository.deleteAll();
     }
 }

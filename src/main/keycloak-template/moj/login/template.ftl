@@ -128,7 +128,7 @@
               <div <#if displayWide>class="${properties.kcFormSocialAccountContentClass!} ${properties.kcFormSocialAccountClass!}"</#if>>
                   <div class="${properties.kcFormGroupClass!}">
                     <input type="hidden" name="tryAnotherWay" value="on" />
-                    <a href="#" id="try-another-way" onclick="document.forms['kc-select-try-another-way-form'].submit();return false;">${msg("doTryAnotherWay")}</a>
+                    <a href="#" id="try-another-way" onclick="document.forms['kc-select-try-another-way-form'].submitRequest();return false;">${msg("doTryAnotherWay")}</a>
                   </div>
               </div>
           </form>
