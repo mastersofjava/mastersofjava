@@ -16,8 +16,11 @@
 */
 package nl.moj.server.test.repository;
 
+import java.util.List;
 import java.util.UUID;
 
+import nl.moj.server.compiler.model.CompileAttempt;
+import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.test.model.TestAttempt;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -25,4 +28,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TestAttemptRepository extends JpaRepository<TestAttempt, Long> {
     TestAttempt findByUuid(UUID testAttemptUuid);
+
+    List<TestAttempt> findByAssignmentStatus(AssignmentStatus assignment);
+
 }

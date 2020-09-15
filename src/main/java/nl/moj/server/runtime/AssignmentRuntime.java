@@ -16,18 +16,6 @@
 */
 package nl.moj.server.runtime;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,17 +33,31 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.sound.Sound;
 import nl.moj.server.sound.SoundService;
-import nl.moj.server.submit.SubmitResult;
+import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
+import nl.moj.server.user.model.User;
+import nl.moj.server.user.service.UserService;
 import nl.moj.server.util.PathUtil;
 import org.apache.commons.lang3.time.StopWatch;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -78,28 +80,123 @@ public class AssignmentRuntime {
     private final SoundService soundService;
     private final TaskScheduler taskScheduler;
     private final AssignmentStatusRepository assignmentStatusRepository;
+    private final UserService userService;
 
     // TODO refactor so we do not need to use ApplicationContext to find a self reference
-    @Autowired
-    private ApplicationContext ctx;
+   // private ApplicationContext ctx;
+    private Map<Long,  AssignmentExecutionModel> assignmentExecutionModelMap = new TreeMap<>();
 
-    private StopWatch timer;
+    public static class AssignmentExecutionModel  {
+        @Getter
+        private StopWatch timer;
 
-    @Getter
-    private OrderedAssignment orderedAssignment;
-    private Assignment assignment;
-    private AssignmentDescriptor assignmentDescriptor;
-    private Map<String, Future<?>> handlers;
+        @Getter
+        private OrderedAssignment orderedAssignment;
+        private Assignment assignment;
+        private AssignmentDescriptor assignmentDescriptor;
+        private Map<String, Future<?>> handlers;
 
-    @Getter
-    private List<AssignmentFile> originalAssignmentFiles;
+        @Getter
+        private List<AssignmentFile> originalAssignmentFiles;
 
-    @Getter
-    private boolean running;
+        @Getter
+        private boolean running;
 
-    @Getter
-    private boolean paused;
-    private CompetitionSession competitionSession;
+        @Getter
+        private boolean paused;
+        private CompetitionSession competitionSession;
+        private AssignmentPreparations assignmentPreparations;
+        private Long durationInSeconds;
+
+        public CompetitionSession getCompetitionSession() {
+            return competitionSession;
+        }
+        public AssignmentStatus initAssignmentForLateTeam(Team team) {
+            return assignmentPreparations.initAssignmentForLateTeam(team);
+        }
+        public void pauseResume() {
+            if (!this.paused) {
+                if (this.timer.isStarted()) {
+                    this.timer.suspend();
+                }
+                this.paused = true;
+            } else {
+                if (this.timer.isSuspended()) {
+                    this.timer.resume();
+                }
+
+                this.paused = false;
+            }
+        }
+        public void clearHandlers() {
+            if (this.handlers != null) {
+                log.info("clearHandlers " + this.handlers.keySet());
+                this.handlers.forEach((k, v) -> v.cancel(true));
+            }
+            this.handlers = new HashMap<>();
+        }
+        public ActiveAssignment getState() {
+            Assert.isTrue(this.assignmentDescriptor!=null,"not initialized " + competitionSession.getAssignmentName());
+            return ActiveAssignment.builder()
+                    .competitionSession(this.competitionSession)
+                    .assignment(this.assignment)
+                    .timeRemaining(getTimeRemaining())
+                    .timeElapsed(getTimeElapsed())
+                    .assignmentDescriptor(this.assignmentDescriptor)
+                    .assignmentFiles(this.originalAssignmentFiles)
+                    .running(competitionSession.isRunning())
+                    .build();
+        }
+        public Long getTimeRemaining() {
+            return computeTimeRemaining();
+        }
+        private Long computeTimeRemaining() {
+            long remaining = 0;
+            if (this.assignmentDescriptor != null && this.timer != null) {
+                remaining = durationInSeconds - this.timer.getTime(TimeUnit.SECONDS);
+                if (remaining < 0) {
+                    remaining = 0;
+                }
+            }
+            return remaining;
+        }
+        private Duration getTimeElapsed() {
+            Duration elapsed = null;
+            if (this.assignmentDescriptor != null && this.timer != null) {
+                elapsed = Duration.ofSeconds(this.timer.getTime(TimeUnit.SECONDS));
+                Duration duration = Duration.ofSeconds(durationInSeconds);
+                if (elapsed.compareTo(duration) > 0) {
+                    elapsed = duration;
+                }
+            }
+            return elapsed;
+        }
+
+        public void setCompetitionSession(CompetitionSession competitionSession) {
+            this.competitionSession = competitionSession;
+        }
+        public void restartTimer() {
+            this.timer = StopWatch.createStarted();
+        }
+        public void resetTimer() {
+            this.durationInSeconds = this.assignmentDescriptor.getDuration().toSeconds();
+            if (this.timer==null) {
+                return;
+            }
+            this.timer.reset();
+            this.timer.start();
+        }
+    }
+
+    public boolean isPaused() {
+        return model.paused;
+    }
+
+    public boolean isRunning() {
+        return model.running;
+    }
+
+    private AssignmentExecutionModel model = new AssignmentExecutionModel();
 
     /**
      * Starts the given {@link OrderedAssignment} and returns
@@ -109,64 +206,73 @@ public class AssignmentRuntime {
      * @param orderedAssignment the assignment to start.
      * @return the {@link Future}
      */
+    public Future<?> start(OrderedAssignment orderedAssignment, CompetitionRuntime.CompetitionExecutionModel competitionExecutionModel) throws AssignmentStartException {
+
+        model = competitionExecutionModel.getAssignmentExecutionModel();
+        assignmentExecutionModelMap.put(competitionExecutionModel.getCompetition().getId(), model);
+        log.debug("assignmentRuntime.start input " +orderedAssignment.getAssignment().getName() + " " +assignmentExecutionModelMap.size() + " " +competitionExecutionModel.getCompetition().getId() + " " + competitionExecutionModel.getCompetitionSession().getTimeLeft());
+
+        Future<?> result = start(orderedAssignment, competitionExecutionModel.getCompetitionSession());
+        return result;
+    }
+
     @Transactional
     public Future<?> start(OrderedAssignment orderedAssignment, CompetitionSession competitionSession) throws AssignmentStartException {
-        clearHandlers();
-        this.competitionSession = competitionSession;
-        this.orderedAssignment = orderedAssignment;
-        this.assignment = orderedAssignment.getAssignment();
-        this.assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
+        model.clearHandlers();
+        model.competitionSession = competitionSession;
+        model.orderedAssignment = orderedAssignment;
+        model.assignment = orderedAssignment.getAssignment();
+        model.assignmentDescriptor = assignmentService.getAssignmentDescriptor(model.assignment);
+        AssignmentPreparations preparations = new AssignmentPreparations(model);
+        preparations.initOriginalAssignmentFiles();
+        model.assignmentPreparations = preparations;
+        model.running = true;
 
-        // verify assignment
-        verifyAssignment(this.assignmentDescriptor);
+        boolean isRestart = model.competitionSession.getTimeLeft()!=null&&model.competitionSession.getTimeLeft()!=0;
 
-        // init assignment sources;
-        initOriginalAssignmentFiles();
+        if (isRestart) {
+            model.durationInSeconds = model.competitionSession.getTimeLeft();
+            log.info("Refreshed running assignment {}", model.assignment.getName());
+            messageService.sendStartToTeams(model.assignment.getName(), model.competitionSession.getUuid().toString());
+            return startTimers();
+        } else {
+            model.resetTimer();
+        }
 
-        initTeamsForAssignment();
-
+        model.competitionSession.setTimeLeft(model.durationInSeconds);
         // play the gong
         taskScheduler.schedule(soundService::playGong, Instant.now());
+        // verify assignment
+        preparations.verifyAssignment(model.assignmentDescriptor);
+        // init assignment sources;
+        model.durationInSeconds = model.assignmentDescriptor.getDuration().getSeconds();
+        preparations.initTeamsForAssignment();
         // start the timers
-        Future<?> stopHandle = startTimers();
-
+        Future<?> mainHandle = startTimers();
         // update assignment status start times
-        updateTeamAssignmentStatuses();
-
-        // mark assignment as running
-        running = true;
+        preparations.updateTeamAssignmentStatuses();
 
         // send start to clients.
-        messageService.sendStartToTeams(assignment.getName());
+        messageService.sendStartToTeams(model.assignment.getName(), model.competitionSession.getUuid().toString());
 
-        log.info("Started assignment {}", assignment.getName());
+        log.info("Started assignment {}", model.assignment.getName());
 
-        return stopHandle;
+        return mainHandle;
     }
 
-    public void pauseResume() {
-        if (!paused) {
-            if (timer.isStarted()) {
-                timer.suspend();
-            }
-            paused = true;
-        } else {
-            if (timer.isSuspended()) {
-                timer.resume();
-            }
-
-            paused = false;
-        }
+    public AssignmentExecutionModel getModel() {
+        return model;
     }
 
-    /**
-     * Stop the current assignment
-     */
+
+    private void sendStopToTeams(AssignmentExecutionModel model) {
+        messageService.sendStopToTeams(model.assignment.getName(),model.competitionSession.getUuid().toString());
+    }
     @Transactional
-    public void stop() {
-        messageService.sendStopToTeams(assignment.getName());
+    public void stopAssignment(AssignmentExecutionModel model) {
+        sendStopToTeams(model);
         teamService.getTeams().forEach(t -> {
-            ActiveAssignment state = getState();
+            ActiveAssignment state = model.getState();
             AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(),
                     state.getCompetitionSession(), t);
             if (as != null) {
@@ -178,192 +284,191 @@ public class AssignmentRuntime {
                             .remainingSubmits(0)
                             .score(ar.getFinalScore())
                             .build());
+
                 }
             } else {
                 log.warn("Could not finalize score for team {}@{}, no assignment status found.", t.getName(), t.getUuid());
             }
         });
-
-        if (getTimeRemaining() > 0) {
-            clearHandlers();
+        model.clearHandlers();
+        if (model.getTimeRemaining() > 0) {
+            model.clearHandlers();
         } else {
             try {
-                this.handlers.get(TIMESYNC).cancel(true);
+                model.handlers.get(TIMESYNC).cancel(true);
             } catch (NullPointerException e) {
                 log.debug("assignment stopped without being started, not canceling timesync handler since it doesn't exist");
             }
         }
-        running = false;
-        orderedAssignment = null;
-        log.info("Stopped assignment {}", assignment.getName());
+        model.running = false;
+        model.orderedAssignment = null;
+        log.info("Stopped assignment {}", model.assignment.getName());
+
+        assignmentExecutionModelMap.remove(model.competitionSession.getCompetition().getId());
     }
 
-    public ActiveAssignment getState() {
-        return ActiveAssignment.builder()
-                .competitionSession(competitionSession)
-                .assignment(assignment)
-                .timeRemaining(getTimeRemaining())
-                .timeElapsed(getTimeElapsed())
-                .assignmentDescriptor(assignmentDescriptor)
-                .assignmentFiles(originalAssignmentFiles)
-                .running(running)
-                .build();
+    /**
+     * Stop the current assignment
+     */
+    @Transactional
+    public void stop() {
+        stopAssignment(model);
     }
-
-    private void verifyAssignment(AssignmentDescriptor ad) throws AssignmentStartException {
-        // verify we have a correct runtime available.
-        try {
-            mojServerProperties.getLanguages().getJavaVersion(ad.getJavaVersion());
-        } catch (IllegalArgumentException iae) {
-            throw new AssignmentStartException("Cannot start assignment " + ad.getName() + ", requested Java runtime version " + ad
-                    .getJavaVersion() + " not available.", iae);
-        }
-    }
-
-    private void initOriginalAssignmentFiles() {
-        try {
-            originalAssignmentFiles = assignmentService.getAssignmentFiles(assignment);
-        } catch (Exception e) {
-            // log exception here since it may get swallowed by async calls
-            log.error("Unable to parse assignment files for assignment {}: {}", assignmentDescriptor.getDisplayName(), e
-                    .getMessage(), e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void initTeamsForAssignment() {
-        cleanupAssignmentStatuses();
-        teamService.getTeams().forEach(this::initAssignmentForTeam);
-    }
-
-    public AssignmentStatus initAssignmentForLateTeam(Team t) {
-        AssignmentStatus as = initAssignmentForTeam(t);
-        as.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
-        return assignmentStatusRepository.save(as);
-    }
-
-    private AssignmentStatus initAssignmentForTeam(Team t) {
-        cleanupTeamAssignmentData(t);
-        AssignmentStatus as = initAssignmentStatus(t);
-        initTeamScore(as);
-        initTeamAssignmentData(t);
-        return as;
-    }
-
-    private void updateTeamAssignmentStatuses() {
-        assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competitionSession).forEach(as -> {
-            as.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
-            assignmentStatusRepository.save(as);
-        });
-    }
-
-    private void initTeamAssignmentData(Team team) {
-        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession, team, assignment);
-        try {
-            // create empty assignment directory
-            Files.createDirectories(assignmentDirectory);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to create team assignment directory " + assignmentDirectory, e);
-        }
-    }
-
-    private AssignmentStatus initAssignmentStatus(Team team) {
-        Duration assignmentDuration = assignmentDescriptor.getDuration();
-        AssignmentStatus as = AssignmentStatus.builder()
-                .assignment(assignment)
-                .competitionSession(competitionSession)
-                .uuid(UUID.randomUUID())
-                .assignmentDuration(assignmentDuration)
-                .team(team)
-                .build();
-        return assignmentStatusRepository.save(as);
-    }
-
-
-    private void initTeamScore(AssignmentStatus as) {
-        scoreService.initializeScoreAtStart(as);
-    }
-
-    private void cleanupTeamAssignmentData(Team team) {
-        // delete historical submitted data.
-        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession, team, assignment);
-        try {
-            if (Files.exists(assignmentDirectory)) {
-                PathUtil.delete(assignmentDirectory);
+    @Deprecated
+    @Transactional
+    public void stopAssignmentsWhenDone() {
+        List<AssignmentExecutionModel> list = new ArrayList<>();
+        list.addAll(assignmentExecutionModelMap.values());
+        for (AssignmentExecutionModel inputModel: list) {
+            if (inputModel.getTimeRemaining()==0) {
+                stopAssignment(inputModel);
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to delete team assignment directory " + assignmentDirectory, e);
         }
     }
 
-    private void cleanupAssignmentStatuses() {
-        assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competitionSession)
-                .forEach(assignmentStatusRepository::delete);
+    private class AssignmentPreparations {
+        private AssignmentExecutionModel model;
+        public AssignmentPreparations(AssignmentExecutionModel model) {
+            this.model = model;
+        }
+
+        public AssignmentStatus initAssignmentForLateTeam(Team t) {
+            AssignmentStatus as = initAssignmentForTeam(t);
+            as.setDateTimeStart(Instant.ofEpochMilli(model.timer.getStartTime()));
+            return assignmentStatusRepository.save(as);
+        }
+        private void initTeamsForAssignment() {
+            cleanupAssignmentStatuses();
+            teamService.getTeams().forEach(this::initAssignmentForTeam);
+        }
+        private void updateTeamAssignmentStatuses() {
+            assignmentStatusRepository.findByAssignmentAndCompetitionSession(model.assignment, model.competitionSession).forEach(as -> {
+                as.setDateTimeStart(Instant.ofEpochMilli(model.timer.getStartTime()));
+                assignmentStatusRepository.save(as);
+            });
+        }
+
+        private void initTeamAssignmentData(Team team) {
+            Path assignmentDirectory = teamService.getTeamAssignmentDirectory(model.competitionSession, team, model.assignment);
+            try {
+                // create empty assignment directory
+                Files.createDirectories(assignmentDirectory);
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to create team assignment directory " + assignmentDirectory, e);
+            }
+        }
+        private void initOriginalAssignmentFiles() {
+            try {
+                if (model.assignment!=null) {
+                    model.originalAssignmentFiles = assignmentService.getAssignmentFiles(model.assignment);
+                }
+            } catch (Exception e) {
+                // log exception here since it may get swallowed by async calls
+                log.error("Unable to parse assignment files for assignment {}: {}", model.assignmentDescriptor.getDisplayName(), e
+                        .getMessage(), e);
+                throw new RuntimeException(e);
+            }
+        }
+        private AssignmentStatus initAssignmentForTeam(Team t) {
+            cleanupTeamAssignmentData(t,model.competitionSession);
+            AssignmentStatus as = initAssignmentStatus(t);
+            initTeamScore(as);
+            initTeamAssignmentData(t);
+            return as;
+        }
+        private void verifyAssignment(AssignmentDescriptor ad) throws AssignmentStartException {
+            // verify we have a correct runtime available.
+            try {
+                mojServerProperties.getLanguages().getJavaVersion(ad.getJavaVersion());
+            } catch (IllegalArgumentException iae) {
+                throw new AssignmentStartException("Cannot start assignment " + ad.getName() + ", requested Java runtime version " + ad
+                        .getJavaVersion() + " not available.", iae);
+            }
+        }
+        private AssignmentStatus initAssignmentStatus(Team team) {
+            Duration assignmentDuration = model.assignmentDescriptor.getDuration();
+
+            AssignmentStatus as = AssignmentStatus.builder()
+                    .assignment(model.assignment)
+                    .competitionSession(model.competitionSession)
+                    .uuid(UUID.randomUUID())
+                    .assignmentDuration(assignmentDuration)
+                    .team(team)
+                    .build();
+            return assignmentStatusRepository.save(as);
+        }
+
+
+        private void initTeamScore(AssignmentStatus as) {
+            scoreService.initializeScoreAtStart(as);
+        }
+
+        private void cleanupTeamAssignmentData(Team team, CompetitionSession competitionSession) {
+            // delete historical submitted data.
+            Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession, team, model.assignment);
+            try {
+                if (Files.exists(assignmentDirectory)) {
+                    PathUtil.delete(assignmentDirectory);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to delete team assignment directory " + assignmentDirectory, e);
+            }
+        }
+
+        private void cleanupAssignmentStatuses() {
+            assignmentStatusRepository.findByAssignmentAndCompetitionSession(model.assignment, model.competitionSession)
+                    .forEach(assignmentStatusRepository::delete);
+        }
+    }
+
+    public void reloadOriginalAssignmentFiles() {
+        assignmentService.clearSmallFileStorageInMemory();
+        new AssignmentPreparations(model).initOriginalAssignmentFiles();
     }
 
     private Future<?> startTimers() {
-        timer = StopWatch.createStarted();
-        Future<?> stop = scheduleStop();
-        handlers.put(STOP, stop);
-        handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration()
-                .toSeconds() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
-        handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration()
-                .toSeconds() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
-        handlers.put(TIMESYNC, scheduleTimeSync());
-        return stop;
+        model.restartTimer();
+        Future<?> main = scheduleTimeSync();
+       // model.handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(model.competitionSession.getTimeLeft() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
+      //  model.handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(model.competitionSession.getTimeLeft() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
+        model.handlers.put(TIMESYNC, main);
+        model.handlers.put(STOP, scheduleStop());
+        return model.handlers.get(STOP);
     }
 
-    private Long getTimeRemaining() {
-        long remaining = 0;
-        if (assignmentDescriptor != null && timer != null) {
-            remaining = assignmentDescriptor.getDuration().getSeconds() - timer.getTime(TimeUnit.SECONDS);
-            if (remaining < 0) {
-                remaining = 0;
-            }
-        }
-        return remaining;
-    }
 
-    private Duration getTimeElapsed() {
-        Duration elapsed = null;
-        if (assignmentDescriptor != null && timer != null) {
-            elapsed = Duration.ofSeconds(timer.getTime(TimeUnit.SECONDS));
-            if (elapsed.compareTo(assignmentDescriptor.getDuration()) > 0) {
-                elapsed = assignmentDescriptor.getDuration();
-            }
-        }
-        return elapsed;
-    }
 
-    private void clearHandlers() {
-        if (this.handlers != null) {
-            this.handlers.forEach((k, v) -> v.cancel(true));
-        }
-        this.handlers = new HashMap<>();
-    }
 
+    @Deprecated
     @Async
     public Future<?> scheduleStop() {
-        AssignmentRuntime ar = getSelfReference();
-        return taskScheduler.schedule(ar::stop, inSeconds(assignmentDescriptor.getDuration().getSeconds()));
+        final AssignmentRuntime ar = this;
+        Date inSeconds = Date.from(LocalDateTime.now().plus(model.assignmentDescriptor.getDuration().getSeconds(), ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
+
+        return taskScheduler.schedule(ar::stopAssignmentsWhenDone, inSeconds);
     }
 
     @Async
     public Future<?> scheduleAssignmentEndingNotification(long start, long duration, Sound sound) {
-        return taskScheduler.schedule(() -> soundService.play(sound, duration), inSeconds(start));
+        Date inSeconds = Date.from(LocalDateTime.now().plus(start, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
+        return taskScheduler.schedule(() -> soundService.play(sound, duration), inSeconds);
     }
 
     @Async
     public Future<?> scheduleTimeSync() {
-        return taskScheduler.scheduleAtFixedRate(() -> messageService.sendRemainingTime(getTimeRemaining(),
-                assignmentDescriptor.getDuration().getSeconds()), TIMESYNC_FREQUENCY);
-    }
+        return taskScheduler.scheduleAtFixedRate(() -> {
+                    List<AssignmentExecutionModel> activeAssignmentList = new ArrayList<>(assignmentExecutionModelMap.values());
+                    for (AssignmentExecutionModel model: activeAssignmentList) {
+                        messageService.sendRemainingTime(model.getTimeRemaining(),
+                                model.assignmentDescriptor.getDuration().getSeconds(), model.isPaused(), model.competitionSession);
+                    }
 
-    private Date inSeconds(long sec) {
-        return Date.from(LocalDateTime.now().plus(sec, ChronoUnit.SECONDS).atZone(ZoneId.systemDefault()).toInstant());
-    }
-
-    private AssignmentRuntime getSelfReference() {
-        return ctx.getBean(AssignmentRuntime.class);
+                    for (AssignmentExecutionModel model: activeAssignmentList) {
+                        if (model.getTimeRemaining()==0) {
+                            stopAssignment(model);
+                        }
+                    }
+                }
+                , TIMESYNC_FREQUENCY);
     }
 }

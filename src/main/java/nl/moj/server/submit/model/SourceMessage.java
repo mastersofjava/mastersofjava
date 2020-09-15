@@ -34,4 +34,7 @@ public class SourceMessage {
     private Map<String, String> sources;
     private List<String> tests;
     private String assignmentName;
+    private String uuid;
+    private String timeLeft;
+    private Long arrivalTime;
 }

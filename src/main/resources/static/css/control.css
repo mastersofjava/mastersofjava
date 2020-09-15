@@ -151,7 +151,9 @@ select.disabled {
     display: block;
     overflow-x: hidden;
 }
-
+tr.underline td{
+    text-decoration: underline;
+}
 .selected .fa-angle-double-right:before {
     content: "\f103";
 }
@@ -163,4 +165,28 @@ select.disabled {
 }
 input[file] {
     color:black;
+}
+.pre_wrap {
+    white-space: pre-wrap;
+}
+.btn-group-toggle label.btn.btn-secondary.active{
+    cursor: default;
+    font-weight: bold;
+}
+.btn-group-toggle label.btn.btn-secondary:not(.active):hover{
+    color: yellow;
+}
+.btn-group-toggle label.btn.btn-secondary:not(.active){
+    background-color: lightgrey;
+}
+.underline .notextdecoration {
+    text-decoration: none;
+}
+.locationClock {
+    position: absolute;
+    left:40px;
+    top:100px;
+}
+div.completed {
+    font-style: italic;
 }

@@ -14,7 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.teams.model;
+package nl.moj.server.authorization;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,12 +27,15 @@ public final class Role {
     public static final String GAME_MASTER = "ROLE_GAME_MASTER";
     public static final String USER = "ROLE_USER";
     public static final String ANONYMOUS = "ROLE_ANONYMOUS";
-    
+
 	public static boolean isWithControleRole(List<String> roles) {
 		return roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER);
 	}
-	
+
 	public static boolean isWithControleRole(KeycloakAuthenticationToken user) {
+		if (user==null || user.getAuthorities()==null || user.getAuthorities().isEmpty()) {
+			return false;
+		}
 		return isWithControleRole(user
     			.getAuthorities().stream()
     			.map(GrantedAuthority::getAuthority)

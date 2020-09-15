@@ -21,43 +21,60 @@ import java.util.Collections;
 import java.util.List;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.competition.model.Competition;
 import nl.moj.server.rankings.model.Ranking;
 import nl.moj.server.rankings.service.RankingsService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.util.CollectionUtil;
+import nl.moj.server.util.HttpUtil;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 public class RankingsController {
 
-    private final CompetitionRuntime competition;
+    private final CompetitionRuntime competitionRuntime;
 
-    private final RankingsService rankingsMapper;
+    private final RankingsService rankingsService;
 
     @GetMapping("/rankings")
     public ModelAndView getRankings() {
-        List<Ranking> rankings = enrich(rankingsMapper.getRankings(competition.getCompetitionSession()));
-        CompetitionState competitionState = competition.getCompetitionState();
+        CompetitionRuntime rankingProvider = competitionRuntime;
+        log.info("competition " +HttpUtil.getParam("competition") + " - " +rankingProvider);
+
+        if (HttpUtil.hasParam("competition")) {
+            Long competitionId = Long.parseLong(HttpUtil.getParam("competition","1"));
+            if (competitionRuntime.getActiveCompetitionsMap().containsKey(competitionId)) {
+                Competition competition = competitionRuntime.getActiveCompetitionsMap().get(competitionId).getCompetition();
+                rankingProvider = competitionRuntime.selectCompetitionRuntimeForGameStart(competition);
+            }
+        }
+        Competition competition = rankingProvider.getCompetition();
+        List<Ranking> rankings = enrich(rankingsService.getRankings(rankingProvider.getCompetitionSession()));
+        CompetitionState competitionState = rankingProvider.getCompetitionState();
         ModelAndView model = new ModelAndView("rankings");
         if (competitionState.getCompletedAssignments().isEmpty()) {
             model.addObject("oas", Collections.emptyList());
         } else {
-            model.addObject("oas", rankingsMapper.getRankingHeaders(competitionState));
+            model.addObject("oas", rankingsService.getRankingHeaders(competitionState));
         }
         model.addObject("top", rankings.subList(0, Math.min(5, rankings.size())));
 
         List<List<Ranking>> parts = partitionRemaining(rankings, 5);
+        model.addObject("competitionName", competition.getShortName());
+        model.addObject("bottom1", parts.get(0));
         model.addObject("bottom1", parts.get(0));
         model.addObject("bottom2", parts.get(1));
         model.addObject("bottom3", parts.get(2));
         model.addObject("bottom4", parts.get(3));
-        if (competition.getCurrentAssignment() != null) {
-            ActiveAssignment state = competition.getActiveAssignment();
+        if (rankingProvider.getCurrentRunningAssignment() != null) {
+            ActiveAssignment state = rankingProvider.getActiveAssignment();
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addObject("timeLeft", state.getTimeRemaining());
             model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());

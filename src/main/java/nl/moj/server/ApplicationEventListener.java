@@ -43,14 +43,21 @@ public class ApplicationEventListener implements ApplicationListener<ContextRefr
 
     private void initCompetition() {
         if (competitionRuntime.getCompetition() == null) {
+            // Goal: pick with a competition to start with (this can be configured)
+            // - if database empty, create the default configured competition
+            // - if configured competition not available anymore then pick the first competition.
             UUID competitionUuid = mojServerProperties.getCompetition().getUuid();
             Competition c = competitionRepository.findByUuid(competitionUuid);
+            boolean isEmptyDatabase = competitionRepository.count()==0;
 
-            if (c == null) {
+            if (c == null && isEmptyDatabase) {
                 c = new Competition();
                 c.setUuid(competitionUuid);
                 c.setName("Masters of Java");
                 c = competitionRepository.save(c);
+            } else
+            if (c==null ) {
+                c = competitionRepository.findAll().get(0);
             }
             competitionRuntime.loadMostRecentSession(c);
         }

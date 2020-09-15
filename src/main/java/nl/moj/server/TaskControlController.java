@@ -29,6 +29,7 @@ import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.assignment.service.AssignmentServiceException;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.CompetitionCleaningService;
@@ -42,9 +43,12 @@ import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Role;
+import nl.moj.server.authorization.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.user.model.User;
+import nl.moj.server.user.service.UserService;
+import nl.moj.server.util.HttpUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +57,7 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
@@ -62,10 +66,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.annotation.security.RolesAllowed;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -101,39 +107,56 @@ public class TaskControlController {
 
     private final CompetitionService competitionService;
 
-    @ModelAttribute(name = "sessions")
-    public List<CompetitionSession> sessions() {
-        return competition.getSessions();
-    }
+    private final SessionRegistry sessionRegistry;
 
-
+    private final UserService userService;
 
     @ModelAttribute(name = "locationList")
     public List<File> locationList() {
         return competitionService.locationList();
     }
 
-    @ModelAttribute(name = "teams")
-    public List<Team> team() {
+    private List<Team> getAllTeams() {
         return teamRepository.findAll();
     }
 
     @MessageMapping("/control/starttask")
-    public void startTask(TaskMessage message) {
+    @SendToUser("/queue/controlfeedback")
+    public String startTask(TaskMessage message) {
         competition.startAssignment(message.getTaskName());
+        return "started assignment '"+message.getTaskName()+"', reloading page";
     }
 
     @MessageMapping("/control/stoptask")
-    public void stopTask() {
-        competition.stopCurrentAssignment();
+    @SendToUser("/queue/controlfeedback")
+    public String stopTask(TaskMessage message) {
+        competition.stopCurrentSession();
+        ActiveAssignment state = competition.getActiveAssignment();
+        boolean isWithNewAssignment = message!=null && !StringUtils.isEmpty(message.taskName);
+        if (isWithNewAssignment) {
+            long timeLeft = assignmentRuntime.getModel().getState().getAssignmentDescriptor().getDuration().toSeconds();
+            competition.startAssignment(message.taskName,timeLeft);
+        } else {
+            competition.getCompetitionSession().setTimeLeft(null);
+            competition.getCompetitionSession().setDateTimeLastUpdate(null);
+            competition.getCompetitionSession().setRunning(false);
+            competitionSessionRepository.save(competition.getCompetitionSession());
+        }
+        String name = "default";
+        if(state!=null && state.getAssignment()!=null) {
+            name = state.getAssignment().getName();
+        }
+        return "stopped assignment '"+name+"' running, reloading page";
     }
 
-    @MessageMapping("/control/clearCurrentAssignment")
+    @MessageMapping("/control/clearCompetition")
     @SendToUser("/queue/controlfeedback")
-    public String clearCompetition() {
+    public String doClearCompetition() {
         log.warn("clearCompetition entered");
-        gamemasterTableComponents.deleteCurrentSessionResources();
-        return competitionCleaningService.doCleanComplete();
+        competition.stopCurrentSession();
+        competitionCleaningService.doCleanComplete(competition.getCompetitionSession());
+        competition.getCompetitionState().getCompletedAssignments().clear();
+        return "competition restarted, reloading page";
     }
 
     @MessageMapping("/control/pauseResume")
@@ -145,33 +168,51 @@ public class TaskControlController {
             return "no active assignment";
         }
         String name = state.getAssignment().getName();
-        assignmentRuntime.pauseResume();
-        if (assignmentRuntime.isPaused()) {
+        competition.getCompetitionModel().getAssignmentExecutionModel().pauseResume();
+        if (competition.getCompetitionModel().getAssignmentExecutionModel().isPaused()) {
             return "assignment '"+name+"' paused, reloading page";
         } else {
             return "assignment '"+name+"' running, reloading page";
         }
     }
 
+
     @MessageMapping("/control/restartAssignment")
     @SendToUser("/queue/controlfeedback")
     public String restartAssignment(TaskMessage message) {
         log.warn("restartAssignment entered = {} " , message.taskName);
-        competition.getCompetitionState().getCompletedAssignments().clear();
         ActiveAssignment state = competition.getActiveAssignment();
         boolean isStopCurrentAssignment=state!=null && state.getAssignment()!=null && state.getAssignment().getName().equals(message.taskName);
 
         if (isStopCurrentAssignment) {
-            competition.stopCurrentAssignment();
+            competition.stopCurrentSession();
         }
         Assignment assignment = assignmentRepository.findByName(message.taskName);
         List<AssignmentStatus> ready4deletionList = assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competition.getCompetitionSession());
-
-        if (ready4deletionList.isEmpty()) {
-            return "Assignment not started yet: "  + message.taskName;
+        if (!ready4deletionList.isEmpty()) {
+            for (AssignmentStatus status: ready4deletionList) {
+                assignmentStatusRepository.deleteById(status.getId());// correct cleaning: first delete all status items, afterwards delete all results
+            }
         }
-        for (AssignmentStatus status: ready4deletionList) {
-            assignmentStatusRepository.deleteById(status.getId());// correct cleaning: first delete all status items, afterwards delete all results
+
+        boolean isWithRestartDirectly = !StringUtils.isEmpty(message.getValue());
+
+        if (isWithRestartDirectly) {
+            long timeLeft = assignmentRuntime.getModel().getState().getAssignmentDescriptor().getDuration().toSeconds();
+            competition.getCompetitionSession().setRunning(true);
+            competition.startAssignment(message.getValue(),timeLeft);// start fresh
+            return "Assignment restarted directly: " + message.taskName + ", reload page";
+        } else {
+            competition.getCompetitionSession().setTimeLeft(null);
+            competition.getCompetitionSession().setDateTimeLastUpdate(null);
+            competition.getCompetitionSession().setRunning(false);
+            competitionSessionRepository.save(competition.getCompetitionSession());
+            List<OrderedAssignment> operatableList = new ArrayList<>(competition.getCompetitionState().getCompletedAssignments());
+            for (OrderedAssignment orderedAssignment: operatableList) {
+                if (orderedAssignment.getAssignment().getName().equals(assignment.getName())) {
+                    competition.getCompetitionState().getCompletedAssignments().remove(orderedAssignment);
+                }
+            }
         }
         return "Assignment resetted: " + message.taskName + ", reload page";
     }
@@ -194,21 +235,21 @@ public class TaskControlController {
     }
     @MessageMapping("/control/competitionDelete")
     @SendToUser("/queue/controlfeedback")
-   // @Transactional
-    public String deleteCompetition(TaskControlController.TaskMessage message) {
-        boolean isUpdateCurrentCompetition =  message.getUuid().equals(competition.getCompetition().getUuid());
+    // @Transactional
+    public String doDeleteCompetition(TaskControlController.TaskMessage message) {
+        boolean isUpdateCurrentCompetition =  message.getUuid().equals(competition.getCompetition().getUuid().toString());
         log.info("deleteCompetition isCurrentCompetition {} ", isUpdateCurrentCompetition);
 
         try {
             long startAmount = competitionRepository.count();
             Competition competitionToClean = competitionRepository.findByUuid(UUID.fromString(message.getUuid()));
             List<CompetitionSession> sessionsToDelete = competitionSessionRepository.findByCompetition(competitionToClean);
-            log.info("sessionsToDelete {} ", sessionsToDelete.size());
-            if (isUpdateCurrentCompetition) {
-                clearCompetition();
-            }
+            log.info("sessionsToDelete {}, c {}", ""+ sessionsToDelete.size(), ""+ competitionToClean.getName());
+
             for (CompetitionSession session: sessionsToDelete) {
+                competitionCleaningService.doCleanComplete(session);
                 competitionSessionRepository.delete(session);
+                competition.getActiveCompetitionsMap().remove(competitionToClean.getId());
             }
             if (startAmount>1) {
 
@@ -230,11 +271,17 @@ public class TaskControlController {
         return "Deleted competition, now reloading page";
     }
 
+    @MessageMapping("/control/competitionToggleAvailability")
+    public void doCompetitionToggleAvailability(TaskMessage message)  throws JsonProcessingException {
+        CompetitionSession item = competitionSessionRepository.findByUuid(UUID.fromString(message.getUuid()));
+        item.setAvailable(Boolean.valueOf(message.value));
+        competitionSessionRepository.save(item);
+    }
     @MessageMapping("/control/competitionCreateNew")
     @SendToUser("/queue/controlfeedback")
-    public String doCompetitionCreateNew(TaskControlController.TaskMessage message)  throws JsonProcessingException {
+    public String doCompetitionCreateNew(TaskMessage message)  throws JsonProcessingException {
         log.info("doCompetitionCreateNew value {} " , message.getValue() );
-        if (StringUtils.isBlank(message.value)) {
+        if (StringUtils.isBlank(message.value)|| !message.value.contains("|")) {
             return "Please provide a valid name. ";
         }
         Competition newCompetition = new Competition();
@@ -263,8 +310,6 @@ public class TaskControlController {
         }
         UserStatusUpdate updateType = UserStatusUpdate.getEnum(message.getValue());
         if (!updateType.isAllowedToPlay) {
-            // anonymous users cannot login anymore, via import files one can be activated again.
-            team.setRole(Role.ANONYMOUS);
             team.setIndication(message.value);
         } else {
             team.setCompany(message.value);
@@ -316,8 +361,10 @@ public class TaskControlController {
             log.info("assignmentList size {} ",assignmentList.size()) ;
 
             String name = competition.getCompetition().getName().split("\\|")[0]+ "|" + path.toFile().getName();
-
-            startCompetitionWithFreshAssignments(name);
+            if (!competition.getCompetitionSession().isRunning()) {
+                startCompetitionWithFreshAssignments(name);
+            }
+            assignmentRuntime.reloadOriginalAssignmentFiles();
 
             return "Assignments scanned from location "+path+" ("+assignmentList.size()+"), reloading to show them.";
         } catch (AssignmentServiceException ase) {
@@ -350,21 +397,26 @@ public class TaskControlController {
         private String selectedYearLabel;
         private boolean isWithAdminRole;
         private boolean isWithSecretCurrentYear;
-        private AdminPageStatus(Authentication user) {
-            roles = user.getAuthorities().stream()
+        private User user;
+        private AdminPageStatus(Authentication principal,User user) {
+            this.user = user;
+            this.roles = principal.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
-            selectedYearLabel = competitionService.getSelectedYearLabel();
-            isWithAdminRole = roles.contains(Role.ADMIN);
-            isWithSecretCurrentYear = selectedYearLabel.contains("2020");
+            this.selectedYearLabel = competitionService.getSelectedYearLabel();
+            this.isWithAdminRole = roles.contains(Role.ADMIN);
+            this.isWithSecretCurrentYear = selectedYearLabel.contains("2020");
 
         }
         private void insertPageDefaults(Model model) {
+            Map<Long,String> activeCompetitions = competition.getRunningCompetitionsQuickviewMap();
+
             model.addAttribute("isWithAdminRole", this.isWithAdminRole);
             model.addAttribute("timeLeft", 0);
             model.addAttribute("time", 0);
             model.addAttribute("running", false);
+            model.addAttribute("runningSelectedCompetition", HttpUtil.hasParam("running"));
             model.addAttribute("clockStyle", "active");
-            model.addAttribute("currentAssignment", "-");
+
             model.addAttribute("assignmentDetailCanvas", "(U moet eerst de opdrachten inladen)");
             model.addAttribute("gameDetailCanvas", "(U moet eerst de opdrachten inladen)");
             model.addAttribute("opdrachtConfiguraties","(U moet eerst de opdrachten inladen)");
@@ -374,31 +426,61 @@ public class TaskControlController {
             model.addAttribute("teamDetailCanvas", "(U moet eerst de gebruikers aanmaken)");
             model.addAttribute("repositoryLocation", mojServerProperties.getAssignmentRepo().toFile());
             model.addAttribute("selectedYearLabel", "");
+            model.addAttribute("competitionName", competition.getCompetition().getShortName());
+            model.addAttribute("isWithCompetitionStarted",false);
+            model.addAttribute("nrOfUsersOnline", sessionRegistry.getAllPrincipals().size());
+            model.addAttribute("currentUserName", user.getName());
+
+            model.addAttribute("nrOfRunningCompetitions", activeCompetitions.size());
+
+            model.addAttribute("currentAssignment", "-");
+            if (HttpUtil.hasParam("running")) {
+                String assignment = HttpUtil.getParam("running","");
+                if (!assignment.isEmpty()) {
+                    model.addAttribute("currentAssignment", assignment);
+                }
+            }
         }
         private void insertGamestatus(Model model) {
+            log.info("insertGamestatus " +competition.getCurrentRunningAssignment()+ " " +competition.getCompetitionSession().isRunning());
+            boolean isSwitch = competition.getCurrentRunningAssignment() == null;
+            if (isSwitch && competition.getCompetitionSession().isRunning()) {
+                log.info("CompetitionSession.refresh " + competition.getCompetitionSession().getAssignmentName());
+                competition.startAssignment(competition.getCompetitionSession().getAssignmentName());
+            }
             ActiveAssignment state = competition.getActiveAssignment();
+            Assert.isTrue(state!=null,"incorrect status, view logs");
+            CompetitionRuntime.CompetitionExecutionModel competitionModel = competition.selectCompetitionRuntimeForGameStart(competition.getCompetition()).getCompetitionModel();
+
             model.addAttribute("timeLeft", state.getTimeRemaining());
             model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addAttribute("running", state.isRunning());
-            model.addAttribute("clockStyle", (assignmentRuntime.isPaused()?"disabled":"active"));
+            boolean isRunningSelected = competitionModel.isRunning()|| HttpUtil.hasParam("running");
+
+            model.addAttribute("runningSelectedCompetition", isRunningSelected);
+            model.addAttribute("clockStyle", (competitionModel.getAssignmentExecutionModel().isPaused()?"disabled":"active"));
             model.addAttribute("currentAssignment", state.getAssignmentDescriptor().getName());
         }
         private void insertAssignmentInfo(Model model) {
             List<AssignmentDescriptor> assignmentDescriptorList = competition.getAssignmentInfoOrderedForCompetition();
 
             boolean isWithAssignmentsLoaded = !assignmentDescriptorList.isEmpty();
-
+            List<String> completedAssignments = new ArrayList<>();
             if (isWithAssignmentsLoaded) {
+                List<GamemasterTableComponents.DtoAssignmentState> statusList = gamemasterTableComponents.createAssignmentStatusList();
+                completedAssignments.addAll(gamemasterTableComponents.createCompletedAssigmentList(statusList));
                 String assignmentDetailCanvas = gamemasterTableComponents.toSimpleBootstrapTable(assignmentDescriptorList);
-
+                String gameDetailCanvas = gamemasterTableComponents.toSimpleBootstrapTableForAssignmentStatus(statusList);
+                model.addAttribute("isWithCompetitionStarted",gameDetailCanvas.contains("STARTED"));
                 model.addAttribute("isWithConfigurableTestScore",assignmentDetailCanvas.contains("(*2)"));
                 model.addAttribute("isWithHiddenTests",assignmentDetailCanvas.contains("(*1)"));
                 model.addAttribute("assignmentDetailCanvas",  assignmentDetailCanvas);
-                model.addAttribute("gameDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForAssignmentStatus());
+                model.addAttribute("gameDetailCanvas", gameDetailCanvas);
                 model.addAttribute("opdrachtConfiguraties", gamemasterTableComponents.toSimpleBootstrapTablesForFileDetails(assignmentDescriptorList));
             }
             model.addAttribute("assignments",assignmentDescriptorList);
             model.addAttribute("isWithAssignmentsLoaded", isWithAssignmentsLoaded);
+            model.addAttribute("completedAssignments", completedAssignments);
         }
 
         private void validateRoleAuthorization() {
@@ -406,33 +488,43 @@ public class TaskControlController {
             Assert.isTrue(!isWithSecretCurrentYear||isWithAdminRole,"Gamemasters are not authorized to see secret current year assignments");
         }
         private boolean isDuringCompetitionAssignment() {
-            return competition.getCurrentAssignment() != null;
+            return competition.getCompetitionSession().isRunning();
         }
         private void insertCompetitionInfo(Model model) {
-
-            List<Team> teams = team();
-            if (!teams.isEmpty() && this.isWithAdminRole) {
-                List<Ranking> rankings = rankingsService.getRankings(competition.getCompetitionSession());
-                model.addAttribute("teamDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, true, rankings));
-                model.addAttribute("activeTeamDetailCanvas",  gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, false, rankings));
+            List<CompetitionSession> sessions = competitionSessionRepository.findAll();
+            if (sessions.isEmpty()) {
+                competition.startSession(competition.getCompetition());
+                sessions.add(competition.getCompetitionSession());
             }
+            List<Team> teams = getAllTeams();
+            if (!teams.isEmpty() && this.isWithAdminRole) {
+                List<Ranking> rankings = rankingsService.getRankings(competition.getCompetitionSession(), competitionService.getSelectedYearValue());
+                model.addAttribute("teamDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, true, rankings));
+                if (teams.size()>1) {
+                    model.addAttribute("activeTeamDetailCanvas",  gamemasterTableComponents.toSimpleBootstrapTableForTeams(teams, false, rankings));
+                }
+            }
+            model.addAttribute("teams", teams);
             if (this.isWithAdminRole) {
                 model.addAttribute("repositoryLocation", competitionService.getSelectedLocation());
                 model.addAttribute("selectedYearLabel", this.selectedYearLabel);
             }
-
+            model.addAttribute("sessions", sessions);
+            model.addAttribute("keycloackUrl", mojServerProperties.getAuthServerUrl());
+            model.addAttribute("setting_registration_disabled", true);
             model.addAttribute("sessionDetailCanvas", gamemasterTableComponents.toSimpleBootstrapTableForSessions());
 
         }
     }
 
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     @GetMapping("/control")
-    public String taskControl(Model model, @AuthenticationPrincipal Authentication user, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
+    public String taskControl(Model model, @AuthenticationPrincipal Authentication principal, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
                               @ModelAttribute("newPasswordRequest") NewPasswordRequest npr) {
-        if (sessions().isEmpty()) {
-            competition.startSession(competition.getCompetition());
-        }
-        AdminPageStatus pageStatus = new AdminPageStatus(user);
+        // TODO maybe move this creat or update stuff to a filter.
+        User user = userService.createOrUpdate(principal);
+
+        AdminPageStatus pageStatus = new AdminPageStatus(principal, user);
         pageStatus.validateRoleAuthorization();
         pageStatus.insertPageDefaults(model);
         if (pageStatus.isDuringCompetitionAssignment()) {
@@ -447,7 +539,7 @@ public class TaskControlController {
 
     @PostMapping("/control/select-session")
     public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
-        competition.loadSession(competition.getCompetition(), ssf.getSession());
+        competition.changeSession(ssf.getSession());
         return "redirect:/control";
     }
 
@@ -457,6 +549,35 @@ public class TaskControlController {
     @PostMapping("/control/new-session")
     public String newSession() {
         competition.startSession(competition.getCompetition());
+        return "redirect:/control";
+    }
+
+    @PostMapping("/control/resetPassword")
+    public String resetPassword(RedirectAttributes redirectAttributes,
+                                @ModelAttribute("newPasswordRequest") NewPasswordRequest passwordChangeRequest) {
+
+        String errorMessage = null;
+
+        if (passwordChangeRequest.teamUuid.equals("0")) {
+            errorMessage = "No team selected";
+        } else {
+            Team team = teamRepository.findByUuid(UUID.fromString(passwordChangeRequest.teamUuid));
+            if (passwordChangeRequest.newPassword == null || passwordChangeRequest.newPassword.isBlank()) {
+                errorMessage = "New password can't be empty";
+            } else if (!passwordChangeRequest.newPassword.equals(passwordChangeRequest.newPasswordCheck)) {
+                errorMessage = "Password and confirmaton did not match";
+            } else {
+                //team.setPassword(competitionService.getEncoder().encode(passwordChangeRequest.newPassword));
+                teamRepository.save(team);
+                redirectAttributes.addFlashAttribute("success", "Successfully changed password");
+                return "redirect:/control";
+            }
+        }
+
+        passwordChangeRequest.clearPasswords();
+        redirectAttributes.addFlashAttribute("newPasswordRequest", passwordChangeRequest);
+        redirectAttributes.addFlashAttribute("error", errorMessage);
+
         return "redirect:/control";
     }
 

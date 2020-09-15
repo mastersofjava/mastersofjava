@@ -38,7 +38,7 @@
         </div>
         <div class="col-5 d-flex justify-content-center">
             <div class="align-self-center">
-                <h1>Assignment: <span id="assignment-name" th:attr="data-assignment=${uuid}">[[${assignment}]]</span>
+                <h1>Assignment: <span id="assignment-name" th:attr="data-assignment=${uuid}" class="cursorPointer">[[${assignment}]]</span>
                 </h1>
             </div>
         </div>
@@ -121,6 +121,16 @@
             <img th:src="@{/images/logo_first8_150x39.png}" class="img-fluid"
                  src="/static/images/logo_first8_150x39.png"/>
         </div>
+        <div class="p-2 text-center inlineBlock minWidth100">
+            <a class="btn btn-info text-white disabled"
+               th:href="@{/feedback}"
+               target="_blank"><span class="fa fa-gamepad pr-1"></span>Live Feedback</a>
+        </div>
+        <div class="p-2 text-center inlineBlock minWidth100">
+            <a class="btn btn-info text-white"
+               th:href="@{/rankings}"
+               target="_blank"><span class="fa fa-trophy pr-1"></span>Rankings</a>
+        </div>
     </div>
 </div>
 
@@ -147,7 +157,7 @@
 <script type="text/javascript" th:src="@{/webjars/jquery-ui/jquery-ui.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
-<script type="text/javascript" th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+<script type="text/javascript" th:src="@{/webjars/stomp__stompjs/bundles/stomp.umd.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/codemirror/lib/codemirror.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/codemirror/addon/edit/matchbrackets.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/codemirror/addon/selection/active-line.js}"></script>

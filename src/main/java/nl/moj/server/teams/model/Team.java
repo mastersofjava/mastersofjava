@@ -17,10 +17,15 @@
 package nl.moj.server.teams.model;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import nl.moj.server.user.model.User;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 
 @Entity
 @Table(name = "teams")
@@ -44,9 +49,6 @@ public class Team {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
-    @Column(name = "role")
-    private String role;
-
     @Column(name = "country")
     private String country;
 
@@ -56,12 +58,22 @@ public class Team {
     @Column(name = "indication")
     private String indication;
 
+    // TODO this is here to make sure we have the teams as FetchType.EAGER gives issues ...
+    // we should be able to do without this, figure out how.
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany
+    @JoinTable(name = "team_users",
+            joinColumns = @JoinColumn(name = "team_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
+    @Builder.Default
+    private List<User> users = new ArrayList<>();
+
     public String getShortName() {
         return name.length() > 20 ? name.substring(0, 20) + "..." : name;
     }
 
     public boolean isDisabled() {
-        return !"ARCHIVE".equals(indication) && !"DISQUALIFY".equals(indication) && !Role.ANONYMOUS.equals(role);
+        return !"ARCHIVE".equals(indication) && !"DISQUALIFY".equals(indication);
     }
 
 }

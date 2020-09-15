@@ -49,6 +49,12 @@ create table competition_sessions
   id             bigint not null,
   uuid           uuid   not null,
   competition_id bigint not null,
+  available      boolean not null,
+  running        boolean not null,
+  time_left      bigint,
+  assignment_name varchar(255),
+  date_time_start       timestamp,
+  last_update           timestamp,
   primary key (id)
 );
 

@@ -30,6 +30,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,65 +41,70 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import lombok.AllArgsConstructor;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.teams.model.Role;
+import nl.moj.server.authorization.Role;
 
 @Configuration
 @AllArgsConstructor
 public class WebConfiguration {
 
-	private MojServerProperties mojServerProperties;
+    private MojServerProperties mojServerProperties;
+    //private SessionRegistry sessionRegistry;
 
-	@Configuration
-	public class WebConfig implements WebMvcConfigurer {
+    @Configuration
+    public class WebConfig implements WebMvcConfigurer {
 
-		@Override
-		public void addResourceHandlers(ResourceHandlerRegistry registry) {
-			Path path = Paths.get(mojServerProperties.getDirectories().getJavadocDirectory());
-			if (!path.isAbsolute()) {
-				path = mojServerProperties.getDirectories().getBaseDirectory()
-						.resolve(mojServerProperties.getDirectories().getJavadocDirectory());
-			}
-			registry.addResourceHandler("/javadoc/**").addResourceLocations(path.toAbsolutePath().toUri().toString());
-		}
-	}
+        @Override
+        public void addResourceHandlers(ResourceHandlerRegistry registry) {
+            Path path = Paths.get(mojServerProperties.getDirectories().getJavadocDirectory());
+            if (!path.isAbsolute()) {
+                path = mojServerProperties.getDirectories().getBaseDirectory()
+                        .resolve(mojServerProperties.getDirectories().getJavadocDirectory());
+            }
+            registry.addResourceHandler("/javadoc/**").addResourceLocations(path.toAbsolutePath().toUri().toString());
+        }
+    }
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+    @KeycloakConfiguration
+    @EnableGlobalMethodSecurity(jsr250Enabled = true)
+    public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 
-	@KeycloakConfiguration
-	@EnableGlobalMethodSecurity(jsr250Enabled = true)
-	public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
+        // Submits the KeycloakAuthenticationProvider to the AuthenticationManager
+        @Autowired
+        public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+            KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
+            keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
+            auth.authenticationProvider(keycloakAuthenticationProvider);
+        }
 
-		// Submits the KeycloakAuthenticationProvider to the AuthenticationManager
-		@Autowired
-		public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-			KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
-			keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
-			auth.authenticationProvider(keycloakAuthenticationProvider);
-		}
+        @Bean
+        public KeycloakSpringBootConfigResolver KeycloakConfigResolver() {
+            return new KeycloakSpringBootConfigResolver();
+        }
 
-		@Bean
-		public KeycloakSpringBootConfigResolver KeycloakConfigResolver() {
-			return new KeycloakSpringBootConfigResolver();
-		}
+        @Bean
+        @Override
+        protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+            return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
+        }
 
-		@Bean
-		@Override
-		protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
-			return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
-		}
-		     
-		@Bean
-		public PasswordEncoder passwordEncoder() {
-			return new BCryptPasswordEncoder();
-		}
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+            return new BCryptPasswordEncoder();
+        }
 
-		@Override
-		protected void configure(HttpSecurity http) throws Exception {
-			super.configure(http);
-			http.authorizeRequests()
-					.antMatchers("/", "/feedback", "/rankings").hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
-					.antMatchers("/control", "/bootstrap","/assignmentAdmin").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
-					.anyRequest().permitAll()
+        @Override
+        protected void configure(HttpSecurity http) throws Exception {
+            super.configure(http);
+            http.authorizeRequests()
+                    .antMatchers("/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico").permitAll()
+                    .antMatchers("/play", "/feedback", "/rankings").hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
+                    .antMatchers("/control", "/bootstrap","/assignmentAdmin").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
+                    .anyRequest().authenticated()
                     .and().headers().frameOptions().disable()
                     .and().csrf().disable();
-		}
-	}
+        }
+    }
 }

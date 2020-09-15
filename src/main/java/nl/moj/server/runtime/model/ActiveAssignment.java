@@ -42,6 +42,12 @@ public class ActiveAssignment {
     private List<AssignmentFile> assignmentFiles;
     private boolean running;
 
+
+    @Override
+    public String toString() {
+        return "[" +assignment.getName() + ", " + competitionSession.getId()+"]";
+    }
+
     public List<String> getTestNames() {
         return assignmentFiles
                 .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST)

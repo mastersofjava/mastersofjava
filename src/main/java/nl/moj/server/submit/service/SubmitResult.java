@@ -14,24 +14,36 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.login;
+package nl.moj.server.submit.service;
+
+import java.time.Instant;
+import java.util.UUID;
 
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import nl.moj.server.compiler.service.CompileResult;
+import nl.moj.server.test.service.TestResults;
 
-@Data
-@Builder
-public class SignupForm {
+@Builder(toBuilder = true)
+@Getter
+public class SubmitResult {
 
-    private String name;
+    private final UUID team;
 
-    private String password;
+    private final Instant dateTimeStart;
 
-    private String passwordCheck;
+    private final Instant dateTimeEnd;
 
-    private String country;
+    @Builder.Default
+    private final int remainingSubmits = 0;
 
-    private String company;
+    @Builder.Default
+    private final long score = 0L;
 
-    private String role;
+    private CompileResult compileResult;
+
+    private TestResults testResults;
+
+    @Builder.Default
+    private boolean success = false;
 }

@@ -18,6 +18,7 @@ package nl.moj.server.competition.model;
 
 
 import javax.persistence.*;
+import java.time.Instant;
 import java.util.UUID;
 
 import lombok.Data;
@@ -38,7 +39,31 @@ public class CompetitionSession {
     @Column(name = "uuid", unique = true, nullable = false)
     private UUID uuid;
 
+    @Column(name = "available")
+    private boolean available;
+
+    @Column(name = "running")
+    private boolean running;
+
+    @Column(name = "time_left")
+    private Long timeLeft;
+
+    @Column(name = "assignment_name")
+    private String assignmentName;
+
+    @Column(name = "date_time_start")
+    private Instant dateTimeStart;
+
+    @Column(name = "last_update")
+    private Instant dateTimeLastUpdate;
+
     @ManyToOne
     @JoinColumn(name = "competition_id", nullable = false)
     private Competition competition;
+
+    public boolean isRunning() {
+        Instant maxDuration = Instant.now().minusSeconds(3600);// max duration is 1 hour
+        return running && !dateTimeStart.isBefore(maxDuration);
+    }
+
 }

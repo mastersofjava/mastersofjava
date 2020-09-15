@@ -20,6 +20,7 @@ import javax.validation.constraints.NotNull;
 import java.nio.file.Path;
 
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -29,6 +30,14 @@ public class MojServerProperties {
 
     @NotNull
     private Path assignmentRepo;
+
+    private String authServerUrl;
+
+    private boolean performanceValidation;
+
+    public String getAuthServerUrl() {
+        return StringUtils.isEmpty(authServerUrl)?"":authServerUrl;
+    }
     @NestedConfigurationProperty
     private Limits limits = new Limits();
     @NestedConfigurationProperty
@@ -39,5 +48,6 @@ public class MojServerProperties {
     private Runtime runtime = new Runtime();
     @NestedConfigurationProperty
     private Competition competition;
+
 
 }

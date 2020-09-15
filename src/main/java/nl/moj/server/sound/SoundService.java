@@ -65,31 +65,38 @@ public class SoundService {
             this.song = mojServerProperties.getDirectories().getBaseDirectory()
                     .resolve(mojServerProperties.getDirectories().getSoundDirectory())
                     .resolve(sound.filename()).toAbsolutePath();
-            clip = AudioSystem.getClip();
+            try {
+                clip = AudioSystem.getClip();
+            } catch( IllegalArgumentException e ) {
+                log.warn("No audio-system detected, sound playing disabled.");
+                clip = null;
+            }
         }
 
         private void play(long seconds) throws IOException, UnsupportedAudioFileException, LineUnavailableException {
-            CountDownLatch l = new CountDownLatch(1);
-            log.debug("Start playing {}.", song);
-            clip.open(AudioSystem.getAudioInputStream(song.toFile()));
-            clip.addLineListener(event -> {
-                if (event.getType() == LineEvent.Type.STOP) {
-                    l.countDown();
+            if( clip != null  ) {
+                CountDownLatch l = new CountDownLatch(1);
+                log.debug("Start playing {}.", song);
+                clip.open(AudioSystem.getAudioInputStream(song.toFile()));
+                clip.addLineListener(event -> {
+                    if (event.getType() == LineEvent.Type.STOP) {
+                        l.countDown();
+                    }
+                });
+                try {
+                    if (seconds > 0) {
+                        clip.loop(Clip.LOOP_CONTINUOUSLY);
+                        l.await(seconds * 1000 * 1000 + 100, TimeUnit.MICROSECONDS);
+                    } else {
+                        clip.start();
+                        l.await(clip.getMicrosecondLength() + 100, TimeUnit.MICROSECONDS);
+                    }
+                } catch (InterruptedException e) {
+                    // ignored
                 }
-            });
-            try {
-                if (seconds > 0) {
-                    clip.loop(Clip.LOOP_CONTINUOUSLY);
-                    l.await(seconds * 1000 * 1000 + 100, TimeUnit.MICROSECONDS);
-                } else {
-                    clip.start();
-                    l.await(clip.getMicrosecondLength() + 100, TimeUnit.MICROSECONDS);
-                }
-            } catch (InterruptedException e) {
-                // ignored
+                log.debug("Finished playing {}.", song);
+                clip.close();
             }
-            log.debug("Finished playing {}.", song);
-            clip.close();
         }
     }
 }

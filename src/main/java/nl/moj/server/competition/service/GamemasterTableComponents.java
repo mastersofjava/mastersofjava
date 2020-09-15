@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.descriptor.AssignmentFiles;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.OrderedAssignment;
@@ -15,26 +17,30 @@ import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.rankings.model.Ranking;
+import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * the html creation will be moved towards the angular client in the future.
@@ -43,7 +49,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class GamemasterTableComponents {
-    private final CompetitionRuntime competition;
+    private final CompetitionRuntime competitionRuntime;
 
     private final MojServerProperties mojServerProperties;
 
@@ -52,11 +58,15 @@ public class GamemasterTableComponents {
     private final CompetitionSessionRepository competitionSessionRepository;
 
     private final AssignmentStatusRepository assignmentStatusRepository;
+
+    private final AssignmentService assignmentService;
     @JsonSerialize
     public static class DtoAssignmentState implements Serializable {
         private long order;
         private String name;
         private String state;
+        private Assignment assignment;
+        private AssignmentDescriptor assignmentDescriptor;
 
         public long getOrder() {
             return order;
@@ -70,9 +80,22 @@ public class GamemasterTableComponents {
             return state;
         }
     }
+    public enum AssignmentStates {
+        COMPLETED,
+        CURRENT;
+    }
+    public List<String> createCompletedAssigmentList(List<DtoAssignmentState> stateList) {
+        List<String> result = new ArrayList<>();
+        for (DtoAssignmentState orderedAssignment: stateList) {
+            if (AssignmentStates.COMPLETED.name().equals(orderedAssignment.state)) {
+                result.add(orderedAssignment.name);
+            }
+        }
+        return result;
+    }
 
-    public List<DtoAssignmentState> createAssignmentStatusMap() {
-        List<OrderedAssignment> orderedList = competition.getCompetition().getAssignmentsInOrder();
+    public List<DtoAssignmentState> createAssignmentStatusList() {
+        List<OrderedAssignment> orderedList = competitionRuntime.getCompetition().getAssignmentsInOrder();
         if (orderedList.isEmpty()) {
             return Collections.emptyList();
         }
@@ -83,15 +106,17 @@ public class GamemasterTableComponents {
             state.name = orderedAssignment.getAssignment().getName();
             state.state = toViewStatus(orderedAssignment);
             state.order = orderedAssignment.getOrder();
+            state.assignment = orderedAssignment.getAssignment();
+            state.assignmentDescriptor = assignmentService.getAssignmentDescriptor(orderedAssignment.getAssignment());
             result.add(state);
         }
         return result;
     }
     private String toViewStatus(OrderedAssignment orderedAssignment) {
         boolean isCompleted = false;
-        boolean isSelectedAndNotCompleted = orderedAssignment.equals(competition.getCurrentAssignment())
-                &&  competition.getActiveAssignment().getTimeRemaining()>0;
-        List<OrderedAssignment> completedList = competition.getCompetitionState().getCompletedAssignments();
+        boolean isSelectedAndNotCompleted = orderedAssignment.equals(competitionRuntime.getCurrentRunningAssignment())
+                &&  competitionRuntime.getActiveAssignment().getTimeRemaining()>0;
+        List<OrderedAssignment> completedList = competitionRuntime.getCompetitionState().getCompletedAssignments();
         for (OrderedAssignment completedAssignment: completedList) {
             if (completedAssignment.getAssignment().getName().equals(orderedAssignment.getAssignment().getName())) {
                 isCompleted = true;
@@ -99,15 +124,15 @@ public class GamemasterTableComponents {
         }
         String status = "-";
         if (isSelectedAndNotCompleted ) {
-            status = "CURRENT";
+            status = AssignmentStates.CURRENT.name();
         } else
         if (isCompleted) {
-            status = "COMPLETED";
+            status = AssignmentStates.COMPLETED.name();
         }
         return status;
     }
     public void deleteCurrentSessionResources() {
-        String uuid = competition.getCompetitionSession().getUuid().toString();
+        String uuid = competitionRuntime.getCompetitionSession().getUuid().toString();
         File rootFile = new File(mojServerProperties.getDirectories().getBaseDirectory().toFile(), "sessions\\"+uuid+"\\teams");
         try {
             File directory = mojServerProperties.getDirectories().getBaseDirectory().toFile();
@@ -120,64 +145,199 @@ public class GamemasterTableComponents {
                     FileUtils.deleteQuietly(project);
                 }
             }
-            log.info("deleteCurrentSessionResources.before {}, {}", rootFile , rootFile.exists() );
-            FileUtils.deleteQuietly(rootFile);
-            log.info("deleteCurrentSessionResources.after {}, {}", rootFile , rootFile.exists() );
+            if (rootFile.exists()) {
+                log.info("deleteCurrentSessionResources.before {}, exists {}", rootFile , rootFile.exists() );
+                FileUtils.deleteQuietly(rootFile);
+            }
+            log.info("deleteCurrentSessionResources.after {}, success {}", rootFile , !rootFile.exists() );
+
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
     }
     public String toSimpleBootstrapTableForSessions() {
-        return new BootstrapTableForSessions().createHtml();
+        return new BootstrapTableForAllCompetitions().createHtml();
     }
-    public class BootstrapTableForSessions {
-        String selectedSession = competition.getCompetitionSession().getUuid().toString();
-        String selectedCompetition = competition.getCompetition().getName();
-        int competitionCounter = 1;
-        List<Competition> competitionList = competitionRepository.findAll();
-        public String createHtmlFooterRow() {
+    public class BootstrapTableForAllCompetitions {
+        private final String selectedSession = competitionRuntime.getCompetitionSession().getUuid().toString();
+        private final String selectedCompetitionName = competitionRuntime.getCompetition().getName();
+        private final String defaultCollectionName = mojServerProperties.getAssignmentRepo().toFile().getName();
+        private int competitionCounter = 1;
+        private final List<Competition> competitionList = competitionRepository.findAll();
+        private final String actionsAdd = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#createNewSessionForm').submit()\">toevoegen sessie</button>";
+        private final String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
+        private Map<Long, List<String>> sessionAssignmentAmount = new TreeMap<>();
+
+        private BootstrapTableForAllCompetitions() {
+            List<String[]> highscoreList = assignmentStatusRepository.getHighscoreList();
+
+            for (String[] item : highscoreList) {
+                HighscoreDataWrapper result = new HighscoreDataWrapper(item);
+                Long sessionId = result.getSessionId();
+                List<String> stateList = sessionAssignmentAmount.getOrDefault(sessionId,new ArrayList<>());
+                stateList.add(result.getAssignmentName());
+                sessionAssignmentAmount.put(sessionId,stateList);
+            }
+        }
+        private boolean isSessionUsed(Long sessionId) {
+            return sessionAssignmentAmount.containsKey(sessionId);
+        }
+        private int computeAmountOfAssignmentsDone(Long sessionId) {
+            return sessionAssignmentAmount.get(sessionId).size();
+        }
+        private String createHtmlFooterRow() {
             StringBuilder html = new StringBuilder();
-            html.append("<tr><th colspan=4></th><th><button class='btn btn-secondary' data-toggle='modal' data-target='#createNewCompetition-modal'>Nieuwe competitie</button></th></tr>");
+            html.append("<tr><th colspan=3></th><th>");
+            html.append("<button class='btn btn-secondary adminRole role' onclick='doValidatePerformance()'>Valideer performance</button>");
+            html.append("</th><th><button class='btn btn-secondary' data-toggle='modal' data-target='#createNewCompetition-modal'>Nieuwe competitie</button>");
+            html.append("</th></tr>");
             return html.toString();
         }
-        public String createHtmlHeaderRow() {
+        private String createHtmlHeaderRow() {
             StringBuilder html = new StringBuilder();
-            html.append("<tr><th></th><th>Competities</th><th></th><th>Aantal sessies</th><th>Acties</th></tr>");
+            html.append("<tr><th></th><th>Competities</th><th></th><th>Beschikbaarheid</th><th>Acties</th></tr>");
             return html.toString();
         }
-        public String createHtmlTableBody() {
-            StringBuilder html = new StringBuilder();
-            for (Competition competition:competitionList) {
-                List<CompetitionSession> sessionList = competitionSessionRepository.findByCompetition(competition);
+
+
+
+        private class BootstrapTableForCompetition {
+            private final Competition competition;
+            private final List<CompetitionSession> sessionList;
+            private final boolean isSelectedCompetition;
+            private final boolean isWithCleanSession;
+            private final boolean isWithAvailableSession;
+            private final boolean isWithRunningSession;
+            private final String mostRecentSessionUuid;
+            private String createActivationToggle(boolean isActive) {
+                String check1 = isActive? "checked active":"";
+                String check2 = isActive? "":"checked active";
+
+                StringBuilder html = new StringBuilder();
+                html.append("<div class=\"btn-group btn-group-toggle notextdecoration\" data-toggle=\"buttons\">");
+                html.append("<label class=\"btn btn-secondary notextdecoration "+check1+"\" >");
+                html.append("<input type=\"radio\" name=\"options\" id=\"active\" "+check1+" onchange=\"doCompetitionToggleState('"+mostRecentSessionUuid+"', true)\" >aan</label>");
+                html.append("<label class=\"btn btn-secondary notextdecoration "+check2+"\" >");
+                html.append("<input type=\"radio\" name=\"options\" id=\"unavailable\" "+check2+" onchange=\"doCompetitionToggleState('"+mostRecentSessionUuid+"', false)\" >uit</label></div>");
+                return html.toString();
+            }
+            public BootstrapTableForCompetition(Competition competition, List<CompetitionSession> sessionList) {
+                this.competition = competition;
+                this.sessionList = sessionList;
+                isSelectedCompetition = competition.getName().equals(selectedCompetitionName);
+                boolean isAllSessionsUsed = true;
+                boolean isNoSessionActive = true;
+                boolean isWithAnyRunningSession = false;
+                for (CompetitionSession session: sessionList) {
+                    if (!isSessionUsed(session.getId())) {
+                        isAllSessionsUsed = false;
+                    }
+                    if (session.isAvailable()) {
+                        isNoSessionActive = false;
+                    }
+                    if (session.isRunning()) {
+                        isWithAnyRunningSession = true;
+                    }
+                }
+                isWithCleanSession = !isAllSessionsUsed;
+                isWithAvailableSession = !isNoSessionActive;
+                isWithRunningSession = isWithAnyRunningSession;
+                mostRecentSessionUuid = sessionList.get(sessionList.size()-1).getUuid().toString();
+            }
+
+            public String createHtml() {
+                StringBuilder html = new StringBuilder();
                 String[] parts = competition.getName().split("\\|");
                 String name = parts[0];
-                String collection = mojServerProperties.getAssignmentRepo().toFile().getName();
+                String collection = defaultCollectionName;
                 if (parts.length>=2) {
                     collection = parts[1];
                 }
-                String actionsAdd = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#createNewSessionForm').submit()\">toevoegen sessie</button>";
-                String actionsDelete = "<button class='btn btn-secondary' data-toggle='modal' data-target='#deleteCompetition-modal'  onclick='clientSelectSubtable(this);return false'>verwijder</button>";
-                String styleCompetition = competition.getName().equals(selectedCompetition) ? " italic " :"";
-                html.append("<tbody title='sessiepanel van competitie "+competition.getId()+"' ><tr class='"+ styleCompetition+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;"+competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this.innerHTML, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td >"+actionsAdd+"</td><td>"+actionsDelete+"</td></tr>");
+                collection = collection.split("-")[0];
+                String styleCompetitionText = isSelectedCompetition ? " italic underline selected " :"";
+                String styleCompetitionContent = isSelectedCompetition ? "" :" hide ";
+                StringBuilder htmlButtonsUpdate = new StringBuilder();
 
+                htmlButtonsUpdate.append(createActivationToggle(isWithAvailableSession));
+                if (!isWithCleanSession) {
+                    htmlButtonsUpdate.append("&nbsp;&nbsp;&nbsp;&nbsp;" + actionsAdd);
+                }
+                html.append("<tbody title='sessiepanel van competitie "+competitionCounter +"' ><tr class='");
+                html.append(styleCompetitionText+" tableSubHeader' id='"+competition.getUuid()+"'><td><button class='btn btn-secondary' onclick='clientSelectSubtable(this)'><span class='fa fa-angle-double-right pr-1'>&nbsp;&nbsp;");
+                html.append(competitionCounter+"</span></button></td><td contentEditable=true spellcheck=false onfocusout=\"doCompetitionSaveName(this, this.parentNode.id)\" >"+name+"</td><td>"+collection+"</td><td class='notextdecoration'>");
+                html.append(htmlButtonsUpdate+"</td><td>");
+                if (!isWithRunningSession) {
+                    html.append(actionsDelete);
+                }
+                html.append("</td></tr>");
                 int sessionCounter = 1;
 
                 for (CompetitionSession session: sessionList) {
-                    String styleCompetitionSession = selectedSession.equals(session.getUuid().toString())?" bold ":"";
-                    String status = "-";
-                    if (sessionCounter==sessionList.size()) {
-                        status = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"confirm('start sessie')\">start</button>";
+                    boolean isSelectedSession = selectedSession.equals(session.getUuid().toString());
+                    String styleCompetitionSession = isSelectedSession?" bold ":"";
+
+                    String sessionIndicator = isSelectedSession? " (huidige) " :"";
+
+                    String statusButton = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#sessions').val('"+session.getUuid().toString()+"').change()\">selecteer sessie</button>";;
+                    if (isSelectedSession) {
+                        statusButton = "<button class='btn btn-secondary' data-toggle='modal' onclick=\"$('#pills-wedstrijdverloop-tab').click()\">bekijk status</button>";
                     }
-                    html.append("<tr class='"+styleCompetitionSession+" subrows hide'><td colspan=2></td><td>- Sessie "+sessionCounter+"</td><td>"+status+"</td><td></td></tr>");
+                    StringBuilder competitieSessieStatus = new StringBuilder();
+                    if (isSessionUsed(session.getId())) {
+                        CompetitionRuntime miniRuntime = competitionRuntime.selectCompetitionRuntimeForGameStart(competition);
+
+                        AssignmentRuntime.AssignmentExecutionModel aem = miniRuntime.getCompetitionModel().getAssignmentExecutionModel();
+                        boolean isRunning = aem.isRunning();
+
+                        int amount = computeAmountOfAssignmentsDone(session.getId());
+                        if (isRunning) {
+                            amount = amount -1;
+                        }
+                        competitieSessieStatus.append("<span title='"+sessionAssignmentAmount.get(session.getId())+"'>#opdrachten gedaan: "+ amount);
+                        if (amount>0||isRunning) {
+                            competitieSessieStatus.append(" (<a href='/rankings?competition="+competition.getId()+"'>scores</a>,<a href='/feedback?competition="+competition.getId()+"'>code</a>)");
+                        }
+                        competitieSessieStatus.append("</span>");
+
+                        if (isRunning) {
+                            if (isSelectedCompetition) {
+                                competitieSessieStatus.append("<br/>actieve opdracht: <a href='/'>"+ aem.getOrderedAssignment().getAssignment().getName() + "</a>");
+                            } else {
+                                competitieSessieStatus.append("<br/>actieve opdracht: "+ aem.getOrderedAssignment().getAssignment().getName());
+                            }
+
+                        } else {
+                            if (aem.getOrderedAssignment()!=null && amount>0) {
+                                competitieSessieStatus.append("<br/>meest recent: "+ aem.getOrderedAssignment().getAssignment().getName());
+                            }
+                        }
+
+                    } else {
+                        competitieSessieStatus.append("(nog ongebruikt)");
+                    }
+
+                    html.append("<tr class='"+styleCompetitionSession+" subrows "+styleCompetitionContent+"'><td ></td><td colspan=2>- Sessie "+sessionCounter+sessionIndicator+"</td><td>"+statusButton+"</td><td>"+competitieSessieStatus+"</td></tr>");
                     sessionCounter ++;
                 }
                 html.append("</tbody>");
+                return html.toString();
+            }
+        }
 
+        private String createHtmlTableBody() {
+            StringBuilder html = new StringBuilder();
+            for (Competition competition:competitionList) {
+                List<CompetitionSession> sessionList = competitionSessionRepository.findByCompetition(competition);
+                if (sessionList.isEmpty()) {
+                    continue;
+                }
+                BootstrapTableForCompetition tableForCompetition = new BootstrapTableForCompetition(competition, sessionList);
+                html.append(tableForCompetition.createHtml());
                 competitionCounter++;
             }
             return html.toString();
         }
-        public String createHtml() {
+        private String createHtml() {
             StringBuilder html = new StringBuilder();
             html.append("<table class='roundGrayBorder table sessionTable' ><thead>"+createHtmlHeaderRow()+"</thead>"+createHtmlTableBody());
             html.append("<tfoot>" +createHtmlFooterRow());
@@ -216,7 +376,7 @@ public class GamemasterTableComponents {
             }
         }
         private void registerTeamWorkspaces() {
-            String uuid = competition.getCompetitionSession().getUuid().toString();
+            String uuid = competitionRuntime.getCompetitionSession().getUuid().toString();
 
             rootFile = new File(mojServerProperties.getDirectories().getBaseDirectory().toFile(), "sessions\\"+uuid+"\\teams");
             if (rootFile.exists()) {
@@ -240,16 +400,9 @@ public class GamemasterTableComponents {
             private String rowClass = isShowAllUsers?"cursorPointer":"";
             private Team team;
             private Long totalScore;
-            private void ensureUserRoleIndication() {
-                if (!team.getRole().equals(Role.USER)) {
-                    specialRoleIndication = "("+team.getRole().replace("ROLE_","")+")";
-                }
-            }
+
             public TableComponentForTeam(Team team) {
                 this.team = team;
-
-                ensureUserRoleIndication();
-
                 totalScore = rankingMap.getOrDefault(team.getName(),0L);
             }
 
@@ -268,11 +421,6 @@ public class GamemasterTableComponents {
                     String inputField = "<i>registreer contactgegevens:</i><br/><input type='text' placeholder='registreer contactgegevens' onchange=\"updateTeamStatus($(this).closest('tbody').attr('id'),this.value)\" value='"+team.getCompany()+"' class='minWidth200 font10px'/>";
                     String deleteButton = "<button class='font10px cursorPointer smallBlackBorder minWidth100' onclick=\"updateTeamStatus($(this).closest('tbody').attr('id'),'ARCHIVE');$(this).closest('tbody').addClass('hide')\">archive team</button><br/>";
                     String disqualifyButton = "<button class='font10px cursorPointer smallBlackBorder minWidth100' onclick=\"updateTeamStatus($(this).closest('tbody').attr('id'),'DISQUALIFY');$(this).closest('tbody').addClass('hide')\">disqualify</button><br/>";
-                    if (team.getRole().equals(Role.ADMIN)) {
-                        deleteButton = "";
-                        inputField = "";
-                        disqualifyButton = "";
-                    }
                     sb.append("<tr class='subrows hide font10px'><td colspan=2>");
                     sb.append(inputField);
                     sb.append("</td><td colspan=2 class='alignCenter'>"+deleteButton+disqualifyButton+"</td></tr>");
@@ -321,38 +469,69 @@ public class GamemasterTableComponents {
         return new BootstrapTableForTeams(teams, isShowAllUsers, rankings).createHtml();
     }
 
+    private class HighscoreDataWrapper {
+        private final String[] data;
+        public HighscoreDataWrapper(String[] data) {
+            this.data = data;
+        }
+        private String getAssignmentName() {
+            return data[0];
+        }
+        private String getFinalScore() {
+            return data[2];
+        }
+        private String getStartTime() {
+            int year = Calendar.getInstance().get(Calendar.YEAR);
+            String time = data[3].split("\\.")[0].replace(year+"-","");
+            time = time.substring(0, time.lastIndexOf(":"));
+            return time;
+        }
+        private Long getSessionId() {
+            return Long.parseLong(data[4]);
+        }
+        private Long getDurationInMilisecondsFromDb() {
+            return Long.parseLong(data[5])/(1000*1000);
+        }
+    }
     public String toSimpleBootstrapTableForAssignmentStatus() {
-        StringBuilder sb = new StringBuilder();
-        List<DtoAssignmentState> list = createAssignmentStatusMap();
+        List<DtoAssignmentState> list = createAssignmentStatusList();
         if (list.isEmpty()) {
             return "";
         }
+        return toSimpleBootstrapTableForAssignmentStatus(list);
+    }
+    public String toSimpleBootstrapTableForAssignmentStatus(List<DtoAssignmentState> list) {
+        StringBuilder sb = new StringBuilder();
+
+
         sb.append("<br/><table class='roundGrayBorder table' ><thead><tr><th>Nr</th><th>Opdracht</th><th>Status</th><th>Starttijd</th><th>Highscore</th></tr></thead>");
 
-        List<String[]> highscoreList = assignmentStatusRepository.getHighscoreList();
-        Map<String, String[]> highscoreMap = new LinkedHashMap<>();
+        List<String[]> highscoreList = assignmentStatusRepository.getHighscoreListForCompetitionSession(competitionRuntime.getCompetitionSession().getId());
+        Map<String, HighscoreDataWrapper> highscoreMap = new LinkedHashMap<>();
 
-        for (String[] item : highscoreList) {
-            highscoreMap.put(item[0],item);
+        for (String[] dbItem : highscoreList) {
+            HighscoreDataWrapper item = new HighscoreDataWrapper(dbItem);
+            highscoreMap.put(item.getAssignmentName(),item);
         }
-
         int counter = 1;
         for (DtoAssignmentState orderedAssignment: list) {
+            String viewTime = "";
+            String viewScore = "";
+
             boolean isStateCurrent = orderedAssignment.state.contains("CURRENT");
             String viewState = orderedAssignment.state;
             if (isStateCurrent) {
                 viewState = "<a href='./'>"+viewState+"</a>";
             }
-            String viewName = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"' title='view assignment'>"+orderedAssignment.name+"</a>";
-            String viewOrder = "<a href='./assignmentAdmin?assignment="+orderedAssignment.name+"&solution' title='view solution'>"+counter+"</a>";
-            String viewTime = "";
-            String viewScore = "0";
-            if (highscoreMap.containsKey(orderedAssignment.name)) {
-                viewTime = highscoreMap.get(orderedAssignment.name)[3].split("\\.")[0];
-                viewScore = highscoreMap.get(orderedAssignment.name)[2];
-            }
+            String viewName = orderedAssignment.name;
+            String viewOrder = ""+counter;
 
-            sb.append("<tr><td>"+viewOrder+"</td><td>"+viewName+"</td><td>"+viewState + "</td><td>"+viewTime+"</td><td>"+viewScore+"</td></tr>");
+            if (highscoreMap.containsKey(orderedAssignment.name)) {
+                viewTime = "<span class='hide'>STARTED</span>" + highscoreMap.get(orderedAssignment.name).getStartTime();
+                viewScore = highscoreMap.get(orderedAssignment.name).getFinalScore();
+            }
+            String title = "duration "  + orderedAssignment.assignmentDescriptor.getDuration().toMinutes();
+            sb.append("<tr title='"+title+"' ><td>"+viewOrder+"</td><td>"+viewName+"</td><td>"+viewState + "</td><td>"+viewTime+"</td><td>"+viewScore+"</td></tr>");
             counter++;
         }
         sb.append("</table>");
@@ -425,7 +604,7 @@ public class GamemasterTableComponents {
 
             StringBuffer header = new StringBuffer();
             header.append("<table class='roundGrayBorder table noBottomMargin' ><thead class='cursorPointer' onclick=\"$(this).closest('.top').find('.extra').addClass('hide');$(this).parent().find('.extra').toggleClass('hide')\"><tr><th class='minWidth300'>Files - Assignment '");
-            header.append(assignmentName+"' - files:"+fileList.size());
+            header.append(assignmentName+"' - files: "+fileList.size());
             header.append("<div  class='extra hide'></div></th><th class='extra hide'>Type</th><th class='extra hide'>Size</th><th class='extra hide'>Last Modified</th></tr>");
             if (!errorList.isEmpty()) {
                 header.append("<tr><td colspan=4 class='error'><center>ERROR</center></td></tr>");
@@ -502,6 +681,7 @@ public class GamemasterTableComponents {
                 String title = descriptor.getDisplayName()+ " - VIEW LABELS FOR MORE DETAILS";
                 String author = createShortAuthorColumn(descriptor);
                 long duration = descriptor.getDuration().toMinutes();
+
                 String selectionBox = toSelectionBox(descriptor.getLabels());
                 String postfix = createAssignmentWarningIfNeeded(descriptor);
                 List<Path> list = descriptor.getAssignmentFiles().getSolution();
@@ -509,10 +689,19 @@ public class GamemasterTableComponents {
                 AssignmentModel model = new AssignmentModel();
                 model.solutionFile = new File(directory, "assets/" +list.get(0).toFile().getName());
                 model.problemFile = new File(directory, "src/main/java/" +descriptor.getAssignmentFiles().getSources().getEditable().get(0).toFile().getName());
-
+                model.readmeFile = new File(directory, "README.md");
                 sb.append("<tr title=\""+title+"\"  class='cursorPointer' onclick=\"doViewDeltaSolution('"+descriptor.getName()+"',this)\"><td>");
-                sb.append(descriptor.getName()+" <i>"+postfix+"</i></td><td>"+author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>"+descriptor.getJavaVersion()+"</td><td>"+descriptor.getDifficulty() + "</td><td>"+selectionBox);
+                sb.append(descriptor.getName()+" <i>"+postfix+"</i></td><td>");
+                sb.append(author+"</td><td>"+bonus+"</td><td>"+duration+"</td><td>");
+                sb.append(descriptor.getJavaVersion()+"</td><td>");
+                if (model.readmeFile.exists()) {
+                    sb.append("<b title='Click hier om de gevonden assignment review te bekijken.' >"+descriptor.getDifficulty()+"</b>");
+                    sb.append("<pre class='review hide'>"+model.getContentReadmeFile()+"</pre>");
+                } else {
+                    sb.append(descriptor.getDifficulty());
+                }
 
+                sb.append("</td><td>"+selectionBox);
                 sb.append("<textarea class='hide'>"+model.createDiffString()+"</textarea>");
                 sb.append("</td></tr>");
             }
@@ -522,7 +711,10 @@ public class GamemasterTableComponents {
         private String createBonusInfo(AssignmentDescriptor descriptor) {
             boolean isWithHiddenTests = !descriptor.getAssignmentFiles().getTestSources().getHiddenTests().isEmpty();
             String bonus = "" + descriptor.getScoringRules().getSuccessBonus() ;
-            boolean isWithIndividualTestBonus = descriptor.getLabels().toString().contains("[test");
+            boolean isWithIndividualTestBonus = false;
+            if (descriptor.getLabels()!=null) {
+                isWithIndividualTestBonus = descriptor.getLabels().toString().contains("[test");
+            }
             if (isWithHiddenTests) {
                 File directory = descriptor.getDirectory().toFile();
                 File hiddenTestFile = new File(directory, "src/test/java/" +descriptor.getAssignmentFiles().getTestSources().getHiddenTests().get(0).toFile().getName());
@@ -542,6 +734,9 @@ public class GamemasterTableComponents {
             return bonus;
         }
         private String createAssignmentWarningIfNeeded(AssignmentDescriptor descriptor) {
+            if (descriptor.getLabels()==null) {
+                return "";
+            }
             boolean isNotReady = descriptor.getLabels().contains("not-ready")||descriptor.getLabels().contains("label1")||descriptor.getLabels().contains("label2");
             boolean isNotForCompetition = descriptor.getLabels().contains("internet-searchable");
             String postfix = "";
@@ -570,6 +765,9 @@ public class GamemasterTableComponents {
             return author;
         }
         private String toSelectionBox(List<String> list) {
+            if (list==null) {
+                return "";
+            }
             StringBuilder sb = new StringBuilder();
             sb.append("<select >");
             for (String item: list) {
@@ -582,12 +780,20 @@ public class GamemasterTableComponents {
         private class AssignmentModel {
             private File problemFile;
             private File solutionFile;
-
+            private File readmeFile;
+            private String getContentReadmeFile() {
+                try {
+                    return FileUtils.readFileToString(readmeFile, Charset.defaultCharset());
+                } catch (Exception ex) {
+                    log.error(ex.getMessage(), ex);
+                    return "ERROR during Readme";
+                }
+            }
             private String createDiffString() {
                 StringBuilder html = new StringBuilder();
                 try {
-                    List<String> original = FileUtils.readLines(problemFile, Charset.defaultCharset());
-                    List<String> revised = FileUtils.readLines(solutionFile, Charset.defaultCharset());
+                    List<String> original = getLinesWithoutLicenseInHeader(problemFile);
+                    List<String> revised = getLinesWithoutLicenseInHeader(solutionFile);
                     String label = getProblemFile().getName();
                     for (String line: UnifiedDiffUtils.generateUnifiedDiff(label, label, original, DiffUtils.diff(original, revised), 10)) {
                         html.append(line + "\n");
@@ -597,6 +803,17 @@ public class GamemasterTableComponents {
                     log.error(ex.getMessage(), ex);
                 }
                 return html.toString();
+            }
+
+            private List<String> getLinesWithoutLicenseInHeader(File file) throws IOException {
+                String content = FileUtils.readFileToString(file, Charset.defaultCharset());
+                List<String> result = new ArrayList<>();
+                if (content.indexOf("import ")>0) {
+                    // pre import statements is never needed in diff (avoids license in header).
+                    content = content.substring(content.indexOf("import "));
+                }
+                result.addAll(Arrays.asList(content.split("\n")));
+                return result;
             }
         }
     }

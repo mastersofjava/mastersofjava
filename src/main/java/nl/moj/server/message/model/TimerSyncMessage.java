@@ -19,6 +19,8 @@ package nl.moj.server.message.model;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.UUID;
+
 @Builder
 @Getter
 public class TimerSyncMessage {
@@ -26,4 +28,6 @@ public class TimerSyncMessage {
     private final MessageType messageType = MessageType.TIMER_SYNC;
     private final long remainingTime;
     private final long totalTime;
+    private final boolean isRunning;
+    private final String sessionId;
 }
