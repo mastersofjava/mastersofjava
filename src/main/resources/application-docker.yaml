@@ -38,11 +38,11 @@ moj:
       success-bonus: 400
 
 keycloak:
-   auth-server-url: https://auth.moj.first8.nl/auth
-   realm: moj
-   resource: moj
-   public-client: true
-   principal-attribute: subject
+  auth-server-url: https://auth.moj.first8.nl/auth
+  realm: moj
+  resource: moj
+  public-client: true
+  principal-attribute: subject
 
 spring:
   h2:
@@ -64,6 +64,9 @@ spring:
 #  jpa:
 #    generate-ddl: true
 
+server:
+  forward-headers-strategy: native
+
 logging.level.nl.moj.server: DEBUG
 
 logging.level.nl.moj.server.persistence: INFO
@@ -73,3 +76,4 @@ logging.level.org.springframework.integration.file.FileReadingMessageSource: FAT
 logging.level.org.springframework.web: DEBUG
 logging.level.org.springframework.security: DEBUG
 logging.level.org.keycloak: DEBUG
+logging.level.org.apache.catalina.valves.RemoteIpValve: DEBUG

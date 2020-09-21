@@ -4,6 +4,7 @@ MAINTAINER First8 B.V.
 
 VOLUME [ "/data" ]
 EXPOSE 8080
+EXPOSE 5000
 
 COPY server-0.0.1-SNAPSHOT.jar /app/app.jar
 

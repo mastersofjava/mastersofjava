@@ -68,9 +68,14 @@ spring:
 #  jpa:
 #    generate-ddl: true
 
+server:
+  forward-headers-strategy: native
+
 logging.level.nl.moj.server: DEBUG
 
 logging.level.nl.moj.server.persistence: INFO
 logging.level.nl.moj.server.persistence.TeamMapper: INFO
 logging.level.nl.moj.server.persistence.ResultMapper: INFO
 logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL
+logging.level.org.keycloak: DEBUG
+logging.level.org.apache.catalina.valves.RemoteIpValve: DEBUG
