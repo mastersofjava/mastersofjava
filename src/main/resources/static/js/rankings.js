@@ -16,15 +16,15 @@ function connect() {
             + window.location.hostname
             + ':' + window.location.port
             + "/rankings/websocket",
-        debug: function (str) {
-            console.log(str);
-        },
+     //   debug: function (str) {
+   //         console.log(str);
+     //   },
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000
     });
 
-    stompClient.onConnect(function (frame) {
+    stompClient.onConnect = function (frame) {
         console.log('Connected to rankings');
         console.log('Subscribe to /rankings/queue/rankings');
         stompClient.subscribe('/queue/rankings',
@@ -33,7 +33,7 @@ function connect() {
                 msg.ack();
             },
             {ack: 'client'});
-    });
+    };
 
     stompClient.activate();
 }
