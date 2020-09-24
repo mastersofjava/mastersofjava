@@ -19,9 +19,8 @@ package nl.moj.server.runtime.model;
 import javax.persistence.*;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import lombok.*;
 import nl.moj.server.assignment.model.Assignment;
@@ -30,6 +29,7 @@ import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestAttempt;
+import org.springframework.util.comparator.Comparators;
 
 @Entity
 @Table(name = "assignment_statuses", uniqueConstraints = @UniqueConstraint(name = "competition_assignment_team_unique", columnNames = {"competition_session_id", "assignment_id", "team_id"}))
@@ -85,5 +85,23 @@ public class AssignmentStatus {
 
     @OneToOne(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
     private AssignmentResult assignmentResult;
+
+    public TestAttempt getMostRecentTestAttempt() {
+        List<TestAttempt> attempts = getTestAttempts().stream().filter( ta -> ta.getDateTimeEnd() != null ).collect(Collectors.toList());
+        if( attempts.isEmpty()) {
+            return null;
+        }
+        attempts.sort(Comparator.comparing(TestAttempt::getDateTimeEnd).reversed());
+        return attempts.get(0);
+    }
+
+    public SubmitAttempt getMostRecentSubmitAttempt() {
+        List<SubmitAttempt> attempts = getSubmitAttempts().stream().filter( ta -> ta.getDateTimeEnd() != null ).collect(Collectors.toList());
+        if( attempts.isEmpty()) {
+            return null;
+        }
+        attempts.sort(Comparator.comparing(SubmitAttempt::getDateTimeEnd).reversed());
+        return attempts.get(0);
+    }
 
 }

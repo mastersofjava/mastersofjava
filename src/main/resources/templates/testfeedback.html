@@ -70,9 +70,14 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="team : ${teams1}" th:attr="data-team=${team.uuid},data-assignment=${uuid}">
-                    <td th:text="${team.shortName}">Team name</td>
-                    <td th:each="test : ${tests}"><span th:attr="data-test=${team.uuid + '-' + test}"></span></td>
+                <tr th:each="fb : ${teams1}" th:attr="data-team=${fb.team.uuid},data-assignment=${uuid}"
+                    th:classappend="(${fb.isSubmitted() && fb.isSuccess()} ? 'table-success':'') + ' ' +(${fb.isSubmitted() && !fb.isSuccess()} ? 'table-danger':'')">
+                    <td th:text="${fb.team.shortName}">Team name</td>
+                    <td th:each="test : ${tests}">
+                        <span th:attr="data-test=${fb.team.uuid + '-' + test}" th:unless="${fb.isTestRun(test)}"></span>
+                        <span th:attr="data-test=${fb.team.uuid + '-' + test}" class="fas fa-check" style="color:green" th:if="${fb.isTestRun(test) && fb.isTestSuccess(test)}"></span>
+                        <span th:attr="data-test=${fb.team.uuid + '-' + test}" class="fas fa-times" style="color:red" th:if="${fb.isTestRun(test) && !fb.isTestSuccess(test)}"></span>
+                    </td>
                 </tr>
                 </tbody>
             </table>
@@ -88,9 +93,14 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="team : ${teams2}" th:attr="data-team=${team.uuid},data-assignment=${uuid}">
-                    <td th:text="${team.shortName}">Team name</td>
-                    <td th:each="test : ${tests}"><span th:attr="data-test=${team.uuid + '-' + test}"></span></td>
+                <tr th:each="fb : ${teams2}" th:attr="data-team=${fb.team.uuid},data-assignment=${uuid}"
+                    th:classappend="(${fb.isSubmitted() && fb.isSuccess()} ? 'table-success':'') + ' ' +(${fb.isSubmitted() && !fb.isSuccess()} ? 'table-danger':'')">
+                    <td th:text="${fb.team.shortName}">Team name</td>
+                    <td th:each="test : ${tests}">
+                        <span th:attr="data-test=${fb.team.uuid + '-' + test}" th:unless="${fb.isTestRun(test)}"></span>
+                        <span th:attr="data-test=${fb.team.uuid + '-' + test}" class="fas fa-check" style="color:green" th:if="${fb.isTestRun(test) && fb.isTestSuccess(test)}"></span>
+                        <span th:attr="data-test=${fb.team.uuid + '-' + test}" class="fas fa-times" style="color:red" th:if="${fb.isTestRun(test) && !fb.isTestSuccess(test)}"></span>
+                    </td>
                 </tr>
                 </tbody>
             </table>
@@ -106,9 +116,14 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="team : ${teams3}" th:attr="data-team=${team.uuid},data-assignment=${uuid}">
-                    <td th:text="${team.shortName}">Team name</td>
-                    <td th:each="test : ${tests}"><span th:attr="data-test=${team.uuid + '-' + test}"></span></td>
+                <tr th:each="fb : ${teams3}" th:attr="data-team=${fb.team.uuid},data-assignment=${uuid}"
+                    th:classappend="(${fb.isSubmitted() && fb.isSuccess()} ? 'table-success':'') + ' ' +(${fb.isSubmitted() && !fb.isSuccess()} ? 'table-danger':'')">
+                    <td th:text="${fb.team.shortName}">Team name</td>
+                    <td th:each="test : ${tests}">
+                        <span th:attr="data-test=${fb.team.uuid + '-' + test}" th:unless="${fb.isTestRun(test)}"></span>
+                        <span th:attr="data-test=${fb.team.uuid + '-' + test}" class="fas fa-check" style="color:green" th:if="${fb.isTestRun(test) && fb.isTestSuccess(test)}"></span>
+                        <span th:attr="data-test=${fb.team.uuid + '-' + test}" class="fas fa-times" style="color:red" th:if="${fb.isTestRun(test) && !fb.isTestSuccess(test)}"></span>
+                    </td>
                 </tr>
                 </tbody>
             </table>
