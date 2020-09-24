@@ -188,7 +188,6 @@ public class GamemasterTableComponents {
         private String createHtmlFooterRow() {
             StringBuilder html = new StringBuilder();
             html.append("<tr><th colspan=3></th><th>");
-            html.append("<button class='btn btn-secondary adminRole role' onclick='doValidatePerformance()'>Valideer performance</button>");
             html.append("</th><th><button class='btn btn-secondary' data-toggle='modal' data-target='#createNewCompetition-modal'>Nieuwe competitie</button>");
             html.append("</th></tr>");
             return html.toString();
