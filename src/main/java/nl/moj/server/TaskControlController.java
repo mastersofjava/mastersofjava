@@ -194,7 +194,12 @@ public class TaskControlController {
                 assignmentStatusRepository.deleteById(status.getId());// correct cleaning: first delete all status items, afterwards delete all results
             }
         }
-
+        List<OrderedAssignment> operatableList = new ArrayList<>(competition.getCompetitionState().getCompletedAssignments());
+        for (OrderedAssignment orderedAssignment: operatableList) {
+            if (orderedAssignment.getAssignment().getName().equals(assignment.getName())) {
+                competition.getCompetitionState().getCompletedAssignments().remove(orderedAssignment);
+            }
+        }
         boolean isWithRestartDirectly = !StringUtils.isEmpty(message.getValue());
 
         if (isWithRestartDirectly) {
@@ -207,12 +212,6 @@ public class TaskControlController {
             competition.getCompetitionSession().setDateTimeLastUpdate(null);
             competition.getCompetitionSession().setRunning(false);
             competitionSessionRepository.save(competition.getCompetitionSession());
-            List<OrderedAssignment> operatableList = new ArrayList<>(competition.getCompetitionState().getCompletedAssignments());
-            for (OrderedAssignment orderedAssignment: operatableList) {
-                if (orderedAssignment.getAssignment().getName().equals(assignment.getName())) {
-                    competition.getCompetitionState().getCompletedAssignments().remove(orderedAssignment);
-                }
-            }
         }
         return "Assignment resetted: " + message.taskName + ", reload page";
     }
