@@ -100,7 +100,7 @@ public class CompetitionRuntime {
     private Map<Long, CompetitionExecutionModel> activeCompetitionsMap = new TreeMap<>();
 
     public Map<Long, CompetitionExecutionModel> getActiveCompetitionsMap() {
-        return Collections.unmodifiableMap(activeCompetitionsMap);
+        return activeCompetitionsMap;
     }
     public Map<Long, String> getRunningCompetitionsQuickviewMap() {
         Map<Long, String> result = new TreeMap<>();
