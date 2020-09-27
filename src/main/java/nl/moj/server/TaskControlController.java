@@ -248,6 +248,7 @@ public class TaskControlController {
             for (CompetitionSession session: sessionsToDelete) {
                 competitionCleaningService.doCleanComplete(session);
                 competitionSessionRepository.delete(session);
+                // remove from active competitions
                 competition.getActiveCompetitionsMap().remove(competitionToClean.getId());
             }
             if (startAmount>1) {
