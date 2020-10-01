@@ -194,11 +194,16 @@ public class TaskControlController {
                 assignmentStatusRepository.deleteById(status.getId());// correct cleaning: first delete all status items, afterwards delete all results
             }
         }
-
+        List<OrderedAssignment> operatableList = new ArrayList<>(competition.getCompetitionState().getCompletedAssignments());
+        for (OrderedAssignment orderedAssignment: operatableList) {
+            if (orderedAssignment.getAssignment().getName().equals(assignment.getName())) {
+                competition.getCompetitionState().getCompletedAssignments().remove(orderedAssignment);
+            }
+        }
         boolean isWithRestartDirectly = !StringUtils.isEmpty(message.getValue());
 
         if (isWithRestartDirectly) {
-            long timeLeft = assignmentRuntime.getModel().getState().getAssignmentDescriptor().getDuration().toSeconds();
+            long timeLeft = assignmentService.getAssignmentDescriptor(assignment).getDuration().toSeconds();
             competition.getCompetitionSession().setRunning(true);
             competition.startAssignment(message.getValue(),timeLeft);// start fresh
             return "Assignment restarted directly: " + message.taskName + ", reload page";
@@ -207,12 +212,6 @@ public class TaskControlController {
             competition.getCompetitionSession().setDateTimeLastUpdate(null);
             competition.getCompetitionSession().setRunning(false);
             competitionSessionRepository.save(competition.getCompetitionSession());
-            List<OrderedAssignment> operatableList = new ArrayList<>(competition.getCompetitionState().getCompletedAssignments());
-            for (OrderedAssignment orderedAssignment: operatableList) {
-                if (orderedAssignment.getAssignment().getName().equals(assignment.getName())) {
-                    competition.getCompetitionState().getCompletedAssignments().remove(orderedAssignment);
-                }
-            }
         }
         return "Assignment resetted: " + message.taskName + ", reload page";
     }
@@ -249,6 +248,7 @@ public class TaskControlController {
             for (CompetitionSession session: sessionsToDelete) {
                 competitionCleaningService.doCleanComplete(session);
                 competitionSessionRepository.delete(session);
+                // remove from active competitions
                 competition.getActiveCompetitionsMap().remove(competitionToClean.getId());
             }
             if (startAmount>1) {
