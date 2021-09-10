@@ -44,19 +44,18 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 
     @Test
     public void shouldRunForSpecifiedDuration() throws Exception {
-        OrderedAssignment oa = getCompetition().getAssignmentsInOrder().stream()
-                .filter( a -> a.getAssignment().getName().equals("parallel")).findFirst().orElse(null);
+        OrderedAssignment oa = getAssignment("parallel");
 
         Assertions.assertThat(oa).isNotNull();
 
         AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(oa.getAssignment());
 
-        Future<?> stopHandle = assignmentRuntime.start(oa, competitionRuntime.getCompetitionSession());
+        Future<?> mainHandle = assignmentRuntime.start(oa, competitionRuntime.getCompetitionSession());
 
         try {
-            stopHandle.get(ad.getDuration().toSeconds() + 1, TimeUnit.SECONDS);
+            mainHandle.get(ad.getDuration().toSeconds() + 1, TimeUnit.SECONDS);
         } catch (Exception e) {
-            stopHandle.cancel(true);
+            mainHandle.cancel(true);
             Assertions.fail("Caught unexpected exception.", e);
         }
     }

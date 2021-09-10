@@ -29,4 +29,5 @@ public class StopAssignmentMessage {
 
     private final String assignment;
 
+    private final String sessionId;
 }

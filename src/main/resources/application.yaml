@@ -1,6 +1,7 @@
 moj:
   server:
     assignment-repo: /tmp/assignments
+    performance-validation: true
     languages:
       java-versions:
         - version: 8
@@ -40,6 +41,13 @@ moj:
       uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
       success-bonus: 400
 
+keycloak:
+   auth-server-url: https://auth.moj.first8.nl/auth
+   realm: moj
+   resource: moj
+   public-client: true
+   principal-attribute: subject
+
 spring:
   h2:
     console:
@@ -55,11 +63,19 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+  resources:
+    static-locations: classpath:/bootstrap/sounds/,classpath:/static/
 #  jpa:
 #    generate-ddl: true
 
+server:
+  forward-headers-strategy: native
+
 logging.level.nl.moj.server: DEBUG
+
 logging.level.nl.moj.server.persistence: INFO
 logging.level.nl.moj.server.persistence.TeamMapper: INFO
 logging.level.nl.moj.server.persistence.ResultMapper: INFO
 logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL
+logging.level.org.keycloak: DEBUG
+logging.level.org.apache.catalina.valves.RemoteIpValve: DEBUG

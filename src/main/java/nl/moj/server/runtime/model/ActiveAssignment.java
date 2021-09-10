@@ -42,6 +42,12 @@ public class ActiveAssignment {
     private List<AssignmentFile> assignmentFiles;
     private boolean running;
 
+
+    @Override
+    public String toString() {
+        return "[" +assignment.getName() + ", " + competitionSession.getId()+"]";
+    }
+
     public List<String> getTestNames() {
         return assignmentFiles
                 .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST)
@@ -68,7 +74,7 @@ public class ActiveAssignment {
     }
 
     public ExecutionModel getExecutionModel() {
-        if (assignmentDescriptor.getExecutionModel() == null) {
+        if (assignmentDescriptor==null || assignmentDescriptor.getExecutionModel() == null) {
             return ExecutionModel.PARALLEL;
         }
         return assignmentDescriptor.getExecutionModel();

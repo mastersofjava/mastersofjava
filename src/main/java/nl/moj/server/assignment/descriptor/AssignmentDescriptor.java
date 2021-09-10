@@ -18,6 +18,7 @@ package nl.moj.server.assignment.descriptor;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -61,4 +62,14 @@ public class AssignmentDescriptor {
     private ScoringRules scoringRules;
     @JsonProperty("assignment-files")
     private AssignmentFiles assignmentFiles;
+
+    public List<String> readScoreLables() {
+        List<String> scoreLabels = new ArrayList<>();
+        for (String label :this.getLabels()) {
+            if (label.startsWith("test")) {
+                scoreLabels.add(label);
+            }
+        }
+        return scoreLabels;
+    }
 }

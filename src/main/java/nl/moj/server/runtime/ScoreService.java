@@ -19,8 +19,12 @@ package nl.moj.server.runtime;
 import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +39,7 @@ import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.test.model.TestCase;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 /**
  * The ScoreService calculates the score.
@@ -110,15 +115,19 @@ public class ScoreService {
 
     private Score calculateScore(ActiveAssignment state, AssignmentStatus as) {
         AssignmentDescriptor ad = state.getAssignmentDescriptor();
+        Assert.isTrue(ad!= null && ad.getLabels()!=null,"assignment should have enough rules configured.");
         return Score.builder()
                 .initialScore(calculateInitialScore(state.getTimeRemaining(), as))
                 .submitBonus(calculateSubmitBonus(ad, as))
-                .testBonus(calculateTestBonus(state.getTimeRemaining(), as))
+                .testBonus(calculateTestBonus(state.getTimeRemaining(), as, ad))
                 .resubmitPenalty(calculateSubmitPenalty(ad, state.getTimeRemaining(), as))
                 .testPenalty(calculateTestPenalty(ad, state.getTimeRemaining(), as))
                 .build();
     }
 
+    /**
+     * InitialScore: if success-submit then count time remaining (otherwise 0 )
+     */
     private Long calculateInitialScore(Long timeRemaining, AssignmentStatus as) {
         if (isSuccessSubmit(as)) {
             return timeRemaining;
@@ -176,6 +185,9 @@ public class ScoreService {
         }
     }
 
+    /**
+     * submitbonus: if success-submit then count success bonus (otherwise 0)
+     */
     private long calculateSubmitBonus(AssignmentDescriptor ad, AssignmentStatus as) {
         if (isSuccessSubmit(as)) {
             long submitBonus;
@@ -189,21 +201,49 @@ public class ScoreService {
         return 0L;
     }
 
-    // Test bonus is given even if submit attempt failed.
-    private long calculateTestBonus(Long initialScore, AssignmentStatus as) {
+    /**
+     * Test bonus is given even if last submit attempt failed.
+     * - default: timeRemaining * 0.05 * succesvolle tests.
+     * - per individuele test: volgens geconfigureerde score.
+     */
+    private long calculateTestBonus(Long timeRemaining, AssignmentStatus as,AssignmentDescriptor configuration) {
         Optional<SubmitAttempt> sa = getLastSubmitAttempt(as);
-        if (sa.isPresent() && sa.get().getTestAttempt() != null
-                && !sa.get().getTestAttempt().getTestCases().isEmpty()) {
-            long successTestCount = sa.get()
-                    .getTestAttempt()
-                    .getTestCases()
-                    .stream()
-                    .filter(TestCase::isSuccess)
-                    .count();
-            return Math.max(Math.round(initialScore * 0.05), 10) * successTestCount;
+        boolean isWithTestAttempts = sa.isPresent() && sa.get().getTestAttempt() != null
+                && !sa.get().getTestAttempt().getTestCases().isEmpty();
+        if (isWithTestAttempts) {
+            boolean isDefault = true;
+            if (!configuration.getLabels().isEmpty()) {
+                isDefault = !configuration.getLabels().get(0).startsWith("test");
+            }
+            log.info("isDefault " +isDefault + " " + configuration.getLabels() );
+            if (isDefault) {
+                long successTestCount = sa.get()
+                        .getTestAttempt()
+                        .getTestCases()
+                        .stream()
+                        .filter(TestCase::isSuccess)
+                        .count();
+                return Math.max(Math.round(timeRemaining * 0.05), 10) * successTestCount;
+            }
+            return calculateTestBonusViaConfiguration(sa.get(), configuration);
         }
-
         return 0L;
+    }
+    private long calculateTestBonusViaConfiguration(SubmitAttempt sa,AssignmentDescriptor configuration) {
+        Map<String, Integer> configDetails = new LinkedHashMap<>();
+        long sum = 0;
+        for (String label: configuration.getLabels()) {
+            String[] parts = label.split("_");
+            configDetails.put(parts[0].toLowerCase(), Integer.parseInt(parts[1]));
+        }
+        List<TestCase> successList = sa.getTestAttempt().getTestCases().stream().filter(TestCase::isSuccess).collect(Collectors.toList());
+        for (TestCase testCase: successList) {
+            String key = testCase.getName().replace(".java","").toLowerCase();
+            if (configDetails.containsKey(key)) {
+                sum += configDetails.get(key);
+            }
+        }
+        return sum;
     }
 
     private Optional<SubmitAttempt> getLastSubmitAttempt(AssignmentStatus as) {
@@ -246,6 +286,7 @@ public class ScoreService {
 
             // make sure cannot finalize twice.
             as.setDateTimeEnd(Instant.now());
+
             as = assignmentStatusRepository.save(as);
 
             log.info("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, as

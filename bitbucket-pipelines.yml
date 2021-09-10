@@ -1,0 +1,39 @@
+# This is a sample build configuration for Java (Maven).
+# Check our guides at https://confluence.atlassian.com/x/zd-5Mw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: maven:3.5-jdk-11-slim
+
+pipelines:
+  default:
+  - step:
+      caches:
+        - maven
+      script:
+        - mvn -B clean install
+  branches:
+    master:
+    - step:
+        caches:
+        - maven
+        script:
+        - mvn -B clean install
+    develop:
+    - step:
+        caches:
+        - maven
+        script:
+        - mvn -B clean install
+    feature/*:
+    - step:
+        caches:
+        - maven
+        script:
+        - mvn -B clean install
+    bugfix/*:
+    - step:
+        caches:
+        - maven
+        script:
+        - mvn -B clean install

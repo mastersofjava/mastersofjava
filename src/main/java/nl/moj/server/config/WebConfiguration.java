@@ -16,39 +16,39 @@
 */
 package nl.moj.server.config;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
 
-import lombok.AllArgsConstructor;
-import nl.moj.server.TeamDetailsService;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.teams.model.Role;
+import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
+import org.keycloak.adapters.springsecurity.KeycloakConfiguration;
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
+import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import lombok.AllArgsConstructor;
+import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.authorization.Role;
 
 @Configuration
 @AllArgsConstructor
 public class WebConfiguration {
 
     private MojServerProperties mojServerProperties;
+    //private SessionRegistry sessionRegistry;
 
     @Configuration
     public class WebConfig implements WebMvcConfigurer {
@@ -57,25 +57,37 @@ public class WebConfiguration {
         public void addResourceHandlers(ResourceHandlerRegistry registry) {
             Path path = Paths.get(mojServerProperties.getDirectories().getJavadocDirectory());
             if (!path.isAbsolute()) {
-                path = mojServerProperties.getDirectories().getBaseDirectory().resolve(
-                        mojServerProperties.getDirectories().getJavadocDirectory());
-                System.out.println("javadoc -> " + path.toAbsolutePath().toUri().toString());
+                path = mojServerProperties.getDirectories().getBaseDirectory()
+                        .resolve(mojServerProperties.getDirectories().getJavadocDirectory());
             }
-            registry
-                    .addResourceHandler("/javadoc/**")
-                    .addResourceLocations(path.toAbsolutePath().toUri().toString());
+            registry.addResourceHandler("/javadoc/**").addResourceLocations(path.toAbsolutePath().toUri().toString());
         }
     }
-
-    @EnableWebSecurity
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+    @KeycloakConfiguration
     @EnableGlobalMethodSecurity(jsr250Enabled = true)
-    @Configuration
-    public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 
-        private TeamDetailsService teamDetailsService;
+        // Submits the KeycloakAuthenticationProvider to the AuthenticationManager
+        @Autowired
+        public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+            KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
+            keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
+            auth.authenticationProvider(keycloakAuthenticationProvider);
+        }
 
-        public SecurityConfig(TeamDetailsService teamDetailsService) {
-            this.teamDetailsService = teamDetailsService;
+        @Bean
+        public KeycloakSpringBootConfigResolver KeycloakConfigResolver() {
+            return new KeycloakSpringBootConfigResolver();
+        }
+
+        @Bean
+        @Override
+        protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+            return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
         }
 
         @Bean
@@ -83,47 +95,16 @@ public class WebConfiguration {
             return new BCryptPasswordEncoder();
         }
 
-        private DaoAuthenticationProvider authProvider() {
-            DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-            authProvider.setUserDetailsService(teamDetailsService);
-            authProvider.setPasswordEncoder(passwordEncoder());
-            return authProvider;
-        }
-
-        @Override
-        protected void configure(AuthenticationManagerBuilder auth) {
-            auth.authenticationProvider(authProvider());
-        }
-
         @Override
         protected void configure(HttpSecurity http) throws Exception {
+            super.configure(http);
             http.authorizeRequests()
-                    .antMatchers("/login", "/register", "/feedback", "/bootstrap").permitAll()//
-                    .antMatchers("/").hasAuthority(Role.USER) //
-                    .antMatchers("/control").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) //
-
-                    .and().formLogin().successHandler(new CustomAuthenticationSuccessHandler()).loginPage("/login")
-                    .and().logout().and().headers().frameOptions().disable().and().csrf().disable();
-        }
-
-        private class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-
-            @Override
-            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                                Authentication authentication) throws IOException {
-                response.setStatus(HttpServletResponse.SC_OK);
-                List<String> roles = authentication.getAuthorities().stream()
-                        .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
-
-                if (roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER)) {
-                    response.sendRedirect("/control");
-                } else if (roles.contains(Role.USER)) {
-                    teamDetailsService.initTeam(authentication.getName());
-                    response.sendRedirect("/");
-                } else {
-                    response.sendRedirect("/");
-                }
-            }
+                    .antMatchers("/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico").permitAll()
+                    .antMatchers("/play", "/feedback", "/rankings").hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
+                    .antMatchers("/control", "/bootstrap","/assignmentAdmin").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
+                    .anyRequest().authenticated()
+                    .and().headers().frameOptions().disable()
+                    .and().csrf().disable();
         }
     }
 }

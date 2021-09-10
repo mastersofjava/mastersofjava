@@ -18,20 +18,28 @@ package nl.moj.server.feedback;
 
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.feedback.model.TeamFeedback;
+import nl.moj.server.feedback.service.FeedbackService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.teams.model.Role;
+import nl.moj.server.authorization.Role;
+import nl.moj.server.runtime.model.AssignmentResult;
+import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.util.CollectionUtil;
+import nl.moj.server.util.HttpUtil;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,24 +52,42 @@ import org.springframework.web.servlet.ModelAndView;
 public class FeedbackController {
 
     private final TeamRepository teamRepository;
+    private final FeedbackService feedbackService;
 
-    private final CompetitionRuntime competition;
+    private final CompetitionRuntime competitionRuntime;
 
     @GetMapping("/feedback")
     public ModelAndView feedback(HttpServletRequest request) {
-        ModelAndView model = new ModelAndView("testfeedback");
-        List<Team> allTeams = teamRepository.findAllByRole(Role.USER);
-        orderTeamsByName(allTeams);
+        CompetitionRuntime resultsProvider = competitionRuntime;
 
-        List<List<Team>> partitionedTeams = CollectionUtil.partition(allTeams, 3);
+        if (HttpUtil.hasParam("competition")) {
+            Long competitionId = Long.parseLong(HttpUtil.getParam("competition","1"));
+            if (competitionRuntime.getActiveCompetitionsMap().containsKey(competitionId)) {
+                Competition competition = competitionRuntime.getActiveCompetitionsMap().get(competitionId).getCompetition();
+                resultsProvider = competitionRuntime.selectCompetitionRuntimeForGameStart(competition);
+            }
+        }
+
+        ModelAndView model = new ModelAndView("testfeedback");
+
+        Assignment assignment = null;
+        CompetitionSession session = null;
+        if( competitionRuntime.getActiveAssignment() != null ) {
+            assignment = competitionRuntime.getActiveAssignment().getAssignment();
+            session = competitionRuntime.getCompetitionSession();
+        }
+        List<TeamFeedback> assignmentFeedback = feedbackService.getAssignmentFeedback(assignment,session);
+        orderTeamsByName(assignmentFeedback);
+
+        List<List<TeamFeedback>> partitionedTeams = CollectionUtil.partition(assignmentFeedback, 3);
         model.addObject("teams1", partitionedTeams.get(0));
         model.addObject("teams2", partitionedTeams.get(1));
         model.addObject("teams3", partitionedTeams.get(2));
 
         List<String> testNames = new ArrayList<>();
 
-        if (competition.getCurrentAssignment() != null) {
-            ActiveAssignment state = competition.getActiveAssignment();
+        if (resultsProvider.getCurrentRunningAssignment() != null) {
+            ActiveAssignment state = resultsProvider.getActiveAssignment();
 
             testNames = state.getTestNames();
 
@@ -78,6 +104,7 @@ public class FeedbackController {
         }
         model.addObject("submitLinks", request.isUserInRole("GAME_MASTER"));
         model.addObject("tests", testNames);
+        model.addObject("competitionName", competitionRuntime.getCompetition().getDisplayName());
 
         return model;
     }
@@ -87,11 +114,12 @@ public class FeedbackController {
     public @ResponseBody
     Submission getAssignmentSolution(@PathVariable("assignment") UUID assignment) {
         return Submission.builder()
-                .files(competition.getSolutionFiles(assignment).stream()
+                .files(competitionRuntime.getSolutionFiles(assignment).stream()
                         .map(f -> FileSubmission.builder()
                                 .uuid(f.getUuid())
                                 .filename(f.getShortName())
                                 .content(f.getContentAsString())
+                                .location(f.getAbsoluteFile().toString())
                                 .build())
                         .collect(Collectors.toList()))
                 .build();
@@ -103,20 +131,19 @@ public class FeedbackController {
     Submission getSubmission(@PathVariable("assignment") UUID assignment, @PathVariable("team") UUID uuid) {
         return Submission.builder()
                 .team(uuid)
-                .files(competition.getTeamSolutionFiles(assignment, teamRepository.findByUuid(uuid)).stream()
+                .files(competitionRuntime.getTeamSolutionFiles(assignment, teamRepository.findByUuid(uuid)).stream()
                         .filter(f -> f.getFileType() == AssignmentFileType.EDIT)
                         .map(f -> FileSubmission.builder()
                                 .uuid(f.getUuid())
                                 .filename(f.getShortName())
                                 .content(f.getContentAsString())
+                                .location(f.getAbsoluteFile().toString())
                                 .build())
                         .collect(Collectors.toList()))
                 .build();
     }
 
-    private void orderTeamsByName(List<Team> allTeams) {
-        if (competition.getCompetitionSession() != null) {
-            allTeams.sort(Comparator.comparing(Team::getName));
-        }
+    private void orderTeamsByName(List<TeamFeedback> allTeams) {
+        allTeams.sort(Comparator.comparing( t -> t.getTeam().getName()));
     }
 }

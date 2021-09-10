@@ -16,17 +16,24 @@
 */
 package nl.moj.server.message.service;
 
-import java.util.UUID;
-
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.TaskControlController.TaskMessage;
+import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.service.CompileResult;
 import nl.moj.server.message.model.*;
-import nl.moj.server.submit.SubmitResult;
+import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.test.service.TestResult;
+import nl.moj.server.user.model.User;
+import nl.moj.server.user.service.UserService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+
+import java.time.Instant;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Controller
 @Slf4j
@@ -39,11 +46,15 @@ public class MessageService {
     private static final String DEST_STOP = "/queue/stop";
     private static final String DEST_RANKINGS = "/queue/rankings";
 
-    private SimpMessagingTemplate template;
+    private final CompetitionSessionRepository competitionSessionRepository;
+    private final UserService userService;
+    private final SimpMessagingTemplate template;
 
-    public MessageService(SimpMessagingTemplate template) {
+    public MessageService(SimpMessagingTemplate template, CompetitionSessionRepository competitionSessionRepository, UserService userService) {
         super();
         this.template = template;
+        this.competitionSessionRepository = competitionSessionRepository;
+        this.userService = userService;
     }
 
     public void sendTestFeedback(Team team, TestResult tr) {
@@ -54,7 +65,7 @@ public class MessageService {
                 .message(tr.getTestOutput() == null ? "" : tr.getTestOutput())
                 .build();
         log.info("Sending test assignmentScores: {}", msg);
-        template.convertAndSendToUser(team.getName(), DEST_COMPETITION, msg);
+        sendToActiveUsers(team, msg);
         template.convertAndSend(DEST_TESTRESULTS, msg);
     }
 
@@ -69,7 +80,7 @@ public class MessageService {
                 .build();
 
         log.info("Sending submit assignmentScores: {}", msg);
-        template.convertAndSendToUser(msg.getTeam(), DEST_COMPETITION, msg);
+        sendToActiveUsers(team, msg);
         template.convertAndSend(DEST_TESTRESULTS, msg);
         template.convertAndSend(DEST_RANKINGS, "refresh");
     }
@@ -81,38 +92,42 @@ public class MessageService {
                 .message(result.getCompileOutput() == null ? "" : result.getCompileOutput())
                 .build();
         log.info("Sending compile assignmentScores: {}", msg);
-        template.convertAndSendToUser(msg.getTeam(), DEST_COMPETITION, msg);
+        sendToActiveUsers(team, msg);
     }
 
-    public void sendStartToTeams(String taskname) {
+    public void sendStartToTeams(String taskname, String sessionId) {
+        log.info("Sending start: t={}, s={}", taskname, sessionId);
         template.convertAndSend(DEST_START, taskname);
-        template.convertAndSend(DEST_COMPETITION, StartAssignmentMessage.builder().assignment(taskname).build());
+        template.convertAndSend(DEST_COMPETITION, StartAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
     }
 
-    public void sendStopToTeams(String taskname) {
+    public void sendStopToTeams(String taskname, String sessionId) {
+        log.info("Sending stop: t={}, s={}", taskname, sessionId);
         template.convertAndSend(DEST_STOP, new TaskMessage(taskname));
-        template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder().assignment(taskname).build());
+        template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
     }
 
-    public void sendRemainingTime(Long remainingTime, Long totalTime) {
+    public void sendRemainingTime(Long remainingTime, Long totalTime, boolean isPaused, CompetitionSession session) {
         try {
-            log.info("Sending remaining time: r={}, t={}", remainingTime, totalTime);
+            log.info("Sending time: r={}, t={}, s={}", remainingTime, totalTime, session.getUuid().toString());
             TimerSyncMessage msg = TimerSyncMessage.builder()
                     .remainingTime(remainingTime)
                     .totalTime(totalTime)
+                    .sessionId(session.getUuid().toString())
+                    .isRunning(!isPaused)
                     .build();
             template.convertAndSend(DEST_COMPETITION, msg);
             template.convertAndSend("/queue/time", msg);
+            session.setTimeLeft(remainingTime);
+            if (remainingTime == 0) {
+                session.setRunning(false);
+            }
+            session.setDateTimeLastUpdate(Instant.now());
+            competitionSessionRepository.save(session);
+
         } catch (Exception e) {
             log.warn("Failed to send remaining time.", e);
         }
-    }
-
-    public void sendTeamStartedTesting(Team team) {
-        log.info("Sending team '{}' started testing.", team.getName());
-        template.convertAndSend(DEST_TESTRESULTS, TeamStartedTestingMessage.builder()
-                .uuid(team.getUuid())
-                .build());
     }
 
     public void sendStartFail(String name, String cause) {
@@ -121,34 +136,47 @@ public class MessageService {
                 .assignment(name).cause(cause).build());
     }
 
-    public void sendComplilingStarted(Team team) {
-        log.info("Sending compiling started to team uuid '{}", team.getUuid() );
-        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, CompilingStarted.builder().team(team.getUuid()).build());
+    public void sendCompilingStarted(Team team) {
+        log.info("Sending compiling started for team '{}' ", team.getUuid());
+        sendToActiveUsers(team, CompilingStarted.builder().team(team.getUuid()).build());
     }
 
-    public void sendComplilingEnded(Team team, boolean success) {
-        log.info("Sending compiling ended to team uuid '{}", team.getUuid() );
-        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, CompilingEnded.builder().team(team.getUuid()).success(success).build());
+    public void sendCompilingEnded(Team team, boolean success) {
+        log.info("Sending compiling ended for team uuid '{}'", team.getUuid());
+        sendToActiveUsers(team, CompilingEnded.builder().team(team.getUuid()).success(success).build());
     }
 
     public void sendTestingStarted(Team team) {
-        log.info("Sending testing started to team uuid '{}", team.getUuid() );
-        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, TestingStarted.builder().team(team.getUuid()).build());
+        log.info("Sending testing started for team uuid '{}'", team.getUuid());
+        sendToActiveUsers(team, TestingStarted.builder().team(team.getUuid()).build());
+        template.convertAndSend(DEST_TESTRESULTS, TeamStartedTestingMessage.builder()
+                .uuid(team.getUuid())
+                .build());
     }
 
     public void sendTestingEnded(Team team, boolean success) {
-        log.info("Sending testing ended to team uuid '{}", team.getUuid() );
-        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, TestingEnded.builder().team(team.getUuid()).success(success).build());
+        log.info("Sending testing ended for team uuid '{}'", team.getUuid());
+        sendToActiveUsers(team, TestingEnded.builder().team(team.getUuid()).success(success).build());
     }
 
     public void sendSubmitStarted(Team team) {
-        log.info("Sending submit started to team uuid '{}", team.getUuid() );
-        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, SubmitStarted.builder().team(team.getUuid()).build());
+        log.info("Sending submit started for team uuid '{}'", team.getUuid());
+        sendToActiveUsers(team, SubmitStarted.builder().team(team.getUuid()).build());
     }
 
     public void sendSubmitEnded(Team team, boolean success, Long score) {
-        log.info("Sending submit ended to team uuid '{}", team.getUuid() );
-        template.convertAndSendToUser(team.getName(),DEST_COMPETITION, SubmitEnded.builder().team(team.getUuid()).success(success)
+        log.info("Sending submit ended for team uuid '{}'", team.getUuid());
+        sendToActiveUsers(team, SubmitEnded.builder().team(team.getUuid()).success(success)
                 .score(score).build());
+    }
+
+    private void sendToActiveUsers(Team team, Object payload) {
+        getActiveUsers(team).forEach(u -> {
+            template.convertAndSendToUser(u.getUuid().toString(), DEST_COMPETITION, payload);
+        });
+    }
+
+    private Set<User> getActiveUsers(Team t) {
+        return userService.getActiveUsers().stream().filter(u -> t.getUsers().contains(u)).collect(Collectors.toSet());
     }
 }

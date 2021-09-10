@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import lombok.RequiredArgsConstructor;
+import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.rankings.model.Ranking;
@@ -31,7 +32,6 @@ import nl.moj.server.rankings.model.RankingHeader;
 import nl.moj.server.runtime.model.AssignmentResult;
 import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
-import nl.moj.server.teams.model.Role;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.springframework.stereotype.Component;
@@ -45,16 +45,29 @@ public class RankingsService {
     private final AssignmentResultRepository assignmentResultRepository;
 
     public List<Ranking> getRankings(CompetitionSession session) {
+        return getRankings(session, null);
+    }
+    public List<Ranking> getRankings(CompetitionSession session, String selectedYearFilter) {
         List<Ranking> rankings = new ArrayList<>();
         if (session != null) {
-            List<AssignmentResult> assignmentResults = assignmentResultRepository.findByCompetitionSession(session);
-            teamRepository.findAllByRole(Role.USER).forEach(t -> {
+            final List<AssignmentResult> sessionList = assignmentResultRepository.findByCompetitionSession(session);
+            final List<AssignmentResult> assignmentResultsPerYear = new ArrayList<>();
+
+            for (AssignmentResult result: sessionList) {
+                boolean isInsertAssignment = selectedYearFilter==null || result.getAssignmentStatus().getAssignment().getAssignmentDescriptor().contains(selectedYearFilter);
+
+                if (isInsertAssignment) {
+                    assignmentResultsPerYear.add(result);
+                }
+            }
+            teamRepository.findAll().forEach(team -> {
                 Ranking rank = Ranking.builder()
-                        .team(t.getName())
-                        .totalScore(calculateTotalScore(assignmentResults, t))
+                        .team(team.getName())
+                        .totalScore(calculateTotalScore(assignmentResultsPerYear, team))
                         .build();
-                getTeamAssignments(assignmentResults, t).forEach(ar -> {
-                    rank.addAssignmentScore(ar.getAssignmentStatus().getAssignment(), ar.getFinalScore());
+                getTeamAssignments(assignmentResultsPerYear, team).forEach(ar -> {
+                    Assignment assignment = ar.getAssignmentStatus().getAssignment();
+                    rank.addAssignmentScore(assignment, ar.getFinalScore());
                 });
                 rankings.add(rank);
             });

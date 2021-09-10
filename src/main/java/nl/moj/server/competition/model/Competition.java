@@ -16,14 +16,16 @@
 */
 package nl.moj.server.competition.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.stream.Collectors;
 
 @Data
 @Entity
@@ -43,12 +45,37 @@ public class Competition {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @OneToMany(mappedBy = "competition", orphanRemoval = true, cascade = CascadeType.ALL)
+    @JsonIgnore
+    @OneToMany(mappedBy = "competition", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<OrderedAssignment> assignments = new ArrayList<>();
 
+    @JsonIgnore
     public List<OrderedAssignment> getAssignmentsInOrder() {
-        List<OrderedAssignment> copy = new ArrayList<>(assignments);
-        copy.sort(Comparator.comparingInt(OrderedAssignment::getOrder));
-        return copy;
+        List<OrderedAssignment> copyFiltered = copyFilteredList();
+        copyFiltered.sort(Comparator.comparingInt(OrderedAssignment::getOrder));
+        return copyFiltered;
+    }
+
+    private List<OrderedAssignment> copyFilteredList() {
+        boolean isDefault = !name.contains("|20");
+        if (isDefault) {
+            return new ArrayList<>(assignments);
+        }
+        String collectionName = name.split("\\|")[1];
+        return assignments.stream()
+                .filter(orderedAssignment -> orderedAssignment.getAssignment().getAssignmentDescriptor().contains(collectionName))
+                .collect(Collectors.toList());
+    }
+
+    public String getShortName() {
+        return name.split("\\|")[0];
+    }
+
+    public String getDisplayName() {
+        if (!name.contains("|20")) {
+            return name;
+        }
+        String[] parts = name.split("\\|");
+        return parts[0] + " (" + parts[1] + ")";
     }
 }

@@ -17,6 +17,7 @@
 package nl.moj.server.submit.json;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +52,19 @@ public class SourceMessageDeserializer extends JsonDeserializer<SourceMessage> {
             ArrayNode jsonTests = (ArrayNode) node.get("tests");
             jsonTests.forEach(t -> tests.add(t.asText()));
         }
-        return new SourceMessage(sources, tests);
+        String assignmentNameForAdminPurpose = null;
+        if (node.get("assignmentName") != null && node.get("assignmentName").isTextual()) {
+            assignmentNameForAdminPurpose = node.get("assignmentName").asText();
+        }
+        String uuid = null;
+        if (node.get("uuid") != null && node.get("uuid").isTextual()) {
+            uuid = node.get("uuid").asText();
+        }
+        String timeLeft = null;
+        if (node.get("timeLeft") != null && node.get("timeLeft").isTextual()) {
+            timeLeft = node.get("timeLeft").asText();
+        }
+        Long arrivalTime = Instant.now().toEpochMilli();
+        return new SourceMessage(sources, tests, assignmentNameForAdminPurpose, uuid, timeLeft, arrivalTime);
     }
 }

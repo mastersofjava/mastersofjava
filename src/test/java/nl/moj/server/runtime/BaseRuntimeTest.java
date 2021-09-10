@@ -40,14 +40,16 @@ import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.submit.SubmitResult;
-import nl.moj.server.teams.model.Role;
+import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.user.model.User;
+import nl.moj.server.user.repository.UserRepository;
 import nl.moj.server.util.PathUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 
 import static nl.moj.server.TestUtil.classpathResourceToPath;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,6 +73,9 @@ public abstract class BaseRuntimeTest {
     private TeamRepository teamRepository;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private MojServerProperties mojServerProperties;
 
     @Autowired
@@ -82,10 +87,13 @@ public abstract class BaseRuntimeTest {
     @Getter
     private Team team;
 
+    @Getter
+    private User user;
+
     @Before
     public void init() throws Exception {
         try {
-            bootstrapService.bootstrap("admin", "admin");
+            bootstrapService.bootstrap();
             dbUtil.cleanup();
             competition = createCompetition();
             competitionRuntime.startSession(competition);
@@ -97,21 +105,32 @@ public abstract class BaseRuntimeTest {
 
     @After
     public void cleanup() throws IOException {
-        competitionRuntime.stopCurrentAssignment();
+        competitionRuntime.stopCurrentSession();
         dbUtil.cleanup();
         PathUtil.delete(mojServerProperties.getDirectories().getBaseDirectory(), true);
+    }
+
+    protected User addUser(Team team) {
+        User user = new User();
+        user.setUuid(UUID.randomUUID());
+        user.setTeam(team);
+        user.setName("username");
+        user.setGivenName("User");
+        user.setFamilyName("Name");
+        user.setEmail("user.name@example.com");
+        return userRepository.save(user);
     }
 
     protected Team addTeam() {
         Team team = new Team();
         team.setUuid(UUID.randomUUID());
         team.setName(team.getUuid().toString());
-        team.setRole(Role.USER);
         return teamRepository.save(team);
     }
 
     private Competition createCompetition() throws Exception {
         team = addTeam();
+        user = addUser(team);
 
         List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/runtime/assignments"));
         AtomicInteger count = new AtomicInteger(0);
@@ -147,6 +166,7 @@ public abstract class BaseRuntimeTest {
     }
 
     protected OrderedAssignment getAssignment(String name) {
+        Assert.isTrue(name!=null,"invalid name used");
         return getCompetition().getAssignments()
                 .stream()
                 .filter(a -> a.getAssignment().getName().equals(name))

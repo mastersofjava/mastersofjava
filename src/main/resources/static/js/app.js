@@ -5,119 +5,213 @@ var activeAction = null;
 var failed = false;
 
 $(document).ready(function () {
+    console.log("Connecting websockets!")
     connectCompetition();
     connectButtons();
 
     initializeAssignmentClock();
+    initializeTextPanes();
     initializeCodeMirrors();
+    $(window).resize(function () {
+        resizeContent()
+    });
+    window.setTimeout('$( window ).resize();', 200);
 });
 
 function connectCompetition() {
-    var socket = new WebSocket(
-        ((window.location.protocol === "https:") ? "wss://" : "ws://")
-        + window.location.hostname
-        + ':' + window.location.port
-        + "/ws/competition/websocket");
-    stomp = Stomp.over(socket);
-    stomp.debug = null;
-    stomp.connect({}, function (frame) {
-        $('#status').append('<span>Connected</span>');
+    stomp = new StompJs.Client({
+        brokerURL: ((window.location.protocol === "https:") ? "wss://" : "ws://")
+            + window.location.hostname
+            + ':' + window.location.port
+            + "/ws/competition/websocket",
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000
+    });
+
+    stomp.onConnect = function (frame) {
+        $('#status').html('<span>Connected</span>');
+        // Do something, all subscribes must be done is this callback
+        // This is needed because this will be executed after a (re)connect
         stomp.subscribe('/user/queue/competition',
             function (data) {
                 var msg = JSON.parse(data.body);
                 console.log('received', msg);
+
+                if ('TEST' === msg.messageType && msg.test) {
+                    var colorStr = msg.success ? 'lightgreen' : 'pink';
+                    $('#tabLink_' + msg.test).css('background-color', colorStr);
+                }
+
                 if (userHandlers.hasOwnProperty(msg.messageType)) {
                     userHandlers[msg.messageType](msg);
                 }
-            });
+                data.ack();
+            },
+            {ack: 'client'});
         stomp.subscribe("/queue/competition",
             function (data) {
                 var msg = JSON.parse(data.body);
-                if (handlers.hasOwnProperty(msg.messageType)) {
-                    handlers[msg.messageType](msg);
+                if (competitionHandlers.hasOwnProperty(msg.messageType)) {
+                    competitionHandlers[msg.messageType](msg);
                 }
-            });
-    });
+                data.ack();
+            },
+            {ack: 'client'});
 
-    var userHandlers = {};
-    userHandlers['COMPILE'] = function (msg) {
-        enable();
-        appendOutput(msg.message);
-    };
-    userHandlers['COMPILING_STARTED'] = function (msg) {
-        updateOutputHeaderColorActionStarted();
-    };
-    userHandlers['COMPILING_ENDED'] = function (msg) {
-        updateOutputHeaderColorActionEnded(msg.success);
-    };
-    userHandlers['TEST'] = function (msg) {
-        enable();
-        appendOutput(msg.test + ':\r\n' + msg.message);
-    };
-    userHandlers['TESTING_STARTED'] = function (msg) {
-        updateOutputHeaderColorActionStarted();
-    };
-    userHandlers['TESTING_ENDED'] = function (msg) {
-        updateOutputHeaderColorActionEnded(msg.success);
-    };
-    userHandlers['SUBMIT'] = function (msg) {
-        if (!msg.success && msg.remainingSubmits > 0) {
+        const userHandlers = {};
+        userHandlers['COMPILE'] = function (msg) {
             enable();
-        } else {
-            disable();
-        }
-        updateSubmits(msg.remainingSubmits);
-        updateAlertContainerWithScore(msg);
+            appendOutput(msg.message);
+        };
+        userHandlers['COMPILING_STARTED'] = function (msg) {
+            updateOutputHeaderColorActionStarted();
+        };
+        userHandlers['COMPILING_ENDED'] = function (msg) {
+            updateOutputHeaderColorActionEnded(msg.success);
+        };
+        userHandlers['TEST'] = function (msg) {
+            enable();
+            appendOutput(msg.test + ':\r\n' + msg.message);
+        };
+        userHandlers['TESTING_STARTED'] = function (msg) {
+            updateOutputHeaderColorActionStarted();
+        };
+        userHandlers['TESTING_ENDED'] = function (msg) {
+            updateOutputHeaderColorActionEnded(msg.success);
+        };
+        userHandlers['SUBMIT'] = function (msg) {
+            if (!msg.success && msg.remainingSubmits > 0) {
+                enable();
+            } else {
+                disable();
+            }
+            updateSubmits(msg.remainingSubmits);
+            updateAlertContainerWithScore(msg);
+        };
+
+        const competitionHandlers = {};
+        competitionHandlers['TIMER_SYNC'] = function (msg) {
+            let lastMessage = msg;
+            if (clock && isSessionValid(msg)) {
+                clock.sync(msg.remainingTime, msg.totalTime);
+                clock.isPaused = !msg.running;
+                if (msg.remainingTime === 0) {
+                    disable();
+                }
+            } else {
+                console.log('timer msg retrieved:' + msg.sessionId + " " + msg.remainingTime + ' ' + $('#sessions').val());
+            }
+        };
+        competitionHandlers['START_ASSIGNMENT'] = function (msg) {
+            window.setTimeout(function () {
+                if (isSessionValid(msg)) {
+                    window.location.reload()
+                }
+            }, 10);
+        };
+        competitionHandlers['STOP_ASSIGNMENT'] = function (msg) {
+            if (isSessionValid(msg)) {
+                disable();
+                if (clock) {
+                    clock.stop();
+                }
+            }
+        };
     };
 
-    var handlers = {};
-    handlers['TIMER_SYNC'] = function (msg) {
-        if (clock) {
-            clock.sync(msg.remainingTime, msg.totalTime);
-        }
+    stomp.onStompError = function (frame) {
+        // Will be invoked in case of error encountered at Broker
+        // Bad login/passcode typically will cause an error
+        // Complaint brokers will set `message` header with a brief message. Body may contain details.
+        // Compliant brokers will terminate the connection after any error
+        console.log('Broker reported error: ' + frame.headers['message']);
+        console.log('Additional details: ' + frame.body);
     };
-    handlers['START_ASSIGNMENT'] = function (msg) {
-        window.setTimeout(function () {
-            window.location.reload()
-        }, 1000);
-    };
-    handlers['STOP_ASSIGNMENT'] = function (msg) {
-        disable();
-        if (clock) {
-            clock.stop();
-        }
-    }
+
+    stomp.activate();
+}
+
+function isSessionValid(msg) {
+    return msg.sessionId == null || $('#sessions').val() === msg.sessionId;
 }
 
 function connectButtons() {
     $('#compile').click(function (e) {
-        compile();
+        doUserActionCompile();
         e.preventDefault();
     });
     $('#test').click(function (e) {
         $('#test-modal').modal('hide');
-        test();
+        doUserActionTest();
         e.preventDefault();
     });
     $('#submit').click(function (e) {
         resetTabColor();
         $('#confirm-submit-modal').modal('hide');
         timerActive = false;
-        submit();
+        doUserActionSubmit();
         e.preventDefault();
     });
 }
 
+/**
+ * after CodeMirror the Assignment Text, this function insert images in dislay.
+ */
+function codeMirror_insertImagesInAssignmentText() {
+
+    var list = $('.CodeMirror-code:visible .CodeMirror-line');
+    $(list).each(function () {
+        var isHtml = this.innerHTML.indexOf('&gt;') !== -1 && this.innerHTML.indexOf('&lt;') !== -1;
+        if (isHtml) {
+            var input = this.innerHTML.replace(/&gt;/g, '>').replace(/&lt;/g, '<');
+            console.log(input);
+            this.innerHTML = input;
+        }
+    });
+}
+
+function initializeTextPanes() {
+    $('div.markdown').each(
+        function (idx) {
+            $(this).html(function (idx, content) {
+                return marked(content)
+            })
+        }
+    )
+}
+
+function resizeContent() {
+    let pos = $('#tabs .tab-content').position();
+    if (pos) {
+        let height = window.innerHeight - pos.top - 80;
+
+        $('#tabs .content').each(function (idx) {
+            $(this).css('height', height + 'px');
+        })
+
+        $('#tabs .CodeMirror.ui-resizable').each(function (idx) {
+            $(this).css('height', height + 'px');
+        })
+    }
+}
+
 function initializeCodeMirrors() {
+    texts = [];
+    cmList = [];
     $('textarea[data-cm]').each(
         function (idx) {
             var type = $(this).attr('data-cm-file-type');
+            texts.push(this);
+            var isTask = type === 'TASK';
+            var isReadOnly = $(this).attr('data-cm-readonly') === 'true';
             var cm = CodeMirror.fromTextArea(this, {
                 lineNumbers: true,
-                mode: type === 'TASK' ? 'text/plain' : "text/x-java",
+                mode: isTask ? 'text/x-markdown' : "text/x-java",
                 matchBrackets: true,
-                readOnly: $(this).attr('data-cm-readonly') === 'true'
+                readOnly: isReadOnly
             });
+            cmList.push(cm);
             editors.push({
                 'cm': cm,
                 'readonly': cm.isReadOnly(),
@@ -126,24 +220,23 @@ function initializeCodeMirrors() {
                 'uuid': $(this).attr('data-cm-id')
             });
 
-            $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
+            var tabLink = $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
                 function (e) {
-                    console.log('shown.bs.tab', e);
                     cm.refresh();
+                    if (isTask) codeMirror_insertImagesInAssignmentText();
+                    $(window).resize();
                 });
 
             var $wrapper = $(cm.getWrapperElement());
             $wrapper.resizable({
                 resize: function () {
                     cm.setSize($(this).width(), $(this).height());
-                    cm.refresh();
+                    tabLink.trigger('shown.bs.tab');
                 }
             });
-
-            var pos = $('#tabs .tab-content').position();
-            var height = window.innerHeight - pos.top - 80;
-            $wrapper.css('height', height + 'px');
-            cm.refresh();
+            if (isTask) {
+                tabLink.trigger('shown.bs.tab');
+            }
         });
 }
 
@@ -170,7 +263,7 @@ function updateOutputHeaderColorActionStarted() {
 function updateOutputHeaderColorActionEnded(success) {
     var $output = $('#output');
     $output.removeClass('failure success action-started');
-    if( success ) {
+    if (success) {
         $output.addClass('success');
     } else {
         $output.addClass('failure');
@@ -228,18 +321,21 @@ function escape(txt) {
     });
 }
 
-function compile() {
+function doUserActionCompile() {
     disable();
     resetOutput();
     appendOutput("Compiling ....");
     showOutput();
     activeAction = "COMPILE";
-    stomp.send("/app/submit/compile", {}, JSON.stringify({
-        'sources': getContent()
+    publish("/app/submit/compile", JSON.stringify({
+        'sources': getContent(),
+        'assignmentName': assignmentName,
+        'uuid': $('#sessions').val(),
+        'timeLeft': getTimeleft()
     }));
 }
 
-function test() {
+function doUserActionTest() {
     disable();
     resetOutput();
     appendOutput("Compiling and testing ....");
@@ -248,9 +344,12 @@ function test() {
     }).get();
     showOutput();
     activeAction = "TEST";
-    stomp.send("/app/submit/test", {}, JSON.stringify({
+    publish("/app/submit/test", JSON.stringify({
         'sources': getContent(),
-        'tests': tests
+        'tests': tests,
+        'assignmentName': assignmentName,
+        'uuid': $('#sessions').val(),
+        'timeLeft': getTimeleft()
     }));
 }
 
@@ -292,15 +391,22 @@ function getContent() {
     return editables;
 }
 
-function submit() {
+function doUserActionSubmit() {
     disable();
     resetOutput();
     showOutput();
     activeAction = "SUBMIT";
-    stomp.send("/app/submit/submit", {}, JSON.stringify({
-        'sources': getContent()
+    publish("/app/submit/submit", JSON.stringify({
+        'sources': getContent(),
+        'uuid': $('#sessions').val(),
+        'assignmentName': assignmentName,
+        'timeLeft': getTimeleft()
     }));
     showSubmitDetails();
+}
+
+function getTimeleft() {
+    return '' + $('#assignment-clock').data()['timeLeft'];
 }
 
 function showOutput() {
@@ -317,4 +423,8 @@ function showSubmitDetails() {
 
 function updateSubmits(count) {
     $('#submits').text(count);
+}
+
+function publish(destination, body) {
+    stomp.publish({destination: destination, body: body});
 }

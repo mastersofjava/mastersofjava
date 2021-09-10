@@ -49,6 +49,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 @Service
@@ -58,49 +59,57 @@ public class TestService {
     private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
             Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-    private MojServerProperties mojServerProperties;
+    private final MojServerProperties mojServerProperties;
 
-    private CompetitionRuntime competition;
+    private final TestCaseRepository testCaseRepository;
 
-    private TestCaseRepository testCaseRepository;
+    private final TestAttemptRepository testAttemptRepository;
 
-    private TestAttemptRepository testAttemptRepository;
+    private final AssignmentStatusRepository assignmentStatusRepository;
 
-    private AssignmentStatusRepository assignmentStatusRepository;
-
-    private TeamService teamService;
+    private final TeamService teamService;
 
     public TestService(MojServerProperties mojServerProperties, CompetitionRuntime competition,
                        TestCaseRepository testCaseRepository, TestAttemptRepository testAttemptRepository,
                        AssignmentStatusRepository assignmentStatusRepository, TeamService teamService) {
         this.mojServerProperties = mojServerProperties;
-        this.competition = competition;
         this.testCaseRepository = testCaseRepository;
         this.testAttemptRepository = testAttemptRepository;
         this.assignmentStatusRepository = assignmentStatusRepository;
         this.teamService = teamService;
     }
 
-    private CompletableFuture<TestResult> scheduleTest(Team team, TestAttempt testAttempt, AssignmentFile test, Executor executor) {
-        return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, competition.getActiveAssignment()), executor);
+    private CompletableFuture<TestResult> scheduleTest(Team team, TestAttempt testAttempt, AssignmentFile test, Executor executor, ActiveAssignment activeAssignment) {
+        Assert.isTrue(activeAssignment.getCompetitionSession()!=null,"CompetitionSession is not ready");
+        return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, activeAssignment), executor);
     }
 
-    public CompletableFuture<TestResults> scheduleTests(Team team, List<AssignmentFile> tests, Executor executor) {
-        ActiveAssignment activeAssignment = competition.getActiveAssignment();
-        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
-                activeAssignment.getCompetitionSession(), team);
-        TestAttempt ta = testAttemptRepository.save(TestAttempt.builder()
-                .assignmentStatus(as)
-                .dateTimeStart(Instant.now())
-                .uuid(UUID.randomUUID())
-                .build());
-
+    public CompletableFuture<TestResults> scheduleTests(TestRequest testRequest, List<AssignmentFile> tests, Executor executor, ActiveAssignment activeAssignment) {
+        log.info("activeAssignment: " + activeAssignment + " tests: " +tests.size());
         List<CompletableFuture<TestResult>> testFutures = new ArrayList<>();
-        tests.forEach(t -> testFutures.add(scheduleTest(team, ta, t, executor)));
+
+        TestAttempt ta = null;
+        try {
+            AssignmentStatus optionalStatus = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(),
+                    activeAssignment.getCompetitionSession(), testRequest.getTeam());
+            ta = registerIfNeeded(TestAttempt.builder()
+                    .assignmentStatus(optionalStatus)
+                    .dateTimeStart(Instant.now())
+                    .uuid(UUID.randomUUID())
+                    .build());
+            log.info("ta.id " + ta.getId() );
+            Assert.isTrue(activeAssignment.getCompetitionSession()!=null,"CompetitionSession is not ready");
+            log.info("testFutures " + testFutures.size());
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
+            throw new RuntimeException(ex);
+        }
+        final TestAttempt testAttempt = ta;
+        tests.forEach(t -> testFutures.add(scheduleTest(testRequest.getTeam(), testAttempt, t, executor, activeAssignment)));
 
         return CompletableFutures.allOf(testFutures).thenApply(r -> {
-            ta.setDateTimeEnd(Instant.now());
-            TestAttempt updatedTa = testAttemptRepository.save(ta);
+            testAttempt.setDateTimeEnd(Instant.now());
+            TestAttempt updatedTa = registerIfNeeded(testAttempt);
             return TestResults.builder()
                     .dateTimeStart(updatedTa.getDateTimeStart())
                     .dateTimeEnd(updatedTa.getDateTimeEnd())
@@ -110,9 +119,17 @@ public class TestService {
         });
     }
 
-    private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, ActiveAssignment activeAssignment) {
-        log.info("Running unit test: {}", file.getName());
+    private TestAttempt registerIfNeeded(TestAttempt ta) {
+        TestAttempt result = ta;
+        if (result.getAssignmentStatus()!=null) {
+            result = testAttemptRepository.save(ta);
+        }
+        return result;
+    }
 
+    private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file, ActiveAssignment activeAssignment) {
+        Assert.isTrue(activeAssignment.getCompetitionSession()!=null,"CompetitionSession is not ready");
+        Assert.isTrue(activeAssignment.getAssignment().getName()!=null,"assignmentcontext is not ready");
         TestCase testCase = TestCase.builder()
                 .testAttempt(testAttempt)
                 .name(file.getName())
@@ -122,7 +139,7 @@ public class TestService {
 
 
         AssignmentDescriptor ad = activeAssignment.getAssignmentDescriptor();
-        Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(competition.getCompetitionSession(), team, activeAssignment
+        Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(activeAssignment.getCompetitionSession(), team, activeAssignment
                 .getAssignment());
 
         Path policy = ad.getAssignmentFiles().getSecurityPolicy();
@@ -141,26 +158,35 @@ public class TestService {
             log.error("No security policy other than default JVM version installed, refusing to execute tests. Please configure a default security policy.");
             throw new RuntimeException("security policy file not found");
         }
+        log.info("starting commandExecutor {} ", teamAssignmentDir);
 
-        try {
+        try (final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
+                .getTestOutputLimits());
+             final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
+                     .getTestOutputLimits())){
             boolean isTimeout = false;
             int exitvalue = 0;
-            final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
-                    .getTestOutputLimits());
-            final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
-                    .getTestOutputLimits());
+
             try {
-                final ProcessExecutor jUnitCommand = new ProcessExecutor().command(mojServerProperties.getLanguages()
-                                .getJavaVersion(ad.getJavaVersion())
-                                .getRuntime()
-                                .toString(), "-cp",
-                        makeClasspath(teamAssignmentDir),
-                        "-Djava.security.manager",
-                        "-Djava.security.policy=" + policy.toAbsolutePath(),
-                        "org.junit.runner.JUnitCore",
-                        file.getName());
-                log.debug("Executing command {}", jUnitCommand.getCommand().toString().replaceAll(",", "\n"));
-                exitvalue = jUnitCommand.directory(teamAssignmentDir.toFile())
+                List<String> commandParts = new ArrayList<>();
+
+                commandParts.add(mojServerProperties.getLanguages()
+                        .getJavaVersion(ad.getJavaVersion())
+                        .getRuntime()
+                        .toString());
+                if (ad.getJavaVersion()>=12) {
+                    commandParts.add("--enable-preview");
+                }
+                commandParts.add("-cp");
+                commandParts.add(makeClasspath(teamAssignmentDir));
+                commandParts.add("-Djava.security.manager");
+                commandParts.add("-Djava.security.policy=" + policy.toAbsolutePath());
+                commandParts.add("org.junit.runner.JUnitCore");
+                commandParts.add(file.getName());
+
+                final ProcessExecutor commandExecutor = new ProcessExecutor().command(commandParts);
+                log.debug("Executing command {}", commandExecutor.getCommand().toString().replaceAll(",", "\n"));
+                exitvalue = commandExecutor.directory(teamAssignmentDir.toFile())
                         .timeout(timeout.toSeconds(), TimeUnit.SECONDS).redirectOutput(jUnitOutput)
                         .redirectError(jUnitError).execute().getExitValue();
             } catch (TimeoutException e) {
@@ -168,6 +194,7 @@ public class TestService {
                 log.debug("Unit test for {} timed out and got killed", team.getName());
                 isTimeout = true;
             } catch (SecurityException se) {
+                log.debug("Unit test for {} got security error", team.getName());
                 log.error(se.getMessage(), se);
             }
             if (isTimeout) {
@@ -183,20 +210,25 @@ public class TestService {
                 // if we still have some output left and exitvalue = 0
                 success = jUnitOutput.length() > 0 && exitvalue == 0 && !isTimeout;
                 result = jUnitOutput.toString();
+                if (jUnitOutput.length()==0) {
+                    log.info("zero normal junit output, error output: {}-{}", jUnitOutput.toString(), jUnitError.toString()  );
+                }
             } else {
-                log.trace(jUnitOutput.toString());
+                log.info("zero normal junit output, error output: {}", jUnitError.toString() );
                 result = jUnitError.toString();
                 success = (exitvalue == 0) && !isTimeout;
             }
-            log.info("finished unit test: {}", file.getName());
+            log.info("finished unit test: {}, exitvalue: {}, outputlength: {}, isTimeout: {} ", file.getName(), exitvalue, result.length(), isTimeout );
 
-            testCase = testCaseRepository.save(testCase.toBuilder()
+            testCase = testCase.toBuilder()
                     .success(success)
                     .timeout(isTimeout)
                     .testOutput(result)
                     .dateTimeEnd(Instant.now())
-                    .build());
-
+                    .build();
+            if (testAttempt.getAssignmentStatus()!=null) {
+                testCase = testCaseRepository.save(testCase);
+            }
             testAttempt.getTestCases().add(testCase);
 
             return TestResult.builder()
@@ -254,7 +286,7 @@ public class TestService {
         StringBuilder sb = new StringBuilder();
         for (File file : classPath) {
             sb.append(file.getAbsolutePath());
-            sb.append(System.getProperty("path.separator"));
+            sb.append(File.pathSeparator);
         }
         return sb.toString();
     }

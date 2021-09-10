@@ -49,6 +49,12 @@ create table competition_sessions
   id             bigint not null,
   uuid           uuid   not null,
   competition_id bigint not null,
+  available      boolean not null,
+  running        boolean not null,
+  time_left      bigint,
+  assignment_name varchar(255),
+  date_time_start       timestamp,
+  last_update           timestamp,
   primary key (id)
 );
 
@@ -98,13 +104,13 @@ create table submit_attempts
 
 create table teams
 (
-  id       bigint       not null,
-  company  varchar(255),
-  country  varchar(255),
-  name     varchar(255) not null,
-  password varchar(255),
-  role     varchar(255),
-  uuid     uuid         not null,
+  id         bigint       not null,
+  company    varchar(255),
+  country    varchar(255),
+  name       varchar(255) not null,
+  role       varchar(255),
+  indication varchar(255),
+  uuid       uuid         not null,
   primary key (id)
 );
 

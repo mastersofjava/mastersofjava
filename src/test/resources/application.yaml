@@ -16,13 +16,21 @@ moj:
       uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
       success-bonus: 400
 
+keycloak:
+   auth-server-url: http://localhost:8180/auth
+   realm: moj
+   resource: moj
+   public-client: true
+   principal-attribute: preferred_username
+
 spring:
   h2:
     console:
       enabled: true
       path: /h2
   datasource:
-    url: jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE
+    ## see https://stackoverflow.com/questions/52480973/h2-in-memory-test-db-closed-despite-db-close-on-exit-false/52481318
+    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1
     username: sa
     password: sa
     driver-class-name: org.h2.Driver

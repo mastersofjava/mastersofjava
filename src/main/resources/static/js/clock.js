@@ -4,6 +4,7 @@ function Clock(initialOffset) {
     this.current = 0;
     this.time = $('#assignment-clock').attr('data-time');
     this.finished = false;
+    this.isPaused = false;
 
     this.start = function () {
         var $assignmentClock = $('#assignment-clock');
@@ -15,6 +16,11 @@ function Clock(initialOffset) {
         }
         // make sure it is rendered at least once in case this team has finished
         this.current = clock.time - timeleft;
+
+        var isStarting = 100*(this.current / clock.time)<1.7// on page load, sound the start gong if in first 20 seconds.
+        if (isStarting) {
+            doPlaySoundOnAssigmentStartGong();
+        }
         renderTime();
 
         function renderTime() {
@@ -36,13 +42,23 @@ function Clock(initialOffset) {
                 }
             }
         }
-
+        // the countdown in the client (synchronized also from the server every 10 seconds)
         var interval = setInterval(function () {
             if (clock.finished || clock.current - clock.time >= 0) {
                 clearInterval(interval);
                 return;
             } else {
-                renderTime();
+                if (!clock.isPaused) {
+                    renderTime();
+
+                    if (clock.current - clock.time===-15) {
+                        doPlaySoundOnAssigmentLast15Seconds();
+                    } else
+                    if (clock.current - clock.time===-25) {
+                        doPlaySoundOnAssigmentLast10SecondsBeforeLast15();
+                    }
+
+                }
             }
             clock.current++;
         }, 1000);
@@ -60,4 +76,30 @@ function Clock(initialOffset) {
         this.current = this.time;
         $('h2', $assignmentClock).text("0:00");
     };
+    this.setPaused = function (isPaused) {
+        this.isPaused = isPaused;
+    };
+    this.getPaused = function () {
+        return this.isPaused;
+    }
+}
+
+function doPlaySoundOnUserStatus(fileName) {
+    var isAdminGUI = window['Howl']==null;
+    console.log('fileName '+fileName + ' isAdminGUI '+ isAdminGUI);
+
+    if (isAdminGUI) {
+        return;
+    }
+    howl=new Howl({urls: [fileName]});
+    howl.play();
+}
+function doPlaySoundOnAssigmentStartGong() {
+    doPlaySoundOnUserStatus('/gong.wav');
+}
+function doPlaySoundOnAssigmentLast10SecondsBeforeLast15() {
+    doPlaySoundOnUserStatus('/tictac2.wav');
+}
+function doPlaySoundOnAssigmentLast15Seconds() {
+    doPlaySoundOnUserStatus('/tikking.wav');
 }

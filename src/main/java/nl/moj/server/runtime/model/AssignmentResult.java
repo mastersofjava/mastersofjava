@@ -17,6 +17,8 @@
 package nl.moj.server.runtime.model;
 
 import javax.persistence.*;
+import java.time.Instant;
+import java.util.Calendar;
 import java.util.UUID;
 
 import lombok.*;
@@ -56,4 +58,12 @@ public class AssignmentResult {
 
     @Column(name = "final_score", nullable = false)
     private Long finalScore;
+
+
+    public boolean isAssignmentEnded(Instant maxStartTime) {
+        if (assignmentStatus.getDateTimeEnd()!=null) {
+            return true;
+        }
+        return assignmentStatus.getDateTimeStart().isBefore(maxStartTime);
+    }
 }

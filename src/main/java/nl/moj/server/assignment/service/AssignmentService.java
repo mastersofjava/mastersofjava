@@ -149,4 +149,8 @@ public class AssignmentService {
         return ASSIGNMENT_FILES.computeIfAbsent(assignment.getUuid(),
                 uuid -> new JavaAssignmentFileResolver().resolve(getAssignmentDescriptor(assignment)));
     }
+
+    public void clearSmallFileStorageInMemory() {
+        ASSIGNMENT_FILES.clear();
+    }
 }
