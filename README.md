@@ -4,6 +4,8 @@ This project is a rebuild of the famous original Masters of Java software orgina
 in 2004 [see http://www.ctrl-alt-dev.nl/mastersofjava/](http://www.ctrl-alt-dev.nl/mastersofjava/). This project takes the original concept, but instead 
 of a classical client/server Swing application, it is a completely web-based re-implementation.
 
+Assignments for previous years can be found at [https://github.com/First8/mastersofjava/](https://github.com/First8/mastersofjava/).
+
 ## moj game server
 
 The game server uses Spring Boot,Keycloak, Thymeleaf, H2 database and Websockets.
