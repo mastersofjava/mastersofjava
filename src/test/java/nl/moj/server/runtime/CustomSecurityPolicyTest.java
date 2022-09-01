@@ -16,29 +16,26 @@
 */
 package nl.moj.server.runtime;
 
+import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentFileType;
+import nl.moj.server.submit.model.SourceMessage;
+import nl.moj.server.submit.service.SubmitRequest;
+import nl.moj.server.submit.service.SubmitResult;
+import nl.moj.server.submit.service.SubmitService;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import nl.moj.server.competition.model.OrderedAssignment;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.submit.service.SubmitRequest;
-import nl.moj.server.submit.service.SubmitResult;
-import nl.moj.server.submit.model.SourceMessage;
-import nl.moj.server.submit.service.SubmitService;
-import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-
-@RunWith(SpringRunner.class)
 @SpringBootTest
 public class CustomSecurityPolicyTest extends BaseRuntimeTest {
 
@@ -65,7 +62,7 @@ public class CustomSecurityPolicyTest extends BaseRuntimeTest {
         Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isTimeout()).isFalse();
     }
 
-    private SubmitResult doSubmitValidInput() throws Exception  {
+    private SubmitResult doSubmitValidInput() throws Exception {
         ActiveAssignment state = competitionRuntime.getActiveAssignment();
         Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
         timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());

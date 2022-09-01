@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -32,15 +33,10 @@ import nl.moj.server.submit.service.SubmitRequest;
 import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.service.SubmitService;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.rules.SpringClassRule;
-import org.springframework.test.context.junit4.rules.SpringMethodRule;
 import org.springframework.util.Assert;
 
 /**
@@ -50,15 +46,8 @@ import org.springframework.util.Assert;
  * - without timeout on first submit ==> users gets a score (while competition running)
  * - user submits in last second and process takes more than second ==> user gets a score (while competition not running)
  */
-@RunWith(Parameterized.class)
 @SpringBootTest
 public class AssignmentSubmitTest extends BaseRuntimeTest {
-    // NB. these final parameters belong to the RunWith Parameterized configuration.
-    @ClassRule
-    public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
-
-    @Rule
-    public final SpringMethodRule springMethodRule = new SpringMethodRule();
 
     @Autowired
     private CompetitionRuntime competitionRuntime;
@@ -69,18 +58,8 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     @Autowired
     private MojServerProperties mojServerProperties;
 
-    private String assignment;
-
-    @Parameterized.Parameters(name = "{index} = {0}")
-    public static String[] data() {
-        return new String[]{
-                "sequential"
-                ,"parallel"
-        };
-    }
-
-    public AssignmentSubmitTest(String assignment) {
-        this.assignment = assignment; // sequential or parallel
+    private static Stream<String> assignments() {
+        return Stream.of("sequential","parallel");
     }
 
     private SourceMessage createSourceMessageWithLongTimeout(Duration timeout) {
@@ -113,7 +92,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         Duration timeout = competitionRuntime.getActiveAssignment().getAssignmentDescriptor().getTestTimeout();
         return timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
     }
-    private void startSelectedAssignmment() {
+    private void startSelectedAssignmment(String assignment) {
         OrderedAssignment oa = getAssignment(assignment);
 
         competitionRuntime.startAssignment(oa.getAssignment().getName());
@@ -147,9 +126,11 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         assertThat(submitResult.isSuccess()).isFalse();
         assertThat(submitResult.getScore()).isEqualTo(0);
     }
-    @Test
-    public void shouldUseSpecifiedAssignmentTestTimeout() throws Exception {
-        startSelectedAssignmment();
+
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldUseSpecifiedAssignmentTestTimeout(String assignment) throws Exception {
+        startSelectedAssignmment(assignment);
         Duration timeout = createDurationThatIsLarge();
         SourceMessage src = createSourceMessageWithLongTimeout(timeout);
         SubmitResult submitResult = doValidate(src, timeout);
@@ -157,9 +138,10 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         assertThat(submitResult.getTestResults().getResults().get(0).isTimeout()).isTrue();
     }
 
-    @Test
-    public void shouldGetPointsForSuccessOnFirstAttempt() throws Exception {
-        startSelectedAssignmment();
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldGetPointsForSuccessOnFirstAttempt(String assignment) throws Exception {
+        startSelectedAssignmment(assignment);
         Duration timeout = createDurationThatIsLarge();
         SourceMessage src = createSourceMessageWithNoTimeout();
 
@@ -167,9 +149,10 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         assertValidSubmit(submitResult);
     }
 
-    @Test
-    public void shouldGetPointsForSuccessOnVeryLateAttempt() throws Exception {
-        startSelectedAssignmment();
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldGetPointsForSuccessOnVeryLateAttempt(String assignment) throws Exception {
+        startSelectedAssignmment(assignment);
         Duration timeout = createDurationThatIsLarge();
         SourceMessage src = createSourceMessageWithNoTimeout();
         insertArrivalDetails(src, Instant.now().toEpochMilli());
@@ -177,9 +160,11 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         SubmitResult submitResult = doSubmit(src, timeout);
         assertValidSubmit(submitResult);
     }
-    @Test
-    public void shouldGetZeroPointsForSuccessOnTooLateAttempt() throws Exception {
-         startSelectedAssignmment();
+
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldGetZeroPointsForSuccessOnTooLateAttempt(String assignment) throws Exception {
+         startSelectedAssignmment(assignment);
          Duration timeout = createDurationThatIsLarge();
          SourceMessage src = createSourceMessageWithNoTimeout();
          insertArrivalDetails(src, Instant.now().plusSeconds(60*10).toEpochMilli());

@@ -93,9 +93,9 @@ public class CompileService {
                 .getJavaVersion(input
                         .getJavaVersion());
 
-        log.info("supplyAsync.javaCompile " + compileRequest.getSourceMessage().getAssignmentName() + " " + javaVersion);
+        log.info("supplyAsync.javaCompile {} {}{}", compileRequest.getSourceMessage().getAssignmentName(), javaVersion, input.isJavaPreviewEnabled()?" with preview features.":" without preview features.");
         // compile code.
-        return CompletableFuture.supplyAsync(() -> javaCompile(javaVersion, compileRequest, compileInputWrapper), executor);
+        return CompletableFuture.supplyAsync(() -> javaCompile(javaVersion, input.isJavaPreviewEnabled(), compileRequest, compileInputWrapper), executor);
     }
 
     public static class CompileInputWrapper {
@@ -267,7 +267,7 @@ public class CompileService {
         return safePathForEarchOperatingSystem;
     }
 
-    private CompileResult javaCompile(Languages.JavaVersion javaVersion, CompileRequest compileRequest, CompileInputWrapper compileInputWrapper) {
+    private CompileResult javaCompile(Languages.JavaVersion javaVersion, boolean enablePreviewFeatures, CompileRequest compileRequest, CompileInputWrapper compileInputWrapper) {
         compileInputWrapper.startTimeSinceQueue = Instant.now();
         // TODO should not be here.
         AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(compileInputWrapper.assignment, compileInputWrapper.state.getCompetitionSession(), compileRequest.getTeam());
@@ -309,7 +309,7 @@ public class CompileService {
                 cmd.add("-Xlint:all");
                 boolean isWebModus = HttpUtil.getCurrentHttpRequest()!=null;
                 // online in webmodus preview features are enabled (during testing preview features are disabled).
-                if (javaVersion.getVersion() >= 12 && isWebModus) {
+                if (javaVersion.getVersion() >= 11 && enablePreviewFeatures) {
                     cmd.add("--enable-preview");
                     cmd.add("--release");
                     cmd.add("" + javaVersion.getVersion());

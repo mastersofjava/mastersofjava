@@ -16,19 +16,16 @@
 */
 package nl.moj.server.compiler;
 
+import nl.moj.server.TaskControlController;
+import nl.moj.server.compiler.service.CompileService;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import nl.moj.server.TaskControlController;
-import nl.moj.server.compiler.service.CompileService;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-
-@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class CompileServiceTest {
 
@@ -39,7 +36,7 @@ public class CompileServiceTest {
     private CompileService compileService;
 
     @Test
-    @Ignore
+    @Disabled
     public void doesNotCompileUncompilableCode() {
 
         //taskControlController.scanAssignments("practice-assignments");

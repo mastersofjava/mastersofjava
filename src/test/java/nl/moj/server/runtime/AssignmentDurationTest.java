@@ -16,20 +16,17 @@
 */
 package nl.moj.server.runtime;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.OrderedAssignment;
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 @SpringBootTest
 public class AssignmentDurationTest extends BaseRuntimeTest {
 

@@ -67,44 +67,4 @@ public class WebConfiguration {
     public SessionRegistry sessionRegistry() {
         return new SessionRegistryImpl();
     }
-    @KeycloakConfiguration
-    @EnableGlobalMethodSecurity(jsr250Enabled = true)
-    public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
-
-        // Submits the KeycloakAuthenticationProvider to the AuthenticationManager
-        @Autowired
-        public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-            KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
-            keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
-            auth.authenticationProvider(keycloakAuthenticationProvider);
-        }
-
-        @Bean
-        public KeycloakSpringBootConfigResolver KeycloakConfigResolver() {
-            return new KeycloakSpringBootConfigResolver();
-        }
-
-        @Bean
-        @Override
-        protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
-            return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
-        }
-
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-            return new BCryptPasswordEncoder();
-        }
-
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            super.configure(http);
-            http.authorizeRequests()
-                    .antMatchers("/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico").permitAll()
-                    .antMatchers("/play", "/feedback", "/rankings").hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
-                    .antMatchers("/control", "/bootstrap","/assignmentAdmin").hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
-                    .anyRequest().authenticated()
-                    .and().headers().frameOptions().disable()
-                    .and().csrf().disable();
-        }
-    }
 }

@@ -1,24 +1,19 @@
 package nl.moj.server.harnas;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.OrderedAssignment;
-import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.BaseRuntimeTest;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentStatus;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.UUID;
 
-@RunWith(SpringRunner.class)
+import static org.assertj.core.api.Assertions.assertThat;
+
 @SpringBootTest
 @Slf4j
 public class CompetitionRuntimeTest extends BaseRuntimeTest {
@@ -36,11 +31,11 @@ public class CompetitionRuntimeTest extends BaseRuntimeTest {
         assertThat(competitionRuntime.getAssignmentInfoOrderedForCompetition().size()).isEqualTo(4);
         UUID assignmentUuid = competitionRuntime.getCompetition().getAssignments().get(0).getAssignment().getUuid();
         assertThat(competitionRuntime.getSolutionFiles(assignmentUuid).size()).isEqualTo(0);
-        assertThat(competitionRuntime.getTeamSolutionFiles(assignmentUuid,this.getTeam()).size()).isEqualTo(0);
+        assertThat(competitionRuntime.getTeamSolutionFiles(assignmentUuid, this.getTeam()).size()).isEqualTo(0);
         assertThat(competitionRuntime.getCompetitionState().getCompletedAssignments().size()).isEqualTo(0);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void handleLateSignup() throws Exception {
         String name = "parallel";

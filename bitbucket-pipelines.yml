@@ -3,7 +3,7 @@
 # Only use spaces to indent your .yml configuration.
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
-image: maven:3.5-jdk-11-slim
+image: maven:3.8-openjdk-17-slim
 
 pipelines:
   default:
@@ -11,29 +11,29 @@ pipelines:
       caches:
         - maven
       script:
-        - mvn -B clean install
+        - mvn -B clean verify
   branches:
     master:
     - step:
         caches:
         - maven
         script:
-        - mvn -B clean install
+        - mvn -B clean verify
     develop:
     - step:
         caches:
         - maven
         script:
-        - mvn -B clean install
+        - mvn -B clean verify
     feature/*:
     - step:
         caches:
         - maven
         script:
-        - mvn -B clean install
+        - mvn -B clean verify
     bugfix/*:
     - step:
         caches:
         - maven
         script:
-        - mvn -B clean install
+        - mvn -B clean verify

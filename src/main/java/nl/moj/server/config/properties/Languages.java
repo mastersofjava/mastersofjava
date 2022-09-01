@@ -16,16 +16,16 @@
 */
 package nl.moj.server.config.properties;
 
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.util.JavaVersionUtil;
+import org.apache.commons.lang3.StringUtils;
+
 import javax.validation.constraints.NotEmpty;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.util.JavaVersionUtil;
-import org.apache.commons.lang3.StringUtils;
 
 @Data
 @Slf4j
@@ -38,16 +38,14 @@ public class Languages {
 
         log.debug("Configured versions: ");
         javaVersions.forEach(jv -> {
-            if (jv.getVersion()==version) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Version " + jv.getVersion());
-                sb.append("  Compiler " + jv.getCompiler());
-                sb.append("  Runtime " + jv.getRuntime());
-                sb.append("  -> available =  " + isAvailable(jv));
-                sb.append("  -> version ok =  " + (jv.getVersion() >= version));
-                sb.append("  -> version runtime = " + JavaVersionUtil.getRuntimeMajorVersion(jv));
-                log.debug(sb.toString());
-            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("Version " + jv.getVersion());
+            sb.append("  Compiler " + jv.getCompiler());
+            sb.append("  Runtime " + jv.getRuntime());
+            sb.append("  -> available =  " + isAvailable(jv));
+            sb.append("  -> version ok =  " + (jv.getVersion() >= version));
+            sb.append("  -> version runtime = " + JavaVersionUtil.getRuntimeMajorVersion(jv));
+            log.debug(sb.toString());
         });
 
         return javaVersions.stream()

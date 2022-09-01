@@ -16,15 +16,6 @@
 */
 package nl.moj.server.runtime;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
@@ -46,10 +37,19 @@ import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.repository.UserRepository;
 import nl.moj.server.util.PathUtil;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static nl.moj.server.TestUtil.classpathResourceToPath;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,7 +90,7 @@ public abstract class BaseRuntimeTest {
     @Getter
     private User user;
 
-    @Before
+    @BeforeEach
     public void init() throws Exception {
         try {
             bootstrapService.bootstrap();
@@ -103,7 +103,7 @@ public abstract class BaseRuntimeTest {
         }
     }
 
-    @After
+    @AfterEach
     public void cleanup() throws IOException {
         competitionRuntime.stopCurrentSession();
         dbUtil.cleanup();
@@ -166,7 +166,7 @@ public abstract class BaseRuntimeTest {
     }
 
     protected OrderedAssignment getAssignment(String name) {
-        Assert.isTrue(name!=null,"invalid name used");
+        Assert.isTrue(name != null, "invalid name used");
         return getCompetition().getAssignments()
                 .stream()
                 .filter(a -> a.getAssignment().getName().equals(name))

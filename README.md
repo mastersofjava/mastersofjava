@@ -12,7 +12,7 @@ The game server uses Spring Boot,Keycloak, Thymeleaf, H2 database and Websockets
 
 ### Requirements
 
-- Java 11+
+- Java 17+
 - Maven 3.5+
 - [Keycloak](www.keycloak.org)
 

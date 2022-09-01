@@ -13,7 +13,7 @@ labels:
   - algorithm
 
 difficulty: 3
-java-version: 8
+java-version: 17
 duration: PT15S
 submit-timeout: PT5S
 test-timeout: PT2S

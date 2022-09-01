@@ -47,6 +47,8 @@ public class AssignmentDescriptor {
     private Integer difficulty;
     @JsonProperty("java-version")
     private Integer javaVersion;
+    @JsonProperty(value = "java-preview-enabled",defaultValue = "true")
+    private boolean javaPreviewEnabled;
     @JsonProperty("duration")
     private Duration duration;
     @JsonProperty("submit-timeout")

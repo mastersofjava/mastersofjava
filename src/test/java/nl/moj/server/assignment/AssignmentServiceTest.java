@@ -23,9 +23,8 @@ import nl.moj.server.DbUtil;
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -33,7 +32,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import static nl.moj.server.TestUtil.classpathResourceToPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest
 public class AssignmentServiceTest {
 
@@ -43,7 +41,7 @@ public class AssignmentServiceTest {
     @Autowired
     private DbUtil dbUtil;
 
-    @Before
+    @BeforeEach
     public void before() {
         dbUtil.cleanup();
     }
