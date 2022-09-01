@@ -17,6 +17,7 @@
 package nl.moj.server.teams.service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -74,6 +75,8 @@ public class TeamService {
                         teamFiles.add(f.toBuilder()
                                 .content(readPathContent(resolvedFile))
                                 .build());
+                    } else if( f.getFileType().isContentHidden()){
+                        teamFiles.add(f.toBuilder().content("-- content intentionally hidden --".getBytes(StandardCharsets.UTF_8)).build());
                     } else {
                         teamFiles.add(f.toBuilder().build());
                     }

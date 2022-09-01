@@ -68,6 +68,9 @@ public class JavaAssignmentFileResolver {
         testSources.getHiddenTests().forEach(p -> {
             originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testSources.getBase(), p, AssignmentFileType.HIDDEN_TEST, true));
         });
+        testSources.getInvisibleTests().forEach(p -> {
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testSources.getBase(), p, AssignmentFileType.INVISIBLE_TEST, true));
+        });
 
         // get all test resources
         TestResources testResources = ad.getAssignmentFiles().getTestResources();
@@ -76,6 +79,9 @@ public class JavaAssignmentFileResolver {
         });
         testResources.getHiddenFiles().forEach(p -> {
             originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testResources.getBase(), p, AssignmentFileType.HIDDEN_TEST_RESOURCE, true));
+        });
+        testResources.getInvisibleFiles().forEach(p -> {
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testResources.getBase(), p, AssignmentFileType.INVISIBLE_TEST_RESOURCE, true));
         });
 
         // get all solution files
@@ -91,6 +97,7 @@ public class JavaAssignmentFileResolver {
     public AssignmentFile convertToAssignmentFile(String assignment, Path assignmentBase, Path prefix, Path file, AssignmentFileType type, boolean readOnly) {
         return convertToAssignmentFile(assignment, assignmentBase, prefix, file, type, readOnly, UUID.randomUUID());
     }
+
     public AssignmentFile convertToAssignmentFile(String assignment, Path assignmentBase, Path prefix, Path file, AssignmentFileType type, boolean readOnly, UUID uuid) {
         Path ap = assignmentBase;
         Path bp = assignmentBase;

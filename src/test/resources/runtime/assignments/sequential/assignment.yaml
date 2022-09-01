@@ -37,9 +37,13 @@ assignment-files:
       - VisibleTest.java
     hidden-tests:
       - HiddenTest.java
+    invisible-tests:
+      - InvisibleTest.java
   test-resources:
     base: src/test/resources
     files:
       - test-data.txt
+    invisible-files:
+      - invisible-data.txt
   solution:
     - assets/solution/Assignment.java

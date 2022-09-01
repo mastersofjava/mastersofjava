@@ -56,13 +56,15 @@ public class ActiveAssignment {
 
     public List<AssignmentFile> getTestFiles() {
         return assignmentFiles
-                .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST)
+                .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST ||
+                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
                 .collect(Collectors.toList());
     }
 
     public List<AssignmentFile> getSubmitTestFiles() {
         return assignmentFiles
                 .stream().filter(f -> f.getFileType() == AssignmentFileType.HIDDEN_TEST ||
+                                f.getFileType() == AssignmentFileType.INVISIBLE_TEST ||
                         f.getFileType() == AssignmentFileType.TEST)
                 .collect(Collectors.toList());
     }

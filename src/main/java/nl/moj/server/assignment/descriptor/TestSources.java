@@ -37,6 +37,9 @@ public class TestSources {
     @JsonProperty("hidden-tests")
     private List<Path> hiddenTests;
 
+    @JsonProperty("invisible-tests")
+    private List<Path> invisibleTests;
+
     public List<Path> getTests() {
         if (tests == null) {
             return Collections.emptyList();
@@ -49,5 +52,12 @@ public class TestSources {
             return Collections.emptyList();
         }
         return hiddenTests;
+    }
+
+    public List<Path> getInvisibleTests() {
+        if (invisibleTests == null) {
+            return Collections.emptyList();
+        }
+        return invisibleTests;
     }
 }

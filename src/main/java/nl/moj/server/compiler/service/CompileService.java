@@ -140,7 +140,8 @@ public class CompileService {
                     .filter(f -> f.getFileType() == AssignmentFileType.READONLY ||
                             f.getFileType() == AssignmentFileType.TEST ||
                             f.getFileType() == AssignmentFileType.HIDDEN_TEST ||
-                            f.getFileType() == AssignmentFileType.HIDDEN)
+                            f.getFileType() == AssignmentFileType.HIDDEN ||
+                            f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
                     .collect(Collectors.toList());
         }
 
@@ -156,7 +157,8 @@ public class CompileService {
                     .stream()
                     .filter(f -> f.getFileType() == AssignmentFileType.RESOURCE ||
                             f.getFileType() == AssignmentFileType.TEST_RESOURCE ||
-                            f.getFileType() == AssignmentFileType.HIDDEN_TEST_RESOURCE)
+                            f.getFileType() == AssignmentFileType.HIDDEN_TEST_RESOURCE ||
+                            f.getFileType() == AssignmentFileType.INVISIBLE_TEST_RESOURCE )
                     .collect(Collectors.toList());
         }
 

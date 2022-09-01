@@ -17,24 +17,32 @@
 package nl.moj.server.runtime.model;
 
 public enum AssignmentFileType {
-    TEST(true),
-    HIDDEN_TEST(false),
-    EDIT(true),
-    READONLY(true),
-    HIDDEN(false),
-    TASK(true),
-    SOLUTION(false),
-    RESOURCE(true),
-    TEST_RESOURCE(true),
-    HIDDEN_TEST_RESOURCE(false);
+    TEST(true, false),
+    HIDDEN_TEST(false, true),
+    EDIT(true, false),
+    READONLY(true, false),
+    HIDDEN(false, true),
+    TASK(true, false),
+    SOLUTION(false, true),
+    RESOURCE(true, false),
+    TEST_RESOURCE(true, false),
+    HIDDEN_TEST_RESOURCE(false, true),
+    INVISIBLE_TEST(true, true),
+    INVISIBLE_TEST_RESOURCE(true, true);
 
     private boolean visible;
+    private boolean contentHidden;
 
-    AssignmentFileType(boolean visible) {
+    AssignmentFileType(boolean visible, boolean contentHidden) {
         this.visible = visible;
+        this.contentHidden = contentHidden;
     }
 
     public boolean isVisible() {
         return this.visible;
+    }
+
+    public boolean isContentHidden() {
+        return this.contentHidden;
     }
 }
