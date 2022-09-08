@@ -22,7 +22,7 @@ public class TeamController {
     private final UserService userService;
 
     @PostMapping("/team")
-    public String createTeam(@AuthenticationPrincipal Principal principal, @ModelAttribute("teamForm") TeamForm form) {
+    public String createTeam(Principal principal, @ModelAttribute("teamForm") TeamForm form) {
         User user = userService.createOrUpdate(principal);
         if (user.getTeam() == null ) {
 			Team team = teamService.createTeam(form.getName(),form.getCompany(), form.getCountry());

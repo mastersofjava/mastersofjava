@@ -43,6 +43,7 @@ keycloak:
   resource: moj
   public-client: true
   principal-attribute: subject
+  use-resource-role-mappings: true
 
 spring:
   h2:

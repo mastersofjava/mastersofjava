@@ -26,27 +26,51 @@ Make sure you update the application.yaml to it works for the machine that is ru
 
 #### Keycloak installation, execution and configuration
 
-The procedure below is based on [this tutorial](https://www.baeldung.com/spring-boot-keycloak) but could change based on differences in versions
-- Download the latest standalone keycloak-server from the link on the page [here](https://www.keycloak.org/getting-started/getting-started-zip)
+Use the following steps to get Keycloak up and running.
+
+- Download the latest standalone keycloak 19 from the link on the page [here](https://www.keycloak.org/getting-started/getting-started-zip)
 - Unpack the installation file to a directory
 - Copy the `src/main/keycloak-template/moj` directory from this project to `themes` directory within the keycloak 
   installation directory 
-- Run it using `bin/standalone.sh -Djboss.socket.binding.port-offset=100` or `bin/standalone.bat -Djboss.socket.binding.port-offset=100`
-- Go the webpage at http://localhost:8180
+- Run it using `bin/kc.sh --hostname localhost --hostname-strict-https false --http-enabled true --http-port 8888`
+- Go the webpage at http://localhost:8888
    * Create an admin account and log in
-   * Hover on the word 'Master' at the left-top of the webpage and select 'Add realm'
-        * Name the new realm `moj`
-        * Click on 'Import' - 'Select file' and select the file `moj-keycloak-realm-export.json` in the root of this project
-   * Navigate on the left menu to 'Clients'
-        * Click on 'Create'
-        * enter Client ID: `moj` and click on save
-   * Navigate on the left menu to 'Users' 
-        * Click on 'Add user'
-        * add 'Username': `admin`, enter a password, and click on save
-        * Click on 'View all users'
-        * Select on the id of the user with username `admin`
-        * click on tab 'Role mappings'
-            * add role 'ROLE_ADMIN' and 'ROLE_GAME_MASTER'
+   * Open the top left dropdown and select 'Add realm'
+     * Click on 'Browse' and select the file `keycloak-19-moj-realm.json` in the root of this project
+     * Click 'Create'
+   * Click on 'Realm settings' in the menu bar on the left. 
+     * Click on 'Partial import' from the top right 'Action' dropdown.
+     * Click on 'Browse' and select the file `keycloak-19-moj-realm.json` in the root of this project again
+     * Select all checkboxes under 'Choose the resources you want to import'
+     * Select 'Skip' as resolution for resources already existing
+     * Click 'Import' and then 'Close'
+     * Due to https://github.com/keycloak/keycloak/issues/12256 the following steps need to be done also.
+       * Update the 'Display name' to 'Masters of Java' (see )
+       * Click the 'Login' tab and enable 'User registration'.
+       * Click the 'User registration tab' and then the tab 'Default groups'
+         * Click 'Add groups'
+         * Click `>` behind the `moj` group
+         * Select `users` and click 'Add'
+       * Click the 'General' tab and then 'Save'
+  * Click on 'Users' in the menu bar on the left.
+    * Click on 'Create new user' and fill in the following form values:
+      * Username: `admin`
+      * Email: <a valid email address>
+      * Email verified: toggle to 'On'
+      * Firstname: 'A'
+      * Lastname: 'Admin'
+      * Enabled: toggle to 'On'
+      * Required user actions: leave blank
+      * Click 'Join Groups'
+        * Click `>` behind the `moj` group
+        * Select `admins`
+        * Click 'Join' and then 'Create'
+      * Click on the 'Credentials' tab and then on 'Set password'
+        * Fill in the two password fields with the same password
+        * Toggle 'Temporary' to off
+        * Click 'Save' and then 'Save password'
+   
+You should now have Keycloak running with a single admin user.
             
 #### Starting
 - From any IDE you can just run the `MojServerApplication.class`

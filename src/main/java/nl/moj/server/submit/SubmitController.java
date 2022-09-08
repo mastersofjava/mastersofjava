@@ -40,7 +40,7 @@ public class SubmitController {
     private UserService userService;
 
     @MessageMapping("/compile")
-    public void compile(SourceMessage message, @AuthenticationPrincipal Principal principal, MessageHeaders headers)
+    public void compile(SourceMessage message, Principal principal, MessageHeaders headers)
             throws Exception {
         User user = userService.findUser(principal);
         submitService.compile(SubmitRequest.builder()
@@ -51,7 +51,7 @@ public class SubmitController {
     }
 
     @MessageMapping("/test")
-    public void test(SourceMessage message, @AuthenticationPrincipal Principal principal, MessageHeaders headers)
+    public void test(SourceMessage message, Principal principal, MessageHeaders headers)
             throws Exception {
         User user = userService.findUser(principal);
         try {
@@ -76,7 +76,7 @@ public class SubmitController {
      * @throws Exception
      */
     @MessageMapping("/submit")
-    public void submit(SourceMessage message, @AuthenticationPrincipal Principal principal, MessageHeaders mesg)
+    public void submit(SourceMessage message, Principal principal, MessageHeaders mesg)
             throws Exception {
         User user = userService.findUser(principal);
         submitService.submit(SubmitRequest.builder()

@@ -519,7 +519,7 @@ public class TaskControlController {
 
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     @GetMapping("/control")
-    public String taskControl(Model model, @AuthenticationPrincipal Authentication principal, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
+    public String taskControl(Model model, Authentication principal, @ModelAttribute("selectSessionForm") SelectSessionForm ssf,
                               @ModelAttribute("newPasswordRequest") NewPasswordRequest npr) {
         // TODO maybe move this creat or update stuff to a filter.
         User user = userService.createOrUpdate(principal);

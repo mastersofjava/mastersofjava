@@ -94,7 +94,7 @@ public class GameController {
     }
 
     @GetMapping("/play")
-    public String index(Model model, @AuthenticationPrincipal Principal principal, @ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
+    public String index(Model model, Principal principal, @ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
 
         User user = userService.createOrUpdate(principal);
         Team team = user.getTeam();

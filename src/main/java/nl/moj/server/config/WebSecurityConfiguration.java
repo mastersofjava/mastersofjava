@@ -22,10 +22,12 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
 public class WebSecurityConfiguration extends KeycloakWebSecurityConfigurerAdapter {
 
     // Submits the KeycloakAuthenticationProvider to the AuthenticationManager
-    //@Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) {
+        SimpleAuthorityMapper simpleAuthorityMapper = new SimpleAuthorityMapper();
+        simpleAuthorityMapper.setConvertToUpperCase(true);
         KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
-        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
+        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(simpleAuthorityMapper);
         auth.authenticationProvider(keycloakAuthenticationProvider);
     }
 
@@ -33,11 +35,6 @@ public class WebSecurityConfiguration extends KeycloakWebSecurityConfigurerAdapt
     @Override
     protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
         return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     @Override

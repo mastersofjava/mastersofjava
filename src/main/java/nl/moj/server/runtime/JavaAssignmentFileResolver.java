@@ -34,6 +34,7 @@ import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
 
 @Slf4j
@@ -128,7 +129,7 @@ public class JavaAssignmentFileResolver {
             TikaInputStream stream = TikaInputStream.get(file);
 
             Metadata metadata = new Metadata();
-            metadata.add(Metadata.RESOURCE_NAME_KEY, file.getFileName().toString());
+            metadata.add(TikaCoreProperties.RESOURCE_NAME_KEY, file.getFileName().toString());
             return detector.detect(stream, metadata);
         } catch (Exception e) {
             log.warn("Unable to determine MediaType for {}, assuming text/plain.", e);
