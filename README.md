@@ -32,7 +32,7 @@ Use the following steps to get Keycloak up and running.
 - Unpack the installation file to a directory
 - Copy the `src/main/keycloak-template/moj` directory from this project to `themes` directory within the keycloak 
   installation directory 
-- Run it using `bin/kc.sh --hostname localhost --hostname-strict-https false --http-enabled true --http-port 8888`
+- Run it using `bin/kc.sh start --hostname localhost --hostname-strict-https false --http-enabled true --http-port 8888`
 - Go the webpage at http://localhost:8888
    * Create an admin account and log in
    * Open the top left dropdown and select 'Add realm'
