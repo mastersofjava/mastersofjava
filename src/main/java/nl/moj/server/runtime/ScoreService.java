@@ -211,6 +211,8 @@ public class ScoreService {
                 .map(tc -> tc.getName().toLowerCase() )
                 .collect(Collectors.toSet());
 
+        log.info("team {}[{}] will get test bonus for {}", as.getTeam().getName(), as.getTeam().getUuid(), String.join(",",succeededTestCases));
+
         if (!succeededTestCases.isEmpty()) {
             boolean useDefaultBonus = configuration.getLabels().stream().noneMatch( l -> l.startsWith("test"));
             if (useDefaultBonus) {
@@ -224,8 +226,10 @@ public class ScoreService {
         Map<String, Integer> configDetails = new LinkedHashMap<>();
         long sum = 0;
         for (String label: configuration.getLabels()) {
-            String[] parts = label.split("_");
-            configDetails.put(parts[0].toLowerCase(), Integer.parseInt(parts[1]));
+            if( label.startsWith("test") && label.contains("_")) {
+                String[] parts = label.split("_");
+                configDetails.put(parts[0].toLowerCase(), Integer.parseInt(parts[1]));
+            }
         }
 
         for (String testCase: succeededTestCases) {

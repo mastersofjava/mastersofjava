@@ -50,7 +50,8 @@ public class ActiveAssignment {
 
     public List<String> getTestNames() {
         return assignmentFiles
-                .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST)
+                .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST ||
+                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
                 .map(AssignmentFile::getName).collect(Collectors.toList());
     }
 
