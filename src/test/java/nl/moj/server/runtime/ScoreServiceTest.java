@@ -41,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -73,11 +74,18 @@ public class ScoreServiceTest {
     }
 
     private ActiveAssignment prepareAssignmentStatus(Team team, Long initialScore, Integer testRuns,
-                                                     Integer totalTestCases, Integer successTestCases,
+                                                              List<String> totalTestCases, Integer successTestCases,
+                                                              Integer submits, boolean lastSubmitSuccess, ScoringRules scoringRules) {
+        return prepareAssignmentStatus(team, Collections.emptyList(),initialScore,testRuns,totalTestCases,successTestCases,
+                submits,lastSubmitSuccess,scoringRules);
+    }
+
+    private ActiveAssignment prepareAssignmentStatus(Team team, List<String> labels, Long initialScore, Integer testRuns,
+                                                     List<String> totalTestCases, Integer successTestCases,
                                                      Integer submits, boolean lastSubmitSuccess, ScoringRules scoringRules) {
         AssignmentDescriptor ad = new AssignmentDescriptor();
         ad.setScoringRules(scoringRules);
-        ad.setLabels(new ArrayList<>());
+        ad.setLabels(labels);
         List<TestAttempt> testAttempts = createTestAttempts(testRuns, totalTestCases, successTestCases);
         List<SubmitAttempt> submitAttempts = createSubmitAttempts(submits, lastSubmitSuccess, totalTestCases, successTestCases);
 
@@ -102,7 +110,7 @@ public class ScoreServiceTest {
                 .build();
     }
 
-    private List<SubmitAttempt> createSubmitAttempts(int count, boolean lastSubmitSuccess, int totalTestCases, int successTestCases) {
+    private List<SubmitAttempt> createSubmitAttempts(int count, boolean lastSubmitSuccess, List<String> totalTestCases, int successTestCases) {
         List<SubmitAttempt> sa = new ArrayList<>();
         Instant now = Instant.now();
         for (int i = 0; i < count; i++) {
@@ -118,22 +126,22 @@ public class ScoreServiceTest {
         return sa;
     }
 
-    private TestAttempt createTestAttempt(Instant now, int totalTestCases, int successTestCases) {
+    private TestAttempt createTestAttempt(Instant now, List<String> totalTestCases, int successTestCases) {
         TestAttempt ta = new TestAttempt();
         ta.setAssignmentStatus(assignmentStatus);
         ta.setTestCases(new ArrayList<>());
-        for (int j = 0; j < totalTestCases; j++) {
+        for (int j = 0; j < totalTestCases.size(); j++) {
             ta.getTestCases().add(TestCase.builder()
                     .testAttempt(ta)
                     .dateTimeStart(now.plusSeconds(j * 3))
-                    .name("test-" + j)
+                    .name(totalTestCases.get(j))
                     .success(j < successTestCases)
                     .build());
         }
         return ta;
     }
 
-    private List<TestAttempt> createTestAttempts(int count, int totalTestCases, int successTestCases) {
+    private List<TestAttempt> createTestAttempts(int count, List<String> totalTestCases, int successTestCases) {
         List<TestAttempt> attempts = new ArrayList<>();
         Instant now = Instant.now();
         for (int i = 0; i < count; i++) {
@@ -160,7 +168,7 @@ public class ScoreServiceTest {
     @Test
     public void scoreShouldNotGoBelowZero() {
         ScoringRules scoringRules = prepareScoringRules(null, null, 0, "1000");
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 1, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -177,7 +185,7 @@ public class ScoreServiceTest {
     public void shouldUseGlobalSuccessBonus() {
         ScoringRules scoringRules = prepareScoringRules(null, null, null, null);
 
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 1, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -194,7 +202,7 @@ public class ScoreServiceTest {
     public void failedSubmitHasScore() {
         ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
 
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 2, 2, false, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -211,7 +219,7 @@ public class ScoreServiceTest {
     public void successSubmitHasScore() {
         ScoringRules scoringRules = prepareScoringRules(1, "500", 500, "100");
 
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 2, 2, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -224,12 +232,63 @@ public class ScoreServiceTest {
         Assertions.assertThat(ar.getBonus()).isEqualTo(700L);
     }
 
+    @Test
+    public void failedSubmitHasTestSuccessScoresWithAllTestsOK() {
+        ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
+
+        ActiveAssignment state = prepareAssignmentStatus(team, List.of("test1_75", "test2_150"), 2000L, 1, List.of("Test1.java", "Test2.java"),
+                2, 1, false, scoringRules);
+
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
+
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(0L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(225L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(225L);
+    }
+
+    @Test
+    public void successSubmitHasTestSuccessScoresWithAllTestsOK() {
+        ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
+
+        ActiveAssignment state = prepareAssignmentStatus(team, List.of("test1_75", "test2_150"), 2000L, 1, List.of("Test1.java", "Test2.java"),
+                2, 1, true, scoringRules);
+
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
+
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(2225L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(225L);
+    }
+
+    @Test
+    public void failedSubmitHasTestSuccessScores() {
+        ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
+
+        ActiveAssignment state = prepareAssignmentStatus(team, List.of("test1_75", "test2_150"), 2000L, 1, List.of("Test1.java", "Test2.java"),
+                1, 1, false, scoringRules);
+
+        AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
+        AssignmentResult ar = as.getAssignmentResult();
+
+        Assertions.assertThat(ar).isNotNull();
+        Assertions.assertThat(ar.getInitialScore()).isEqualTo(0L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(75L);
+        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(75L);
+    }
+
     // Submit Penalties
 
     @Test
     public void shouldHaveFixedResubmitPenalties() {
         ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 3, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -245,7 +304,7 @@ public class ScoreServiceTest {
     @Test
     public void shouldHaveNoFixedResubmitPenaltyOnFirstSubmit() {
         ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 1, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -261,7 +320,7 @@ public class ScoreServiceTest {
     @Test
     public void shouldHavePercentageResubmitPenalties() {
         ScoringRules scoringRules = prepareScoringRules(2, "25%", 0, null);
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 3, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -277,7 +336,7 @@ public class ScoreServiceTest {
     @Test
     public void shouldHaveNoPercentageResubmitPenaltyOnFirstSubmit() {
         ScoringRules scoringRules = prepareScoringRules(2, "25%", 0, null);
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 1, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -295,7 +354,7 @@ public class ScoreServiceTest {
     public void invalidResubmitPenaltiesUsesZeroValue() {
         ScoringRules scoringRules = prepareScoringRules(2, "foo", 0, null);
 
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 2, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -313,7 +372,7 @@ public class ScoreServiceTest {
     @Test
     public void shouldHaveFixedTestPenalties() {
         ScoringRules scoringRules = prepareScoringRules(2, null, 0, "50");
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 2, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 2, List.of("test1", "test2"),
                 0, 2, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -329,7 +388,7 @@ public class ScoreServiceTest {
     @Test
     public void shouldHavePercentageTestPenalties() {
         ScoringRules scoringRules = prepareScoringRules(2, null, 0, "5%");
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 1, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);
@@ -345,7 +404,7 @@ public class ScoreServiceTest {
     @Test
     public void invalidTestPenaltiesUsesZeroValue() {
         ScoringRules scoringRules = prepareScoringRules(2, null, 0, "foo");
-        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, 2,
+        ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 2, true, scoringRules);
 
         AssignmentStatus as = scoreService.finalizeScore(assignmentStatus, state);

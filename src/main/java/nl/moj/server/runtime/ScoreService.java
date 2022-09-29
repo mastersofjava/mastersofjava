@@ -18,12 +18,7 @@ package nl.moj.server.runtime;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -37,6 +32,7 @@ import nl.moj.server.runtime.model.Score;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
+import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -202,43 +198,38 @@ public class ScoreService {
     }
 
     /**
-     * Test bonus is given even if last submit attempt failed.
+     * Test bonus is always applied and based on the unique set of tests
+     * completed over all test attempts and submit attempts.
      * - default: timeRemaining * 0.05 * succesvolle tests.
      * - per individuele test: volgens geconfigureerde score.
      */
     private long calculateTestBonus(Long timeRemaining, AssignmentStatus as,AssignmentDescriptor configuration) {
-        Optional<SubmitAttempt> sa = getLastSubmitAttempt(as);
-        boolean isWithTestAttempts = sa.isPresent() && sa.get().getTestAttempt() != null
-                && !sa.get().getTestAttempt().getTestCases().isEmpty();
-        if (isWithTestAttempts) {
-            boolean isDefault = true;
-            if (!configuration.getLabels().isEmpty()) {
-                isDefault = !configuration.getLabels().get(0).startsWith("test");
+        //
+        Set<String> succeededTestCases = Optional.ofNullable(as.getTestAttempts()).orElse(Collections.emptyList()).stream()
+                .flatMap(ta -> ta.getTestCases().stream() )
+                .filter(TestCase::isSuccess)
+                .map(tc -> tc.getName().toLowerCase() )
+                .collect(Collectors.toSet());
+
+        if (!succeededTestCases.isEmpty()) {
+            boolean useDefaultBonus = configuration.getLabels().stream().noneMatch( l -> l.startsWith("test"));
+            if (useDefaultBonus) {
+                return Math.max(Math.round(timeRemaining * 0.05), 10) * succeededTestCases.size();
             }
-            log.info("isDefault " +isDefault + " " + configuration.getLabels() );
-            if (isDefault) {
-                long successTestCount = sa.get()
-                        .getTestAttempt()
-                        .getTestCases()
-                        .stream()
-                        .filter(TestCase::isSuccess)
-                        .count();
-                return Math.max(Math.round(timeRemaining * 0.05), 10) * successTestCount;
-            }
-            return calculateTestBonusViaConfiguration(sa.get(), configuration);
+            return calculateTestBonusViaConfiguration(succeededTestCases, configuration);
         }
         return 0L;
     }
-    private long calculateTestBonusViaConfiguration(SubmitAttempt sa,AssignmentDescriptor configuration) {
+    private long calculateTestBonusViaConfiguration(Set<String> succeededTestCases ,AssignmentDescriptor configuration) {
         Map<String, Integer> configDetails = new LinkedHashMap<>();
         long sum = 0;
         for (String label: configuration.getLabels()) {
             String[] parts = label.split("_");
             configDetails.put(parts[0].toLowerCase(), Integer.parseInt(parts[1]));
         }
-        List<TestCase> successList = sa.getTestAttempt().getTestCases().stream().filter(TestCase::isSuccess).collect(Collectors.toList());
-        for (TestCase testCase: successList) {
-            String key = testCase.getName().replace(".java","").toLowerCase();
+
+        for (String testCase: succeededTestCases) {
+            String key = testCase.replace(".java","").toLowerCase();
             if (configDetails.containsKey(key)) {
                 sum += configDetails.get(key);
             }
