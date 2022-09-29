@@ -37,7 +37,6 @@ import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import nl.moj.server.util.HttpUtil;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
@@ -46,6 +45,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import java.security.Principal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -93,8 +93,14 @@ public class GameController {
         return result;
     }
 
+    @GetMapping("/")
+    public String index(Model model) {
+        model.addAttribute("year", LocalDate.now().getYear());
+        return "index";
+    }
+
     @GetMapping("/play")
-    public String index(Model model, Principal principal, @ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
+    public String play(Model model, Principal principal, @ModelAttribute("selectSessionForm") TaskControlController.SelectSessionForm ssf) {
 
         User user = userService.createOrUpdate(principal);
         Team team = user.getTeam();

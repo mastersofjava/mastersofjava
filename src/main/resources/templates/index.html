@@ -11,14 +11,14 @@
         <img class="logo" th:src="@{/public/images/moj_logo.png}"/>
     </div>
     <div class="row">
-        <h1>Masters Of Java 2021</h1>
+        <h1>Masters Of Java [[${year}]]</h1>
     </div>
     <div class="row">
-        <p class="para">Welcome to the Masters of Java 2021. Have a look at the intro movie below to get an idea
+        <p class="para">Welcome to the Masters of Java [[${year}]]. Have a look at the intro movie below to get an idea
             on what to expect. When you are ready to join the game click the Play Now button.</p>
     </div>
     <div class="row">
-        <a href="/play"><img class="button play" th:src="@{/public/images/play-now.png}"></a>
+        <a href="/play"><img class="button play" th:src="@{/public/images/play-now.png}"/></a>
     </div>
     <div class="row">
         <iframe width="800" height="450" src="https://www.youtube.com/embed/CcxUbPsCPdQ" frameborder="0"

@@ -52,7 +52,7 @@ class IndexControllerTest {
 		org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken user = Mockito.mock(org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken.class);
 
 		when(userService.createOrUpdate(user)).thenReturn(new User());
-		assertEquals("createteam", indexController.index(Mockito.mock(Model.class), user, null));
+		assertEquals("createteam", indexController.play(Mockito.mock(Model.class), user, null));
 	}
 
 	@Test
@@ -67,7 +67,7 @@ class IndexControllerTest {
 		when(userService.createOrUpdate(userToken)).thenReturn(user);
 		when(competition.getCompetitionSession()).thenReturn(session);
 		when(competitionSessionRepository.findAll()).thenReturn(sessions);
-		assertEquals("play", indexController.index(Mockito.mock(Model.class), userToken, null));
+		assertEquals("play", indexController.play(Mockito.mock(Model.class), userToken, null));
 
 		Mockito.verify(competitionService, never()).addTeam(Mockito.any(Team.class));
 	}

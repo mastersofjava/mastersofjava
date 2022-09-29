@@ -23,7 +23,6 @@
 
     <properties>
         <java.version>17</java.version>
-        <spring-boot.repackage.skip>true</spring-boot.repackage.skip>
         <moj.image>moj-game-server:17</moj.image>
     </properties>
 
@@ -289,6 +288,7 @@
                     </to>
                     <containerizingMode>packaged</containerizingMode>
                     <container>
+                        <creationTime>${maven.build.timestamp}</creationTime>
                         <ports>8080,5000</ports>
                         <args>--spring.profiles.active=docker</args>
                     </container>

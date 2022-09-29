@@ -94,7 +94,6 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     }
     private void startSelectedAssignmment(String assignment) {
         OrderedAssignment oa = getAssignment(assignment);
-
         competitionRuntime.startAssignment(oa.getAssignment().getName());
     }
     private SubmitResult doValidate(SourceMessage src,Duration timeout) throws Exception {
