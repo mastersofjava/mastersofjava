@@ -214,6 +214,25 @@
         <finalName>moj-game-server</finalName>
         <plugins>
             <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>5.0.0</version>
+                <executions>
+                    <execution>
+                        <id>git-info</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
+                    </includeOnlyProperties>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
@@ -291,6 +310,9 @@
                         <creationTime>${maven.build.timestamp}</creationTime>
                         <ports>8080,5000</ports>
                         <args>--spring.profiles.active=docker</args>
+                        <labels>
+                            <commit>${git.commit.id.abbrev}</commit>
+                        </labels>
                     </container>
                 </configuration>
             </plugin>
