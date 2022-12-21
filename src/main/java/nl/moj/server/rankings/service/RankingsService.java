@@ -83,7 +83,7 @@ public class RankingsService {
                 .stream()
                 .map(oa -> RankingHeader.builder()
                         .orderedAssignment(oa)
-                        .displayName(assignmentService.getAssignmentDescriptor(oa.getAssignment()).getDisplayName())
+                        .displayName(assignmentService.resolveAssignmentDescriptor(oa.getAssignment()).getDisplayName())
                         .build())
                 .collect(Collectors.toList());
 

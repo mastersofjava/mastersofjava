@@ -30,6 +30,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+import org.zeroturnaround.exec.ProcessExecutor;
+
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
@@ -45,12 +52,6 @@ import nl.moj.server.test.repository.TestAttemptRepository;
 import nl.moj.server.test.repository.TestCaseRepository;
 import nl.moj.server.util.CompletableFutures;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
-import org.zeroturnaround.exec.ProcessExecutor;
 
 @Service
 public class TestService {
@@ -131,8 +132,8 @@ public class TestService {
 				.dateTimeStart(Instant.now()).build();
 
 		AssignmentDescriptor ad = activeAssignment.getAssignmentDescriptor();
-		Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(activeAssignment.getCompetitionSession(),
-				team.getUuid(), activeAssignment.getAssignment());
+		Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(activeAssignment.getCompetitionSession().getUuid(),
+				team.getUuid(), activeAssignment.getAssignment().getName());
 
 		Path policy = ad.getAssignmentFiles().getSecurityPolicy();
 		if (policy != null) {

@@ -133,7 +133,7 @@ public class SubmitService {
         }
         Assignment assignment = assignmentRepository.findByName(submitRequest.getSourceMessage().getAssignmentName() );
         List<AssignmentFile> fileList = assignmentService.getAssignmentFiles(assignment);
-        AssignmentDescriptor assignmentDescriptor = assignmentService.getAssignmentDescriptor(assignment);
+        AssignmentDescriptor assignmentDescriptor = assignmentService.resolveAssignmentDescriptor(assignment);
         long timeLeft = Long.parseLong(submitRequest.getSourceMessage().getTimeLeft());
         long timeElapsed = assignmentDescriptor.getDuration().toSeconds()-timeLeft;
         boolean isWithSubmitValidation = competitionSession.isRunning();

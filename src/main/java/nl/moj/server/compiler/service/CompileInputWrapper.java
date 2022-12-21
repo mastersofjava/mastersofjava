@@ -1,15 +1,10 @@
 package nl.moj.server.compiler.service;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.submit.model.SourceMessage;
 
 /**
@@ -22,8 +17,14 @@ public class CompileInputWrapper {
 	private final String teamName;
 	private final Long teamId;
 	private final Instant dateTimeSubmitted; 
-	private final ActiveAssignment activeAssignment;
 	private final SourceMessage sourceMessage;
+	
+	private final AssignmentDescriptor assignmentDescriptor;
+	private final String assignmentName;
+	private final UUID assignmentUuid;
+	private final Long assignmentId;
+	private final UUID competitionSessionUuid;
+	private final Long competitionSessionId;
 
 	CompileInputWrapper(CompileRequest compileRequest, ActiveAssignment activeAssignment) {
 		this.teamUuid = compileRequest.getTeam().getUuid();
@@ -32,67 +33,33 @@ public class CompileInputWrapper {
 		this.sourceMessage = compileRequest.getSourceMessage();
 		this.compileAttemptUuid = UUID.randomUUID();
 		this.dateTimeSubmitted = compileRequest.getDateTimeSubmitted();
-		this.activeAssignment = activeAssignment;
+		this.assignmentDescriptor = activeAssignment.getAssignmentDescriptor();
+		this.assignmentName = activeAssignment.getAssignment().getName();
+		this.assignmentUuid = activeAssignment.getAssignment().getUuid();
+		this.assignmentId = activeAssignment.getAssignment().getId();
+		this.competitionSessionUuid = activeAssignment.getCompetitionSession().getUuid();
+		this.competitionSessionId = activeAssignment.getCompetitionSession().getId();
     }
 
-	public List<AssignmentFile> getReadonlyAssignmentFiles() {
-		return getReadonlyAssignmentFilesToCompile(activeAssignment.getAssignmentFiles());
-	}
-
-	/**
-	 * AssignmentFileType: READONLY, TEST, HIDDEN_TEST, HIDDEN
-	 */
-	private List<AssignmentFile> getReadonlyAssignmentFilesToCompile(List<AssignmentFile> fileList) {
-		return fileList.stream().filter(f -> f.getFileType() == AssignmentFileType.READONLY
-				|| f.getFileType() == AssignmentFileType.TEST || f.getFileType() == AssignmentFileType.HIDDEN_TEST
-				|| f.getFileType() == AssignmentFileType.HIDDEN || f.getFileType() == AssignmentFileType.INVISIBLE_TEST)
-				.collect(Collectors.toList());
-	}
-
-	private List<AssignmentFile> getResourcesToCopy(ActiveAssignment state) {
-		return getResourcesToCopy(state.getAssignmentFiles());
-	}
-
-	public List<AssignmentFile> getResources() {
-		return getResourcesToCopy(activeAssignment);
-	}
-
-	/**
-	 * AssignmentFileType: RESOURCE, TEST_RESOURCE, HIDDEN_TEST_RESOURCE
-	 */
-	private List<AssignmentFile> getResourcesToCopy(List<AssignmentFile> fileList) {
-		return fileList.stream()
-				.filter(f -> f.getFileType() == AssignmentFileType.RESOURCE
-						|| f.getFileType() == AssignmentFileType.TEST_RESOURCE
-						|| f.getFileType() == AssignmentFileType.HIDDEN_TEST_RESOURCE
-						|| f.getFileType() == AssignmentFileType.INVISIBLE_TEST_RESOURCE)
-				.collect(Collectors.toList());
-	}
-
-	AssignmentFile getOriginalAssignmentFile(String uuid) {
-		return activeAssignment.getAssignmentFiles().stream().filter(f -> f.getUuid().toString().equals(uuid)).findFirst()
-				.orElseThrow(() -> new RuntimeException("Could not find original assignment file for UUID " + uuid));
-	}
-
-	public Assignment getAssignment() {
-		return activeAssignment.getAssignment();
-	}
 
 	public UUID getCompileAttemptUuid() {
 		return compileAttemptUuid;
 	}
 
-	public ActiveAssignment getActiveAssignment() {
-		return activeAssignment;
-	}
-
 	public AssignmentDescriptor getAssignmentDescriptor() {
-		return activeAssignment.getAssignmentDescriptor();
+		return assignmentDescriptor;
+	}
+	
+	public String getAssignmentName() {
+		return assignmentName;
 	}
 
+	public UUID getCompetitionSessionUuid() {
+		return competitionSessionUuid;
+	}
 	
 	public Long getCompetitionSessionId() {
-		return activeAssignment.getCompetitionSession().getId();
+		return competitionSessionId;
 	}
 	public SourceMessage getSourceMessage() {
 		return sourceMessage;
@@ -115,7 +82,11 @@ public class CompileInputWrapper {
 	}
 
 	public Long getAssignmentId() {
-		return activeAssignment.getAssignment().getId();
+		return assignmentId;
+	}
+
+	public UUID getAssignmentUuid() {
+		return assignmentUuid;
 	}
 
 }

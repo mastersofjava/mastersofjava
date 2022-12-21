@@ -30,6 +30,7 @@ import lombok.Data;
 public class AssignmentDescriptor {
 
     private Path directory;
+    private String originalAssignmentDescriptor;
 
     @JsonProperty("name")
     private String name;
@@ -64,7 +65,9 @@ public class AssignmentDescriptor {
     private ScoringRules scoringRules;
     @JsonProperty("assignment-files")
     private AssignmentFiles assignmentFiles;
+    
 
+    // TODO: make this proper properties instead of abusing labels
     public List<String> readScoreLables() {
         List<String> scoreLabels = new ArrayList<>();
         for (String label :this.getLabels()) {

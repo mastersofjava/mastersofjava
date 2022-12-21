@@ -42,9 +42,10 @@ public class ActiveAssignment {
 
     private Duration timeElapsed;
     private Long timeRemaining;
-    private List<AssignmentFile> assignmentFiles;
+    private List<AssignmentFile> assignmentFiles; // this is a reference to AssignmentExecutionModel.originalAssignmentFiles, which is a reference to assignmentService.getAssignmentFiles(model.assignment)
     private boolean running;
 
+    
 
     @Override
     public String toString() {
@@ -85,4 +86,5 @@ public class ActiveAssignment {
         }
         return assignmentDescriptor.getExecutionModel();
     }
+
 }

@@ -203,7 +203,7 @@ public class TaskControlController {
         boolean isWithRestartDirectly = !StringUtils.isEmpty(message.getValue());
 
         if (isWithRestartDirectly) {
-            long timeLeft = assignmentService.getAssignmentDescriptor(assignment).getDuration().toSeconds();
+            long timeLeft = assignmentService.resolveAssignmentDescriptor(assignment).getDuration().toSeconds();
             competition.getCompetitionSession().setRunning(true);
             competition.startAssignment(message.getValue(),timeLeft);// start fresh
             return "Assignment restarted directly: " + message.taskName + ", reload page";

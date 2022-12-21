@@ -45,7 +45,7 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 
         Assertions.assertThat(oa).isNotNull();
 
-        AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(oa.getAssignment());
+        AssignmentDescriptor ad = assignmentService.resolveAssignmentDescriptor(oa.getAssignment());
 
         Future<?> mainHandle = assignmentRuntime.start(oa, competitionRuntime.getCompetitionSession());
 

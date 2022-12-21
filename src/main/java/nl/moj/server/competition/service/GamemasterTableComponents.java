@@ -107,7 +107,7 @@ public class GamemasterTableComponents {
             state.state = toViewStatus(orderedAssignment);
             state.order = orderedAssignment.getOrder();
             state.assignment = orderedAssignment.getAssignment();
-            state.assignmentDescriptor = assignmentService.getAssignmentDescriptor(orderedAssignment.getAssignment());
+            state.assignmentDescriptor = assignmentService.resolveAssignmentDescriptor(orderedAssignment.getAssignment());
             result.add(state);
         }
         return result;

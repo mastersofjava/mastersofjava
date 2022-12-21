@@ -38,6 +38,8 @@ import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -55,47 +57,50 @@ public class CompileService {
 	private CompileAttemptRepository compileAttemptRepository;
 	private AssignmentStatusRepository assignmentStatusRepository;
 	private MojServerProperties mojServerProperties;
-	TeamService teamService;
+	private TeamService teamService;
+	private AssignmentService assignmentService;
 	private static final boolean OS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
 
 	public CompileService(MojServerProperties mojServerProperties, CompileAttemptRepository compileAttemptRepository,
-			AssignmentStatusRepository assignmentStatusRepository, TeamService teamService) {
+			AssignmentStatusRepository assignmentStatusRepository, TeamService teamService,
+			AssignmentService assignmentService) {
 		this.mojServerProperties = mojServerProperties;
 		this.compileAttemptRepository = compileAttemptRepository;
 		this.assignmentStatusRepository = assignmentStatusRepository;
 		this.teamService = teamService;
+		this.assignmentService = assignmentService;
 	}
 
 	public CompletableFuture<CompileResult> scheduleCompile(CompileRequest compileRequest, Executor executor,
 			ActiveAssignment activeAssignment) {
 		// determine compiler version to use.
-		final CompileInputWrapper compileInputWrapper = new CompileInputWrapper(compileRequest, activeAssignment);
+		final CompileInputWrapper input = new CompileInputWrapper(compileRequest, activeAssignment);
 
 		log.info("supplyAsync.javaCompile {}", compileRequest.getSourceMessage().getAssignmentName());
 		// compile code.
 
-		log.info("javaCompile: {} for team {} ", compileInputWrapper.getAssignment().getName(),
-				compileInputWrapper.getTeamName());
+		log.info("javaCompile: {} for team {} ", input.getAssignmentName(),
+				input.getTeamName());
 
-
-		return CompletableFuture.supplyAsync(() -> javaCompile(compileInputWrapper), executor).thenApply(cow -> {
-			CompileAttempt ca = createCompileAttempt(cow);
+		return CompletableFuture.supplyAsync(() -> javaCompile(input), executor).thenApply(output -> {
+			CompileAttempt ca = createCompileAttempt(output);
 			return createCompileResult(ca);
 
 		});
 	}
 
 	private CompileAttempt createCompileAttempt(CompileOutputWrapper compileOutputWrapper) {
-	
-		log.debug("Creating compile attempt entity for assignment {}, competitionSession {} and team {}", compileOutputWrapper.getAssignmentId(), compileOutputWrapper.getCompetitionSessionId(),
+
+		log.debug("Creating compile attempt entity for assignment {}, competitionSession {} and team {}",
+				compileOutputWrapper.getAssignmentId(), compileOutputWrapper.getCompetitionSessionId(),
 				compileOutputWrapper.getTeamId());
 		AssignmentStatus as = assignmentStatusRepository.findByAssignment_IdAndCompetitionSession_IdAndTeam_Id(
 				compileOutputWrapper.getAssignmentId(), compileOutputWrapper.getCompetitionSessionId(),
 				compileOutputWrapper.getTeamId());
-				
-		CompileAttempt compileAttempt = 
-				CompileAttempt.builder().assignmentStatus(as).dateTimeStart(Instant.now()).dateTimeEnd(compileOutputWrapper.getDateTimeEnd())
-				.uuid(compileOutputWrapper.getCompileAttemptUuid()).build();
+
+		CompileAttempt compileAttempt = CompileAttempt.builder().assignmentStatus(as).dateTimeStart(Instant.now())
+				.dateTimeEnd(compileOutputWrapper.getDateTimeEnd()).uuid(compileOutputWrapper.getCompileAttemptUuid())
+				.build();
 		compileAttemptRepository.save(compileAttempt);
 
 		// TODO can this be done nicer?
@@ -120,7 +125,7 @@ public class CompileService {
 		}
 
 		compileAttemptRepository.save(compileAttempt);
-		
+
 		return compileAttempt;
 
 	}
@@ -141,23 +146,21 @@ public class CompileService {
 	}
 
 	// TODO this will be client side
-	private CompileOutputWrapper javaCompile(CompileInputWrapper compileInputWrapper) {
+	private CompileOutputWrapper javaCompile(CompileInputWrapper input) {
 		try {
 
-			List<AssignmentFile> assignmentFiles = compileInputWrapper.getReadonlyAssignmentFiles();
-			log.info("resources: {}, assignmentFiles: {}", compileInputWrapper.getResources().size(),
-					assignmentFiles.size());
+			WorkspaceUtil workspace = new WorkspaceUtil(teamService, assignmentService, input);
 
-			TeamProjectPathModel pathModel = new TeamProjectPathModel(this, compileInputWrapper.getTeamUuid(),
-					compileInputWrapper.getAssignment(), compileInputWrapper.getActiveAssignment());
-			pathModel.cleanCompileLocationForTeam();
+			List<AssignmentFile> assignmentFiles = workspace.getReadonlyAssignmentFiles();
+			log.info("resources: {}, assignmentFiles: {}", workspace.getResources().size(), assignmentFiles.size());
+			workspace.cleanCompileLocationForTeam();
 			// copy resources
-			pathModel.prepareResources(compileInputWrapper.getResources());
-			pathModel.prepareInputSources(assignmentFiles, compileInputWrapper.getSourceMessage(), compileInputWrapper);
+			workspace.prepareResources(workspace.getResources());
+			workspace.prepareInputSources(assignmentFiles, input.getSourceMessage(), input);
 
 			// find java compiler
-			var javaVersion = mojServerProperties.getLanguages().getJavaVersion(
-					compileInputWrapper.getActiveAssignment().getAssignmentDescriptor().getJavaVersion());
+			AssignmentDescriptor ad = input.getAssignmentDescriptor();
+			var javaVersion = mojServerProperties.getLanguages().getJavaVersion(ad.getJavaVersion());
 
 			// C) Java compiler options
 			boolean timedOut = false;
@@ -166,8 +169,7 @@ public class CompileService {
 					mojServerProperties.getLimits().getCompileOutputLimits());
 			final LengthLimitedOutputCatcher compileErrorOutput = new LengthLimitedOutputCatcher(
 					mojServerProperties.getLimits().getCompileOutputLimits());
-			final Duration timeout = compileInputWrapper.getAssignmentDescriptor().getCompileTimeout() != null
-					? compileInputWrapper.getAssignmentDescriptor().getCompileTimeout()
+			final Duration timeout = ad.getCompileTimeout() != null ? ad.getCompileTimeout()
 					: mojServerProperties.getLimits().getCompileTimeout();
 
 			final Instant dateTimeStart = Instant.now();
@@ -177,8 +179,7 @@ public class CompileService {
 				cmd.add(javaVersion.getCompiler().toString());
 				cmd.add("-Xlint:all");
 
-				boolean enablePreviewFeatures = compileInputWrapper.getActiveAssignment().getAssignmentDescriptor()
-						.isJavaPreviewEnabled();
+				boolean enablePreviewFeatures = ad.isJavaPreviewEnabled();
 				if (javaVersion.getVersion() >= 11 && enablePreviewFeatures) {
 					cmd.add("--enable-preview");
 					cmd.add("--release");
@@ -189,10 +190,10 @@ public class CompileService {
 				cmd.add("UTF8");
 				cmd.add("-g:source,lines,vars");
 				cmd.add("-cp");
-				cmd.add(makeClasspath(pathModel.classesDir).stream().map(f -> f.getAbsoluteFile().toString())
+				cmd.add(makeClasspath(workspace.getClassesDir()).stream().map(f -> f.getAbsoluteFile().toString())
 						.collect(Collectors.joining(File.pathSeparator)));
 				cmd.add("-d");
-				cmd.add(toSafeFilePathInputForEachOperatingSystem(pathModel.classesDir.toAbsolutePath().toFile()));
+				cmd.add(toSafeFilePathInputForEachOperatingSystem(workspace.getClassesDir().toAbsolutePath().toFile()));
 				assignmentFiles.forEach(a -> {
 					Assert.isTrue(a.getAbsoluteFile().toFile().exists(),
 							"file does not exist: " + a.getAbsoluteFile().toFile());
@@ -203,8 +204,9 @@ public class CompileService {
 
 				final ProcessExecutor commandExecutor = new ProcessExecutor().command(cmd);
 				commandExecutor.destroyOnExit().closeTimeout(closeTimeout, TimeUnit.SECONDS)
-						.directory(pathModel.teamAssignmentDir.toFile()).timeout(timeout.toSeconds(), TimeUnit.SECONDS)
-						.redirectOutput(compileOutput).redirectError(compileErrorOutput);
+						.directory(workspace.getTeamAssignmentDir().toFile())
+						.timeout(timeout.toSeconds(), TimeUnit.SECONDS).redirectOutput(compileOutput)
+						.redirectError(compileErrorOutput);
 
 				log.debug("Executing command {}", String.join(" \\\n", cmd));
 				ProcessResult processResult = commandExecutor.execute();
@@ -228,7 +230,7 @@ public class CompileService {
 
 			} catch (TimeoutException e) {
 				// process is automatically destroyed
-				log.debug("Compile timed out and got killed for team {}.", compileInputWrapper.getTeamName());
+				log.debug("Compile timed out and got killed for team {}.", input.getTeamName());
 				timedOut = true;
 			} catch (SecurityException se) {
 				log.error(se.getMessage(), se);
@@ -240,19 +242,19 @@ public class CompileService {
 			}
 
 			String output = stripTeamPathInfo(compileOutput.getBuffer(),
-					FileUtils.getFile(pathModel.teamAssignmentDir.toFile(), "sources"));
+					FileUtils.getFile(workspace.getTeamAssignmentDir().toFile(), "sources"));
 
 			String errorOutput = stripTeamPathInfo(compileErrorOutput.getBuffer(),
-					FileUtils.getFile(pathModel.teamAssignmentDir.toFile(), "sources"));
+					FileUtils.getFile(workspace.getTeamAssignmentDir().toFile(), "sources"));
 
-			var compileOutputWrapper = new CompileOutputWrapper(compileInputWrapper, output, errorOutput, exitvalue, timedOut, dateTimeStart,
-					Instant.now());
+			var compileOutputWrapper = new CompileOutputWrapper(input, output, errorOutput, exitvalue, timedOut,
+					dateTimeStart, Instant.now());
 
 			return compileOutputWrapper;
 
 		} catch (Exception e) {
 			log.error("Unable to compile the assignment due to unexpected exception: {}", e.getMessage(), e);
-			return new CompileOutputWrapper(compileInputWrapper, "", "Unable to compile: " + e.getMessage(), -1, false, Instant.now(),
+			return new CompileOutputWrapper(input, "", "Unable to compile: " + e.getMessage(), -1, false, Instant.now(),
 					Instant.now());
 		}
 

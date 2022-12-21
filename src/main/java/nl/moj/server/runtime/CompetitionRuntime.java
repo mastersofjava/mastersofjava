@@ -334,7 +334,7 @@ public class CompetitionRuntime {
         }
 
         return Optional.ofNullable(competitionModel.competition.getAssignmentsInOrder()).orElse(Collections.emptyList()).stream()
-                .map(v -> assignmentService.getAssignmentDescriptor(v.getAssignment())
+                .map(v -> assignmentService.resolveAssignmentDescriptor(v.getAssignment())
                 ).sorted(Comparator.comparing(AssignmentDescriptor::getDisplayName)).collect(Collectors.toList());
     }
 

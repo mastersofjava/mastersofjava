@@ -92,7 +92,7 @@ public class AssignmentServiceTest {
 
 
         assignments.forEach(a -> {
-            AssignmentDescriptor d = assignmentService.getAssignmentDescriptor(a);
+            AssignmentDescriptor d = assignmentService.resolveAssignmentDescriptor(a);
             assertThat(d).isNotNull();
             assertThat(d.getName()).isNotBlank();
             assertThat(d.getDuration()).isNotNull();
