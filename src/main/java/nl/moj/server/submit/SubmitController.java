@@ -16,6 +16,12 @@
 */
 package nl.moj.server.submit;
 
+import java.security.Principal;
+
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.stereotype.Controller;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.submit.model.SourceMessage;
@@ -23,12 +29,6 @@ import nl.moj.server.submit.service.SubmitRequest;
 import nl.moj.server.submit.service.SubmitService;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
-
-import java.security.Principal;
 
 @Controller
 @MessageMapping("/submit")

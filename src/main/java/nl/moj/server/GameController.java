@@ -184,7 +184,7 @@ public class GameController {
 
         public void saveFiles(CompetitionSession session, Assignment assignment, Team team) {
             Assert.isTrue(team != null, "invalid team");
-            List<AssignmentFile> teamAssignmentFiles = teamService.getTeamAssignmentFiles(session, assignment, team);
+            List<AssignmentFile> teamAssignmentFiles = teamService.getTeamAssignmentFiles(session, assignment, team.getUuid());
             model.addAttribute("files", prepareInputFilesOnScreen(teamAssignmentFiles));
         }
 

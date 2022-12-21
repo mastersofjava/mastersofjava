@@ -345,7 +345,7 @@ public class CompetitionRuntime {
 
     private List<AssignmentFile> getTeamAssignmentFiles(UUID assignment, Team team) {
         return competitionModel.completedAssignments.stream().filter(o -> o.getAssignment().getUuid().equals(assignment)).findFirst()
-                .map(orderedAssignment -> teamService.getTeamAssignmentFiles(competitionModel.competitionSession, orderedAssignment.getAssignment(), team))
+                .map(orderedAssignment -> teamService.getTeamAssignmentFiles(competitionModel.competitionSession, orderedAssignment.getAssignment(), team.getUuid()))
                 .orElse(Collections.emptyList());
     }
     public AssignmentStatus handleLateSignup(Team team) {

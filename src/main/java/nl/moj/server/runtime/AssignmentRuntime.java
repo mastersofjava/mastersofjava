@@ -82,8 +82,6 @@ public class AssignmentRuntime {
     private final AssignmentStatusRepository assignmentStatusRepository;
     private final UserService userService;
 
-    // TODO refactor so we do not need to use ApplicationContext to find a self reference
-   // private ApplicationContext ctx;
     private Map<Long,  AssignmentExecutionModel> assignmentExecutionModelMap = new TreeMap<>();
 
     public static class AssignmentExecutionModel  {
@@ -349,7 +347,7 @@ public class AssignmentRuntime {
         }
 
         private void initTeamAssignmentData(Team team) {
-            Path assignmentDirectory = teamService.getTeamAssignmentDirectory(model.competitionSession, team, model.assignment);
+            Path assignmentDirectory = teamService.getTeamAssignmentDirectory(model.competitionSession, team.getUuid(), model.assignment);
             try {
                 // create empty assignment directory
                 Files.createDirectories(assignmentDirectory);
@@ -405,7 +403,7 @@ public class AssignmentRuntime {
 
         private void cleanupTeamAssignmentData(Team team, CompetitionSession competitionSession) {
             // delete historical submitted data.
-            Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession, team, model.assignment);
+            Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession, team.getUuid(), model.assignment);
             try {
                 if (Files.exists(assignmentDirectory)) {
                     PathUtil.delete(assignmentDirectory);

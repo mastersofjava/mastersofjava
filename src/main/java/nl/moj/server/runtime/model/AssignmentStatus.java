@@ -40,6 +40,9 @@ import org.springframework.util.comparator.Comparators;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(of = {"uuid"})
+/**
+ * Stores all attempts for an assignment for a specific team.
+ */		
 public class AssignmentStatus {
 
     @Id

@@ -85,7 +85,7 @@ public class SequentialAssignmentSubmitTest extends BaseRuntimeTest {
         ActiveAssignment state = competitionRuntime.getActiveAssignment();
         Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
         timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
-
+        
         try {
             // make sure team 1 runs for 0.1s and one for 0.5
 

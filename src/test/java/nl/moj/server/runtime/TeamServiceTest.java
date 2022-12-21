@@ -69,7 +69,7 @@ public class TeamServiceTest extends BaseRuntimeTest {
     public void invisibleTestsShouldHaveContentIntentionallyHidden(String assignment) throws Exception {
         startSelectedAssignmment(assignment);
         List<AssignmentFile> files = teamService.getTeamAssignmentFiles(competitionRuntime.getCompetitionSession(),
-                competitionRuntime.getActiveAssignment().getAssignment(),getTeam());
+                competitionRuntime.getActiveAssignment().getAssignment(),getTeam().getUuid());
 
         Assertions.assertThat(files).hasSize(6);
         Assertions.assertThat(files.stream().filter( f -> f.getFileType() == AssignmentFileType.INVISIBLE_TEST )

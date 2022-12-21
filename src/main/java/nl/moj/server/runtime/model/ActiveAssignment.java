@@ -31,6 +31,9 @@ import nl.moj.server.competition.model.CompetitionSession;
 @Getter
 @Builder
 @Slf4j
+/**
+ * Holds the state of the current assignment (the assignment itself, the session it is part of and how long it has been running.)
+ */
 public class ActiveAssignment {
 
     private CompetitionSession competitionSession;
