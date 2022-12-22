@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -74,7 +73,7 @@ public class CompileService {
 	public CompletableFuture<CompileResult> scheduleCompile(CompileRequest compileRequest, Executor executor,
 			ActiveAssignment activeAssignment) {
 		// determine compiler version to use.
-		final CompileInputWrapper input = new CompileInputWrapper(compileRequest, activeAssignment);
+		final CompileInput input = new CompileInput(compileRequest, activeAssignment);
 
 		log.info("supplyAsync.javaCompile {}", compileRequest.getSourceMessage().getAssignmentName());
 		// compile code.
@@ -83,13 +82,13 @@ public class CompileService {
 				input.getTeamName());
 
 		return CompletableFuture.supplyAsync(() -> javaCompile(input), executor).thenApply(output -> {
-			CompileAttempt ca = createCompileAttempt(output);
+			CompileAttempt ca = persistCompileAttempt(output);
 			return createCompileResult(ca);
 
 		});
 	}
 
-	private CompileAttempt createCompileAttempt(CompileOutputWrapper compileOutputWrapper) {
+	private CompileAttempt persistCompileAttempt(CompileOutput compileOutputWrapper) {
 
 		log.debug("Creating compile attempt entity for assignment {}, competitionSession {} and team {}",
 				compileOutputWrapper.getAssignmentId(), compileOutputWrapper.getCompetitionSessionId(),
@@ -146,7 +145,7 @@ public class CompileService {
 	}
 
 	// TODO this will be client side
-	private CompileOutputWrapper javaCompile(CompileInputWrapper input) {
+	private CompileOutput javaCompile(CompileInput input) {
 		try {
 
 			WorkspaceUtil workspace = new WorkspaceUtil(teamService, assignmentService, input);
@@ -247,14 +246,14 @@ public class CompileService {
 			String errorOutput = stripTeamPathInfo(compileErrorOutput.getBuffer(),
 					FileUtils.getFile(workspace.getTeamAssignmentDir().toFile(), "sources"));
 
-			var compileOutputWrapper = new CompileOutputWrapper(input, output, errorOutput, exitvalue, timedOut,
+			var compileOutputWrapper = new CompileOutput(input, output, errorOutput, exitvalue, timedOut,
 					dateTimeStart, Instant.now());
 
 			return compileOutputWrapper;
 
 		} catch (Exception e) {
 			log.error("Unable to compile the assignment due to unexpected exception: {}", e.getMessage(), e);
-			return new CompileOutputWrapper(input, "", "Unable to compile: " + e.getMessage(), -1, false, Instant.now(),
+			return new CompileOutput(input, "", "Unable to compile: " + e.getMessage(), -1, false, Instant.now(),
 					Instant.now());
 		}
 

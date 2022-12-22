@@ -10,7 +10,7 @@ import nl.moj.server.submit.model.SourceMessage;
 /**
  * Contains all data (references) required to be able to compile a submission.
  */
-public class CompileInputWrapper {
+public class CompileInput {
 
 	private final UUID compileAttemptUuid;
 	private final UUID teamUuid;
@@ -26,7 +26,7 @@ public class CompileInputWrapper {
 	private final UUID competitionSessionUuid;
 	private final Long competitionSessionId;
 
-	CompileInputWrapper(CompileRequest compileRequest, ActiveAssignment activeAssignment) {
+	CompileInput(CompileRequest compileRequest, ActiveAssignment activeAssignment) {
 		this.teamUuid = compileRequest.getTeam().getUuid();
 		this.teamName = compileRequest.getTeam().getName();
 		this.teamId = compileRequest.getTeam().getId();

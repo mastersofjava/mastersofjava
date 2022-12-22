@@ -24,9 +24,9 @@ import lombok.Data;
 
 @Builder
 @Data
-public class TestResult {
+public class TestCaseOutput {
 
-    private UUID testCaseUuid;
+	private TestCaseInput input;
     private Instant dateTimeStart;
     private Instant dateTimeEnd;
     private String testName;

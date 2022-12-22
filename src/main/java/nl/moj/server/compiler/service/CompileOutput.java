@@ -3,9 +3,9 @@ package nl.moj.server.compiler.service;
 import java.time.Instant;
 import java.util.UUID;
 
-public class CompileOutputWrapper {
+public class CompileOutput {
 
-	private final CompileInputWrapper compileInputWrapper;
+	private final CompileInput compileInput;
 	
 	private final String output;
 	private final String errorOutput;
@@ -15,8 +15,8 @@ public class CompileOutputWrapper {
 	private final Instant dateTimeStart;
 	private final Instant dateTimeEnd;
 	
-	public CompileOutputWrapper(CompileInputWrapper compileInputWrapper, String output, String errorOutput, int exitvalue, boolean timedOut,  Instant dateTimeStart, Instant dateTimeEnd) {
-		this.compileInputWrapper = compileInputWrapper;
+	public CompileOutput(CompileInput compileInput, String output, String errorOutput, int exitvalue, boolean timedOut,  Instant dateTimeStart, Instant dateTimeEnd) {
+		this.compileInput = compileInput;
 		this.output = output;
 		this.errorOutput = errorOutput;
 		this.exitvalue = exitvalue;
@@ -49,26 +49,26 @@ public class CompileOutputWrapper {
 	}
 
 	public Instant getDateSubmitted() {
-		return compileInputWrapper.getDateTimeSubmitted();
+		return compileInput.getDateTimeSubmitted();
 	}
 
 	public UUID getTeamUuid() {
-		return compileInputWrapper.getTeamUuid();
+		return compileInput.getTeamUuid();
 	}
 	public Long getTeamId() {
-		return compileInputWrapper.getTeamId();
+		return compileInput.getTeamId();
 	}
 
 	public Long getCompetitionSessionId() {
-		return compileInputWrapper.getCompetitionSessionId();
+		return compileInput.getCompetitionSessionId();
 	}
 
 	public Long getAssignmentId() {
-		return compileInputWrapper.getAssignmentId();
+		return compileInput.getAssignmentId();
 	}
 
 	public UUID getCompileAttemptUuid() {
-		return compileInputWrapper.getCompileAttemptUuid();
+		return compileInput.getCompileAttemptUuid();
 	}
 	
 	

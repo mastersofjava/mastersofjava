@@ -25,7 +25,7 @@ import nl.moj.server.message.model.*;
 import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
-import nl.moj.server.test.service.TestResult;
+import nl.moj.server.test.service.TestCaseOutput;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -57,7 +57,7 @@ public class MessageService {
         this.userService = userService;
     }
 
-    public void sendTestFeedback(Team team, TestResult tr) {
+    public void sendTestFeedback(Team team, TestCaseOutput tr) {
         TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder()
                 .success(tr.isSuccess())
                 .uuid(team.getUuid())

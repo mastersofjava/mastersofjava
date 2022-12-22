@@ -7,16 +7,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.springframework.util.Assert;
 
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.submit.model.SourceMessage;
@@ -31,10 +28,10 @@ public class WorkspaceUtil {
     private Path sourcesDir;
     private Path classesDir;
     private String errorMessage;
-	private CompileInputWrapper compileInputWrapper;
+	private CompileInput compileInputWrapper;
 	private AssignmentService assignmentService;
 
-    public WorkspaceUtil(TeamService teamService, AssignmentService assignmentService, CompileInputWrapper compileInputWrapper) {
+    public WorkspaceUtil(TeamService teamService, AssignmentService assignmentService, CompileInput compileInputWrapper) {
 		this.assignmentService = assignmentService;
 		this.compileInputWrapper = compileInputWrapper;
 		teamAssignmentDir = teamService.getTeamAssignmentDirectory(compileInputWrapper.getCompetitionSessionUuid(), compileInputWrapper.getTeamUuid(), compileInputWrapper.getAssignmentName());
@@ -96,7 +93,7 @@ public class WorkspaceUtil {
         });
     }
 
-    void prepareInputSources(List<AssignmentFile> assignmentFiles, SourceMessage message, CompileInputWrapper compileInputWrapper) {
+    void prepareInputSources(List<AssignmentFile> assignmentFiles, SourceMessage message, CompileInput compileInputWrapper) {
         message.getSources().forEach((uuid, v) -> {
             try {
                 AssignmentFile orig = getOriginalAssignmentFile(uuid);

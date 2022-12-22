@@ -28,7 +28,7 @@ import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.test.service.TestRequest;
-import nl.moj.server.test.service.TestResults;
+import nl.moj.server.test.service.TestsOutput;
 import nl.moj.server.test.service.TestService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -54,7 +54,7 @@ public class ExecutionService {
         return compileService.scheduleCompile(CompileRequest.from(submitRequest), getExecutor(activeAssignment), activeAssignment);
     }
 
-    public CompletableFuture<TestResults> test(SubmitRequest submitRequest, List<AssignmentFile> tests, ActiveAssignment activeAssignment) {
+    public CompletableFuture<TestsOutput> test(SubmitRequest submitRequest, List<AssignmentFile> tests, ActiveAssignment activeAssignment) {
         return testService.scheduleTests(TestRequest.from(submitRequest), tests, getExecutor(activeAssignment), activeAssignment);
     }
 

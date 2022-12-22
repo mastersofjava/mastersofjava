@@ -34,7 +34,6 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
@@ -44,7 +43,6 @@ import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
@@ -80,60 +78,66 @@ public class TestService {
 		this.teamService = teamService;
 	}
 
-	private CompletableFuture<TestResult> scheduleTest(Team team, TestAttempt testAttempt, AssignmentFile test,
+	public CompletableFuture<TestsOutput> scheduleTests(TestRequest testRequest, List<AssignmentFile> tests,
 			Executor executor, ActiveAssignment activeAssignment) {
-		Assert.isTrue(activeAssignment.getCompetitionSession() != null, "CompetitionSession is not ready");
-		return CompletableFuture.supplyAsync(() -> executeTest(team, testAttempt, test, activeAssignment), executor);
+		TestsInput testsInput = new TestsInput(testRequest, tests, activeAssignment);
+		return scheduleTests(executor, testsInput);
 	}
 
-	public CompletableFuture<TestResults> scheduleTests(TestRequest testRequest, List<AssignmentFile> tests,
-			Executor executor, ActiveAssignment activeAssignment) {
-		log.info("activeAssignment: " + activeAssignment + " tests: " + tests.size());
-		List<CompletableFuture<TestResult>> testFutures = new ArrayList<>();
+	public CompletableFuture<TestsOutput> scheduleTests(Executor executor, TestsInput testsInput) {
 
-		TestAttempt ta = null;
-		try {
-			AssignmentStatus optionalStatus = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(
-					activeAssignment.getAssignment(), activeAssignment.getCompetitionSession(), testRequest.getTeam());
-			ta = registerIfNeeded(TestAttempt.builder().assignmentStatus(optionalStatus).dateTimeStart(Instant.now())
-					.uuid(UUID.randomUUID()).build());
-			log.info("ta.id " + ta.getId());
-			Assert.isTrue(activeAssignment.getCompetitionSession() != null, "CompetitionSession is not ready");
-			log.info("testFutures " + testFutures.size());
-		} catch (Exception ex) {
-			log.error(ex.getMessage(), ex);
-			throw new RuntimeException(ex);
-		}
-		final TestAttempt testAttempt = ta;
-		tests.forEach(
-				t -> testFutures.add(scheduleTest(testRequest.getTeam(), testAttempt, t, executor, activeAssignment)));
+		List<CompletableFuture<TestCaseOutput>> testCaseFutures = new ArrayList<CompletableFuture<TestCaseOutput>>();
 
-		return CompletableFutures.allOf(testFutures).thenApply(r -> {
-			testAttempt.setDateTimeEnd(Instant.now());
-			TestAttempt updatedTa = registerIfNeeded(testAttempt);
-			return TestResults.builder().dateTimeStart(updatedTa.getDateTimeStart())
-					.dateTimeEnd(updatedTa.getDateTimeEnd()).testAttemptUuid(updatedTa.getUuid()).results(r).build();
+		Instant dateTimeStart = Instant.now();
+		testsInput.getTestCases().forEach(testCaseInput -> testCaseFutures.add(scheduleTest(executor, testCaseInput)));
+
+		// TODO this will be client side, or maybe we want to just one test on the same client?
+
+		return CompletableFutures.allOf(testCaseFutures).thenApply(testCaseOutput -> {
+			TestsOutput testsOutput = TestsOutput.builder().testsInput(testsInput).dateTimeStart(dateTimeStart).dateTimeEnd(Instant.now())
+					.results(testCaseOutput).build();
+			TestAttempt testAttempt = persistTestAttempt(testsOutput);
+			testsOutput.setTestAttemptUuid(testAttempt.getUuid());
+			return testsOutput;
 		});
 	}
 
-	private TestAttempt registerIfNeeded(TestAttempt ta) {
-		TestAttempt result = ta;
-		if (result.getAssignmentStatus() != null) {
-			result = testAttemptRepository.save(ta);
-		}
-		return result;
+	private CompletableFuture<TestCaseOutput> scheduleTest(Executor executor, TestCaseInput input) {
+		return CompletableFuture.supplyAsync(() -> executeTest(input), executor);
 	}
 
-	private TestResult executeTest(Team team, TestAttempt testAttempt, AssignmentFile file,
-			ActiveAssignment activeAssignment) {
-		Assert.isTrue(activeAssignment.getCompetitionSession() != null, "CompetitionSession is not ready");
-		Assert.isTrue(activeAssignment.getAssignment().getName() != null, "assignmentcontext is not ready");
-		TestCase testCase = TestCase.builder().testAttempt(testAttempt).name(file.getName()).uuid(UUID.randomUUID())
-				.dateTimeStart(Instant.now()).build();
+	private TestAttempt persistTestAttempt(TestsOutput testsOutput) {
 
-		AssignmentDescriptor ad = activeAssignment.getAssignmentDescriptor();
-		Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(activeAssignment.getCompetitionSession().getUuid(),
-				team.getUuid(), activeAssignment.getAssignment().getName());
+		log.debug("persisting test attempt for assignment id {}, competitionSessionId {} and teamId {}", testsOutput.getTestsInput().getAssignmentId(),
+						testsOutput.getTestsInput().getCompetitionSessionId(), testsOutput.getTestsInput().getTeamId());
+		AssignmentStatus assignmentStatus = assignmentStatusRepository
+				.findByAssignment_IdAndCompetitionSession_IdAndTeam_Id(testsOutput.getTestsInput().getAssignmentId(),
+						testsOutput.getTestsInput().getCompetitionSessionId(), testsOutput.getTestsInput().getTeamId());
+
+		final TestAttempt testAttempt = testAttemptRepository.save(TestAttempt.builder().assignmentStatus(assignmentStatus).dateTimeStart(Instant.now())
+				.dateTimeEnd(Instant.now()).uuid(UUID.randomUUID()).build());
+
+		testsOutput.getResults().forEach(output -> {
+			TestCase testCase = TestCase.builder().testAttempt(testAttempt).name(output.getInput().getFile().getName())
+					.uuid(UUID.randomUUID()).dateTimeStart(output.getDateTimeStart()).success(output.isSuccess())
+					.timeout(output.isTimeout()).testOutput(output.getTestOutput()).dateTimeEnd(output.getDateTimeEnd())
+					.build();
+			
+			testCase = testCaseRepository.save(testCase);
+			testAttempt.getTestCases().add(testCase);
+
+		});
+
+		return testAttemptRepository.save(testAttempt);
+
+	}
+
+	// TODO this will be client side, or maybe we want to run all tests on the same client?
+	private TestCaseOutput executeTest(TestCaseInput input) {
+
+		AssignmentDescriptor ad = input.getAssignmentDescriptor();
+		Path teamAssignmentDir = teamService.getTeamAssignmentDirectory(input.getCompetitionSessionUuid(),
+				input.getTeamUuid(), input.getAssignmentName());
 
 		Path policy = ad.getAssignmentFiles().getSecurityPolicy();
 		if (policy != null) {
@@ -161,6 +165,7 @@ public class TestService {
 			boolean isTimeout = false;
 			int exitvalue = 0;
 
+			Instant dateTimeStart = Instant.now();
 			try {
 				List<String> commandParts = new ArrayList<>();
 
@@ -174,7 +179,7 @@ public class TestService {
 				commandParts.add("-Djava.security.manager");
 				commandParts.add("-Djava.security.policy=" + policy.toAbsolutePath());
 				commandParts.add("org.junit.runner.JUnitCore");
-				commandParts.add(file.getName());
+				commandParts.add(input.getFile().getName());
 
 				final ProcessExecutor commandExecutor = new ProcessExecutor().command(commandParts);
 				log.debug("Executing command {}", commandExecutor.getCommand().toString().replaceAll(",", "\n"));
@@ -183,10 +188,10 @@ public class TestService {
 						.redirectError(jUnitError).execute().getExitValue();
 			} catch (TimeoutException e) {
 				// process is automatically destroyed
-				log.debug("Unit test for {} timed out and got killed", team.getName());
+				log.debug("Unit test for {} timed out and got killed", input.getTeamName());
 				isTimeout = true;
 			} catch (SecurityException se) {
-				log.debug("Unit test for {} got security error", team.getName());
+				log.debug("Unit test for {} got security error", input.getTeamName());
 				log.error(se.getMessage(), se);
 			}
 			if (isTimeout) {
@@ -210,25 +215,16 @@ public class TestService {
 				result = jUnitError.toString();
 				success = (exitvalue == 0) && !isTimeout;
 			}
-			log.info("finished unit test: {}, exitvalue: {}, outputlength: {}, isTimeout: {} ", file.getName(),
-					exitvalue, result.length(), isTimeout);
+			log.info("finished unit test: {}, exitvalue: {}, outputlength: {}, isTimeout: {} ",
+					input.getFile().getName(), exitvalue, result.length(), isTimeout);
 
-			testCase = testCase.toBuilder().success(success).timeout(isTimeout).testOutput(result)
-					.dateTimeEnd(Instant.now()).build();
-			if (testAttempt.getAssignmentStatus() != null) {
-				testCase = testCaseRepository.save(testCase);
-			}
-			testAttempt.getTestCases().add(testCase);
-
-			return TestResult.builder().testCaseUuid(testCase.getUuid()).dateTimeStart(testCase.getDateTimeStart())
-					.dateTimeEnd(testCase.getDateTimeEnd()).success(testCase.isSuccess()).timeout(testCase.isTimeout())
-					.testName(testCase.getName()).testOutput(testCase.getTestOutput()).build();
+			return TestCaseOutput.builder().input(input).dateTimeStart(dateTimeStart).dateTimeEnd(Instant.now())
+					.success(success).timeout(isTimeout).testName(input.getFile().getName()).testOutput(result).build();
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
+			return null;
 		}
 
-		// TODO this should not be a null result.
-		return null;
 	}
 
 	private void stripJUnitPrefix(StringBuilder result) {

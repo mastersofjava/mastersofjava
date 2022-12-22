@@ -25,14 +25,20 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class TestResults {
+public class TestsOutput {
 
-    private UUID testAttemptUuid;
+	private TestsInput testsInput;
     private Instant dateTimeStart;
     private Instant dateTimeEnd;
-    private List<TestResult> results;
+    private List<TestCaseOutput> results;
+    private UUID testAttemptUuid;
 
     public boolean isSuccess() {
-        return results.stream().allMatch(TestResult::isSuccess);
+        return results.stream().allMatch(TestCaseOutput::isSuccess);
     }
+
+	public void setTestAttemptUuid(UUID uuid) {
+		testAttemptUuid = uuid;
+	}
+
 }
