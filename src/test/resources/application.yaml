@@ -38,8 +38,11 @@ spring:
     mode: HTML
   flyway:
     enabled: false
-  #    baseline-on-migrate: true
   jpa:
     generate-ddl: true
 
-logging.level.nl.moj.server: DEBUG
+logging:
+  level:
+    nl.moj.server: debug
+    org.keycloak: debug
+    org.apache.activemq.audit: error

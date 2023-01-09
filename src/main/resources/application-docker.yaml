@@ -15,7 +15,7 @@ moj:
       javadoc-directory: javadoc
       base-directory: /data/moj-data
     limits:
-      compile-timeout: PT4S
+      compile-timeout: PT30S
       compile-output-limits:
         max-feedback-lines: 1000
         max-chars: 100000
@@ -23,7 +23,7 @@ moj:
         line-truncated-message: "...{truncated}"
         output-trunc-message: "...{output truncated}"
         timeout-message: "...{terminated: compile time expired}"
-      test-timeout: PT4S
+      test-timeout: PT30S
       test-output-limits:
         max-feedback-lines: 1000
         max-chars: 100000
@@ -32,7 +32,7 @@ moj:
         output-trunc-message: "...{output truncated}"
         timeout-message: "...{terminated: test time expired}"
     runtime:
-      game-threads: 10
+      game-threads: 20
     competition:
       uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
       success-bonus: 400
@@ -63,19 +63,19 @@ spring:
   web:
     resources:
       static-locations: classpath:/bootstrap/sounds/,classpath:/static/
-#  jpa:
-#    generate-ddl: true
-
+  artemis:
+    embedded:
+      enabled: true
+      queues: operation_request,operation_response
+    mode: embedded
+    broker-url: vm://0
+    user: admin
+    password: admin
 server:
   forward-headers-strategy: native
 
-logging.level.nl.moj.server: DEBUG
-
-logging.level.nl.moj.server.persistence: INFO
-logging.level.nl.moj.server.persistence.TeamMapper: INFO
-logging.level.nl.moj.server.persistence.ResultMapper: INFO
-logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL
-logging.level.org.springframework.web: DEBUG
-logging.level.org.springframework.security: DEBUG
-logging.level.org.keycloak: DEBUG
-logging.level.org.apache.catalina.valves.RemoteIpValve: DEBUG
+logging:
+  level:
+    nl.moj.server: debug
+    org.keycloak: debug
+    org.apache.activemq.audit: error
