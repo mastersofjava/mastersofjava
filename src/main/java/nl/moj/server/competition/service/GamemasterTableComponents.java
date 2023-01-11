@@ -6,8 +6,8 @@ import com.github.difflib.UnifiedDiffUtils;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.descriptor.AssignmentFiles;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.AssignmentFiles;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
@@ -107,7 +107,7 @@ public class GamemasterTableComponents {
             state.state = toViewStatus(orderedAssignment);
             state.order = orderedAssignment.getOrder();
             state.assignment = orderedAssignment.getAssignment();
-            state.assignmentDescriptor = assignmentService.getAssignmentDescriptor(orderedAssignment.getAssignment());
+            state.assignmentDescriptor = assignmentService.resolveAssignmentDescriptor(orderedAssignment.getAssignment());
             result.add(state);
         }
         return result;

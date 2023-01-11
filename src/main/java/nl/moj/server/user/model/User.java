@@ -22,7 +22,7 @@ public class User {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", nullable = false, unique = true)
+    @Column(name = "uuid", nullable = false, unique = true, columnDefinition = "uuid")
     private UUID uuid;
 
     @Column(name = "name", nullable = false)

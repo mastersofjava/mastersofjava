@@ -16,19 +16,14 @@
 */
 package nl.moj.server.submit.service;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.ExecutionModel;
-import nl.moj.server.compiler.service.CompileRequest;
-import nl.moj.server.compiler.service.CompileResult;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.ExecutionModel;
+import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.compiler.service.CompileService;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.test.service.TestRequest;
-import nl.moj.server.test.service.TestResults;
 import nl.moj.server.test.service.TestService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -39,6 +34,10 @@ public class ExecutionService {
 
     private final CompileService compileService;
     private final TestService testService;
+
+    private CompileAttemptRepository compileAttemptRepository;
+
+    private AssignmentService assignmentService;
     private final Executor sequential;
     private final Executor parallel;
 
@@ -50,20 +49,12 @@ public class ExecutionService {
         this.testService = testService;
     }
 
-    public CompletableFuture<CompileResult> compile(SubmitRequest submitRequest, ActiveAssignment activeAssignment) {
-        return compileService.scheduleCompile(CompileRequest.from(submitRequest), getExecutor(activeAssignment), activeAssignment);
-    }
-
-    public CompletableFuture<TestResults> test(SubmitRequest submitRequest, List<AssignmentFile> tests, ActiveAssignment activeAssignment) {
-        return testService.scheduleTests(TestRequest.from(submitRequest), tests, getExecutor(activeAssignment), activeAssignment);
-    }
-
-    private Executor getExecutor(ActiveAssignment activeAssignment) {
-        if (activeAssignment == null) {
+    public Executor getExecutor(AssignmentDescriptor ad) {
+        if (ad == null) {
             log.debug("Executing assignment in sequentially, can slow down client response (only used by admin)");
             return sequential;
         }
-        if (activeAssignment.getExecutionModel() == ExecutionModel.SEQUENTIAL) {
+        if (ad.getExecutionModel() == ExecutionModel.SEQUENTIAL) {
         	log.debug("Executing assignment sequentially, can slow down response to client");
             return sequential;
         }

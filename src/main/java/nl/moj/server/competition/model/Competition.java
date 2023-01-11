@@ -18,7 +18,9 @@ package nl.moj.server.competition.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
 @Table(name = "competitions")
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competitions_seq", sequenceName = "competitions_seq")
+@EqualsAndHashCode(of={"uuid"})
 public class Competition {
 
     @Id
@@ -39,7 +42,7 @@ public class Competition {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", unique = true, nullable = false)
+    @Column(name = "uuid", unique = true, nullable = false, columnDefinition = "uuid")
     private UUID uuid;
 
     @Column(name = "name", nullable = false)

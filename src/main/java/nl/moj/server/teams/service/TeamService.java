@@ -46,25 +46,25 @@ public class TeamService {
     private final TeamRepository teamRepository;
     private final AssignmentService assignmentService;
 
-    public Path getTeamDirectory(CompetitionSession session, Team team) {
+    public Path getTeamDirectory(UUID competitionSessionUUID, UUID teamUUID) {
         return mojServerProperties.getDirectories().getBaseDirectory()
                 .resolve(mojServerProperties.getDirectories().getSessionDirectory())
-                .resolve(session.getUuid().toString())
+                .resolve(competitionSessionUUID.toString())
                 .resolve(mojServerProperties.getDirectories().getTeamDirectory())
-                .resolve(team.getUuid().toString());
+                .resolve(teamUUID.toString());
     }
 
-    public Path getTeamAssignmentDirectory(CompetitionSession session, Team team, Assignment assignment) {
-        return getTeamDirectory(session, team).resolve(assignment.getName());
+    public Path getTeamAssignmentDirectory(UUID competitionSessionUUID, UUID teamUUID, String assignmentName) {
+        return getTeamDirectory(competitionSessionUUID, teamUUID).resolve(assignmentName);
     }
 
     public List<Team> getTeams() {
         return teamRepository.findAll();
     }
 
-    public List<AssignmentFile> getTeamAssignmentFiles(CompetitionSession session, Assignment assignment, Team team) {
+    public List<AssignmentFile> getTeamAssignmentFiles(CompetitionSession session, Assignment assignment, UUID teamUUID) {
         List<AssignmentFile> teamFiles = new ArrayList<>();
-        Path teamAssignmentBase = getTeamAssignmentDirectory(session, team, assignment).resolve("sources");
+        Path teamAssignmentBase = getTeamAssignmentDirectory(session.getUuid(),  teamUUID, assignment.getName()).resolve("sources");
 
         assignmentService.getAssignmentFiles(assignment).stream()
                 .filter(f -> f.getFileType().isVisible())

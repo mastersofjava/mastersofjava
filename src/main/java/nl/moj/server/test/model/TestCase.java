@@ -40,27 +40,30 @@ public class TestCase {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", nullable = false, updatable = false)
+    @Column(name = "uuid", nullable = false, unique = true, columnDefinition = "uuid")
     private UUID uuid;
+
+    @Column(name = "name", nullable = false)
+    private String name;
 
     @ManyToOne
     @JoinColumn(name = "test_attempt_id", nullable = false)
     private TestAttempt testAttempt;
 
-    @Column(name = "date_time_start", nullable = false)
+    @Column(name = "date_time_register", nullable = false)
+    private Instant dateTimeRegister;
+
+    @Column(name = "date_time_start")
     private Instant dateTimeStart;
 
-    @Column(name = "date_time_end", nullable = false)
+    @Column(name = "date_time_end")
     private Instant dateTimeEnd;
 
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "success")
+    private Boolean success;
 
-    @Column(name = "success", nullable = false)
-    private boolean success;
-
-    @Column(name = "timeout", nullable = false)
-    private boolean timeout;
+    @Column(name = "timeout")
+    private Boolean timeout;
 
     @Column(name = "test_output", columnDefinition = "TEXT")
     private String testOutput;

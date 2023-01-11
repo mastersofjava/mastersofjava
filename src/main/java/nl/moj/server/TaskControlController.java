@@ -22,7 +22,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
@@ -56,7 +56,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -203,7 +202,7 @@ public class TaskControlController {
         boolean isWithRestartDirectly = !StringUtils.isEmpty(message.getValue());
 
         if (isWithRestartDirectly) {
-            long timeLeft = assignmentService.getAssignmentDescriptor(assignment).getDuration().toSeconds();
+            long timeLeft = assignmentService.resolveAssignmentDescriptor(assignment).getDuration().toSeconds();
             competition.getCompetitionSession().setRunning(true);
             competition.startAssignment(message.getValue(),timeLeft);// start fresh
             return "Assignment restarted directly: " + message.taskName + ", reload page";

@@ -16,19 +16,15 @@
 */
 package nl.moj.server.submit;
 
+import java.security.Principal;
+
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.stereotype.Controller;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.submit.model.SourceMessage;
-import nl.moj.server.submit.service.SubmitRequest;
-import nl.moj.server.submit.service.SubmitService;
-import nl.moj.server.user.model.User;
-import nl.moj.server.user.service.UserService;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
-
-import java.security.Principal;
 
 @Controller
 @MessageMapping("/submit")
@@ -36,53 +32,40 @@ import java.security.Principal;
 @AllArgsConstructor
 public class SubmitController {
 
-    private SubmitService submitService;
-    private UserService userService;
+    private SubmitFacade submitFacade;
 
     @MessageMapping("/compile")
     public void compile(SourceMessage message, Principal principal, MessageHeaders headers)
             throws Exception {
-        User user = userService.findUser(principal);
-        submitService.compile(SubmitRequest.builder()
-                .team(user.getTeam())
-                .user(user)
-                .sourceMessage(message)
-                .build());
-    }
-
-    @MessageMapping("/test")
-    public void test(SourceMessage message, Principal principal, MessageHeaders headers)
-            throws Exception {
-        User user = userService.findUser(principal);
         try {
-            submitService.test(SubmitRequest.builder()
-                    .team(user.getTeam())
-                    .user(user)
-                    .sourceMessage(message)
-                    .build());
+            submitFacade.registerCompileRequest(message,principal);
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
     }
 
-    /**
-     * Submits the final solution of the team and closes the assignment for the
-     * submitting team. The submitting team cannot work with the assignment after
-     * closing.
-     *
-     * @param message
-     * @param principal
-     * @param mesg
-     * @throws Exception
-     */
-    @MessageMapping("/submit")
-    public void submit(SourceMessage message, Principal principal, MessageHeaders mesg)
+    @MessageMapping("/test")
+    public void test(SourceMessage message, Principal principal, MessageHeaders headers)
             throws Exception {
-        User user = userService.findUser(principal);
-        submitService.submit(SubmitRequest.builder()
-                .team(user.getTeam())
-                .user(user)
-                .sourceMessage(message)
-                .build());
+        try {
+            submitFacade.registerTestRequest(message,principal);
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
+        }
     }
+
+    @MessageMapping("/submit")
+    public void submit(SourceMessage message, Principal principal, MessageHeaders headers)
+            throws Exception {
+        try {
+            submitFacade.registerSubmitRequest(message,principal);
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
+        }
+    }
+
+
+
+    // TODO this should not be here
+
 }

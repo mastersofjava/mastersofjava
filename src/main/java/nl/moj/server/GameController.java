@@ -19,7 +19,7 @@ package nl.moj.server;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.authorization.Role;
 import nl.moj.server.competition.model.CompetitionSession;
@@ -184,7 +184,7 @@ public class GameController {
 
         public void saveFiles(CompetitionSession session, Assignment assignment, Team team) {
             Assert.isTrue(team != null, "invalid team");
-            List<AssignmentFile> teamAssignmentFiles = teamService.getTeamAssignmentFiles(session, assignment, team);
+            List<AssignmentFile> teamAssignmentFiles = teamService.getTeamAssignmentFiles(session, assignment, team.getUuid());
             model.addAttribute("files", prepareInputFilesOnScreen(teamAssignmentFiles));
         }
 

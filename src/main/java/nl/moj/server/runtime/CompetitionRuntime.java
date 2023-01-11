@@ -16,6 +16,7 @@
 */
 package nl.moj.server.runtime;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -25,8 +26,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
@@ -35,6 +37,8 @@ import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.*;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
+import nl.moj.server.submit.model.SourceMessage;
+import nl.moj.server.submit.service.SubmitRequest;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import org.springframework.stereotype.Service;
@@ -44,6 +48,7 @@ import org.springframework.util.Assert;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+// TODO this needs to be cleaned up!!
 public class CompetitionRuntime {
 
     private final AssignmentRuntime assignmentRuntime;
@@ -55,6 +60,8 @@ public class CompetitionRuntime {
     private final CompetitionSessionRepository competitionSessionRepository;
 
     private final AssignmentResultRepository assignmentResultRepository;
+
+    private final AssignmentRepository assignmentRepository;
 
     private final MessageService messageService;
 
@@ -147,7 +154,7 @@ public class CompetitionRuntime {
         return result;
     }
     public CompetitionRuntime selectCompetitionRuntimeForGameStart(Competition competition) {
-        CompetitionRuntime result = new CompetitionRuntime(assignmentRuntime, assignmentService,teamService, competitionSessionRepository,assignmentResultRepository,messageService);
+        CompetitionRuntime result = new CompetitionRuntime(assignmentRuntime, assignmentService,teamService, competitionSessionRepository,assignmentResultRepository,assignmentRepository,messageService);
         if (activeCompetitionsMap.get(competition.getId())==null) {
             return this;
         }
@@ -334,7 +341,7 @@ public class CompetitionRuntime {
         }
 
         return Optional.ofNullable(competitionModel.competition.getAssignmentsInOrder()).orElse(Collections.emptyList()).stream()
-                .map(v -> assignmentService.getAssignmentDescriptor(v.getAssignment())
+                .map(v -> assignmentService.resolveAssignmentDescriptor(v.getAssignment())
                 ).sorted(Comparator.comparing(AssignmentDescriptor::getDisplayName)).collect(Collectors.toList());
     }
 
@@ -345,7 +352,7 @@ public class CompetitionRuntime {
 
     private List<AssignmentFile> getTeamAssignmentFiles(UUID assignment, Team team) {
         return competitionModel.completedAssignments.stream().filter(o -> o.getAssignment().getUuid().equals(assignment)).findFirst()
-                .map(orderedAssignment -> teamService.getTeamAssignmentFiles(competitionModel.competitionSession, orderedAssignment.getAssignment(), team))
+                .map(orderedAssignment -> teamService.getTeamAssignmentFiles(competitionModel.competitionSession, orderedAssignment.getAssignment(), team.getUuid()))
                 .orElse(Collections.emptyList());
     }
     public AssignmentStatus handleLateSignup(Team team) {
@@ -388,5 +395,71 @@ public class CompetitionRuntime {
         } else {
             loadSession(competition, session.getUuid());
         }
+    }
+
+    public ActiveAssignment getActiveAssignment(Team team,SourceMessage sourceMessage) {
+        ActiveAssignment activeAssignment = getActiveAssignmentValidate(team,sourceMessage);
+        Assert.isTrue(activeAssignment!=null, "activeAssignment missing");
+        Assert.isTrue(activeAssignment.getCompetitionSession()!=null, "CompetitionSession missing");
+        return activeAssignment;
+    }
+
+    // TODO this is bizarre logic and needs to be cleaned up
+    private ActiveAssignment getActiveAssignmentValidate(Team team, SourceMessage sourceMessage) {
+        if (sourceMessage==null || sourceMessage.getUuid() == null) {
+            return getActiveAssignment();
+        }
+        UUID uuid = UUID.fromString(sourceMessage.getUuid());
+        Competition competition = selectCompetitionByUUID(uuid);
+
+        ActiveAssignment activeAssignment = null;
+        if (competition!=null) {
+            activeAssignment = selectCompetitionRuntimeForGameStart(competition).getActiveAssignment();
+        }
+        if (activeAssignment!=null && sourceMessage.getAssignmentName().equals(activeAssignment.getAssignment().getName())) {
+            return activeAssignment;
+        }
+        // TODO wtf is going on here?
+        CompetitionSession competitionSession = getCompetitionSession();
+        boolean isGlobalUuid = uuid.equals(competitionSession.getUuid());
+        if (!isGlobalUuid) {
+            competitionSession = competitionSessionRepository.findByUuid(uuid);
+        }
+        Assignment assignment = assignmentRepository.findByName( sourceMessage.getAssignmentName() );
+        List<AssignmentFile> fileList = assignmentService.getAssignmentFiles(assignment);
+        AssignmentDescriptor assignmentDescriptor = assignmentService.resolveAssignmentDescriptor(assignment);
+
+        long timeLeft = Long.parseLong(sourceMessage.getTimeLeft());
+        long timeElapsed = assignmentDescriptor.getDuration().toSeconds()-timeLeft;
+        boolean isWithSubmitValidation = competitionSession.isRunning();
+
+        // TODO @kaben No clue what this does and how to test this!
+        if (!isWithSubmitValidation)  {
+            // after competition completion, we still allow arriving submits for 5 minutes (because of performance reasons)
+            long maxSubmitDelayAfterFinish = competitionSession.getDateTimeLastUpdate().plusSeconds(5*60).toEpochMilli();
+            long timeDelta = sourceMessage.getArrivalTime() - maxSubmitDelayAfterFinish;
+
+            if (isWithDelayedSubmitValidation(competitionSession, sourceMessage)) {
+                isWithSubmitValidation = true;
+                log.info("Team " + team.getName() + " submitted before max submit time ( milliseconds left : "+timeDelta+", attempt will be used).");
+            } else {
+                log.info("Warning: Team " + team.getName() + " submitted far after max submit time ( milliseconds too late: "+timeDelta+", attempt will be ignored).");
+            }
+        }
+        activeAssignment  = ActiveAssignment.builder()
+                .competitionSession(competitionSession)
+                .assignment(assignment)
+                .timeElapsed(Duration.ofSeconds(timeElapsed))
+                .timeRemaining(timeLeft)
+                .running(isWithSubmitValidation)
+                .assignmentDescriptor(assignmentDescriptor)
+                .assignmentFiles(fileList).build();// individual user
+
+        return activeAssignment;
+    }
+    public boolean isWithDelayedSubmitValidation(CompetitionSession competitionSession, SourceMessage message) {
+        long maxSubmitDelayAfterFinish = competitionSession.getDateTimeLastUpdate().plusSeconds(5*60).toEpochMilli();
+        long timeDelta = message.getArrivalTime() - maxSubmitDelayAfterFinish;
+        return timeDelta<0;
     }
 }

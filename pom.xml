@@ -275,7 +275,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>nl.moj.server.MojServerApplication</mainClass>
+                            <mainClass>nl.moj.MojServerApplication</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

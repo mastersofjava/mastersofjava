@@ -64,7 +64,12 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
             KeycloakAuthenticationToken kat = (KeycloakAuthenticationToken) principal;
             AccessToken token = kat.getAccount().getKeycloakSecurityContext().getToken();
             UUID uuid = UUID.fromString(token.getSubject());
-            return userRepository.findByUuid(uuid);
+
+            User u = userRepository.findByUuid(uuid);
+            log.info("Found user {}", u);
+
+            //return userRepository.findByUuid(uuid);
+            return u;
         }
         throw new IllegalArgumentException("Principal not a KeycloakAuthenticationToken, unable to find the user.");
     }

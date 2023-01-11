@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentResult;
@@ -32,8 +32,6 @@ import nl.moj.server.runtime.model.Score;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
-import nl.moj.server.test.model.TestAttempt;
-import nl.moj.server.test.model.TestCase;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -207,7 +205,7 @@ public class ScoreService {
         //
         Set<String> succeededTestCases = Optional.ofNullable(as.getTestAttempts()).orElse(Collections.emptyList()).stream()
                 .flatMap(ta -> ta.getTestCases().stream() )
-                .filter(TestCase::isSuccess)
+                .filter( tc -> tc.getSuccess() != null && tc.getSuccess() )
                 .map(tc -> tc.getName().toLowerCase() )
                 .collect(Collectors.toSet());
 

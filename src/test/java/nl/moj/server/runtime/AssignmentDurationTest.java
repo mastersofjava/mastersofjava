@@ -16,7 +16,7 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.OrderedAssignment;
 import org.assertj.core.api.Assertions;
@@ -26,7 +26,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 @SpringBootTest
 public class AssignmentDurationTest extends BaseRuntimeTest {
 
@@ -45,7 +44,7 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 
         Assertions.assertThat(oa).isNotNull();
 
-        AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(oa.getAssignment());
+        AssignmentDescriptor ad = assignmentService.resolveAssignmentDescriptor(oa.getAssignment());
 
         Future<?> mainHandle = assignmentRuntime.start(oa, competitionRuntime.getCompetitionSession());
 

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 
 import lombok.*;
+import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.runtime.model.AssignmentStatus;
 
 @Entity
@@ -42,18 +43,31 @@ public class TestAttempt {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", nullable = false, updatable = false)
+    @Column(name = "uuid", nullable = false, unique = true, columnDefinition = "uuid")
     private UUID uuid;
 
-    @Column(name = "date_time_start", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "assignment_status_id", nullable = false)
+    private AssignmentStatus assignmentStatus;
+
+    @Column(name="date_time_register", nullable = false)
+    private Instant dateTimeRegister;
+
+    @Column(name = "date_time_start")
     private Instant dateTimeStart;
 
     @Column(name = "date_time_end")
     private Instant dateTimeEnd;
 
-    @ManyToOne
-    @JoinColumn(name = "assignment_status_id", nullable = false)
-    private AssignmentStatus assignmentStatus;
+    @Column(name = "aborted")
+    private Boolean aborted;
+
+    @Column(name = "reaseon", columnDefinition = "TEXT")
+    private String reason;
+
+    @OneToOne(cascade = CascadeType.REMOVE)
+    @JoinColumn(name = "compile_attempt_id")
+    private CompileAttempt compileAttempt;
 
     @OneToMany(mappedBy = "testAttempt", cascade = CascadeType.REMOVE)
     @Builder.Default

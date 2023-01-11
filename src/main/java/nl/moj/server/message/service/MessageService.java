@@ -20,12 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.TaskControlController.TaskMessage;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.compiler.service.CompileResult;
 import nl.moj.server.message.model.*;
+import nl.moj.server.submit.service.CompileResponse;
 import nl.moj.server.submit.service.SubmitResult;
+import nl.moj.server.submit.service.TestResponse;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
-import nl.moj.server.test.service.TestResult;
+import nl.moj.server.test.service.TestCaseOutput;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -57,14 +57,29 @@ public class MessageService {
         this.userService = userService;
     }
 
-    public void sendTestFeedback(Team team, TestResult tr) {
+    public void sendTestFeedback(Team team, TestResponse tr) {
+
+        tr.getTestCaseResults().forEach( tcr -> {
+            TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder()
+                    .success(tcr.isSuccess())
+                    .uuid(team.getUuid())
+                    .test(tcr.getName())
+                    .message(tcr.getOutput() == null ? "" : tcr.getOutput())
+                    .build();
+            log.info("Sending test feedback: {}", msg);
+            sendToActiveUsers(team, msg);
+            template.convertAndSend(DEST_TESTRESULTS, msg);
+        });
+    }
+
+    public void sendTestFeedback(Team team, TestCaseOutput tr) {
         TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder()
                 .success(tr.isSuccess())
                 .uuid(team.getUuid())
                 .test(tr.getTestName())
                 .message(tr.getTestOutput() == null ? "" : tr.getTestOutput())
                 .build();
-        log.info("Sending test assignmentScores: {}", msg);
+        log.info("Sending test feedback: {}", msg);
         sendToActiveUsers(team, msg);
         template.convertAndSend(DEST_TESTRESULTS, msg);
     }
@@ -79,19 +94,19 @@ public class MessageService {
                 .message("TODO")
                 .build();
 
-        log.info("Sending submit assignmentScores: {}", msg);
+        log.info("Sending submit feedback: {}", msg);
         sendToActiveUsers(team, msg);
         template.convertAndSend(DEST_TESTRESULTS, msg);
         template.convertAndSend(DEST_RANKINGS, "refresh");
     }
 
-    public void sendCompileFeedback(Team team, CompileResult result) {
+    public void sendCompileFeedback(Team team, CompileResponse compileResponse) {
         TeamCompileFeedbackMessage msg = TeamCompileFeedbackMessage.builder()
-                .success(result.isSuccess())
+                .success(compileResponse.isSuccess())
                 .team(team.getName())
-                .message(result.getCompileOutput() == null ? "" : result.getCompileOutput())
+                .message(compileResponse.getOutput() == null ? "" : compileResponse.getOutput())
                 .build();
-        log.info("Sending compile assignmentScores: {}", msg);
+        log.info("Sending compile feedback: {}", msg);
         sendToActiveUsers(team, msg);
     }
 

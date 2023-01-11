@@ -41,7 +41,7 @@ public class Assignment {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", unique = true, nullable = false)
+    @Column(name = "uuid", unique = true, nullable = false, columnDefinition = "uuid")
     private UUID uuid;
 
     @Column(name = "name", unique = true, nullable = false)

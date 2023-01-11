@@ -19,7 +19,6 @@ package nl.moj.server.config;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -38,7 +37,10 @@ public class AppConfig {
 
     @Bean(name = "objectMapper")
     public ObjectMapper jsonObjectMapper() {
-        return JsonMapper.builder().enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS).build();
+        return JsonMapper.builder()
+                .addModule(new JavaTimeModule())
+                .addModule(new Jdk8Module())
+                .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS).build();
 //        ObjectMapper objectMapper = new ObjectMapper();
 //        objectMapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
 //        return objectMapper;
@@ -65,6 +67,7 @@ public class AppConfig {
         MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
         converter.setTargetType(MessageType.TEXT);
         converter.setTypeIdPropertyName("_type");
+        converter.setObjectMapper(jsonObjectMapper());
         return converter;
     }
 }

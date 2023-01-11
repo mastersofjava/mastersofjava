@@ -22,13 +22,17 @@ import java.time.Instant;
 import java.util.UUID;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Entity
 @Table(name = "competition_sessions")
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competition_sessions_seq", sequenceName = "competition_sessions_seq")
+@EqualsAndHashCode(of={"uuid"})
+@ToString(exclude={"competition"})
 public class CompetitionSession {
 
     @Id
@@ -36,7 +40,7 @@ public class CompetitionSession {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", unique = true, nullable = false)
+    @Column(name = "uuid", unique = true, nullable = false, columnDefinition = "uuid")
     private UUID uuid;
 
     @Column(name = "available")

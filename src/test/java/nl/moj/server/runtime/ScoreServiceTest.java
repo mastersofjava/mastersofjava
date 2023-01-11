@@ -16,8 +16,8 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.descriptor.ScoringRules;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.ScoringRules;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.config.properties.Competition;

@@ -16,6 +16,19 @@
 */
 package nl.moj.server.runtime;
 
+import javax.persistence.EntityManager;
+import javax.transaction.Transactional;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
@@ -27,35 +40,41 @@ import nl.moj.server.bootstrap.service.BootstrapService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.OrderedAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
+import nl.moj.server.compiler.model.CompileAttempt;
+import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
+import nl.moj.server.submit.model.SubmitAttempt;
+import nl.moj.server.submit.repository.SubmitAttemptRepository;
 import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.test.model.TestAttempt;
+import nl.moj.server.test.repository.TestAttemptRepository;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.repository.UserRepository;
 import nl.moj.server.util.PathUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.keycloak.KeycloakSecurityContext;
+import org.keycloak.adapters.OidcKeycloakAccount;
+import org.keycloak.adapters.spi.KeycloakAccount;
+import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
+import org.keycloak.representations.AccessToken;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.Assert;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static nl.moj.server.TestUtil.classpathResourceToPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public abstract class BaseRuntimeTest {
+
+    @Autowired
+    private TestJmsListener mockJmsService;
 
     @Autowired
     private AssignmentService assignmentService;
@@ -81,6 +100,18 @@ public abstract class BaseRuntimeTest {
     @Autowired
     private BootstrapService bootstrapService;
 
+    @Autowired
+    private CompileAttemptRepository compileAttemptRepository;
+
+    @Autowired
+    private TestAttemptRepository testAttemptRepository;
+
+    @Autowired
+    private SubmitAttemptRepository submitAttemptRepository;
+
+    @Autowired
+    private EntityManager em;
+
     @Getter
     private Competition competition;
 
@@ -97,10 +128,30 @@ public abstract class BaseRuntimeTest {
             dbUtil.cleanup();
             competition = createCompetition();
             competitionRuntime.startSession(competition);
+            mockJmsService.reset();
         } catch (NullPointerException npe) {
             log.error("Nullpointer: {}", npe.getMessage(), npe);
             throw npe;
         }
+    }
+
+    @Transactional
+    public CompileAttempt refresh(CompileAttempt entity) {
+        return compileAttemptRepository.findById(entity.getId()).orElse(null);
+    }
+
+    @Transactional
+    public TestAttempt refresh(TestAttempt entity) {
+        return testAttemptRepository.findById(entity.getId()).orElse(null);
+    }
+
+    @Transactional
+    public SubmitAttempt refresh(SubmitAttempt entity) {
+        return submitAttemptRepository.findById(entity.getId()).orElse(null);
+    }
+
+    public boolean awaitAttempt(UUID attempt, long timeout, TimeUnit unit) throws InterruptedException {
+        return mockJmsService.awaitAttempt(attempt,timeout,unit);
     }
 
     @AfterEach
@@ -108,6 +159,33 @@ public abstract class BaseRuntimeTest {
         competitionRuntime.stopCurrentSession();
         dbUtil.cleanup();
         PathUtil.delete(mojServerProperties.getDirectories().getBaseDirectory(), true);
+    }
+
+    protected Principal getPrincipal(User user) {
+        AccessToken token = new AccessToken() {
+            @Override
+            public String getSubject() {
+                return user.getUuid().toString();
+            }
+        };
+        KeycloakAccount ka = new OidcKeycloakAccount() {
+            @Override
+            public KeycloakSecurityContext getKeycloakSecurityContext() {
+                return new KeycloakSecurityContext(null, token, null, null);
+            }
+
+            @Override
+            public Principal getPrincipal() {
+                return () -> null;
+            }
+
+            @Override
+            public Set<String> getRoles() {
+                return Collections.emptySet();
+            }
+        };
+        KeycloakAuthenticationToken kat = new KeycloakAuthenticationToken(ka, false, Collections.emptyList());
+        return kat;
     }
 
     protected User addUser(Team team) {

@@ -16,10 +16,35 @@
 */
 package nl.moj.server.runtime;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession;
@@ -36,28 +61,8 @@ import nl.moj.server.sound.SoundService;
 import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
-import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import nl.moj.server.util.PathUtil;
-import org.apache.commons.lang3.time.StopWatch;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -82,8 +87,6 @@ public class AssignmentRuntime {
     private final AssignmentStatusRepository assignmentStatusRepository;
     private final UserService userService;
 
-    // TODO refactor so we do not need to use ApplicationContext to find a self reference
-   // private ApplicationContext ctx;
     private Map<Long,  AssignmentExecutionModel> assignmentExecutionModelMap = new TreeMap<>();
 
     public static class AssignmentExecutionModel  {
@@ -222,7 +225,7 @@ public class AssignmentRuntime {
         model.competitionSession = competitionSession;
         model.orderedAssignment = orderedAssignment;
         model.assignment = orderedAssignment.getAssignment();
-        model.assignmentDescriptor = assignmentService.getAssignmentDescriptor(model.assignment);
+        model.assignmentDescriptor = assignmentService.resolveAssignmentDescriptor(model.assignment);
         AssignmentPreparations preparations = new AssignmentPreparations(model);
         preparations.initOriginalAssignmentFiles();
         model.assignmentPreparations = preparations;
@@ -349,7 +352,7 @@ public class AssignmentRuntime {
         }
 
         private void initTeamAssignmentData(Team team) {
-            Path assignmentDirectory = teamService.getTeamAssignmentDirectory(model.competitionSession, team, model.assignment);
+            Path assignmentDirectory = teamService.getTeamAssignmentDirectory(model.competitionSession.getUuid(), team.getUuid(), model.assignment.getName());
             try {
                 // create empty assignment directory
                 Files.createDirectories(assignmentDirectory);
@@ -405,7 +408,7 @@ public class AssignmentRuntime {
 
         private void cleanupTeamAssignmentData(Team team, CompetitionSession competitionSession) {
             // delete historical submitted data.
-            Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession, team, model.assignment);
+            Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession.getUuid(), team.getUuid(), model.assignment.getName());
             try {
                 if (Files.exists(assignmentDirectory)) {
                     PathUtil.delete(assignmentDirectory);

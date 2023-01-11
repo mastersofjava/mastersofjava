@@ -68,7 +68,7 @@ public class CompetitionService {
 
     // TODO: Sort out if we can do this lazily when the team first submits.
     public void addTeam(Team team) {
-        Path teamdir = teamService.getTeamDirectory(competitionRuntime.getCompetitionSession(), team);
+        Path teamdir = teamService.getTeamDirectory(competitionRuntime.getCompetitionSession().getUuid(), team.getUuid());
         if (!Files.exists(teamdir)) {
             try {
                 Files.createDirectory(teamdir);

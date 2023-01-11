@@ -50,7 +50,7 @@ public class FeedbackService {
                         results.add(TeamFeedback.builder().team(t).build());
                     } else {
                         ta.getTestCases().forEach(tc -> {
-                            tf.getTestResults().put(tc.getName(), tc.isSuccess());
+                            tf.getTestResults().put(tc.getName(), tc.getSuccess() != null && tc.getSuccess());
                         });
                         results.add(tf);
                     }
