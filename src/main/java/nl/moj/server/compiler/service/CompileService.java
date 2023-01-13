@@ -16,23 +16,23 @@
 */
 package nl.moj.server.compiler.service;
 
-import java.time.Instant;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.messages.JMSCompileRequest;
+import nl.moj.common.messages.JMSCompileResponse;
 import nl.moj.common.messages.JMSFile;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.submit.service.CompileResponse;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +45,7 @@ public class CompileService {
 
     private final MessageService messageService;
 
-    public void receiveCompileResponse(CompileResponse compileResponse) {
+    public void receiveCompileResponse(JMSCompileResponse compileResponse) {
         log.info("Received compile attempt response {}", compileResponse.getAttempt());
         CompileAttempt compileAttempt = registerCompileResponse(compileResponse);
         messageService.sendCompileFeedback(compileAttempt.getAssignmentStatus().getTeam(), compileResponse);
@@ -58,7 +58,7 @@ public class CompileService {
         jmsTemplate.convertAndSend("compile_request", JMSCompileRequest.builder()
                 .attempt(compileAttempt.getUuid())
                 .assignment(compileRequest.getAssignment().getUuid())
-                .sources(compileRequest.getSources().entrySet().stream().map( e -> JMSFile.builder()
+                .sources(compileRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()
                         .path(e.getKey().toString())
                         .content(e.getValue())
                         .build()).collect(Collectors.toList()))
@@ -84,9 +84,11 @@ public class CompileService {
     }
 
     @Transactional
-    public CompileAttempt registerCompileResponse(CompileResponse compileResponse) {
+    public CompileAttempt registerCompileResponse(JMSCompileResponse compileResponse) {
         // update compile attempt with response
         CompileAttempt compileAttempt = compileAttemptRepository.findByUuid(compileResponse.getAttempt());
+        compileAttempt.setWorker(compileResponse.getWorker());
+        compileAttempt.setRun(compileResponse.getRunId());
         compileAttempt.setDateTimeStart(compileResponse.getStarted());
         compileAttempt.setDateTimeEnd(compileResponse.getEnded());
         compileAttempt.setSuccess(compileResponse.isSuccess());

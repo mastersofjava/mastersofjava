@@ -1,20 +1,25 @@
 package nl.moj.common.messages;
 
-import java.time.Instant;
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Getter;
-import nl.moj.server.submit.service.TestCaseResult;
+
+import java.time.Instant;
+import java.util.UUID;
 
 @Getter
 @Builder
-@JsonDeserialize(builder= JMSTestCaseResult.JMSTestCaseResultBuilder.class)
+@JsonDeserialize(builder = JMSTestCaseResult.JMSTestCaseResultBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class JMSTestCaseResult implements TestCaseResult {
+public class JMSTestCaseResult {
+
+    @JsonProperty("run")
+    private UUID runId;
+
+    @JsonProperty("worker")
+    private String worker;
 
     @JsonProperty("uuid")
     private UUID testCase;
@@ -34,7 +39,9 @@ public class JMSTestCaseResult implements TestCaseResult {
     @JsonProperty("output")
     private String output;
 
-    // this should not be needed it is linked directly to the UI
-    @JsonProperty("name")
-    private String name;
+    @JsonProperty("aborted")
+    private boolean aborted;
+
+    @JsonProperty("reason")
+    private String reason;
 }

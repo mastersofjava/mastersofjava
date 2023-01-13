@@ -16,12 +16,12 @@
 */
 package nl.moj.server.compiler.model;
 
+import lombok.*;
+import nl.moj.server.runtime.model.AssignmentStatus;
+
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
-
-import lombok.*;
-import nl.moj.server.runtime.model.AssignmentStatus;
 
 @Entity
 @Table(name = "compile_attempts")
@@ -50,6 +50,12 @@ public class CompileAttempt {
     @Column(name = "date_time_register", nullable = false)
     private Instant dateTimeRegister;
 
+    @Column(name = "worker", columnDefinition = "TEXT")
+    private String worker;
+
+    @Column(name = "run", columnDefinition = "uuid")
+    private UUID run;
+
     @Column(name = "date_time_start")
     private Instant dateTimeStart;
 
@@ -65,7 +71,7 @@ public class CompileAttempt {
     @Column(name = "aborted")
     private Boolean aborted;
 
-    @Column(name = "reaseon", columnDefinition = "TEXT")
+    @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
 
     @Column(name = "compiler_output", columnDefinition = "TEXT")

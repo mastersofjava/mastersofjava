@@ -84,13 +84,11 @@ public class FeedbackController {
         model.addObject("teams2", partitionedTeams.get(1));
         model.addObject("teams3", partitionedTeams.get(2));
 
-        List<String> testNames = new ArrayList<>();
+        List<UUID> testIds = new ArrayList<>();
 
         if (resultsProvider.getCurrentRunningAssignment() != null) {
             ActiveAssignment state = resultsProvider.getActiveAssignment();
-
-            testNames = state.getTestNames();
-
+            testIds = state.getTestUuids();
             model.addObject("uuid", state.getAssignment().getUuid().toString());
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addObject("timeLeft", state.getTimeRemaining());
@@ -103,7 +101,7 @@ public class FeedbackController {
             model.addObject("running", false);
         }
         model.addObject("submitLinks", request.isUserInRole("GAME_MASTER"));
-        model.addObject("tests", testNames);
+        model.addObject("tests", testIds);
         model.addObject("competitionName", competitionRuntime.getCompetition().getDisplayName());
 
         return model;

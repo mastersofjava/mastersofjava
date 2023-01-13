@@ -1,4 +1,4 @@
-package nl.moj.worker.workspace.service;
+package nl.moj.worker.workspace;
 
 import java.io.IOException;
 import java.nio.file.Path;

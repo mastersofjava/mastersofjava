@@ -1,21 +1,26 @@
 package nl.moj.common.messages;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Getter;
-import nl.moj.server.submit.service.TestResponse;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Builder
-@JsonDeserialize(builder= JMSTestResponse.JMSTestResponseBuilder.class)
+@JsonDeserialize(builder = JMSTestResponse.JMSTestResponseBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class JMSTestResponse implements TestResponse  {
+public class JMSTestResponse {
+
+    @JsonProperty("run")
+    private UUID runId;
+
+    @JsonProperty("worker")
+    private String worker;
 
     @JsonProperty("attempt")
     private UUID attempt;

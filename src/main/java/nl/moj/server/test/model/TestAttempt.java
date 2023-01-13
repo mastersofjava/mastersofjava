@@ -53,6 +53,12 @@ public class TestAttempt {
     @Column(name="date_time_register", nullable = false)
     private Instant dateTimeRegister;
 
+    @Column(name = "worker", columnDefinition = "TEXT")
+    private String worker;
+
+    @Column(name = "run", columnDefinition = "uuid")
+    private UUID run;
+
     @Column(name = "date_time_start")
     private Instant dateTimeStart;
 
@@ -62,7 +68,7 @@ public class TestAttempt {
     @Column(name = "aborted")
     private Boolean aborted;
 
-    @Column(name = "reaseon", columnDefinition = "TEXT")
+    @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
 
     @OneToOne(cascade = CascadeType.REMOVE)

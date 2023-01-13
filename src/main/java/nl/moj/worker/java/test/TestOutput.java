@@ -14,7 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.test.service;
+package nl.moj.worker.java.test;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -22,17 +22,23 @@ import java.util.UUID;
 import lombok.Builder;
 import lombok.Data;
 
-@Builder
 @Data
-public class TestCaseOutput {
+@Builder(toBuilder = true)
+public class TestOutput {
 
-	private TestCaseInput input;
+    private UUID runId;
+    private UUID testCase;
+
+    private String output;
+    private String errorOutput;
+    @Builder.Default
+    private boolean success = false;
+    @Builder.Default
+    private boolean timedOut = false;
+    @Builder.Default
+    private boolean aborted = false;
+    private String reason;
+
     private Instant dateTimeStart;
     private Instant dateTimeEnd;
-    private String testName;
-    private String testOutput;
-    private boolean success;
-
-    @Builder.Default
-    private boolean timeout = false;
 }

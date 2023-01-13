@@ -18,6 +18,7 @@ package nl.moj.server.runtime.model;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import lombok.Builder;
@@ -57,6 +58,13 @@ public class ActiveAssignment {
                 .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST ||
                         f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
                 .map(AssignmentFile::getName).collect(Collectors.toList());
+    }
+
+    public List<UUID> getTestUuids() {
+        return assignmentFiles
+                .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST ||
+                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
+                .map(AssignmentFile::getUuid).collect(Collectors.toList());
     }
 
     public List<AssignmentFile> getTestFiles() {

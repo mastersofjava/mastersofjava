@@ -12,6 +12,12 @@ import lombok.Getter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JMSFile {
 
+    public enum Type {
+        SOURCE, RESOURCE
+    }
+
+    @JsonProperty("type")
+    private Type type;
     @JsonProperty("path")
     private String path;
     @JsonProperty("content")

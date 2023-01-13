@@ -49,8 +49,14 @@ public class SubmitAttempt {
     @JoinColumn(name = "assignment_status_id", nullable = false)
     private AssignmentStatus assignmentStatus;
 
-    @Column(name = "date_time_register")
+    @Column(name = "date_time_register", nullable = false)
     private Instant dateTimeRegister;
+
+    @Column(name = "worker", columnDefinition = "TEXT")
+    private String worker;
+
+    @Column(name = "run", columnDefinition = "uuid")
+    private UUID run;
 
     @Column(name = "date_time_start")
     private Instant dateTimeStart;

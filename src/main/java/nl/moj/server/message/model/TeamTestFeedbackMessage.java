@@ -30,7 +30,7 @@ public class TeamTestFeedbackMessage {
     private final MessageType messageType = MessageType.TEST;
     private final UUID uuid;
     private final String message;
-    private final String test;
+    private final UUID test;
     private final boolean success;
 
 }

@@ -17,15 +17,15 @@
 package nl.moj.server.message.service;
 
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.messages.JMSCompileResponse;
+import nl.moj.common.messages.JMSTestCaseResult;
+import nl.moj.common.messages.JMSTestResponse;
 import nl.moj.server.TaskControlController.TaskMessage;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.message.model.*;
-import nl.moj.server.submit.service.CompileResponse;
 import nl.moj.server.submit.service.SubmitResult;
-import nl.moj.server.submit.service.TestResponse;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.test.service.TestCaseOutput;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -57,27 +57,25 @@ public class MessageService {
         this.userService = userService;
     }
 
-    public void sendTestFeedback(Team team, TestResponse tr) {
+    public void sendTestFeedback(Team team, JMSTestResponse tr) {
 
-        tr.getTestCaseResults().forEach( tcr -> {
+        tr.getTestCaseResults().forEach(tcr -> {
             TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder()
                     .success(tcr.isSuccess())
                     .uuid(team.getUuid())
-                    .test(tcr.getName())
+                    .test(tcr.getTestCase())
                     .message(tcr.getOutput() == null ? "" : tcr.getOutput())
                     .build();
-            log.info("Sending test feedback: {}", msg);
-            sendToActiveUsers(team, msg);
-            template.convertAndSend(DEST_TESTRESULTS, msg);
+            sendTestFeedback(team, tcr);
         });
     }
 
-    public void sendTestFeedback(Team team, TestCaseOutput tr) {
+    public void sendTestFeedback(Team team, JMSTestCaseResult tr) {
         TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder()
                 .success(tr.isSuccess())
                 .uuid(team.getUuid())
-                .test(tr.getTestName())
-                .message(tr.getTestOutput() == null ? "" : tr.getTestOutput())
+                .test(tr.getTestCase())
+                .message(tr.getOutput())
                 .build();
         log.info("Sending test feedback: {}", msg);
         sendToActiveUsers(team, msg);
@@ -100,7 +98,7 @@ public class MessageService {
         template.convertAndSend(DEST_RANKINGS, "refresh");
     }
 
-    public void sendCompileFeedback(Team team, CompileResponse compileResponse) {
+    public void sendCompileFeedback(Team team, JMSCompileResponse compileResponse) {
         TeamCompileFeedbackMessage msg = TeamCompileFeedbackMessage.builder()
                 .success(compileResponse.isSuccess())
                 .team(team.getName())

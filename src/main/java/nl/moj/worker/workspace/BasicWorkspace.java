@@ -1,4 +1,4 @@
-package nl.moj.worker.workspace.service;
+package nl.moj.worker.workspace;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -7,12 +7,15 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
-import java.util.Map;
+import java.util.List;
 import java.util.stream.Stream;
 
 import nl.moj.common.assignment.descriptor.*;
+import nl.moj.common.messages.JMSFile;
+import nl.moj.worker.java.common.FileContent;
 
 public class BasicWorkspace implements Workspace {
 
@@ -21,14 +24,14 @@ public class BasicWorkspace implements Workspace {
     private Path target;
     private AssignmentDescriptor assignmentDescriptor;
 
-    public BasicWorkspace(AssignmentDescriptor assignmentDescriptor, Map<Path,String> teamSources) throws IOException {
+    public BasicWorkspace(AssignmentDescriptor assignmentDescriptor, List<JMSFile> replacements) throws IOException {
         this.base = Files.createTempDirectory("workspace");
         this.sources = this.base.resolve("sources");
         this.target = this.base.resolve("target");
         this.assignmentDescriptor = assignmentDescriptor;
         prepare();
-        if( teamSources != null ) {
-            importSourceFiles(teamSources);
+        if( replacements != null && !replacements.isEmpty() ) {
+            replaceFiles(replacements);
         }
     }
 
@@ -120,10 +123,17 @@ public class BasicWorkspace implements Workspace {
         Files.copy(data, tp, StandardCopyOption.REPLACE_EXISTING);
     }
 
-    public void importSourceFiles(Map<Path, String> sources) throws IOException {
-        for (Map.Entry<Path, String> entry : sources.entrySet())
-            importSourceFile(new ByteArrayInputStream(entry.getValue()
-                    .getBytes(StandardCharsets.UTF_8)), entry.getKey());
+    public void replaceFiles(List<JMSFile> files) throws IOException {
+        for( JMSFile file : files ) {
+            if( file.getType() == JMSFile.Type.SOURCE ) {
+                importSourceFile(new ByteArrayInputStream(file.getContent()
+                        .getBytes(StandardCharsets.UTF_8)), Paths.get(file.getPath()));
+            }
+            if( file.getType() == JMSFile.Type.RESOURCE ) {
+                importResourceFile(new ByteArrayInputStream(file.getContent()
+                        .getBytes(StandardCharsets.UTF_8)), Paths.get(file.getPath()));
+            }
+        }
     }
 
     public Stream<Path> getSources() throws IOException {
@@ -134,6 +144,7 @@ public class BasicWorkspace implements Workspace {
         try (Stream<Path> walk = Files.walk(base)) {
             walk.sorted(Comparator.reverseOrder()).forEach(f -> {
                 try {
+                    System.out.println("DELETE: " + f.toAbsolutePath());
                     Files.delete(f);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
