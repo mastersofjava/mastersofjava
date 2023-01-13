@@ -53,6 +53,12 @@ public class TestCase {
     @Column(name = "date_time_register", nullable = false)
     private Instant dateTimeRegister;
 
+    @Column(name = "worker", columnDefinition = "TEXT")
+    private String worker;
+
+    @Column(name = "run", columnDefinition = "uuid")
+    private UUID run;
+
     @Column(name = "date_time_start")
     private Instant dateTimeStart;
 
@@ -64,6 +70,12 @@ public class TestCase {
 
     @Column(name = "timeout")
     private Boolean timeout;
+
+    @Column(name = "aborted")
+    private Boolean aborted;
+
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
 
     @Column(name = "test_output", columnDefinition = "TEXT")
     private String testOutput;

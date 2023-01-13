@@ -149,6 +149,18 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
 
     @ParameterizedTest
     @MethodSource("assignments")
+    public void shouldTest(String assignment) throws Exception {
+        startSelectedAssignment(assignment);
+        Duration timeout = createDurationThatIsLarge();
+        SourceMessage src = createSourceMessageWithNoTimeout();
+        TestAttempt testAttempt = doTest(src, timeout);
+
+        //assertValidSubmit(submitResult);
+        Assertions.assertThat(testAttempt).isNotNull();
+    }
+
+    @ParameterizedTest
+    @MethodSource("assignments")
     @Disabled
     public void shouldUseSpecifiedAssignmentTestTimeout(String assignment) throws Exception {
         startSelectedAssignment(assignment);

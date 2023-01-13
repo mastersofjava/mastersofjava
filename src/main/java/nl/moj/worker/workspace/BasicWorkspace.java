@@ -15,7 +15,6 @@ import java.util.stream.Stream;
 
 import nl.moj.common.assignment.descriptor.*;
 import nl.moj.common.messages.JMSFile;
-import nl.moj.worker.java.common.FileContent;
 
 public class BasicWorkspace implements Workspace {
 
@@ -30,7 +29,7 @@ public class BasicWorkspace implements Workspace {
         this.target = this.base.resolve("target");
         this.assignmentDescriptor = assignmentDescriptor;
         prepare();
-        if( replacements != null && !replacements.isEmpty() ) {
+        if (replacements != null && !replacements.isEmpty()) {
             replaceFiles(replacements);
         }
     }
@@ -39,7 +38,7 @@ public class BasicWorkspace implements Workspace {
         AssignmentFiles files = assignmentDescriptor.getAssignmentFiles();
         Sources sources = files.getSources();
         Path base = null;
-        if( sources.getBase() != null ) {
+        if (sources.getBase() != null) {
             base = assignmentDescriptor.getDirectory().resolve(sources.getBase());
             for (Path p : sources.getEditable()) {
                 importSourceFile(base.resolve(p), p);
@@ -53,7 +52,7 @@ public class BasicWorkspace implements Workspace {
         }
 
         Resources resources = files.getResources();
-        if( resources.getBase() != null ) {
+        if (resources.getBase() != null) {
             base = assignmentDescriptor.getDirectory().resolve(resources.getBase());
             for (Path p : resources.getFiles()) {
                 importResourceFile(base.resolve(p), p);
@@ -61,7 +60,7 @@ public class BasicWorkspace implements Workspace {
         }
 
         TestSources testSources = files.getTestSources();
-        if( testSources.getBase() != null ) {
+        if (testSources.getBase() != null) {
             base = assignmentDescriptor.getDirectory().resolve(testSources.getBase());
             for (Path p : testSources.getTests()) {
                 importSourceFile(base.resolve(p), p);
@@ -75,7 +74,7 @@ public class BasicWorkspace implements Workspace {
         }
 
         TestResources testResources = files.getTestResources();
-        if( testResources.getBase() != null ) {
+        if (testResources.getBase() != null) {
             base = assignmentDescriptor.getDirectory().resolve(testResources.getBase());
             for (Path p : testResources.getFiles()) {
                 importResourceFile(base.resolve(p), p);
@@ -100,7 +99,7 @@ public class BasicWorkspace implements Workspace {
         if (!p.startsWith(target)) {
             tp = target.resolve(p);
         }
-        if( tp.getParent() != null ) {
+        if (tp.getParent() != null) {
             Files.createDirectories(tp.getParent());
         }
         Files.copy(data, tp, StandardCopyOption.REPLACE_EXISTING);
@@ -117,19 +116,19 @@ public class BasicWorkspace implements Workspace {
         if (!p.startsWith(sources)) {
             tp = sources.resolve(p);
         }
-        if( tp.getParent() != null ) {
+        if (tp.getParent() != null) {
             Files.createDirectories(tp.getParent());
         }
         Files.copy(data, tp, StandardCopyOption.REPLACE_EXISTING);
     }
 
     public void replaceFiles(List<JMSFile> files) throws IOException {
-        for( JMSFile file : files ) {
-            if( file.getType() == JMSFile.Type.SOURCE ) {
+        for (JMSFile file : files) {
+            if (file.getType() == JMSFile.Type.SOURCE) {
                 importSourceFile(new ByteArrayInputStream(file.getContent()
                         .getBytes(StandardCharsets.UTF_8)), Paths.get(file.getPath()));
             }
-            if( file.getType() == JMSFile.Type.RESOURCE ) {
+            if (file.getType() == JMSFile.Type.RESOURCE) {
                 importResourceFile(new ByteArrayInputStream(file.getContent()
                         .getBytes(StandardCharsets.UTF_8)), Paths.get(file.getPath()));
             }

@@ -1,19 +1,5 @@
 package nl.moj.worker.java.compile;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.util.LengthLimitedOutputCatcher;
-import nl.moj.worker.java.ClasspathService;
-import nl.moj.worker.workspace.Workspace;
-import org.slf4j.MDC;
-import org.springframework.stereotype.Service;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.ProcessResult;
-import org.zeroturnaround.exec.listener.ProcessListener;
-
-import java.io.Closeable;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,10 +8,21 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.util.LengthLimitedOutputCatcher;
+import nl.moj.worker.java.ClasspathService;
+import nl.moj.worker.workspace.Workspace;
+import org.springframework.stereotype.Service;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
+import org.zeroturnaround.exec.listener.ProcessListener;
 
 @Service
 @RequiredArgsConstructor
@@ -35,16 +32,15 @@ public class CompileRunnerService {
     private final MojServerProperties mojServerProperties;
     private final ClasspathService classpathService;
 
-    public CompileOutput compile(Workspace workspace, UUID runId) {
+    public CompileOutput compile(Workspace workspace) {
 
         CompileOutput co = CompileOutput.builder()
-                .runId(runId)
                 .dateTimeStart(Instant.now())
                 .build();
 
         log.info("Compile starting.");
 
-        try(Closeable ignored = MDC.putCloseable("run", runId.toString())) {
+        try {
             // find java compiler
             AssignmentDescriptor ad = workspace.getAssignmentDescriptor();
             var javaVersion = mojServerProperties.getLanguages().getJavaVersion(ad.getJavaVersion());
@@ -123,7 +119,8 @@ public class CompileRunnerService {
             } catch (TimeoutException e) {
                 // process is automatically destroyed
                 co.setTimedOut(true);
-                compileOutput.getBuffer().append(mojServerProperties.getLimits().getCompileOutputLimits().getTimeoutMessage());
+                compileOutput.getBuffer()
+                        .append(mojServerProperties.getLimits().getCompileOutputLimits().getTimeoutMessage());
             }
 
             co.setOutput(stripTeamPathInfo(compileOutput.getBuffer(), workspace.getSourcesRoot()));
@@ -134,7 +131,7 @@ public class CompileRunnerService {
             return co;
 
         } catch (Throwable e) {
-            log.info("Unexpected exception running compile, aborting",e);
+            log.info("Unexpected exception running compile, aborting", e);
             return CompileOutput.builder()
                     .dateTimeStart(co.getDateTimeStart())
                     .dateTimeEnd(Instant.now())

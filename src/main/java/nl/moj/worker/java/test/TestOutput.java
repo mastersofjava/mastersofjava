@@ -26,7 +26,6 @@ import lombok.Data;
 @Builder(toBuilder = true)
 public class TestOutput {
 
-    private UUID runId;
     private UUID testCase;
 
     private String output;

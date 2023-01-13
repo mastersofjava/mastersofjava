@@ -10,7 +10,6 @@ import java.util.UUID;
 @Builder(toBuilder = true)
 public class CompileOutput {
 
-    private UUID runId;
     private String output;
     private String errorOutput;
     @Builder.Default

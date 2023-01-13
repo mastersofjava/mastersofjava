@@ -16,11 +16,19 @@
 */
 package nl.moj.server.test.service;
 
+import javax.transaction.Transactional;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.messages.*;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
+import nl.moj.server.compiler.service.CompileRequest;
+import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentStatus;
@@ -32,16 +40,12 @@ import nl.moj.server.test.repository.TestCaseRepository;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
-import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class TestService {
+
+    private final CompileService compileService;
 
     private final TestCaseRepository testCaseRepository;
 
@@ -61,6 +65,7 @@ public class TestService {
         messageService.sendTestFeedback(testAttempt.getAssignmentStatus().getTeam(), testResponse);
     }
 
+    @Transactional
     public TestAttempt registerTestRequest(TestRequest testRequest) {
 
         messageService.sendTestingStarted(testRequest.getTeam());
@@ -89,21 +94,21 @@ public class TestService {
                 testRequest.getAssignment().getId(), testRequest.getSession().getId(),
                 testRequest.getTeam().getId());
 
-        // register compile attempt
-        CompileAttempt compileAttempt = CompileAttempt.builder()
-                .assignmentStatus(as)
-                .uuid(UUID.randomUUID())
-                .dateTimeRegister(Instant.now())
-                .build();
-        compileAttempt = compileAttemptRepository.save(compileAttempt);
+        CompileAttempt compileAttempt = compileService.prepareCompileAttempt(
+                CompileRequest.builder()
+                        .assignment(testRequest.getAssignment())
+                        .session(testRequest.getSession())
+                        .sources(testRequest.getSources())
+                        .team(testRequest.getTeam())
+                        .build());
 
-        // register test attempt
         TestAttempt testAttempt = TestAttempt.builder()
                 .assignmentStatus(as)
                 .uuid(UUID.randomUUID())
                 .dateTimeRegister(Instant.now())
                 .compileAttempt(compileAttempt)
                 .build();
+        testAttempt = testAttemptRepository.save(testAttempt);
 
         for (AssignmentFile af : testRequest.getTests()) {
             TestCase tc = TestCase.builder()
@@ -117,34 +122,53 @@ public class TestService {
 
         as.getCompileAttempts().add(compileAttempt);
         as.getTestAttempts().add(testAttempt);
-        return testAttemptRepository.save(testAttempt);
+        return testAttempt;
     }
 
     @Transactional
     public TestAttempt registerTestResponse(JMSTestResponse testResponse) {
         TestAttempt testAttempt = testAttemptRepository.findByUuid(testResponse.getAttempt());
+        return update(testAttempt, testResponse);
+    }
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    public TestAttempt update(TestAttempt testAttempt, JMSTestResponse testResponse) {
+
+        if (testAttempt == null) {
+            return null;
+        }
+        if (testResponse == null) {
+            return testAttempt;
+        }
+
         testAttempt.setDateTimeStart(testResponse.getStarted());
         testAttempt.setDateTimeEnd(testResponse.getEnded());
         testAttempt.setWorker(testResponse.getWorker());
         testAttempt.setRun(testResponse.getRunId());
+        testAttempt.setAborted(testResponse.isAborted());
+        testAttempt.setReason(testResponse.getReason());
 
         Map<UUID, JMSTestCaseResult> testCaseResults = testResponse.getTestCaseResults().stream()
                 .collect(Collectors.toMap(JMSTestCaseResult::getTestCase, tcr -> tcr));
 
-        for (TestCase tc : testAttempt.getTestCases()) {
-            if (testCaseResults.containsKey(tc.getUuid())) {
-                JMSTestCaseResult tcr = testCaseResults.get(tc.getUuid());
-                tc.setTestOutput(tcr.getOutput());
-                tc.setDateTimeStart(tcr.getStarted());
-                tc.setDateTimeEnd(tcr.getEnded());
-                tc.setSuccess(tcr.isSuccess());
-                tc.setTimeout(tcr.isTimeout());
-                testCaseRepository.save(tc);
+        if (testAttempt.getTestCases() != null) {
+            for (TestCase tc : testAttempt.getTestCases()) {
+                if (testCaseResults.containsKey(tc.getUuid())) {
+                    JMSTestCaseResult tcr = testCaseResults.get(tc.getUuid());
+                    tc.setWorker(tcr.getWorker());
+                    tc.setRun(tcr.getRunId());
+                    tc.setTestOutput(tcr.getOutput());
+                    tc.setDateTimeStart(tcr.getStarted());
+                    tc.setDateTimeEnd(tcr.getEnded());
+                    tc.setSuccess(tcr.isSuccess());
+                    tc.setTimeout(tcr.isTimeout());
+                    tc.setAborted(tcr.isAborted());
+                    tc.setReason(tcr.getReason());
+                    testCaseRepository.save(tc);
+                }
             }
         }
-
-        // TODO update compile attempt!
-
+        compileService.update(testAttempt.getCompileAttempt(), testResponse.getCompileResponse());
         return testAttemptRepository.save(testAttempt);
     }
 }

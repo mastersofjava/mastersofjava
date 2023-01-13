@@ -16,6 +16,11 @@
 */
 package nl.moj.server.compiler.service;
 
+import javax.transaction.Transactional;
+import java.time.Instant;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.messages.JMSCompileRequest;
@@ -28,11 +33,6 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +42,6 @@ public class CompileService {
     private final CompileAttemptRepository compileAttemptRepository;
     private final AssignmentStatusRepository assignmentStatusRepository;
     private final JmsTemplate jmsTemplate;
-
     private final MessageService messageService;
 
     public void receiveCompileResponse(JMSCompileResponse compileResponse) {
@@ -73,7 +72,6 @@ public class CompileService {
                 compileRequest.getAssignment().getId(), compileRequest.getSession().getId(),
                 compileRequest.getTeam().getId());
 
-        // register compile attempt
         CompileAttempt compileAttempt = CompileAttempt.builder()
                 .assignmentStatus(as)
                 .uuid(UUID.randomUUID())
@@ -85,8 +83,20 @@ public class CompileService {
 
     @Transactional
     public CompileAttempt registerCompileResponse(JMSCompileResponse compileResponse) {
-        // update compile attempt with response
         CompileAttempt compileAttempt = compileAttemptRepository.findByUuid(compileResponse.getAttempt());
+        return update(compileAttempt, compileResponse);
+    }
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    public CompileAttempt update(CompileAttempt compileAttempt, JMSCompileResponse compileResponse) {
+
+        if (compileAttempt == null) {
+            return null;
+        }
+        if (compileResponse == null) {
+            return compileAttempt;
+        }
+
         compileAttempt.setWorker(compileResponse.getWorker());
         compileAttempt.setRun(compileResponse.getRunId());
         compileAttempt.setDateTimeStart(compileResponse.getStarted());

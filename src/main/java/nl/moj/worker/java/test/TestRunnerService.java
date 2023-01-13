@@ -1,5 +1,15 @@
 package nl.moj.worker.java.test;
 
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
@@ -8,23 +18,10 @@ import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.util.LengthLimitedOutputCatcher;
 import nl.moj.worker.java.ClasspathService;
 import nl.moj.worker.workspace.Workspace;
-import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.listener.ProcessListener;
-
-import java.io.Closeable;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -38,15 +35,14 @@ public class TestRunnerService {
     private final MojServerProperties mojServerProperties;
     private final ClasspathService classpathService;
 
-    public TestOutput test(Workspace workspace, JMSTestCase test, UUID runId) {
+    public TestOutput test(Workspace workspace, JMSTestCase test) {
         TestOutput to = TestOutput.builder()
-                .runId(runId)
                 .dateTimeStart(Instant.now())
                 .build();
 
         log.info("Test case {} {} starting.", test.getTestCase(), test.getName());
 
-        try (Closeable ignored = MDC.putCloseable("run", runId.toString())) {
+        try {
             AssignmentDescriptor ad = workspace.getAssignmentDescriptor();
             Path policy = resolveSecurityPolicy(ad);
 
@@ -69,7 +65,10 @@ public class TestRunnerService {
                 try {
                     List<String> cmd = new ArrayList<>();
                     cmd.add(
-                            mojServerProperties.getLanguages().getJavaVersion(ad.getJavaVersion()).getRuntime().toString());
+                            mojServerProperties.getLanguages()
+                                    .getJavaVersion(ad.getJavaVersion())
+                                    .getRuntime()
+                                    .toString());
                     if (ad.getJavaVersion() > 11) {
                         cmd.add("--enable-preview");
                     }
@@ -91,7 +90,9 @@ public class TestRunnerService {
                             .addListener(new ProcessListener() {
                                 @Override
                                 public void afterStart(Process process, ProcessExecutor executor) {
-                                    log.info("Test case {} {} executing: {}", test.getTestCase(), test.getName(), process.info().commandLine().orElse("<none>"));
+                                    log.info("Test case {} {} executing: {}", test.getTestCase(), test.getName(), process.info()
+                                            .commandLine()
+                                            .orElse("<none>"));
                                 }
                             }).execute();
                     to.setSuccess(pr.getExitValue() == 0);
