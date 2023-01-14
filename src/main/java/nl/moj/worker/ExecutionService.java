@@ -14,17 +14,13 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.submit.service;
+package nl.moj.worker;
 
 import java.util.concurrent.Executor;
 
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.common.assignment.descriptor.ExecutionModel;
-import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.compiler.repository.CompileAttemptRepository;
-import nl.moj.server.compiler.service.CompileService;
-import nl.moj.server.test.service.TestService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -32,34 +28,18 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ExecutionService {
 
-    private final CompileService compileService;
-    private final TestService testService;
-
-    private CompileAttemptRepository compileAttemptRepository;
-
-    private AssignmentService assignmentService;
     private final Executor sequential;
     private final Executor parallel;
 
-    public ExecutionService(@Qualifier("sequential") Executor sequential, @Qualifier("parallel") Executor parallel,
-                            CompileService compileService, TestService testService) {
+    public ExecutionService(@Qualifier("sequential") Executor sequential, @Qualifier("parallel") Executor parallel) {
         this.sequential = sequential;
         this.parallel = parallel;
-        this.compileService = compileService;
-        this.testService = testService;
     }
 
     public Executor getExecutor(AssignmentDescriptor ad) {
-        if (ad == null) {
-            log.debug("Executing assignment in sequentially, can slow down client response (only used by admin)");
-            return sequential;
-        }
         if (ad.getExecutionModel() == ExecutionModel.SEQUENTIAL) {
-        	log.debug("Executing assignment sequentially, can slow down response to client");
             return sequential;
         }
-        log.debug("Executing assignment in parallel, can impact timing of assignment");
         return parallel;
     }
-
 }

@@ -12,9 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.common.messages.*;
 import nl.moj.server.runtime.service.RuntimeService;
-import nl.moj.server.submit.service.ExecutionService;
 import nl.moj.server.util.CompletableFutures;
-import nl.moj.worker.RunTracer;
+import nl.moj.worker.ExecutionService;
 import nl.moj.worker.WorkerService;
 import nl.moj.worker.java.compile.CompileOutput;
 import nl.moj.worker.java.compile.CompileRunnerService;
@@ -36,23 +35,19 @@ public class JavaService {
     private final ExecutionService executionService;
     private final WorkerService workerService;
 
-    public CompletableFuture<JMSCompileResponse> compile(JMSCompileRequest compileRequest, UUID runId) {
-        return RunTracer.trace(runId, () -> compileInternal(compileRequest, runId));
-    }
-
-    private CompletableFuture<JMSCompileResponse> compileInternal(JMSCompileRequest compileRequest, UUID runId) {
+    public CompletableFuture<JMSCompileResponse> compile(JMSCompileRequest compileRequest, String traceId) {
         try {
             AssignmentDescriptor ad = runtimeService.getAssignmentDescriptor(compileRequest.getAssignment());
             Workspace workspace = workspaceService.getWorkspace(ad, compileRequest.getSources());
-            return compile(workspace, runId)
+            return compile(workspace)
                     .thenApply(co -> {
                         closeWorkspace(workspace);
-                        return toCompileResponse(compileRequest.getAttempt(), runId, co);
+                        return toCompileResponse(compileRequest.getAttempt(), traceId, co);
                     });
 
         } catch (Exception e) {
             return CompletableFuture.completedFuture(JMSCompileResponse.builder()
-                    .runId(runId)
+                    .traceId(traceId)
                     .worker(workerService.getWorkerIdentification())
                     .attempt(compileRequest.getAttempt())
                     .started(Instant.now())
@@ -63,29 +58,25 @@ public class JavaService {
         }
     }
 
-    public CompletableFuture<JMSTestResponse> test(JMSTestRequest testRequest, UUID runId) {
-        return RunTracer.trace(runId, () -> testInternal(testRequest, runId));
-    }
-
-    private CompletableFuture<JMSTestResponse> testInternal(JMSTestRequest testRequest, UUID runId) {
+    public CompletableFuture<JMSTestResponse> test(JMSTestRequest testRequest, String traceId) {
         try {
             AssignmentDescriptor ad = runtimeService.getAssignmentDescriptor(testRequest.getAssignment());
             Workspace workspace = workspaceService.getWorkspace(ad, testRequest.getSources());
-            return compile(workspace, runId)
+            return compile(workspace)
                     .thenCompose(co -> {
                         if (co.isSuccess()) {
-                            return test(workspace, testRequest.getTests(), runId)
-                                    .thenApply(r -> toTestResponse(testRequest.getAttempt(), runId, co, r));
+                            return test(workspace, testRequest.getTests())
+                                    .thenApply(r -> toTestResponse(testRequest.getAttempt(), traceId, co, r));
                         } else {
                             return CompletableFuture.completedFuture(JMSTestResponse
                                     .builder()
-                                    .runId(runId)
+                                    .traceId(traceId)
                                     .worker(workerService.getWorkerIdentification())
                                     .attempt(testRequest.getAttempt())
                                     .started(co.getDateTimeStart())
                                     .ended(Instant.now())
                                     .aborted(false)
-                                    .compileResponse(toCompileResponse(null, runId, co))
+                                    .compileResponse(toCompileResponse(null, traceId, co))
                                     .build());
                         }
                     })
@@ -96,7 +87,7 @@ public class JavaService {
 
         } catch (Exception e) {
             return CompletableFuture.completedFuture(JMSTestResponse.builder()
-                    .runId(runId)
+                    .traceId(traceId)
                     .worker(workerService.getWorkerIdentification())
                     .attempt(testRequest.getAttempt())
                     .started(Instant.now())
@@ -114,9 +105,9 @@ public class JavaService {
                 .build());
     }
 
-    private JMSCompileResponse toCompileResponse(UUID attempt, UUID runId, CompileOutput co) {
+    private JMSCompileResponse toCompileResponse(UUID attempt, String runId, CompileOutput co) {
         return JMSCompileResponse.builder()
-                .runId(runId)
+                .traceId(runId)
                 .worker(workerService.getWorkerIdentification())
                 .success(co.isSuccess())
                 .attempt(attempt)
@@ -129,22 +120,22 @@ public class JavaService {
                 .build();
     }
 
-    private JMSTestResponse toTestResponse(UUID attempt, UUID runId, CompileOutput co, List<TestOutput> r) {
+    private JMSTestResponse toTestResponse(UUID attempt, String traceId, CompileOutput co, List<TestOutput> r) {
         return JMSTestResponse.builder()
-                .runId(runId)
+                .traceId(traceId)
                 .worker(workerService.getWorkerIdentification())
                 .attempt(attempt)
                 .started(co.getDateTimeStart())
                 .ended(Instant.now())
                 .aborted(false)
-                .compileResponse(toCompileResponse(null, runId, co))
-                .testCaseResults(r.stream().map(tcr -> toTestCaseResult(tcr, runId)).toList())
+                .compileResponse(toCompileResponse(null, traceId, co))
+                .testCaseResults(r.stream().map(tcr -> toTestCaseResult(tcr, traceId)).toList())
                 .build();
     }
 
-    private JMSTestCaseResult toTestCaseResult(TestOutput to, UUID runId) {
+    private JMSTestCaseResult toTestCaseResult(TestOutput to, String traceId) {
         return JMSTestCaseResult.builder()
-                .runId(runId)
+                .traceId(traceId)
                 .worker(workerService.getWorkerIdentification())
                 .testCase(to.getTestCase())
                 .aborted(to.isAborted())
@@ -165,18 +156,17 @@ public class JavaService {
         }
     }
 
-    private CompletableFuture<List<TestOutput>> test(Workspace workspace, List<JMSTestCase> testCases, UUID runId) {
+    private CompletableFuture<List<TestOutput>> test(Workspace workspace, List<JMSTestCase> testCases) {
         AssignmentDescriptor ad = workspace.getAssignmentDescriptor();
         List<CompletableFuture<TestOutput>> tests = new ArrayList<>();
         testCases.forEach(tc ->
-                tests.add(CompletableFuture.supplyAsync(() -> RunTracer.trace(runId, () -> testRunnerService.test(workspace, tc)),
+                tests.add(CompletableFuture.supplyAsync(() -> testRunnerService.test(workspace, tc),
                         executionService.getExecutor(ad))));
         return CompletableFutures.allOf(tests);
     }
 
-    private CompletableFuture<CompileOutput> compile(Workspace workspace, UUID runId) {
-        return CompletableFuture.supplyAsync(() ->
-                        RunTracer.trace(runId, () -> compileRunnerService.compile(workspace)),
+    private CompletableFuture<CompileOutput> compile(Workspace workspace) {
+        return CompletableFuture.supplyAsync(() -> compileRunnerService.compile(workspace),
                 executionService.getExecutor(workspace.getAssignmentDescriptor()));
     }
 

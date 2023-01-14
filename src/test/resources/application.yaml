@@ -40,3 +40,10 @@ spring:
     enabled: false
   jpa:
     generate-ddl: true
+
+logging:
+  level:
+    nl.moj.server: debug
+    org.keycloak: debug
+    "org.apache.activemq.audit.base": error
+    "org.apache.activemq.audit.message": error

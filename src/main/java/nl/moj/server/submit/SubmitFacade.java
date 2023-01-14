@@ -57,7 +57,7 @@ public class SubmitFacade {
 
     public CompileAttempt registerCompileRequest(SourceMessage message, Principal principal) {
         try {
-            return compileService.registerCompileRequest(createCompileRequest(message, principal));
+            return compileService.registerCompileAttempt(createCompileRequest(message, principal));
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
@@ -66,7 +66,7 @@ public class SubmitFacade {
 
     public TestAttempt registerTestRequest(SourceMessage message, Principal principal) {
         try {
-            return testService.registerTestRequest(createTestRequest(message, principal));
+            return testService.registerTestAttempt(createTestRequest(message, principal));
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }

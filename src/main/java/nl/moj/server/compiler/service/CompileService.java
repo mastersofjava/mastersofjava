@@ -31,6 +31,7 @@ import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +45,7 @@ public class CompileService {
     private final JmsTemplate jmsTemplate;
     private final MessageService messageService;
 
+    @Transactional
     public void receiveCompileResponse(JMSCompileResponse compileResponse) {
         log.info("Received compile attempt response {}", compileResponse.getAttempt());
         CompileAttempt compileAttempt = registerCompileResponse(compileResponse);
@@ -51,7 +53,10 @@ public class CompileService {
     }
 
     @Transactional
-    public CompileAttempt registerCompileRequest(CompileRequest compileRequest) {
+    @NewSpan
+    public CompileAttempt registerCompileAttempt(CompileRequest compileRequest) {
+        log.info("Registering compile attempt for assignment {} by team {}.", compileRequest.getAssignment().getUuid(),
+                compileRequest.getTeam().getUuid());
         CompileAttempt compileAttempt = prepareCompileAttempt(compileRequest);
         // send JMS compile request
         jmsTemplate.convertAndSend("compile_request", JMSCompileRequest.builder()
@@ -63,11 +68,14 @@ public class CompileService {
                         .build()).collect(Collectors.toList()))
                 .build());
 
+        log.info("Compile attempt {} for assignment {} by team {} registered.", compileAttempt.getUuid(), compileRequest.getAssignment()
+                .getUuid(), compileRequest.getTeam().getUuid());
         return compileAttempt;
     }
 
     @Transactional
-    public CompileAttempt prepareCompileAttempt(CompileRequest compileRequest) {
+    public CompileAttempt
+    prepareCompileAttempt(CompileRequest compileRequest) {
         AssignmentStatus as = assignmentStatusRepository.findByAssignment_IdAndCompetitionSession_IdAndTeam_Id(
                 compileRequest.getAssignment().getId(), compileRequest.getSession().getId(),
                 compileRequest.getTeam().getId());
@@ -98,7 +106,7 @@ public class CompileService {
         }
 
         compileAttempt.setWorker(compileResponse.getWorker());
-        compileAttempt.setRun(compileResponse.getRunId());
+        compileAttempt.setTrace(compileResponse.getTraceId());
         compileAttempt.setDateTimeStart(compileResponse.getStarted());
         compileAttempt.setDateTimeEnd(compileResponse.getEnded());
         compileAttempt.setSuccess(compileResponse.isSuccess());

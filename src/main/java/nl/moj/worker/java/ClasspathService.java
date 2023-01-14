@@ -1,10 +1,5 @@
 package nl.moj.worker.java;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.config.properties.MojServerProperties;
-import org.springframework.stereotype.Service;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,6 +7,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.config.properties.MojServerProperties;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -22,7 +22,7 @@ public class ClasspathService {
 
     public String resolveClasspath(Collection<Path> paths) {
         final List<Path> classPath = new ArrayList<>();
-        if( paths != null && !paths.isEmpty()) {
+        if (paths != null && !paths.isEmpty()) {
             classPath.addAll(paths);
         }
         classPath.add(resolveLibrary("junit-4.12.jar"));
@@ -31,9 +31,9 @@ public class ClasspathService {
 
         for (Path file : classPath) {
             if (Files.exists(file)) {
-                log.error("not found: {}", file.toAbsolutePath());
-            } else {
                 log.trace("found: {}", file.toAbsolutePath());
+            } else {
+                log.error("not found: {}", file.toAbsolutePath());
             }
         }
         return classPath.stream().map(p -> p.toAbsolutePath().toString())

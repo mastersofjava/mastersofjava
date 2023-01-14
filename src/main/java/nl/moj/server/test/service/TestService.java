@@ -37,6 +37,7 @@ import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.test.repository.TestAttemptRepository;
 import nl.moj.server.test.repository.TestCaseRepository;
+import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
@@ -59,6 +60,7 @@ public class TestService {
 
     private final MessageService messageService;
 
+    @Transactional
     public void receiveTestResponse(JMSTestResponse testResponse) {
         log.info("Received test attempt response {}", testResponse.getAttempt());
         TestAttempt testAttempt = registerTestResponse(testResponse);
@@ -66,10 +68,11 @@ public class TestService {
     }
 
     @Transactional
-    public TestAttempt registerTestRequest(TestRequest testRequest) {
+    @NewSpan
+    public TestAttempt registerTestAttempt(TestRequest testRequest) {
 
+        log.info("Registering test attempt for assignment {} by team {}.", testRequest.getAssignment().getUuid(), testRequest.getTeam().getUuid());
         messageService.sendTestingStarted(testRequest.getTeam());
-
         TestAttempt testAttempt = prepareTestAttempt(testRequest);
         // send JMS test request
         jmsTemplate.convertAndSend("test_request", JMSTestRequest.builder()
@@ -85,6 +88,7 @@ public class TestService {
                         .collect(Collectors.toList()))
                 .build());
 
+        log.info("Test attempt {} for assignment {} by team {} registered.", testAttempt.getUuid(), testRequest.getAssignment().getUuid(), testRequest.getTeam().getUuid());
         return testAttempt;
     }
 
@@ -144,7 +148,7 @@ public class TestService {
         testAttempt.setDateTimeStart(testResponse.getStarted());
         testAttempt.setDateTimeEnd(testResponse.getEnded());
         testAttempt.setWorker(testResponse.getWorker());
-        testAttempt.setRun(testResponse.getRunId());
+        testAttempt.setTrace(testResponse.getTraceId());
         testAttempt.setAborted(testResponse.isAborted());
         testAttempt.setReason(testResponse.getReason());
 
@@ -156,7 +160,7 @@ public class TestService {
                 if (testCaseResults.containsKey(tc.getUuid())) {
                     JMSTestCaseResult tcr = testCaseResults.get(tc.getUuid());
                     tc.setWorker(tcr.getWorker());
-                    tc.setRun(tcr.getRunId());
+                    tc.setTrace(tcr.getTraceId());
                     tc.setTestOutput(tcr.getOutput());
                     tc.setDateTimeStart(tcr.getStarted());
                     tc.setDateTimeEnd(tcr.getEnded());

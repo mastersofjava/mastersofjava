@@ -53,8 +53,8 @@ public class CompileAttempt {
     @Column(name = "worker", columnDefinition = "TEXT")
     private String worker;
 
-    @Column(name = "run", columnDefinition = "uuid")
-    private UUID run;
+    @Column(name = "trace", columnDefinition = "TEXT")
+    private String trace;
 
     @Column(name = "date_time_start")
     private Instant dateTimeStart;

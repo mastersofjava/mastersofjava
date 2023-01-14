@@ -26,7 +26,6 @@ import nl.moj.server.util.NamedThreadFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -35,7 +34,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @Slf4j
 @AllArgsConstructor
-public class AsyncConfiguration implements AsyncConfigurer {
+public class AsyncConfiguration { //implements AsyncConfigurer {
 
     private MojServerProperties mojServerProperties;
 
@@ -45,7 +44,7 @@ public class AsyncConfiguration implements AsyncConfigurer {
                 .getGameThreads(), new NamedThreadFactory("parallel"));
     }
 
-    @Override
+    @Bean
     public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
         return (ex, method, params) -> log.error("Uncaught async error", ex);
     }

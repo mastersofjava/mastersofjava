@@ -143,7 +143,6 @@ public class BasicWorkspace implements Workspace {
         try (Stream<Path> walk = Files.walk(base)) {
             walk.sorted(Comparator.reverseOrder()).forEach(f -> {
                 try {
-                    System.out.println("DELETE: " + f.toAbsolutePath());
                     Files.delete(f);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);

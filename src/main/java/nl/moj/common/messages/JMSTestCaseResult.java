@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -13,10 +14,11 @@ import java.util.UUID;
 @Builder
 @JsonDeserialize(builder = JMSTestCaseResult.JMSTestCaseResultBuilder.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
+@ToString(of={"testCase","success","timeout","aborted","reason"})
 public class JMSTestCaseResult {
 
-    @JsonProperty("run")
-    private UUID runId;
+    @JsonProperty("trace")
+    private String traceId;
 
     @JsonProperty("worker")
     private String worker;
