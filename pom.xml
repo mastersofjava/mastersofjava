@@ -208,7 +208,32 @@
             <artifactId>howler</artifactId>
             <version>1.1.29</version>
         </dependency>
+
+        <dependency>
+            <groupId>io.gatling.highcharts</groupId>
+            <artifactId>gatling-charts-highcharts</artifactId>
+            <version>3.9.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-admin-client</artifactId>
+            <version>19.0.1</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.keycloak</groupId>
+                    <artifactId>keycloak-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-authz-client</artifactId>
+        </dependency>
     </dependencies>
+
 
     <build>
         <finalName>moj-game-server</finalName>
@@ -314,6 +339,15 @@
                             <commit>${git.commit.id.abbrev}</commit>
                         </labels>
                     </container>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>io.gatling</groupId>
+                <artifactId>gatling-maven-plugin</artifactId>
+                <version>4.2.9</version>
+                <configuration>
+                    <simulationClass>performance.PerformanceTest</simulationClass>
                 </configuration>
             </plugin>
         </plugins>
