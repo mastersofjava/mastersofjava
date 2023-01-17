@@ -48,7 +48,6 @@ import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
-import nl.moj.server.submit.service.SubmitResult;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.test.model.TestAttempt;
@@ -56,6 +55,8 @@ import nl.moj.server.test.repository.TestAttemptRepository;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.repository.UserRepository;
 import nl.moj.server.util.PathUtil;
+import org.assertj.core.api.AbstractLongAssert;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.keycloak.KeycloakSecurityContext;
@@ -151,13 +152,17 @@ public abstract class BaseRuntimeTest {
         return submitAttemptRepository.findById(entity.getId()).orElse(null);
     }
 
-    public boolean awaitAttempt(UUID attempt, long timeout, TimeUnit unit) throws InterruptedException {
-        return mockJmsService.awaitAttempt(attempt,timeout,unit);
+    public boolean awaitAttempt(UUID attempt, long timeout, TimeUnit unit) {
+        try {
+            return mockJmsService.awaitAttempt(attempt, timeout, unit);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @AfterEach
     public void cleanup() throws IOException {
-        competitionRuntime.stopCurrentSession();
+        competitionRuntime.stopCurrentAssignment();
         dbUtil.cleanup();
         PathUtil.delete(mojServerProperties.getDirectories().getBaseDirectory(), true);
     }
@@ -222,7 +227,6 @@ public abstract class BaseRuntimeTest {
                     oa.setCompetition(c);
                     oa.setAssignment(a);
                     oa.setOrder(count.getAndIncrement());
-                    oa.setUuid(UUID.randomUUID());
                     return oa;
                 }).collect(Collectors.toList()));
 
@@ -253,25 +257,34 @@ public abstract class BaseRuntimeTest {
                 .orElseThrow();
     }
 
-    protected Stream<ExecutionWindow> getExecutionWindows(SubmitResult... sr) {
-        return Stream.empty();
-//        return Arrays.stream(sr).flatMap(r ->
-//                Stream.concat(Stream.of(ExecutionWindow.builder()
-//                                .start(r.getCompileResult().getDateTimeStart())
-//                                .end(r.getCompileResult().getDateTimeEnd())
-//                                .build()),
-//                        r.getTestResults()
-//                                .getResults()
-//                                .stream()
-//                                .map(tr -> ExecutionWindow.builder()
-//                                        .start(tr.getDateTimeStart())
-//                                        .end(tr.getDateTimeEnd())
-//                                        .build())));
+    protected Stream<ExecutionWindow> getExecutionWindows(SubmitAttempt... sa) {
+        return Arrays.stream(sa).flatMap(s -> getExecutionWindows(s.getTestAttempt()));
     }
 
-    protected void assertNoOverlappingExecutionWindows(SubmitResult... results) {
-        List<ExecutionWindow> windows = getExecutionWindows(results).sorted(Comparator.comparing(ExecutionWindow::getStart))
-                .collect(Collectors.toList());
+    protected Stream<ExecutionWindow> getExecutionWindows(TestAttempt... ta) {
+        return Arrays.stream(ta).flatMap(r ->
+                Stream.concat(Stream.of(ExecutionWindow.builder()
+                                .start(r.getCompileAttempt().getDateTimeStart())
+                                .end(r.getCompileAttempt().getDateTimeEnd())
+                                .build()),
+                        r.getTestCases()
+                                .stream()
+                                .map(tr -> ExecutionWindow.builder()
+                                        .start(tr.getDateTimeStart())
+                                        .end(tr.getDateTimeEnd())
+                                        .build())));
+    }
+
+    protected void assertNoOverlappingExecutionWindows(SubmitAttempt... results) {
+        assertNoOverlappingExecutionWindows(getExecutionWindows(results).toList());
+    }
+
+    protected void assertNoOverlappingExecutionWindows(TestAttempt... results) {
+        assertNoOverlappingExecutionWindows(getExecutionWindows(results).toList());
+    }
+
+    private void assertNoOverlappingExecutionWindows(List<ExecutionWindow> windows) {
+        windows.sort(Comparator.comparing(ExecutionWindow::getStart));
         ExecutionWindow previous = null;
         for (ExecutionWindow w : windows) {
             if (previous != null) {
@@ -279,6 +292,49 @@ public abstract class BaseRuntimeTest {
             }
             previous = w;
         }
+    }
+
+    protected AbstractLongAssert<?> assertFinalScore(SubmitAttempt submitAttempt) {
+        Assertions.assertThat(submitAttempt.getAssignmentStatus()).isNotNull();
+        Assertions.assertThat(submitAttempt.getAssignmentStatus().getAssignmentResult()).isNotNull();
+        return Assertions.assertThat(submitAttempt.getAssignmentStatus().getAssignmentResult().getFinalScore());
+    }
+
+    protected void assertSuccess(SubmitAttempt sa) {
+        assertSuccess(sa.getTestAttempt());
+        Assertions.assertThat(sa).isNotNull();
+        Assertions.assertThat(sa.getSuccess()).isTrue();
+        Assertions.assertThat(sa.getAborted()).isFalse();
+        Assertions.assertThat(sa.getAssignmentStatus()).isNotNull();
+        Assertions.assertThat(sa.getAssignmentStatus().getAssignmentResult()).isNotNull();
+    }
+
+    protected void assertSuccess(TestAttempt ta) {
+        assertSuccess(ta.getCompileAttempt());
+        Assertions.assertThat(ta).isNotNull();
+        Assertions.assertThat(ta.getTestCases())
+                .allMatch(tc -> tc.getSuccess() && !tc.getTimeout() && !tc.getAborted());
+    }
+
+    protected void assertTimeout(TestAttempt ta) {
+        assertSuccess(ta.getCompileAttempt());
+        Assertions.assertThat(ta).isNotNull();
+        Assertions.assertThat(ta.getTestCases())
+                .anyMatch(tc -> !tc.getSuccess() && tc.getTimeout() && !tc.getAborted());
+    }
+
+    protected void assertSuccess(CompileAttempt ca) {
+        Assertions.assertThat(ca).isNotNull();
+        Assertions.assertThat(ca.getSuccess()).isTrue();
+        Assertions.assertThat(ca.getTimeout()).isFalse();
+        Assertions.assertThat(ca.getAborted()).isFalse();
+    }
+
+    protected void assertTimeout(CompileAttempt ca) {
+        Assertions.assertThat(ca).isNotNull();
+        Assertions.assertThat(ca.getSuccess()).isFalse();
+        Assertions.assertThat(ca.getTimeout()).isTrue();
+        Assertions.assertThat(ca.getAborted()).isFalse();
     }
 
     @Value

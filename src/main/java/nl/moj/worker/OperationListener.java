@@ -5,10 +5,7 @@ import java.util.Objects;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.messages.JMSCompileRequest;
-import nl.moj.common.messages.JMSCompileResponse;
-import nl.moj.common.messages.JMSTestRequest;
-import nl.moj.common.messages.JMSTestResponse;
+import nl.moj.common.messages.*;
 import nl.moj.worker.java.JavaService;
 import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.cloud.sleuth.annotation.NewSpan;
@@ -32,9 +29,9 @@ public class OperationListener {
     public void receiveCompileRequest(JMSCompileRequest compileRequest) {
         String traceId = traceId();
         try {
-            log.info("Received compile attempt request {}", compileRequest.getAttempt());
+            log.info("Received compile attempt {}", compileRequest.getAttempt());
             javaService.compile(compileRequest, traceId).thenApply(cr -> {
-                log.info("Compile attempt request {} finished with {}", cr.getAttempt(), cr);
+                log.info("Compile attempt {} finished with {}", cr.getAttempt(), cr);
                 try {
                     jmsTemplate.convertAndSend("compile_response", cr);
                 } catch (Throwable t) {
@@ -68,9 +65,9 @@ public class OperationListener {
     public void receiveTestRequest(JMSTestRequest testRequest) {
         String traceId = traceId();
         try {
-            log.info("Received test attempt request {}", testRequest.getAttempt());
+            log.info("Received test attempt {}", testRequest.getAttempt());
             javaService.test(testRequest, traceId).thenApply(tr -> {
-                log.info("Test attempt request {} finished with {}", tr.getAttempt(), tr);
+                log.info("Test attempt {} finished with {}", tr.getAttempt(), tr);
                 try {
                     jmsTemplate.convertAndSend("test_response", tr);
                 } catch (Throwable t) {
@@ -83,6 +80,39 @@ public class OperationListener {
             try {
                 jmsTemplate.convertAndSend("test_response", JMSTestResponse.builder()
                         .attempt(testRequest.getAttempt())
+                        .ended(Instant.now())
+                        .started(Instant.now())
+                        .aborted(true)
+                        .reason(e.getMessage())
+                        .traceId(traceId)
+                        .worker(workerService.getWorkerIdentification())
+                        .build());
+            } catch (Throwable t) {
+                log.error("FAIL", t);
+            }
+        }
+    }
+
+    @JmsListener(destination = "submit_request")
+    @NewSpan
+    public void receiveSubmitRequest(JMSSubmitRequest submitRequest) {
+        String traceId = traceId();
+        try {
+            log.info("Received submit attempt {}", submitRequest.getAttempt());
+            javaService.submit(submitRequest, traceId).thenApply(tr -> {
+                log.info("Submit attempt {} finished with {}", tr.getAttempt(), tr);
+                try {
+                    jmsTemplate.convertAndSend("submit_response", tr);
+                } catch (Throwable t) {
+                    log.error("FAIL", t);
+                }
+                return tr;
+            });
+        } catch (Exception e) {
+            log.error("Submit failed for attempt {}", submitRequest.getAttempt(), e);
+            try {
+                jmsTemplate.convertAndSend("submit_response", JMSSubmitResponse.builder()
+                        .attempt(submitRequest.getAttempt())
                         .ended(Instant.now())
                         .started(Instant.now())
                         .aborted(true)

@@ -38,8 +38,6 @@ public class User {
     private String email;
 
     @ManyToOne
-    @JoinTable(name = "team_users",
-            joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "team_id", referencedColumnName = "id"))
+    @JoinColumn(name="team_id")
     private Team team;
 }

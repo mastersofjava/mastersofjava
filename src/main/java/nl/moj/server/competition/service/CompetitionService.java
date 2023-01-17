@@ -16,24 +16,6 @@
 */
 package nl.moj.server.competition.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.competition.model.Competition;
-import nl.moj.server.competition.model.CompetitionSession;
-import nl.moj.server.competition.model.OrderedAssignment;
-import nl.moj.server.competition.repository.CompetitionRepository;
-import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.repository.AssignmentResultRepository;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.service.TeamService;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.ResponseBody;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,10 +23,26 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.repository.CompetitionRepository;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
+import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.server.runtime.CompetitionRuntime;
+import nl.moj.server.runtime.repository.AssignmentResultRepository;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.service.TeamService;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -56,7 +54,7 @@ public class CompetitionService {
 
     private final AssignmentResultRepository assignmentResultRepository;
 
-    private final AssignmentStatusRepository assignmentStatusRepository;
+    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
 
     private final CompetitionRuntime competitionRuntime;
 
@@ -66,9 +64,12 @@ public class CompetitionService {
 
     private final TeamService teamService;
 
+    private final AssignmentStatusRepository assignmentStatusRepository;
+
     // TODO: Sort out if we can do this lazily when the team first submits.
     public void addTeam(Team team) {
-        Path teamdir = teamService.getTeamDirectory(competitionRuntime.getCompetitionSession().getUuid(), team.getUuid());
+        Path teamdir = teamService.getTeamDirectory(competitionRuntime.getCompetitionSession()
+                .getUuid(), team.getUuid());
         if (!Files.exists(teamdir)) {
             try {
                 Files.createDirectory(teamdir);
@@ -83,10 +84,11 @@ public class CompetitionService {
         if (!StringUtils.isNumeric(year)) {
             year = "";
         } else {
-            year = " ("+year + ")";
+            year = " (" + year + ")";
         }
         return year;
     }
+
     public String getSelectedYearValue() {
         String year = getSelectedLocation().getName().split("-")[0];
         if (!StringUtils.isNumeric(year)) {
@@ -94,11 +96,12 @@ public class CompetitionService {
         }
         return year;
     }
+
     public File getLocationByYear(int year) {
         File defaultLocation = mojServerProperties.getAssignmentRepo().toFile();
         defaultLocation.mkdirs();
-        String token = ""+year  +"-";
-        for (File file: locationList()) {
+        String token = "" + year + "-";
+        for (File file : locationList()) {
             if (file.getName().startsWith(token)) {
                 return file;
             }
@@ -112,15 +115,15 @@ public class CompetitionService {
             OrderedAssignment oa = new OrderedAssignment();
             oa.setAssignment(a);
             oa.setCompetition(c);
-            oa.setUuid(UUID.randomUUID());
             oa.setOrder(count.getAndIncrement());
             return oa;
         };
     }
+
     public List<File> locationList() {
         List<File> locationList = new ArrayList<>();
         File defaultLocation = mojServerProperties.getAssignmentRepo().toFile();
-        if (!defaultLocation.exists()||!defaultLocation.getParentFile().isDirectory()) {
+        if (!defaultLocation.exists() || !defaultLocation.getParentFile().isDirectory()) {
             mojServerProperties.getAssignmentRepo().toFile().mkdirs();
             return locationList;
         }
@@ -133,31 +136,14 @@ public class CompetitionService {
     public File getSelectedLocation() {
         File file = mojServerProperties.getAssignmentRepo().toFile();
         Competition c = competitionRuntime.getCompetition();
-        boolean isUseDefaultLocation = c.getName().contains("|" +YEAR_PREFIX);
+        boolean isUseDefaultLocation = c.getName().contains("|" + YEAR_PREFIX);
         if (!isUseDefaultLocation) {
             return file;
         }
         var name = c.getName().split("\\|")[1];
-        if (new File(file.getParentFile(),name).isDirectory()) {
-            file = new File(file.getParentFile(),name);
+        if (new File(file.getParentFile(), name).isDirectory()) {
+            file = new File(file.getParentFile(), name);
         }
         return file;
     }
-
-    public @ResponseBody
-    List<Competition> getAvailableCompetitions() {
-        List<Competition> listAll = competitionRepository.findAll();
-        List<Competition> result = new ArrayList<>();
-        for (Competition competition : listAll) {
-            List<CompetitionSession> sessions = competitionSessionRepository.findByCompetition(competition);
-
-            for (CompetitionSession session : sessions) {
-                if (session.isAvailable()) {
-                    result.add(competition);
-                }
-            }
-        }
-        return result;
-    }
-
 }

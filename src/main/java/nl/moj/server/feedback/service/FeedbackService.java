@@ -5,9 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.feedback.model.TeamFeedback;
-import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
@@ -24,17 +23,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FeedbackService {
 
-    private final AssignmentStatusRepository assignmentStatusRepository;
+    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
 
     private final TeamRepository teamRepository;
 
     public List<TeamFeedback> getAssignmentFeedback(Assignment assignment, CompetitionSession session) {
         List<Team> allTeams = teamRepository.findAll();
         if( assignment != null && session != null ) {
-            List<AssignmentStatus> statuses = assignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment,session);
+            List<TeamAssignmentStatus> statuses = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment,session);
             List<TeamFeedback> results = new ArrayList<>();
             for( Team t : allTeams ) {
-                Optional<AssignmentStatus> s = statuses.stream().filter(as -> as.getTeam().equals(t)).findFirst();
+                Optional<TeamAssignmentStatus> s = statuses.stream().filter(as -> as.getTeam().equals(t)).findFirst();
                 if( s.isEmpty() ) {
                     results.add( TeamFeedback.builder().team(t).build());
                 } else {
@@ -43,7 +42,7 @@ public class FeedbackService {
                     SubmitAttempt sa = s.get().getMostRecentSubmitAttempt();
                     if( sa != null && sa.getTestAttempt().equals(ta)) {
                         tf.setSubmitted(true);
-                        tf.setSuccess(sa.isSuccess());
+                        tf.setSuccess(sa.getSuccess() != null && sa.getSuccess());
                         ta = sa.getTestAttempt();
                     }
                     if( ta == null ) {

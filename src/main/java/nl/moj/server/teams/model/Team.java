@@ -59,13 +59,7 @@ public class Team {
     @Column(name = "indication")
     private String indication;
 
-    // TODO this is here to make sure we have the teams as FetchType.EAGER gives issues ...
-    // we should be able to do without this, figure out how.
-    @LazyCollection(LazyCollectionOption.FALSE)
-    @OneToMany
-    @JoinTable(name = "team_users",
-            joinColumns = @JoinColumn(name = "team_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
+    @OneToMany()
     @Builder.Default
     private List<User> users = new ArrayList<>();
 

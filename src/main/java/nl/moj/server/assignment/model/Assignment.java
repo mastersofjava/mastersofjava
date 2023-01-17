@@ -17,6 +17,7 @@
 package nl.moj.server.assignment.model;
 
 import javax.persistence.*;
+import java.time.Duration;
 import java.util.UUID;
 
 import lombok.*;
@@ -49,5 +50,12 @@ public class Assignment {
 
     @Column(name = "assignment_descriptor", unique = true, nullable = false)
     private String assignmentDescriptor;
+
+    @Column(name = "assignment_duration")
+    private Duration assignmentDuration;
+
+    @Column(name = "allowed_submits")
+    private Integer allowedSubmits;
+
 
 }

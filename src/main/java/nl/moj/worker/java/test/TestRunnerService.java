@@ -35,8 +35,9 @@ public class TestRunnerService {
     private final MojServerProperties mojServerProperties;
     private final ClasspathService classpathService;
 
-    public TestOutput test(Workspace workspace, JMSTestCase test) {
-        TestOutput to = TestOutput.builder()
+    public TestCaseOutput test(Workspace workspace, JMSTestCase test) {
+        TestCaseOutput to = TestCaseOutput.builder()
+                .testCase(test.getTestCase())
                 .dateTimeStart(Instant.now())
                 .build();
 
@@ -51,7 +52,7 @@ public class TestRunnerService {
 
             if (!policy.toFile().exists()) {
                 log.info("Test case {} {} missing security policy, aborting.", test.getTestCase(), test.getName());
-                return TestOutput.builder()
+                return TestCaseOutput.builder()
                         .aborted(true)
                         .reason("No security policy defined.")
                         .build();
@@ -117,7 +118,8 @@ public class TestRunnerService {
             }
         } catch (Throwable e) {
             log.error("Unexpected exception running test case {} {}, aborting", test.getTestCase(), test.getName(), e);
-            return TestOutput.builder()
+            return TestCaseOutput.builder()
+                    .testCase(test.getTestCase())
                     .dateTimeStart(to.getDateTimeStart())
                     .dateTimeEnd(Instant.now())
                     .aborted(true)

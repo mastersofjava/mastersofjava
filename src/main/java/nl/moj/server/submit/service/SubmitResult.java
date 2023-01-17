@@ -22,7 +22,7 @@ import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
 import nl.moj.worker.java.compile.CompileOutput;
-import nl.moj.worker.java.test.TestOutput;
+import nl.moj.worker.java.test.TestCaseOutput;
 
 @Builder(toBuilder = true)
 @Getter
@@ -42,7 +42,7 @@ public class SubmitResult {
 
     private CompileOutput compileResult;
 
-    private TestOutput testResults;
+    private TestCaseOutput testResults;
 
     @Builder.Default
     private boolean success = false;

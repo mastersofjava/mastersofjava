@@ -17,27 +17,21 @@
 package nl.moj.worker.java.test;
 
 import java.time.Instant;
-import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 import lombok.Builder;
 import lombok.Data;
+import nl.moj.worker.java.compile.CompileOutput;
 
 @Data
 @Builder(toBuilder = true)
 public class TestOutput {
 
-    private UUID testCase;
-
-    private String output;
-    private String errorOutput;
     @Builder.Default
-    private boolean success = false;
-    @Builder.Default
-    private boolean timedOut = false;
-    @Builder.Default
-    private boolean aborted = false;
-    private String reason;
-
+    private List<TestCaseOutput> testCases = new ArrayList<>();
+    private CompileOutput compileOutput;
     private Instant dateTimeStart;
     private Instant dateTimeEnd;
+
 }

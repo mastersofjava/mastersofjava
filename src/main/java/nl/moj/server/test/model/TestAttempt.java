@@ -24,7 +24,7 @@ import java.util.UUID;
 
 import lombok.*;
 import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 
 @Entity
 @Table(name = "test_attempts")
@@ -35,7 +35,7 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(of = {"uuid"})
-@ToString(exclude = {"assignmentStatus"})
+@ToString(exclude = {"assignmentStatus", "compileAttempt", "testCases"})
 public class TestAttempt {
 
     @Id
@@ -48,9 +48,9 @@ public class TestAttempt {
 
     @ManyToOne
     @JoinColumn(name = "assignment_status_id", nullable = false)
-    private AssignmentStatus assignmentStatus;
+    private TeamAssignmentStatus assignmentStatus;
 
-    @Column(name="date_time_register", nullable = false)
+    @Column(name = "date_time_register", nullable = false)
     private Instant dateTimeRegister;
 
     @Column(name = "worker", columnDefinition = "TEXT")

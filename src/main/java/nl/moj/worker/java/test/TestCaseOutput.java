@@ -14,20 +14,30 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.compiler.repository;
+package nl.moj.worker.java.test;
 
-import java.util.List;
+import java.time.Instant;
 import java.util.UUID;
 
-import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.server.runtime.model.TeamAssignmentStatus;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import lombok.Builder;
+import lombok.Data;
 
-@Repository
-public interface CompileAttemptRepository extends JpaRepository<CompileAttempt, Long> {
-    CompileAttempt findByUuid(UUID compileAttemptUuid);
+@Data
+@Builder(toBuilder = true)
+public class TestCaseOutput {
 
-    List<CompileAttempt> findByAssignmentStatus(TeamAssignmentStatus assignment);
+    private UUID testCase;
 
+    private String output;
+    private String errorOutput;
+    @Builder.Default
+    private boolean success = false;
+    @Builder.Default
+    private boolean timedOut = false;
+    @Builder.Default
+    private boolean aborted = false;
+    private String reason;
+
+    private Instant dateTimeStart;
+    private Instant dateTimeEnd;
 }

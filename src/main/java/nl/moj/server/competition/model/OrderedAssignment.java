@@ -42,9 +42,6 @@ public class OrderedAssignment {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", nullable = false, unique = true, columnDefinition = "uuid")
-    private UUID uuid;
-
     @Column(name = "idx", nullable = false)
     private Integer order;
 

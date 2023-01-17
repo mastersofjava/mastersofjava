@@ -34,28 +34,6 @@ h6 {
     background-color: lightgray;
     cursor: pointer;
 }
-.nav-pills .nav-link, .roundGrayTabBorder {
-    border-radius: .6rem;
-    border: 1px solid lightgray;
-    border-bottom-left-radius: 0.2rem;
-    border-bottom-right-radius: 0.2rem;
-}
-ul.nav {
-    padding-left: 8px;
-}
-.roundGrayBorder {
-    border-radius: .6rem;
-    border: 1px solid lightgray;
-}
-.nav-pills .nav-link.active {
-    border: 1px solid #007bff;
-}
-.paddingLeft50,.tab-content>div {
-    padding-left: 50px;
-}
-table th {
-    background-color: deepskyblue;
-}
 
 .circle_animation {
     stroke-dasharray: 440; /* this value is the pixel circumference of the circle */

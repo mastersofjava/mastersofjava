@@ -162,16 +162,11 @@ public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
         }
     }
 
-    private CompletableFuture<TestAttempt> doTest(SourceMessage src, User user, Duration timeout) throws Exception {
+    private CompletableFuture<TestAttempt> doTest(SourceMessage src, User user, Duration timeout) {
         return CompletableFuture.supplyAsync(() -> {
             TestAttempt ta = submitFacade.registerTestRequest(src,getPrincipal(user));
-            try {
-                awaitAttempt(ta.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
-                refresh(ta);
-            } catch( InterruptedException ie ) {
-                throw new RuntimeException(ie);
-            }
-            return ta;
+            awaitAttempt(ta.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
+            return refresh(ta);
         });
     }
 }

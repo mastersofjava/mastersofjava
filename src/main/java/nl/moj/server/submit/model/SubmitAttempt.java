@@ -22,8 +22,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import lombok.*;
-import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.test.model.TestAttempt;
 
 @Entity
@@ -34,7 +33,7 @@ import nl.moj.server.test.model.TestAttempt;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(of = {"uuid"})
-@ToString(exclude = {"assignmentStatus"})
+@ToString(exclude = {"assignmentStatus","testAttempt"})
 public class SubmitAttempt {
 
     @Id
@@ -47,16 +46,19 @@ public class SubmitAttempt {
 
     @ManyToOne
     @JoinColumn(name = "assignment_status_id", nullable = false)
-    private AssignmentStatus assignmentStatus;
+    private TeamAssignmentStatus assignmentStatus;
 
     @Column(name = "date_time_register", nullable = false)
     private Instant dateTimeRegister;
 
+    @Column(name = "assignment_time_remaining", nullable = false)
+    private Duration assignmentTimeRemaining;
+
     @Column(name = "worker", columnDefinition = "TEXT")
     private String worker;
 
-    @Column(name = "run", columnDefinition = "uuid")
-    private UUID run;
+    @Column(name = "trace", columnDefinition = "TEXT")
+    private String trace;
 
     @Column(name = "date_time_start")
     private Instant dateTimeStart;
@@ -65,14 +67,13 @@ public class SubmitAttempt {
     private Instant dateTimeEnd;
 
     @Column(name = "success")
-    private boolean success;
+    private Boolean success;
 
-    @Column(name = "assignment_time_elapsed")
-    private Duration assignmentTimeElapsed;
+    @Column(name = "aborted")
+    private Boolean aborted;
 
-    @OneToOne(cascade = CascadeType.REMOVE)
-    @JoinColumn(name = "compile_attempt_id")
-    private CompileAttempt compileAttempt;
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
 
     @OneToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name = "test_attempt_id")

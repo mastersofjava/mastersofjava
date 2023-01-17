@@ -23,7 +23,5 @@ public class SubmitRequest {
     private final CompetitionSession session;
     private final List<AssignmentFile> tests;
     private final Map<Path,String> sources;
-    private final Duration timeElapsed;
-    // TODO this should not be here
-    private final boolean isSubmitAllowed;
+
 }

@@ -17,6 +17,7 @@ import nl.moj.worker.ExecutionService;
 import nl.moj.worker.WorkerService;
 import nl.moj.worker.java.compile.CompileOutput;
 import nl.moj.worker.java.compile.CompileRunnerService;
+import nl.moj.worker.java.test.TestCaseOutput;
 import nl.moj.worker.java.test.TestOutput;
 import nl.moj.worker.java.test.TestRunnerService;
 import nl.moj.worker.workspace.Workspace;
@@ -62,29 +63,11 @@ public class JavaService {
         try {
             AssignmentDescriptor ad = runtimeService.getAssignmentDescriptor(testRequest.getAssignment());
             Workspace workspace = workspaceService.getWorkspace(ad, testRequest.getSources());
-            return compile(workspace)
-                    .thenCompose(co -> {
-                        if (co.isSuccess()) {
-                            return test(workspace, testRequest.getTests())
-                                    .thenApply(r -> toTestResponse(testRequest.getAttempt(), traceId, co, r));
-                        } else {
-                            return CompletableFuture.completedFuture(JMSTestResponse
-                                    .builder()
-                                    .traceId(traceId)
-                                    .worker(workerService.getWorkerIdentification())
-                                    .attempt(testRequest.getAttempt())
-                                    .started(co.getDateTimeStart())
-                                    .ended(Instant.now())
-                                    .aborted(false)
-                                    .compileResponse(toCompileResponse(null, traceId, co))
-                                    .build());
-                        }
-                    })
+            return test(workspace, testRequest.getTests())
                     .thenApply(to -> {
                         closeWorkspace(workspace);
-                        return to;
+                        return toTestResponse(testRequest.getAttempt(), traceId, to);
                     });
-
         } catch (Exception e) {
             return CompletableFuture.completedFuture(JMSTestResponse.builder()
                     .traceId(traceId)
@@ -96,18 +79,34 @@ public class JavaService {
                     .reason(e.getMessage())
                     .build());
         }
+
     }
 
-    public CompletableFuture<JMSSubmitResponse> submit(JMSSubmitRequest submitRequest) {
-        return CompletableFuture.completedFuture(JMSSubmitResponse.builder()
-                .aborted(true)
-                .reason("Not Implemented")
-                .build());
+    public CompletableFuture<JMSSubmitResponse> submit(JMSSubmitRequest submitRequest, String traceId) {
+        try {
+            AssignmentDescriptor ad = runtimeService.getAssignmentDescriptor(submitRequest.getAssignment());
+            Workspace workspace = workspaceService.getWorkspace(ad, submitRequest.getSources());
+            return test(workspace, submitRequest.getTests())
+                    .thenApply(to -> {
+                        closeWorkspace(workspace);
+                        return toSubmitResponse(submitRequest.getAttempt(), traceId, to);
+                    });
+        } catch (Exception e) {
+            return CompletableFuture.completedFuture(JMSSubmitResponse.builder()
+                    .traceId(traceId)
+                    .worker(workerService.getWorkerIdentification())
+                    .attempt(submitRequest.getAttempt())
+                    .started(Instant.now())
+                    .ended(Instant.now())
+                    .aborted(true)
+                    .reason(e.getMessage())
+                    .build());
+        }
     }
 
-    private JMSCompileResponse toCompileResponse(UUID attempt, String runId, CompileOutput co) {
+    private JMSCompileResponse toCompileResponse(UUID attempt, String traceId, CompileOutput co) {
         return JMSCompileResponse.builder()
-                .traceId(runId)
+                .traceId(traceId)
                 .worker(workerService.getWorkerIdentification())
                 .success(co.isSuccess())
                 .attempt(attempt)
@@ -120,20 +119,20 @@ public class JavaService {
                 .build();
     }
 
-    private JMSTestResponse toTestResponse(UUID attempt, String traceId, CompileOutput co, List<TestOutput> r) {
+    private JMSTestResponse toTestResponse(UUID attempt, String traceId, TestOutput to) {
         return JMSTestResponse.builder()
                 .traceId(traceId)
                 .worker(workerService.getWorkerIdentification())
                 .attempt(attempt)
-                .started(co.getDateTimeStart())
-                .ended(Instant.now())
+                .started(to.getDateTimeStart())
+                .ended(to.getDateTimeEnd())
                 .aborted(false)
-                .compileResponse(toCompileResponse(null, traceId, co))
-                .testCaseResults(r.stream().map(tcr -> toTestCaseResult(tcr, traceId)).toList())
+                .compileResponse(toCompileResponse(null, traceId, to.getCompileOutput()))
+                .testCaseResults(to.getTestCases().stream().map(tcr -> toTestCaseResult(tcr, traceId)).toList())
                 .build();
     }
 
-    private JMSTestCaseResult toTestCaseResult(TestOutput to, String traceId) {
+    private JMSTestCaseResult toTestCaseResult(TestCaseOutput to, String traceId) {
         return JMSTestCaseResult.builder()
                 .traceId(traceId)
                 .worker(workerService.getWorkerIdentification())
@@ -148,6 +147,18 @@ public class JavaService {
                 .build();
     }
 
+    private JMSSubmitResponse toSubmitResponse(UUID attempt, String traceId, TestOutput to) {
+        return JMSSubmitResponse.builder()
+                .attempt(attempt)
+                .traceId(traceId)
+                .worker(workerService.getWorkerIdentification())
+                .started(to.getDateTimeStart())
+                .ended(to.getDateTimeEnd())
+                .aborted(false)
+                .testResponse(toTestResponse(null, traceId, to))
+                .build();
+    }
+
     private static void closeWorkspace(Workspace workspace) {
         try {
             workspace.close();
@@ -156,13 +167,30 @@ public class JavaService {
         }
     }
 
-    private CompletableFuture<List<TestOutput>> test(Workspace workspace, List<JMSTestCase> testCases) {
+    private CompletableFuture<TestOutput> test(Workspace workspace, List<JMSTestCase> testCases) {
         AssignmentDescriptor ad = workspace.getAssignmentDescriptor();
-        List<CompletableFuture<TestOutput>> tests = new ArrayList<>();
-        testCases.forEach(tc ->
-                tests.add(CompletableFuture.supplyAsync(() -> testRunnerService.test(workspace, tc),
-                        executionService.getExecutor(ad))));
-        return CompletableFutures.allOf(tests);
+        return compile(workspace)
+                .thenCompose(co -> {
+                    if (co.isSuccess()) {
+                        List<CompletableFuture<TestCaseOutput>> tests = new ArrayList<>();
+                        testCases.forEach(tc ->
+                                tests.add(CompletableFuture.supplyAsync(() -> testRunnerService.test(workspace, tc),
+                                        executionService.getExecutor(ad))));
+                        return CompletableFutures.allOf(tests).thenApply(tcs ->
+                                TestOutput.builder()
+                                        .compileOutput(co)
+                                        .testCases(tcs)
+                                        .dateTimeStart(co.getDateTimeStart())
+                                        .dateTimeEnd(Instant.now())
+                                        .build());
+                    } else {
+                        return CompletableFuture.completedFuture(TestOutput.builder()
+                                .compileOutput(co)
+                                .dateTimeStart(co.getDateTimeStart())
+                                .dateTimeEnd(Instant.now())
+                                .build());
+                    }
+                });
     }
 
     private CompletableFuture<CompileOutput> compile(Workspace workspace) {

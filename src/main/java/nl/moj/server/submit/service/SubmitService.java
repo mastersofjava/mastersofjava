@@ -17,58 +17,148 @@
 package nl.moj.server.submit.service;
 
 import javax.transaction.Transactional;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.messages.JMSFile;
-import nl.moj.common.messages.JMSSubmitResponse;
-import nl.moj.server.compiler.model.CompileAttempt;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.messages.*;
+import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
-import nl.moj.common.messages.JMSSubmitRequest;
-import nl.moj.common.messages.JMSTestCase;
 import nl.moj.server.message.service.MessageService;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.ScoreService;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
+import nl.moj.server.test.repository.TestAttemptRepository;
 import nl.moj.server.test.repository.TestCaseRepository;
-import org.springframework.jms.annotation.JmsListener;
+import nl.moj.server.test.service.TestRequest;
+import nl.moj.server.test.service.TestService;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 public class SubmitService {
 
     private final MessageService messageService;
-    private final AssignmentStatusRepository assignmentStatusRepository;
+    private final TestService testService;
+    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
     private final CompileAttemptRepository compileAttemptRepository;
-    private final SubmitAttemptRepository submitAttemptRepository;
 
+    private final TestAttemptRepository testAttemptRepository;
+    private final SubmitAttemptRepository submitAttemptRepository;
     private final TestCaseRepository testCaseRepository;
+    private final ScoreService scoreService;
+    private final AssignmentService assignmentService;
     private final JmsTemplate jmsTemplate;
 
+    @Transactional
     public void receiveSubmitResponse(JMSSubmitResponse submitResponse) {
         log.info("Received submit attempt response {}", submitResponse.getAttempt());
+        SubmitAttempt sa = registerSubmitResponse(submitResponse);
+        messageService.sendSubmitFeedback(sa);
     }
 
-    public SubmitAttempt registerSubmitRequest(SubmitRequest submitRequest) {
+    @Transactional
+    public SubmitAttempt registerSubmitResponse(JMSSubmitResponse submitResponse) {
+        SubmitAttempt sa = submitAttemptRepository.findByUuid(submitResponse.getAttempt());
+        AssignmentDescriptor ad = assignmentService.resolveAssignmentDescriptor(sa.getAssignmentStatus()
+                .getAssignment());
 
-        if (submitRequest.isSubmitAllowed()) {
+        // update submit attempt
+        sa = update(sa, submitResponse);
+
+        // score if needed
+        if (isSuccess(sa, submitResponse) && sa.getAssignmentStatus().getRemainingSubmitAttempts() >= 0) {
+            sa.setSuccess(true);
+            scoreService.finalizeScore(sa, ad);
+        } else {
+            sa.setSuccess(false);
+        }
+        return sa;
+    }
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    public SubmitAttempt update(SubmitAttempt sa, JMSSubmitResponse sr) {
+
+        if (sa == null) {
+            return null;
+        }
+        if (sr == null) {
+            return sa;
+        }
+
+        sa.setAborted(sr.isAborted());
+        sa.setReason(sr.getReason());
+        sa.setWorker(sr.getWorker());
+        sa.setTrace(sr.getTraceId());
+        sa.setSuccess(isSuccess(sa, sr));
+        testService.update(sa.getTestAttempt(), sr.getTestResponse());
+        return submitAttemptRepository.save(sa);
+    }
+
+    private boolean isSuccess(SubmitAttempt sa, JMSSubmitResponse sr) {
+        if (sr != null) {
+            return !sr.isAborted() && testsSucceeded(sa, sr.getTestResponse());
+        }
+        return false;
+    }
+
+    private boolean testsSucceeded(SubmitAttempt sa, JMSTestResponse tr) {
+        if (tr != null) {
+            if (compileSucceeded(tr.getCompileResponse())) {
+                List<TestCase> testCases = Optional.ofNullable(sa.getTestAttempt().getTestCases())
+                        .orElse(Collections.emptyList());
+                List<JMSTestCaseResult> testCaseResults = Optional.ofNullable(tr.getTestCaseResults())
+                        .orElse(Collections.emptyList());
+                // TODO Maybe also check if testCases.size() == assignment.tests
+                // check if we got the expected amount of testcases
+                if (!testCases.isEmpty() && !testCaseResults.isEmpty() && testCases.size() == testCaseResults.size()) {
+                    // match all test cases with test case results
+                    return testCases.stream().allMatch(tc ->
+                            testCaseResults.stream()
+                                    .filter(tcr -> tcr.getTestCase().equals(tc.getUuid()))
+                                    .map(JMSTestCaseResult::isSuccess).findFirst().orElse(false));
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean compileSucceeded(JMSCompileResponse cr) {
+        if (cr != null) {
+            return cr.isSuccess();
+        }
+        return false;
+    }
+
+    @Transactional
+    public SubmitAttempt registerSubmitAttempt(SubmitRequest submitRequest) {
+        log.info("Registering compile attempt for assignment {} by team {}.", submitRequest.getAssignment().getUuid(),
+                submitRequest.getTeam().getUuid());
+        final TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam());
+
+        Instant registered = Instant.now();
+        long secondsRemaining = getSecondsRemaining(registered, as);
+        if (as.getRemainingSubmitAttempts() >= 0 && secondsRemaining >= 0) {
             messageService.sendSubmitStarted(submitRequest.getTeam());
-            SubmitAttempt submitAttempt = prepareSubmitAttempt(submitRequest);
+            SubmitAttempt submitAttempt = prepareSubmitAttempt(submitRequest, registered, Duration.ofSeconds(secondsRemaining));
 
             jmsTemplate.convertAndSend("submit_request", JMSSubmitRequest.builder()
                     .attempt(submitAttempt.getUuid())
                     .assignment(submitRequest.getAssignment().getUuid())
-                    .sources(submitRequest.getSources().entrySet().stream().map( e -> JMSFile.builder()
+                    .sources(submitRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()
                             .path(e.getKey().toString())
                             .content(e.getValue())
                             .build()).collect(Collectors.toList()))
@@ -78,6 +168,9 @@ public class SubmitService {
                             .collect(Collectors.toList()))
                     .build());
 
+            log.info("Submit attempt {} for assignment {} by team {} registered.", submitAttempt.getUuid(), submitRequest.getAssignment()
+                    .getUuid(), submitRequest.getTeam().getUuid());
+
             return submitAttempt;
         }
         log.warn("Submit is not allowed for team '{}' named '{}'", submitRequest.getTeam()
@@ -85,138 +178,34 @@ public class SubmitService {
         return null;
     }
 
-    @Transactional
-    public SubmitAttempt prepareSubmitAttempt(SubmitRequest submitRequest) {
-        final AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam());
+    private SubmitAttempt prepareSubmitAttempt(SubmitRequest submitRequest, Instant registered, Duration timeRemaining) {
+        final TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam());
 
-        CompileAttempt compileAttempt = CompileAttempt.builder()
-                .assignmentStatus(as)
-                .uuid(UUID.randomUUID())
-                .dateTimeRegister(Instant.now())
-                .build();
-        compileAttempt = compileAttemptRepository.save(compileAttempt);
-
-        // register test attempt
-        TestAttempt testAttempt = TestAttempt.builder()
-                .assignmentStatus(as)
-                .uuid(UUID.randomUUID())
-                .dateTimeRegister(Instant.now())
-                .compileAttempt(compileAttempt)
-                .build();
-
-        for (AssignmentFile af : submitRequest.getTests()) {
-            TestCase tc = TestCase.builder()
-                    .uuid(UUID.randomUUID())
-                    .testAttempt(testAttempt)
-                    .name(af.getName())
-                    .dateTimeRegister(Instant.now())
-                    .build();
-            testAttempt.getTestCases().add(testCaseRepository.save(tc));
-        }
+        TestAttempt testAttempt = testService.prepareTestAttempt(TestRequest.builder()
+                .tests(submitRequest.getTests())
+                .session(submitRequest.getSession())
+                .sources(submitRequest.getSources())
+                .assignment(submitRequest.getAssignment())
+                .team(submitRequest.getTeam())
+                .build());
 
         SubmitAttempt sa = SubmitAttempt.builder()
                 .assignmentStatus(as)
-                .dateTimeRegister(Instant.now())
-                .assignmentTimeElapsed(submitRequest.getTimeElapsed())
+                .dateTimeRegister(registered)
+                .assignmentTimeRemaining(timeRemaining)
                 .uuid(UUID.randomUUID())
-                .compileAttempt(compileAttempt)
                 .testAttempt(testAttempt)
                 .build();
 
-        as.getCompileAttempts().add(compileAttempt);
-        as.getTestAttempts().add(testAttempt);
         as.getSubmitAttempts().add(sa);
-
         return submitAttemptRepository.save(sa);
     }
 
-//    private CompletableFuture<SubmitResult> testInternal(SubmitRequest submitRequest, boolean isSubmit, ActiveAssignment activeAssignment) {
-//        //compile
-//        return compileInternal(submitRequest, activeAssignment)
-//                .thenCompose(submitResult -> {
-//                    Assert.isTrue( activeAssignment.getAssignment()!=null, "not ready for test");
-//
-//                    if (submitResult.isSuccess()) {
-//                        // filter selected test cases
-//                        var testCases = activeAssignment.getTestFiles().stream()
-//                                .filter(t -> submitRequest.getSourceMessage().getTests().contains(t.getUuid().toString()))
-//                                .collect(Collectors.toList());
-//
-//                        if (isSubmit) {
-//                            testCases = activeAssignment.getSubmitTestFiles();// contains hidden tests.
-//                        }
-//                        // run selected testcases
-//                        return executionService.test(submitRequest, testCases, activeAssignment).thenApply(r -> {
-//
-//                            r.getResults().forEach(tr -> messageService.sendTestFeedback(submitRequest.getTeam(), tr));
-//
-//                            return submitResult.toBuilder()
-//                                    .dateTimeEnd(r.getDateTimeEnd())
-//                                    .success(r.isSuccess())
-//                                    .testResults(r)
-//                                    .build();
-//                        });
-//                    } else {
-//                        return CompletableFuture.completedFuture(submitResult);
-//                    }
-//                });
-//    }
-//
-//    @Transactional
-//    public CompletableFuture<SubmitResult> submitInternal(SubmitRequest submitRequest) {
-//        final ActiveAssignment activeAssignment = competitionRuntime.getActiveAssignment(submitRequest);
-//        final AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment
-//                .getAssignment(), activeAssignment.getCompetitionSession(), submitRequest.getTeam());
-//        boolean isSubmitAllowed = isSubmitAllowedForTeam(as, activeAssignment);
-//
-//        if (isSubmitAllowed) {
-//            messageService.sendSubmitStarted(submitRequest.getTeam());
-//            SubmitAttempt sa = SubmitAttempt.builder()
-//                    .assignmentStatus(as)
-//                    .dateTimeStart(Instant.now())
-//                    .assignmentTimeElapsed(activeAssignment.getTimeElapsed())
-//                    .uuid(UUID.randomUUID())
-//                    .build();
-//            as.getSubmitAttempts().add(sa);
-//
-//            return testInternal(submitRequest, true,activeAssignment).thenApply(sr -> {
-//                int remainingSubmits = getRemainingSubmits(as, activeAssignment);
-//                try {
-//                    if( sr.getCompileResult() != null) {
-//                        sa.setCompileAttempt(compileAttemptRepository.findByUuid(sr.getCompileResult()
-//                                .getCompileAttemptUuid()));
-//                    }
-//                    if( sr.getTestResults() != null ) {
-//                        sa.setTestAttempt(testAttemptRepository.findByUuid(sr.getTestResults().getTestAttemptUuid()));
-//                    }
-//                    sa.setSuccess(sr.isSuccess() && activeAssignment.isRunning());
-//                    sa.setDateTimeEnd(Instant.now());
-//                    submitAttemptRepository.save(sa);
-//
-//                    remainingSubmits = getRemainingSubmits(as, activeAssignment);
-//
-//                    if (sr.isSuccess() || remainingSubmits <= 0) {
-//                        if (activeAssignment.isRunning() && as.getDateTimeEnd()!=null) {
-//                            as.setDateTimeEnd(null);
-//                        }
-//                        AssignmentStatus scored = scoreService.finalizeScore(as, activeAssignment);
-//                        return sr.toBuilder().score(scored.getAssignmentResult().getFinalScore())
-//                                .remainingSubmits(0).build();
-//                    }
-//                } catch (Exception e) {
-//                    log.error("Submit failed unexpectedly.", e);
-//                }
-//
-//                return sr.toBuilder().remainingSubmits(remainingSubmits).build();
-//            }).thenApply(sr -> {
-//                messageService.sendSubmitFeedback(submitRequest.getTeam(), sr);
-//                messageService.sendSubmitEnded(submitRequest.getTeam(), sr.isSuccess(), sr.getScore());
-//                return sr;
-//            });
-//        }
-//        log.warn("Submit is not allowed for team '{}' named '{}'", submitRequest.getTeam().getUuid(), submitRequest.getTeam().getName());
-//        return CompletableFuture.completedFuture(SubmitResult.builder().build());
-//    }
-
-
+    private long getSecondsRemaining(Instant start, TeamAssignmentStatus as) {
+        Instant end = as.getDateTimeStart().plus(as.getAssignment().getAssignmentDuration());
+        if (start.isBefore(end)) {
+            return Duration.between(start, end).toSeconds();
+        }
+        return -1;
+    }
 }

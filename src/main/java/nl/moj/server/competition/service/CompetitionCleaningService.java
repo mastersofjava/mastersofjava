@@ -2,17 +2,15 @@ package nl.moj.server.competition.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.repository.AssignmentRepository;
-import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.AssignmentResult;
-import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
 import nl.moj.server.test.model.TestAttempt;
@@ -29,7 +27,7 @@ import java.util.List;
 public class CompetitionCleaningService {
     private final CompetitionRuntime competitionRuntime;
 
-    private final AssignmentStatusRepository assignmentStatusRepository;
+    private final TeamAssignmentStatusRepository assignmentStatusRepository;
 
     private final AssignmentResultRepository assignmentResultRepository;
 
@@ -50,20 +48,20 @@ public class CompetitionCleaningService {
         }
         log.info("delete contents of session " + competitionSession.getId());
 
-        List<AssignmentStatus> statusList = assignmentStatusRepository.findByCompetitionSession(competitionSession);
+        List<TeamAssignmentStatus> statusList = assignmentStatusRepository.findByCompetitionSession(competitionSession);
         List<AssignmentResult> resultList = assignmentResultRepository.findByCompetitionSession(competitionSession);
         log.info("contents of session " + statusList.size() + " " +resultList.size() );
 
         try {
-            competitionSession.setDateTimeStart(null);
-            competitionSession.setRunning(false);
-            competitionSession.setAssignmentName(null);
-            competitionSession.setTimeLeft(null);
+//            competitionSession.setDateTimeStart(null);
+//            competitionSession.setRunning(false);
+//            competitionSession.setAssignmentName(null);
+//            competitionSession.setTimeLeft(null);
             competitionSessionRepository.save(competitionSession);
             for (AssignmentResult result: resultList) {
                 assignmentResultRepository.delete(result);
             }
-            for (AssignmentStatus status: statusList) {
+            for (TeamAssignmentStatus status: statusList) {
                 List<SubmitAttempt> saList = submitAttemptRepository.findByAssignmentStatus(status);
 
                 for (SubmitAttempt sa: saList) {

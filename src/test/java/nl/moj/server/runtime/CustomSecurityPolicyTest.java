@@ -52,18 +52,12 @@ public class CustomSecurityPolicyTest extends BaseRuntimeTest {
     private MojServerProperties mojServerProperties;
 
     @Test
-    @Disabled
     public void shouldUseAssignmentSecurityPolicy() throws Exception {
 
         OrderedAssignment oa = getAssignment("custom-security-policy");
-
         competitionRuntime.startAssignment(oa.getAssignment().getName());
-
-        SubmitAttempt submitResult = doSubmitValidInput();
-
-        Assertions.assertThat(submitResult.isSuccess()).isTrue();
-//        Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isSuccess()).isTrue();
-//        Assertions.assertThat(submitResult.getTestResults().getResults().get(0).isTimeout()).isFalse();
+        SubmitAttempt sa = doSubmitValidInput();
+        assertSuccess(sa);
     }
 
     private SubmitAttempt doSubmitValidInput() throws Exception {
@@ -78,8 +72,6 @@ public class CustomSecurityPolicyTest extends BaseRuntimeTest {
         SourceMessage src = new SourceMessage();
         src.setSources(files);
         src.setTests(List.of(state.getTestFiles().get(0).getUuid().toString()));
-
-
 
         SubmitAttempt sa = submitService.registerSubmitRequest(src,getPrincipal(getUser()));
         awaitAttempt(sa.getUuid(),timeout.plusSeconds(10).toSeconds(), TimeUnit.SECONDS);

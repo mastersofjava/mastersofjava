@@ -16,12 +16,6 @@
 */
 package nl.moj.server.competition.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -29,12 +23,17 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
 @Data
 @Entity
 @Table(name = "competitions")
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competitions_seq", sequenceName = "competitions_seq")
-@EqualsAndHashCode(of={"uuid"})
+@EqualsAndHashCode(of = {"uuid"})
 public class Competition {
 
     @Id
@@ -48,8 +47,7 @@ public class Competition {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "competition", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "competition", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderedAssignment> assignments = new ArrayList<>();
 
     @JsonIgnore
@@ -66,7 +64,9 @@ public class Competition {
         }
         String collectionName = name.split("\\|")[1];
         return assignments.stream()
-                .filter(orderedAssignment -> orderedAssignment.getAssignment().getAssignmentDescriptor().contains(collectionName))
+                .filter(orderedAssignment -> orderedAssignment.getAssignment()
+                        .getAssignmentDescriptor()
+                        .contains(collectionName))
                 .collect(Collectors.toList());
     }
 

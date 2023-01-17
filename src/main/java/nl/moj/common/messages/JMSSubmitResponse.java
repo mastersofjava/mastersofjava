@@ -26,9 +26,6 @@ public class JMSSubmitResponse {
     @JsonProperty("attempt")
     private UUID attempt;
 
-    @JsonProperty("compileResponse")
-    private JMSCompileResponse compileResponse;
-
     @JsonProperty("testResponse")
     private JMSTestResponse testResponse;
 

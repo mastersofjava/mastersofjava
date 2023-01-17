@@ -18,28 +18,23 @@ package nl.moj.server.feedback;
 
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.competition.model.Competition;
+import nl.moj.server.authorization.Role;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.feedback.model.TeamFeedback;
 import nl.moj.server.feedback.service.FeedbackService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.authorization.Role;
-import nl.moj.server.runtime.model.AssignmentResult;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.submit.model.SubmitAttempt;
-import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
-import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.util.CollectionUtil;
-import nl.moj.server.util.HttpUtil;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,23 +55,15 @@ public class FeedbackController {
     public ModelAndView feedback(HttpServletRequest request) {
         CompetitionRuntime resultsProvider = competitionRuntime;
 
-        if (HttpUtil.hasParam("competition")) {
-            Long competitionId = Long.parseLong(HttpUtil.getParam("competition","1"));
-            if (competitionRuntime.getActiveCompetitionsMap().containsKey(competitionId)) {
-                Competition competition = competitionRuntime.getActiveCompetitionsMap().get(competitionId).getCompetition();
-                resultsProvider = competitionRuntime.selectCompetitionRuntimeForGameStart(competition);
-            }
-        }
-
         ModelAndView model = new ModelAndView("testfeedback");
 
         Assignment assignment = null;
         CompetitionSession session = null;
-        if( competitionRuntime.getActiveAssignment() != null ) {
+        if (competitionRuntime.getActiveAssignment() != null) {
             assignment = competitionRuntime.getActiveAssignment().getAssignment();
             session = competitionRuntime.getCompetitionSession();
         }
-        List<TeamFeedback> assignmentFeedback = feedbackService.getAssignmentFeedback(assignment,session);
+        List<TeamFeedback> assignmentFeedback = feedbackService.getAssignmentFeedback(assignment, session);
         orderTeamsByName(assignmentFeedback);
 
         List<List<TeamFeedback>> partitionedTeams = CollectionUtil.partition(assignmentFeedback, 3);
@@ -86,12 +73,12 @@ public class FeedbackController {
 
         List<UUID> testIds = new ArrayList<>();
 
-        if (resultsProvider.getCurrentRunningAssignment() != null) {
+        if (resultsProvider.getActiveAssignment() != null) {
             ActiveAssignment state = resultsProvider.getActiveAssignment();
             testIds = state.getTestUuids();
             model.addObject("uuid", state.getAssignment().getUuid().toString());
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
-            model.addObject("timeLeft", state.getTimeRemaining());
+            model.addObject("timeLeft", state.getSecondsRemaining());
             model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addObject("running", state.isRunning());
         } else {
@@ -142,6 +129,6 @@ public class FeedbackController {
     }
 
     private void orderTeamsByName(List<TeamFeedback> allTeams) {
-        allTeams.sort(Comparator.comparing( t -> t.getTeam().getName()));
+        allTeams.sort(Comparator.comparing(t -> t.getTeam().getName()));
     }
 }

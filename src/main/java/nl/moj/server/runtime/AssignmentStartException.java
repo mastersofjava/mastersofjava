@@ -16,7 +16,7 @@
 */
 package nl.moj.server.runtime;
 
-public class AssignmentStartException extends Exception {
+public class AssignmentStartException extends RuntimeException {
 
     public AssignmentStartException(String message, Throwable cause) {
         super(message, cause);

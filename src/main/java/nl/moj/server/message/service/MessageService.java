@@ -16,24 +16,27 @@
 */
 package nl.moj.server.message.service;
 
+import javax.transaction.Transactional;
+import java.time.Duration;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.messages.JMSCompileResponse;
-import nl.moj.common.messages.JMSTestCaseResult;
-import nl.moj.common.messages.JMSTestResponse;
 import nl.moj.server.TaskControlController.TaskMessage;
-import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
+import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.message.model.*;
-import nl.moj.server.submit.service.SubmitResult;
+import nl.moj.server.runtime.model.AssignmentResult;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
+import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.teams.model.Team;
+import nl.moj.server.test.model.TestAttempt;
+import nl.moj.server.test.model.TestCase;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
-
-import java.time.Instant;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Controller
 @Slf4j
@@ -57,86 +60,105 @@ public class MessageService {
         this.userService = userService;
     }
 
-    public void sendTestFeedback(Team team, JMSTestResponse tr) {
-
-        tr.getTestCaseResults().forEach(tcr -> {
-            TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder()
-                    .success(tcr.isSuccess())
-                    .uuid(team.getUuid())
-                    .test(tcr.getTestCase())
-                    .message(tcr.getOutput() == null ? "" : tcr.getOutput())
-                    .build();
-            sendTestFeedback(team, tcr);
-        });
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void sendTestFeedback(TestAttempt ta) {
+        if (ta != null) {
+            Team team = ta.getAssignmentStatus().getTeam();
+            sendCompileFeedback(ta.getCompileAttempt());
+            ta.getTestCases().forEach(tc -> {
+                sendTestFeedback(team, tc);
+            });
+        }
     }
 
-    public void sendTestFeedback(Team team, JMSTestCaseResult tr) {
+    private void sendTestFeedback(Team team, TestCase tc) {
         TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder()
-                .success(tr.isSuccess())
+                .success(tc.getSuccess())
                 .uuid(team.getUuid())
-                .test(tr.getTestCase())
-                .message(tr.getOutput())
+                .test(tc.getUuid())
+                .message(tc.getTestOutput())
                 .build();
         log.info("Sending test feedback: {}", msg);
         sendToActiveUsers(team, msg);
         template.convertAndSend(DEST_TESTRESULTS, msg);
     }
 
-    public void sendSubmitFeedback(Team team, SubmitResult submitResult) {
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void sendSubmitFeedback(SubmitAttempt sa) {
+        TeamAssignmentStatus as = sa.getAssignmentStatus();
+        sendSubmitFeedback(sa, as);
+    }
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void sendSubmitFeedback(TeamAssignmentStatus as) {
+        SubmitAttempt sa = as.getMostRecentSubmitAttempt();
+        sendSubmitFeedback(sa, as);
+    }
+
+    private void sendSubmitFeedback(SubmitAttempt sa, TeamAssignmentStatus as) {
+        AssignmentResult ar = as.getAssignmentResult();
+        Team team = as.getTeam();
         TeamSubmitFeedbackMessage msg = TeamSubmitFeedbackMessage.builder()
-                .score(submitResult.getScore())
-                .remainingSubmits(submitResult.getRemainingSubmits())
+                .score(ar != null ? ar.getFinalScore() : 0L)
+                .remainingSubmits(as.getAssignment().getAllowedSubmits() - as.getSubmitAttempts().size())
                 .uuid(team.getUuid())
                 .team(team.getName())
-                .success(submitResult.isSuccess())
+                .success(sa != null && sa.getSuccess() != null && sa.getSuccess())
                 .message("TODO")
                 .build();
 
         log.info("Sending submit feedback: {}", msg);
+        if (sa != null) {
+            sendTestFeedback(sa.getTestAttempt());
+        }
         sendToActiveUsers(team, msg);
         template.convertAndSend(DEST_TESTRESULTS, msg);
         template.convertAndSend(DEST_RANKINGS, "refresh");
     }
 
-    public void sendCompileFeedback(Team team, JMSCompileResponse compileResponse) {
-        TeamCompileFeedbackMessage msg = TeamCompileFeedbackMessage.builder()
-                .success(compileResponse.isSuccess())
-                .team(team.getName())
-                .message(compileResponse.getOutput() == null ? "" : compileResponse.getOutput())
-                .build();
-        log.info("Sending compile feedback: {}", msg);
-        sendToActiveUsers(team, msg);
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void sendCompileFeedback(CompileAttempt ca) {//Team team, JMSCompileResponse compileResponse) {
+        if( ca != null ) {
+            Team team = ca.getAssignmentStatus().getTeam();
+            TeamCompileFeedbackMessage msg = TeamCompileFeedbackMessage.builder()
+                    .success(ca.getSuccess())
+                    .team(team.getName())
+                    .message(ca.getCompilerOutput() == null ? "" : ca.getCompilerOutput())
+                    .build();
+            log.info("Sending compile feedback: {}", msg);
+            sendToActiveUsers(team, msg);
+        }
     }
 
     public void sendStartToTeams(String taskname, String sessionId) {
         log.info("Sending start: t={}, s={}", taskname, sessionId);
         template.convertAndSend(DEST_START, taskname);
-        template.convertAndSend(DEST_COMPETITION, StartAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
+        template.convertAndSend(DEST_COMPETITION, StartAssignmentMessage.builder()
+                .sessionId(sessionId)
+                .assignment(taskname)
+                .build());
     }
 
     public void sendStopToTeams(String taskname, String sessionId) {
         log.info("Sending stop: t={}, s={}", taskname, sessionId);
         template.convertAndSend(DEST_STOP, new TaskMessage(taskname));
-        template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
+        template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder()
+                .sessionId(sessionId)
+                .assignment(taskname)
+                .build());
     }
 
-    public void sendRemainingTime(Long remainingTime, Long totalTime, boolean isPaused, CompetitionSession session) {
+    public void sendRemainingTime(Duration remainingTime, Duration totalTime, UUID session ) {
         try {
-            log.info("Sending time: r={}, t={}, s={}", remainingTime, totalTime, session.getUuid().toString());
+            log.info("Sending time: r={}, t={}, s={}", remainingTime, totalTime, session.toString());
             TimerSyncMessage msg = TimerSyncMessage.builder()
-                    .remainingTime(remainingTime)
-                    .totalTime(totalTime)
-                    .sessionId(session.getUuid().toString())
-                    .isRunning(!isPaused)
+                    .remainingTime(remainingTime.toSeconds())
+                    .totalTime(totalTime.toSeconds())
+                    .sessionId(session.toString())
+                    .isRunning(true)
                     .build();
             template.convertAndSend(DEST_COMPETITION, msg);
             template.convertAndSend("/queue/time", msg);
-            session.setTimeLeft(remainingTime);
-            if (remainingTime == 0) {
-                session.setRunning(false);
-            }
-            session.setDateTimeLastUpdate(Instant.now());
-            competitionSessionRepository.save(session);
 
         } catch (Exception e) {
             log.warn("Failed to send remaining time.", e);

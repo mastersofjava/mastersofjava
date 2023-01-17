@@ -31,8 +31,8 @@ import nl.moj.server.compiler.service.CompileRequest;
 import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.test.repository.TestAttemptRepository;
@@ -52,9 +52,7 @@ public class TestService {
 
     private final TestAttemptRepository testAttemptRepository;
 
-    private final CompileAttemptRepository compileAttemptRepository;
-
-    private final AssignmentStatusRepository assignmentStatusRepository;
+    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
 
     private final JmsTemplate jmsTemplate;
 
@@ -64,7 +62,7 @@ public class TestService {
     public void receiveTestResponse(JMSTestResponse testResponse) {
         log.info("Received test attempt response {}", testResponse.getAttempt());
         TestAttempt testAttempt = registerTestResponse(testResponse);
-        messageService.sendTestFeedback(testAttempt.getAssignmentStatus().getTeam(), testResponse);
+        messageService.sendTestFeedback(testAttempt);
     }
 
     @Transactional
@@ -94,7 +92,7 @@ public class TestService {
 
     @Transactional
     public TestAttempt prepareTestAttempt(TestRequest testRequest) {
-        AssignmentStatus as = assignmentStatusRepository.findByAssignment_IdAndCompetitionSession_IdAndTeam_Id(
+        TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignment_IdAndCompetitionSession_IdAndTeam_Id(
                 testRequest.getAssignment().getId(), testRequest.getSession().getId(),
                 testRequest.getTeam().getId());
 
@@ -124,7 +122,6 @@ public class TestService {
             testAttempt.getTestCases().add(testCaseRepository.save(tc));
         }
 
-        as.getCompileAttempts().add(compileAttempt);
         as.getTestAttempts().add(testAttempt);
         return testAttempt;
     }

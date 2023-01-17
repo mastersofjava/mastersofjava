@@ -14,13 +14,10 @@ import nl.moj.server.compiler.service.CompileRequest;
 import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.service.SubmitRequest;
 import nl.moj.server.submit.service.SubmitService;
-import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.service.TestRequest;
 import nl.moj.server.test.service.TestService;
@@ -32,9 +29,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @RequiredArgsConstructor
 public class SubmitFacade {
-
-    private final AssignmentStatusRepository assignmentStatusRepository;
-
     private final CompetitionRuntime competitionRuntime;
 
     private final UserService userService;
@@ -44,16 +38,6 @@ public class SubmitFacade {
     private final TestService testService;
 
     private final SubmitService submitService;
-
-    private boolean isSubmitAllowedForTeam(Team team, ActiveAssignment activeAssignment) {
-        final AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(), activeAssignment.getCompetitionSession(), team);
-        return getRemainingSubmits(as, activeAssignment) > 0 && activeAssignment.isRunning();
-    }
-
-    private int getRemainingSubmits(AssignmentStatus as, ActiveAssignment activeAssignment) {
-        int maxSubmits = activeAssignment.getAssignmentDescriptor().getScoringRules().getMaximumResubmits() + 1;
-        return maxSubmits - as.getSubmitAttempts().size();
-    }
 
     public CompileAttempt registerCompileRequest(SourceMessage message, Principal principal) {
         try {
@@ -75,7 +59,7 @@ public class SubmitFacade {
 
     public SubmitAttempt registerSubmitRequest(SourceMessage message, Principal principal) {
         try {
-            return submitService.registerSubmitRequest(createSubmitRequest(message, principal));
+            return submitService.registerSubmitAttempt(createSubmitRequest(message, principal));
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
@@ -84,7 +68,7 @@ public class SubmitFacade {
 
     private SubmitRequest createSubmitRequest(SourceMessage message, Principal principal) {
         User user = userService.findUser(principal);
-        ActiveAssignment activeAssignment = competitionRuntime.getActiveAssignment(user.getTeam(), message);
+        ActiveAssignment activeAssignment = competitionRuntime.getActiveAssignment();
         var testCases = activeAssignment.getSubmitTestFiles();
         return SubmitRequest.builder()
                 .team(user.getTeam())
@@ -92,14 +76,12 @@ public class SubmitFacade {
                 .assignment(activeAssignment.getAssignment())
                 .sources(convertSources(message.getSources(), activeAssignment))
                 .tests(testCases)
-                .timeElapsed(activeAssignment.getTimeElapsed())
-                .isSubmitAllowed(isSubmitAllowedForTeam(user.getTeam(), activeAssignment))
                 .build();
     }
 
     private TestRequest createTestRequest(SourceMessage message, Principal principal) {
         User user = userService.findUser(principal);
-        ActiveAssignment activeAssignment = competitionRuntime.getActiveAssignment(user.getTeam(), message);
+        ActiveAssignment activeAssignment = competitionRuntime.getActiveAssignment();
 
         var testCases = activeAssignment.getTestFiles().stream()
                 .filter(t -> message.getTests().contains(t.getUuid().toString()))
@@ -116,7 +98,7 @@ public class SubmitFacade {
 
     private CompileRequest createCompileRequest(SourceMessage message, Principal principal) {
         User user = userService.findUser(principal);
-        ActiveAssignment activeAssignment = competitionRuntime.getActiveAssignment(user.getTeam(), message);
+        ActiveAssignment activeAssignment = competitionRuntime.getActiveAssignment();
 
         return CompileRequest.builder()
                 .team(user.getTeam())

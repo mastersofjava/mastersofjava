@@ -29,8 +29,8 @@ import nl.moj.common.messages.JMSFile;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.message.service.MessageService;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
 public class CompileService {
 
     private final CompileAttemptRepository compileAttemptRepository;
-    private final AssignmentStatusRepository assignmentStatusRepository;
+    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
     private final JmsTemplate jmsTemplate;
     private final MessageService messageService;
 
@@ -49,7 +49,7 @@ public class CompileService {
     public void receiveCompileResponse(JMSCompileResponse compileResponse) {
         log.info("Received compile attempt response {}", compileResponse.getAttempt());
         CompileAttempt compileAttempt = registerCompileResponse(compileResponse);
-        messageService.sendCompileFeedback(compileAttempt.getAssignmentStatus().getTeam(), compileResponse);
+        messageService.sendCompileFeedback(compileAttempt);
     }
 
     @Transactional
@@ -76,7 +76,7 @@ public class CompileService {
     @Transactional
     public CompileAttempt
     prepareCompileAttempt(CompileRequest compileRequest) {
-        AssignmentStatus as = assignmentStatusRepository.findByAssignment_IdAndCompetitionSession_IdAndTeam_Id(
+        TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignment_IdAndCompetitionSession_IdAndTeam_Id(
                 compileRequest.getAssignment().getId(), compileRequest.getSession().getId(),
                 compileRequest.getTeam().getId());
 

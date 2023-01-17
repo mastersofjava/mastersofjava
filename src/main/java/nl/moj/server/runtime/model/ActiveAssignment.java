@@ -42,7 +42,8 @@ public class ActiveAssignment {
     private AssignmentDescriptor assignmentDescriptor;
 
     private Duration timeElapsed;
-    private Long timeRemaining;
+    private Long secondsRemaining;
+    private Duration timeRemaining;
     private List<AssignmentFile> assignmentFiles; // this is a reference to AssignmentExecutionModel.originalAssignmentFiles, which is a reference to assignmentService.getAssignmentFiles(model.assignment)
     private boolean running;
 

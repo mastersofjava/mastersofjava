@@ -46,15 +46,8 @@ public class RankingsController {
     @GetMapping("/rankings")
     public ModelAndView getRankings() {
         CompetitionRuntime rankingProvider = competitionRuntime;
-        log.info("competition " +HttpUtil.getParam("competition") + " - " +rankingProvider);
+        log.info("competition " + HttpUtil.getParam("competition") + " - " + rankingProvider);
 
-        if (HttpUtil.hasParam("competition")) {
-            Long competitionId = Long.parseLong(HttpUtil.getParam("competition","1"));
-            if (competitionRuntime.getActiveCompetitionsMap().containsKey(competitionId)) {
-                Competition competition = competitionRuntime.getActiveCompetitionsMap().get(competitionId).getCompetition();
-                rankingProvider = competitionRuntime.selectCompetitionRuntimeForGameStart(competition);
-            }
-        }
         Competition competition = rankingProvider.getCompetition();
         List<Ranking> rankings = enrich(rankingsService.getRankings(rankingProvider.getCompetitionSession()));
         CompetitionState competitionState = rankingProvider.getCompetitionState();
@@ -73,10 +66,10 @@ public class RankingsController {
         model.addObject("bottom2", parts.get(1));
         model.addObject("bottom3", parts.get(2));
         model.addObject("bottom4", parts.get(3));
-        if (rankingProvider.getCurrentRunningAssignment() != null) {
+        if (rankingProvider.getActiveAssignment() != null) {
             ActiveAssignment state = rankingProvider.getActiveAssignment();
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
-            model.addObject("timeLeft", state.getTimeRemaining());
+            model.addObject("timeLeft", state.getSecondsRemaining());
             model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addObject("running", state.isRunning());
         } else {

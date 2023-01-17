@@ -17,7 +17,7 @@
 package nl.moj.server.compiler.model;
 
 import lombok.*;
-import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 
 import javax.persistence.*;
 import java.time.Instant;
@@ -45,7 +45,7 @@ public class CompileAttempt {
 
     @ManyToOne
     @JoinColumn(name = "assignment_status_id", nullable = false)
-    private AssignmentStatus assignmentStatus;
+    private TeamAssignmentStatus assignmentStatus;
 
     @Column(name = "date_time_register", nullable = false)
     private Instant dateTimeRegister;

@@ -18,13 +18,12 @@ package nl.moj.server.submit;
 
 import java.security.Principal;
 
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.stereotype.Controller;
-
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.submit.model.SourceMessage;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.stereotype.Controller;
 
 @Controller
 @MessageMapping("/submit")
@@ -38,7 +37,7 @@ public class SubmitController {
     public void compile(SourceMessage message, Principal principal, MessageHeaders headers)
             throws Exception {
         try {
-            submitFacade.registerCompileRequest(message,principal);
+            submitFacade.registerCompileRequest(message, principal);
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
@@ -48,7 +47,7 @@ public class SubmitController {
     public void test(SourceMessage message, Principal principal, MessageHeaders headers)
             throws Exception {
         try {
-            submitFacade.registerTestRequest(message,principal);
+            submitFacade.registerTestRequest(message, principal);
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
@@ -58,14 +57,9 @@ public class SubmitController {
     public void submit(SourceMessage message, Principal principal, MessageHeaders headers)
             throws Exception {
         try {
-            submitFacade.registerSubmitRequest(message,principal);
+            submitFacade.registerSubmitRequest(message, principal);
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
     }
-
-
-
-    // TODO this should not be here
-
 }
