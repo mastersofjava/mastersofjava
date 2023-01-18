@@ -13,6 +13,7 @@ import java.util.Map;
 public class KeyCloakHelper {
 
     public static String createUserAndReturnToken(String keycloakUrl, String userName) {
+        System.out.println("++++++++++++ Create user " + userName);
         createUser(userName, keycloakUrl);
         return getToken(keycloakUrl, userName);
     }
