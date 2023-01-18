@@ -37,7 +37,7 @@ import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession;
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.message.service.MessageService;
@@ -90,7 +90,7 @@ public class AssignmentRuntime {
     private StopWatch timer;
 
     @Getter
-    private OrderedAssignment orderedAssignment;
+    private CompetitionAssignment orderedAssignment;
     private Assignment assignment;
     private AssignmentDescriptor assignmentDescriptor;
     private Map<String, Future<?>> handlers;
@@ -106,7 +106,7 @@ public class AssignmentRuntime {
     private CompetitionSession competitionSession;
 
     /**
-     * Starts the given {@link OrderedAssignment} and returns
+     * Starts the given {@link CompetitionAssignment} and returns
      * a Future&lt;?&gt; referencing which completes when the
      * assignment is supposed to end.
      *

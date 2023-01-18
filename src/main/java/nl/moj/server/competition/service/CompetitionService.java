@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.Competition;
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -109,10 +109,10 @@ public class CompetitionService {
         return defaultLocation;
     }
 
-    public Function<Assignment, OrderedAssignment> createOrderedAssignments(Competition c) {
+    public Function<Assignment, CompetitionAssignment> createOrderedAssignments(Competition c) {
         AtomicInteger count = new AtomicInteger(0);
         return a -> {
-            OrderedAssignment oa = new OrderedAssignment();
+            CompetitionAssignment oa = new CompetitionAssignment();
             oa.setAssignment(a);
             oa.setCompetition(c);
             oa.setOrder(count.getAndIncrement());

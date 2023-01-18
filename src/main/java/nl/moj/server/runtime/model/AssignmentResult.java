@@ -36,7 +36,7 @@ public class AssignmentResult {
     @Column(name = "id", nullable = false)
     private Long id;
     @OneToOne
-    @JoinColumn(name = "assignment_status_id", nullable = false)
+    @JoinColumn(name = "team_assignment_status_id", nullable = false)
     private TeamAssignmentStatus assignmentStatus;
 
     @Column(name = "initial_score", nullable = false)

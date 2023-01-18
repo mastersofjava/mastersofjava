@@ -63,6 +63,7 @@ public class CompileService {
                 .attempt(compileAttempt.getUuid())
                 .assignment(compileRequest.getAssignment().getUuid())
                 .sources(compileRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()
+                        .type(JMSFile.Type.SOURCE)
                         .path(e.getKey().toString())
                         .content(e.getValue())
                         .build()).collect(Collectors.toList()))

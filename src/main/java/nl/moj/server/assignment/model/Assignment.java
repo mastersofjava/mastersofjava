@@ -48,13 +48,16 @@ public class Assignment {
     @Column(name = "name", unique = true, nullable = false)
     private String name;
 
+    @Column(name = "collection", nullable = false)
+    private String collection;
+
     @Column(name = "assignment_descriptor", unique = true, nullable = false)
     private String assignmentDescriptor;
 
-    @Column(name = "assignment_duration")
+    @Column(name = "assignment_duration", nullable = false)
     private Duration assignmentDuration;
 
-    @Column(name = "allowed_submits")
+    @Column(name = "allowed_submits", nullable = false)
     private Integer allowedSubmits;
 
 

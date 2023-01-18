@@ -16,7 +16,7 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.message.service.MessageService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -38,7 +38,7 @@ public class NonExistingJDKTest extends BaseRuntimeTest {
 
     @Test
     public void assignmentShouldNotStartWhenJDKVersionUnavailable() {
-        OrderedAssignment oa = getAssignment("non-existing-jdk");
+        CompetitionAssignment oa = getAssignment("non-existing-jdk");
         competitionRuntime.startAssignment(oa.getAssignment().getName());
         Mockito.verify(messageService).sendStartFail(eq("non-existing-jdk"), any());
     }

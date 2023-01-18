@@ -17,16 +17,16 @@
 package nl.moj.server.runtime.model;
 
 
-import javax.persistence.*;
-import java.time.Duration;
-import java.time.Instant;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
+
+import javax.persistence.*;
+import java.time.Duration;
+import java.time.Instant;
 
 @Data
 @Entity
@@ -42,10 +42,10 @@ public class AssignmentStatus {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "time_remaining")
+    @Column(name = "time_remaining", nullable = false)
     private Duration timeRemaining;
 
-    @Column(name = "date_time_start")
+    @Column(name = "date_time_start", nullable = false)
     private Instant dateTimeStart;
 
     @Column(name = "date_time_end")

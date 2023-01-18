@@ -16,17 +16,10 @@
 */
 package nl.moj.server.test.service;
 
-import javax.transaction.Transactional;
-import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.messages.*;
 import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.compiler.service.CompileRequest;
 import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.message.service.MessageService;
@@ -40,6 +33,12 @@ import nl.moj.server.test.repository.TestCaseRepository;
 import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -77,6 +76,7 @@ public class TestService {
                 .attempt(testAttempt.getUuid())
                 .assignment(testRequest.getAssignment().getUuid())
                 .sources(testRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()
+                        .type(JMSFile.Type.SOURCE)
                         .path(e.getKey().toString())
                         .content(e.getValue())
                         .build()).collect(Collectors.toList()))

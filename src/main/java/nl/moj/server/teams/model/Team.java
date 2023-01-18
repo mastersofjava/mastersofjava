@@ -59,7 +59,7 @@ public class Team {
     @Column(name = "indication")
     private String indication;
 
-    @OneToMany()
+    @OneToMany(mappedBy = "team")
     @Builder.Default
     private List<User> users = new ArrayList<>();
 

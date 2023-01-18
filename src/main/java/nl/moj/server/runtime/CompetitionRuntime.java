@@ -16,7 +16,6 @@
 */
 package nl.moj.server.runtime;
 
-import javax.transaction.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,7 +26,7 @@ import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.*;
@@ -59,7 +58,7 @@ public class CompetitionRuntime {
     @Getter
     private CompetitionSession competitionSession;
 
-    private List<OrderedAssignment> completedAssignments;
+    private List<CompetitionAssignment> completedAssignments;
 
     public void startSession(Competition competition) {
         log.info("Starting new session for competition {}", competition.getName());
@@ -92,7 +91,7 @@ public class CompetitionRuntime {
         });
     }
 
-    public OrderedAssignment getCurrentAssignment() {
+    public CompetitionAssignment getCurrentAssignment() {
         if (assignmentRuntime.isRunning()) {
             return assignmentRuntime.getOrderedAssignment();
         }
@@ -115,7 +114,7 @@ public class CompetitionRuntime {
     public void startAssignment(String name) {
         log.debug("stopping current assignment to start assignment '{}'", name);
         stopCurrentAssignment();
-        Optional<OrderedAssignment> assignment = competition.getAssignments().stream()
+        Optional<CompetitionAssignment> assignment = competition.getAssignments().stream()
                 .filter(a -> a.getAssignment().getName().equals(name))
                 .findFirst();
 

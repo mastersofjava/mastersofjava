@@ -16,6 +16,26 @@
 */
 package nl.moj.server.submit.service;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.messages.*;
+import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.message.service.MessageService;
+import nl.moj.server.runtime.ScoreService;
+import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
+import nl.moj.server.submit.model.SubmitAttempt;
+import nl.moj.server.submit.repository.SubmitAttemptRepository;
+import nl.moj.server.test.model.TestAttempt;
+import nl.moj.server.test.model.TestCase;
+import nl.moj.server.test.service.TestRequest;
+import nl.moj.server.test.service.TestService;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.stereotype.Service;
+
 import javax.transaction.Transactional;
 import java.time.Duration;
 import java.time.Instant;
@@ -25,27 +45,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.common.messages.*;
-import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.compiler.repository.CompileAttemptRepository;
-import nl.moj.server.message.service.MessageService;
-import nl.moj.server.runtime.ScoreService;
-import nl.moj.server.runtime.model.TeamAssignmentStatus;
-import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
-import nl.moj.server.submit.model.SubmitAttempt;
-import nl.moj.server.submit.repository.SubmitAttemptRepository;
-import nl.moj.server.test.model.TestAttempt;
-import nl.moj.server.test.model.TestCase;
-import nl.moj.server.test.repository.TestAttemptRepository;
-import nl.moj.server.test.repository.TestCaseRepository;
-import nl.moj.server.test.service.TestRequest;
-import nl.moj.server.test.service.TestService;
-import org.springframework.jms.core.JmsTemplate;
-import org.springframework.stereotype.Service;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -54,11 +53,9 @@ public class SubmitService {
     private final MessageService messageService;
     private final TestService testService;
     private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
-    private final CompileAttemptRepository compileAttemptRepository;
+    private final AssignmentStatusRepository assignmentStatusRepository;
 
-    private final TestAttemptRepository testAttemptRepository;
     private final SubmitAttemptRepository submitAttemptRepository;
-    private final TestCaseRepository testCaseRepository;
     private final ScoreService scoreService;
     private final AssignmentService assignmentService;
     private final JmsTemplate jmsTemplate;
@@ -147,11 +144,13 @@ public class SubmitService {
     public SubmitAttempt registerSubmitAttempt(SubmitRequest submitRequest) {
         log.info("Registering compile attempt for assignment {} by team {}.", submitRequest.getAssignment().getUuid(),
                 submitRequest.getTeam().getUuid());
-        final TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam());
+        final TeamAssignmentStatus tas = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam());
+        final AssignmentStatus as = assignmentStatusRepository.findByCompetitionSessionAndAssignment(tas.getCompetitionSession(), tas.getAssignment())
+                .orElseThrow(() -> new IllegalStateException("Submit request received for assignment " + tas.getAssignment().getUuid() + " that was never started."));
 
         Instant registered = Instant.now();
         long secondsRemaining = getSecondsRemaining(registered, as);
-        if (as.getRemainingSubmitAttempts() >= 0 && secondsRemaining >= 0) {
+        if (tas.getRemainingSubmitAttempts() >= 0 && isRegisteredBeforeEnding(registered, as)) {
             messageService.sendSubmitStarted(submitRequest.getTeam());
             SubmitAttempt submitAttempt = prepareSubmitAttempt(submitRequest, registered, Duration.ofSeconds(secondsRemaining));
 
@@ -159,6 +158,7 @@ public class SubmitService {
                     .attempt(submitAttempt.getUuid())
                     .assignment(submitRequest.getAssignment().getUuid())
                     .sources(submitRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()
+                            .type(JMSFile.Type.SOURCE)
                             .path(e.getKey().toString())
                             .content(e.getValue())
                             .build()).collect(Collectors.toList()))
@@ -201,11 +201,19 @@ public class SubmitService {
         return submitAttemptRepository.save(sa);
     }
 
-    private long getSecondsRemaining(Instant start, TeamAssignmentStatus as) {
-        Instant end = as.getDateTimeStart().plus(as.getAssignment().getAssignmentDuration());
-        if (start.isBefore(end)) {
-            return Duration.between(start, end).toSeconds();
+    private boolean isRegisteredBeforeEnding(Instant registered, AssignmentStatus as) {
+        Duration d = as.getAssignment().getAssignmentDuration();
+        if (as.getDateTimeEnd() != null) {
+            return as.getDateTimeEnd().isAfter(registered);
         }
-        return -1;
+        return as.getDateTimeStart().plus(d).isAfter(registered);
+    }
+
+    private long getSecondsRemaining(Instant registered, AssignmentStatus as) {
+        if (isRegisteredBeforeEnding(registered, as)) {
+            Duration d = as.getAssignment().getAssignmentDuration();
+            return Duration.between(registered, as.getDateTimeStart().plus(d)).toSeconds();
+        }
+        return 0;
     }
 }

@@ -48,16 +48,16 @@ public class Competition {
     private String name;
 
     @OneToMany(mappedBy = "competition", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderedAssignment> assignments = new ArrayList<>();
+    private List<CompetitionAssignment> assignments = new ArrayList<>();
 
     @JsonIgnore
-    public List<OrderedAssignment> getAssignmentsInOrder() {
-        List<OrderedAssignment> copyFiltered = copyFilteredList();
-        copyFiltered.sort(Comparator.comparingInt(OrderedAssignment::getOrder));
+    public List<CompetitionAssignment> getAssignmentsInOrder() {
+        List<CompetitionAssignment> copyFiltered = copyFilteredList();
+        copyFiltered.sort(Comparator.comparingInt(CompetitionAssignment::getOrder));
         return copyFiltered;
     }
 
-    private List<OrderedAssignment> copyFilteredList() {
+    private List<CompetitionAssignment> copyFilteredList() {
         boolean isDefault = !name.contains("|20");
         if (isDefault) {
             return new ArrayList<>(assignments);

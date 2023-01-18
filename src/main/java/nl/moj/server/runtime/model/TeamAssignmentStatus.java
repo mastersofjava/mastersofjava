@@ -30,7 +30,7 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestAttempt;
 
 @Entity
-@Table(name = "team_assignment_statuses", uniqueConstraints = @UniqueConstraint(name = "competition_assignment_team_unique", columnNames = {"competition_session_id", "assignment_id", "team_id"}))
+@Table(name = "team_assignment_statuses", uniqueConstraints = @UniqueConstraint(name = "team_assignment_statuses_cs_a_t_uk", columnNames = {"competition_session_id", "assignment_id", "team_id"}))
 @SequenceGenerator(name = "team_assignment_status_id_seq", sequenceName = "team_assignment_statuses_seq")
 
 @Builder
@@ -63,7 +63,7 @@ public class TeamAssignmentStatus {
     @JoinColumn(name = "assignment_id", nullable = false)
     private Assignment assignment;
 
-    @Column(name = "date_time_start")
+    @Column(name = "date_time_start", nullable = false)
     private Instant dateTimeStart;
 
     @Column(name = "date_time_completed")
@@ -85,6 +85,7 @@ public class TeamAssignmentStatus {
     private List<SubmitAttempt> submitAttempts = new ArrayList<>();
 
     @OneToOne(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
+    @JoinColumn(name="assignment_result_id")
     private AssignmentResult assignmentResult;
 
     public TestAttempt getMostRecentTestAttempt() {

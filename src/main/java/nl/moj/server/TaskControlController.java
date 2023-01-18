@@ -16,22 +16,15 @@
 */
 package nl.moj.server;
 
-import javax.annotation.security.RolesAllowed;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
+import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.authorization.Role;
 import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.CompetitionCleaningService;
@@ -41,6 +34,7 @@ import nl.moj.server.rankings.service.RankingsService;
 import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
@@ -58,6 +52,17 @@ import org.springframework.ui.Model;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.annotation.security.RolesAllowed;
+import java.io.File;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -333,42 +338,21 @@ public class TaskControlController {
         }
     }
 
-    /**
-     * import assignments from a selected available year.
-     *
-     * @param message
-     * @return
-     */
-    @MessageMapping("/control/scanAssignments")
+    @MessageMapping("/control/assignment/scan")
     @SendToUser("/queue/controlfeedback")
-    public String cloneAssignmentsRepo(TaskMessage message) {
-//        try {
-//            Path path = mojServerProperties.getAssignmentRepo();
-//            if (StringUtils.isNumeric(message.taskName)) {
-//                path = competitionService.getLocationByYear(Integer.parseInt(message.taskName)).toPath();
-//            }
-//            if (!path.toFile().isDirectory()) {
-//                return "Assignment location invalid ("+path+").";
-//            }
-//            log.info("scanAssignments year {}, path {}" ,  message.taskName , path ) ;
-//            List<Assignment> assignmentList = assignmentService.updateAssignments(path);
-//            if (assignmentList.isEmpty()) {
-//                return "No assignments scanned from location of "+path.toFile().getName()+" (improve assignments before importing).";
-//            }
-//            log.info("assignmentList size {} ",assignmentList.size()) ;
-//
-//            String name = competition.getCompetition().getName().split("\\|")[0]+ "|" + path.toFile().getName();
-//            if (!competition.getCompetitionSession().isRunning()) {
-//                startCompetitionWithFreshAssignments(name);
-//            }
-//            assignmentRuntime.reloadOriginalAssignmentFiles();
-//
-//            return "Assignments scanned from location "+path+" ("+assignmentList.size()+"), reloading to show them.";
-//        } catch (AssignmentServiceException ase) {
-//            log.error("Scanning assignments failed.", ase);
-//            return ase.getMessage();
-//        }
-        return "Not Implemented";
+    public String scanAssignments() {
+        try {
+            List<Assignment> assignments = assignmentService.updateAssignments();
+            if (assignments.isEmpty()) {
+                return "No assignments found in folder " + mojServerProperties.getAssignmentRepo() + ".";
+            }
+            log.info("Found {} assignments in folder {}.",assignments.size(),mojServerProperties.getAssignmentRepo()) ;
+
+            return "Assignments scanned from location "+mojServerProperties.getAssignmentRepo()+" ("+assignments.size()+"), reloading to show them.";
+        } catch (Exception e) {
+            log.error("Scanning assignments failed.", e);
+            return e.getMessage();
+        }
     }
 
     private void startCompetitionWithFreshAssignments(String name) {
@@ -523,73 +507,99 @@ public class TaskControlController {
         // TODO maybe move this creat or update stuff to a filter.
         User user = userService.createOrUpdate(principal);
 
-        ActiveAssignment state = competition.getActiveAssignment();
-        model.addAttribute("competitionName", competition.getCompetition().getName());
-        model.addAttribute("running",state.isRunning());
+        //ActiveAssignment state = competition.getActiveAssignment();
+        model.addAttribute("competition", toCompetitionVO(competition));
 
+        //model.addAttribute("running", state.isRunning());
         model.addAttribute("clockStyle", "active");
 
-        if( competition.getActiveAssignment().isRunning()) {
-            model.addAttribute("timeLeft", state.getTimeRemaining().toSeconds());
-            model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
-        }
-
-//        AdminPageStatus pageStatus = new AdminPageStatus(principal, user);
-//        pageStatus.validateRoleAuthorization();
-//        pageStatus.insertPageDefaults(model);
-//        if (pageStatus.isDuringCompetitionAssignment()) {
-//            pageStatus.insertGamestatus(model);
+//        if (competition.getActiveAssignment().isRunning()) {
+//            model.addAttribute("timeLeft", state.getTimeRemaining().toSeconds());
+//            model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
 //        }
-//        pageStatus.insertAssignmentInfo(model);
-//        pageStatus.insertCompetitionInfo(model);
-//        ssf.setSession(competition.getCompetitionSession().getUuid());
+
+
         return "control";
     }
 
+    private CompetitionSessionVO toCompetitionVO(CompetitionRuntime runtime) {
+        Competition competition = runtime.getCompetition();
+        CompetitionSession session = runtime.getCompetitionSession();
+        ActiveAssignment activeAssignment = runtime.getActiveAssignment();
 
-//    @PostMapping("/control/select-session")
-//    public String selectSession(@ModelAttribute("sessionSelectForm") SelectSessionForm ssf) {
-//        competition.changeSession(ssf.getSession());
-//        return "redirect:/control";
-//    }
+        List<AssignmentStatus> assignmentStatuses = session.getAssignmentStatuses();
+        List<AssignmentVO> assignments = new ArrayList<>();
+        competition.getAssignmentsInOrder().forEach(ca -> {
+            Optional<AssignmentStatus> as = assignmentStatuses.stream().filter(a -> a.getAssignment().equals(ca.getAssignment())).findFirst();
+            assignments.add(toAssignmentVO(ca, as));
+        });
 
-//    /**
-//     * creates new session in selected competition. There is always only on session active in a competition.
-//     */
-//    @PostMapping("/control/new-session")
-//    public String newSession() {
-//        competition.startSession(competition.getCompetition());
-//        return "redirect:/control";
-//    }
+        ActiveAssignmentVO active = null;
+        if (activeAssignment.isRunning()) {
+            Optional<CompetitionAssignment> oca = competition.getAssignments().stream().filter(a -> a.getAssignment().equals(activeAssignment.getAssignment())).findFirst();
+            if (oca.isPresent()) {
+                Optional<AssignmentStatus> as = assignmentStatuses.stream().filter(a -> a.getAssignment().equals(activeAssignment.getAssignment())).findFirst();
+                active = ActiveAssignmentVO.builder()
+                        .assignment(toAssignmentVO(oca.get(), as))
+                        .seconds(oca.get().getAssignment().getAssignmentDuration().toSeconds())
+                        .secondsLeft(activeAssignment.getTimeRemaining().toSeconds())
+                        .build();
+            }
+        }
 
-//    @PostMapping("/control/resetPassword")
-//    public String resetPassword(RedirectAttributes redirectAttributes,
-//                                @ModelAttribute("newPasswordRequest") NewPasswordRequest passwordChangeRequest) {
-//
-//        String errorMessage = null;
-//
-//        if (passwordChangeRequest.teamUuid.equals("0")) {
-//            errorMessage = "No team selected";
-//        } else {
-//            Team team = teamRepository.findByUuid(UUID.fromString(passwordChangeRequest.teamUuid));
-//            if (passwordChangeRequest.newPassword == null || passwordChangeRequest.newPassword.isBlank()) {
-//                errorMessage = "New password can't be empty";
-//            } else if (!passwordChangeRequest.newPassword.equals(passwordChangeRequest.newPasswordCheck)) {
-//                errorMessage = "Password and confirmaton did not match";
-//            } else {
-//                //team.setPassword(competitionService.getEncoder().encode(passwordChangeRequest.newPassword));
-//                teamRepository.save(team);
-//                redirectAttributes.addFlashAttribute("success", "Successfully changed password");
-//                return "redirect:/control";
-//            }
-//        }
-//
-//        passwordChangeRequest.clearPasswords();
-//        redirectAttributes.addFlashAttribute("newPasswordRequest", passwordChangeRequest);
-//        redirectAttributes.addFlashAttribute("error", errorMessage);
-//
-//        return "redirect:/control";
-//    }
+        return CompetitionSessionVO.builder()
+                .assignments(assignments)
+                .activeAssignment(active)
+                .uuid(session.getUuid())
+                .name(competition.getName())
+                .build();
+    }
+
+    private static AssignmentVO toAssignmentVO(CompetitionAssignment ca, Optional<AssignmentStatus> as) {
+        return AssignmentVO.builder()
+                .idx(ca.getOrder())
+                .uuid(ca.getAssignment().getUuid())
+                .name(ca.getAssignment().getName())
+                .started(as.map(AssignmentStatus::getDateTimeStart).orElse(null))
+                .ended(as.map(AssignmentStatus::getDateTimeEnd).orElse(null))
+                .duration(ca.getAssignment().getAssignmentDuration())
+                .submits(ca.getAssignment().getAllowedSubmits())
+                .build();
+    }
+
+    @Value
+    @Builder
+    public static class CompetitionSessionVO {
+        UUID uuid;
+        String name;
+        @Builder.Default
+        List<AssignmentVO> assignments = new ArrayList<>();
+        ActiveAssignmentVO activeAssignment;
+
+        public boolean isAssignmentActive() {
+            return activeAssignment != null;
+        }
+    }
+
+    @Value
+    @Builder
+    public static class AssignmentVO {
+        UUID uuid;
+        String name;
+        int idx;
+        Instant started;
+        Instant ended;
+        Duration duration;
+        int submits;
+    }
+
+    @Value
+    @Builder
+    public static class ActiveAssignmentVO {
+        AssignmentVO assignment;
+        long secondsLeft;
+        long seconds;
+    }
 
     /**
      * General Taskmessage for GUI-actions
@@ -606,21 +616,4 @@ public class TaskControlController {
             this.taskName = taskName;
         }
     }
-
-//    @Data
-//    public static class NewPasswordRequest {
-//        private String teamUuid;
-//        private String newPassword;
-//        private String newPasswordCheck;
-//
-//        public void clearPasswords() {
-//            newPassword = null;
-//            newPasswordCheck = null;
-//        }
-//    }
-//
-//    @Data
-//    public static class SelectSessionForm {
-//        private UUID session;
-//    }
 }

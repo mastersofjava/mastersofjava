@@ -16,21 +16,16 @@
 */
 package nl.moj.server;
 
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
-
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.repository.AssignmentRepository;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.user.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -50,8 +45,8 @@ public class DbUtil {
         competitionSessionRepository.deleteAll();
         competitionRepository.deleteAll();
         assignmentRepository.deleteAll();
-        teamRepository.deleteAll();
         userRepository.deleteAll();
+        teamRepository.deleteAll();
     }
 
 }

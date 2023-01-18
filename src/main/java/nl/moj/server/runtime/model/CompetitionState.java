@@ -21,13 +21,13 @@ import java.util.List;
 
 import lombok.Builder;
 import lombok.Getter;
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 
 @Getter
 @Builder
 public class CompetitionState {
 
     @Builder.Default
-    private List<OrderedAssignment> completedAssignments = new ArrayList<>();
+    private List<CompetitionAssignment> completedAssignments = new ArrayList<>();
 
 }

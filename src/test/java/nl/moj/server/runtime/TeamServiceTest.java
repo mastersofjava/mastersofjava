@@ -16,30 +16,17 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.competition.model.OrderedAssignment;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.submit.model.SourceMessage;
-import nl.moj.server.submit.service.SubmitRequest;
-import nl.moj.server.submit.service.SubmitResult;
-import nl.moj.server.submit.service.SubmitService;
 import nl.moj.server.teams.service.TeamService;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.util.Assert;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,7 +46,7 @@ public class TeamServiceTest extends BaseRuntimeTest {
     }
 
     private void startSelectedAssignmment(String assignment) {
-        OrderedAssignment oa = getAssignment(assignment);
+        CompetitionAssignment oa = getAssignment(assignment);
 
         competitionRuntime.startAssignment(oa.getAssignment().getName());
     }

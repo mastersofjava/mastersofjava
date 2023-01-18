@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +41,7 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 
     @Test
     public void shouldRunForSpecifiedDuration() throws Exception {
-        OrderedAssignment oa = getAssignment("parallel");
+        CompetitionAssignment oa = getAssignment("parallel");
 
         Assertions.assertThat(oa).isNotNull();
 

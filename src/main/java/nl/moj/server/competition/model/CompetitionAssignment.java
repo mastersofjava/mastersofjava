@@ -16,9 +16,6 @@
 */
 package nl.moj.server.competition.model;
 
-import javax.persistence.*;
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -26,19 +23,21 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import nl.moj.server.assignment.model.Assignment;
 
+import javax.persistence.*;
+
 @Entity
-@Table(name = "ordered_assignments", uniqueConstraints = {
-        @UniqueConstraint(name = "order_competition_unique", columnNames = {"idx", "competition_id"})
+@Table(name = "competition_assignments", uniqueConstraints = {
+        @UniqueConstraint(name = "competition_assignments_competition_idx_uk", columnNames = {"idx", "competition_id"})
 })
 @Data
 @NoArgsConstructor(force = true)
-@SequenceGenerator(name = "ordered_assignments_seq", sequenceName = "ordered_assignments_seq")
-@EqualsAndHashCode(of = {"uuid"})
+@SequenceGenerator(name = "competition_assignments_seq", sequenceName = "competition_assignments_seq")
+@EqualsAndHashCode(of = {"id"})
 @ToString(exclude = {"competition"})
-public class OrderedAssignment {
+public class CompetitionAssignment {
 
     @Id
-    @GeneratedValue(generator = "ordered_assignments_seq", strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(generator = "competition_assignments_seq", strategy = GenerationType.SEQUENCE)
     @Column(name = "id", nullable = false)
     private Long id;
 

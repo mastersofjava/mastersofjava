@@ -31,7 +31,7 @@ public class RuntimeService {
         return assignmentService.getAssignmentContentFolder(assignment);
     }
 
-    public AssignmentDescriptor getAssignmentDescriptor(UUID assignmentUuid) throws IOException {
+    public AssignmentDescriptor getAssignmentDescriptor(UUID assignmentUuid) throws IOException, AssignmentServiceException {
 
         Path assignment = getAssigmentContentFolder(assignmentUuid);
         Path descriptor = assignment.resolve("assignment.yaml");

@@ -1,16 +1,16 @@
 package nl.moj.server.runtime.service;
 
-import javax.transaction.Transactional;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.UUID;
-
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +25,8 @@ public class AssignmentStatusService {
                     AssignmentStatus as = new AssignmentStatus();
                     as.setAssignment(assignment);
                     as.setCompetitionSession(session);
+                    as.setDateTimeStart(Instant.now());
+                    as.setTimeRemaining(timeRemaining);
                     session.getAssignmentStatuses().add(as);
                     return assignmentStatusRepository.save(as);
                 });

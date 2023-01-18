@@ -16,7 +16,7 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
@@ -24,11 +24,6 @@ import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.submit.SubmitFacade;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.model.SubmitAttempt;
-import nl.moj.server.submit.service.SubmitRequest;
-import nl.moj.server.submit.service.SubmitResult;
-import nl.moj.server.submit.service.SubmitService;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,7 +49,7 @@ public class CustomSecurityPolicyTest extends BaseRuntimeTest {
     @Test
     public void shouldUseAssignmentSecurityPolicy() throws Exception {
 
-        OrderedAssignment oa = getAssignment("custom-security-policy");
+        CompetitionAssignment oa = getAssignment("custom-security-policy");
         competitionRuntime.startAssignment(oa.getAssignment().getName());
         SubmitAttempt sa = doSubmitValidInput();
         assertSuccess(sa);

@@ -25,7 +25,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 
 @Data
 @Builder
@@ -57,7 +57,7 @@ public class Ranking {
         return b.toString();
     }
 
-    public AssignmentScore getAssignmentResult(OrderedAssignment oa) {
+    public AssignmentScore getAssignmentResult(CompetitionAssignment oa) {
         return assignmentScores.stream()
                 .filter(r -> r.getAssignmentUuid().equals(oa.getAssignment().getUuid()))
                 .findFirst()
