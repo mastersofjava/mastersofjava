@@ -5,6 +5,7 @@ import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Simulation;
 import io.gatling.javaapi.http.HttpProtocolBuilder;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -54,7 +55,7 @@ public class PerformanceTest extends Simulation {
                                         session -> "Bearer " + KeyCloakHelper.createUserAndReturnToken("http://" + Conf.keyCloakUrl, session.get("testUser")))
                                 .check(status().is(200))
                 )
-                .exec(http(session -> "Add team " + session.get("testTeam"))
+                .exec(http(session -> "Add team")
                                     .post("/team")
                                     .formParam("name", session -> session.get("testTeam"))
                                     .formParam("company", session -> session.get("testTeam"))
@@ -177,7 +178,7 @@ public class PerformanceTest extends Simulation {
 //                                        ws.checkTextMessage("Testing ended")
 //                                                .check(regex(".*TESTING_ENDED.*")))
                         )
-                                .pause(random(10, 70))
+                                .pause(session -> Duration.ofSeconds(random(10, 70)))
                 )
                 .pause(1)
 

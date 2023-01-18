@@ -3,7 +3,7 @@ package performance;
 public class Conf {
 
     // number of users
-    public static int users = 10;
+    public static int users = 100;
     // time in seconds that users starting up (reading the assignment etc)
     public static long ramp = 20;
     // Every user will start with a compile, and then run 'x' attempts before submitting
