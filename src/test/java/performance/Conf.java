@@ -3,9 +3,9 @@ package performance;
 public class Conf {
 
     // number of users
-    public static int users = 1;
+    public static int users = 10;
     // time in seconds that users starting up (reading the assignment etc)
-    public static long ramp = 1;
+    public static long ramp = 20;
     // Every user will start with a compile, and then run 'x' attempts before submitting
     public static int attemptCount = 5;
 
@@ -19,7 +19,7 @@ public class Conf {
 
 
     public static final String assigmentName = "requirement hell";
-    public static final String missingReturnStatement = """
+    public static final String doesNotCompile = """
             import java.util.List;
                         
             /**
@@ -51,42 +51,188 @@ public class Conf {
             """;
 
     public static final String attempt1 = """
-            """;
-    public static final String attempt2 = """
-            """;
-    public static final String attempt3 = """
-            """;
-    public static final String attempt4 = """
-            """;
-    public static final String attempt5 = """
-            """;
-
-    public static final String correctSolution = """
-            import java.util.Comparator;
             import java.util.List;
-                        
-            import static java.util.Comparator.comparing;
                         
             /**
              * This class makes the super awesome list of names
              */
             public class SuperAwesomeNameService {
-                public static List<String> doTheThings(List<String> names) {
-                    names.sort(comparing(String::toLowerCase));
-                    for (int i = 1; i < names.size(); i++) {
-                        if (names.get(i - 1).contains("a")) {
-                            names.set(i, reverseAndCapitalize(names.get(i)));
-                        }
-                    }
-                    return names;
+                        
+                public List<String> doTheThings(List<String> names) {
+                   \s
+                    return names.stream().sorted().toList();
                 }
                         
-                private static String reverseAndCapitalize(String name) {
-                    var reversedLowerCase = new StringBuilder(name).reverse().toString().toLowerCase();
-                    return reversedLowerCase.substring(0,1).toUpperCase() + reversedLowerCase.substring(1).toLowerCase();
-                }
             }
                         
             """;
+    public static final String attempt2 = """
+            import java.util.List;
+                        
+            /**
+             * This class makes the super awesome list of names
+             */
+            public class SuperAwesomeNameService {
+                        
+                public List<String> doTheThings(List<String> names) {
+                   \s
+                    return names.stream().sorted((a,b)->a.toLowerCase().compareTo(b.toLowerCase())).toList();
+                }
+                        
+            }
+                        
+            """;
+    public static final String attempt3 = """
+            import java.util.List;
+                        
+            /**
+             * This class makes the super awesome list of names
+             */
+            public class SuperAwesomeNameService {
+                        
+                public List<String> doTheThings(List<String> names) {
+                   \s
+                    return names.stream()
+                      .sorted((a,b)->a.toLowerCase().compareTo(b.toLowerCase()))
+                      .filter(a -> !a.contains("e"))
+                      .toList();
+                }
+                        
+            }
+                        
+            """;
+    public static final String attempt4 = """
+            import java.util.List;
+                        
+            /**
+             * This class makes the super awesome list of names
+             */
+            public class SuperAwesomeNameService {
+                        
+                public List<String> doTheThings(List<String> names) {
+                   \s
+                    return names.stream()
+                      .sorted((a,b)-> {
+                        if (hasVowel(a) && !hasVowel(b)) {
+                        	return -1;
+                        } else if (!hasVowel(a) && hasVowel(b)) {
+                        	return 1;
+                        }
+                        return a.toLowerCase().compareTo(b.toLowerCase()) ;
+                                                                 })
+                      .filter(a -> !a.contains("e"))
+                      .toList();
+                }
+                           \s
+                            private boolean hasVowel(String input) {
+                            return input.contains("aa")
+                              || input.contains("ae")
+                              || input.contains("ai")
+                              || input.contains("ao")
+                              || input.contains("au")
+                             \s
+                              || input.contains("ea")
+                              || input.contains("ee")
+                              || input.contains("ei")
+                              || input.contains("eo")
+                              || input.contains("eu")
+                             \s
+                              || input.contains("ia")
+                              || input.contains("ie")
+                              || input.contains("ii")
+                              || input.contains("io")
+                              || input.contains("iu")
+                             \s
+                              || input.contains("oa")
+                              || input.contains("oe")
+                              || input.contains("oi")
+                              || input.contains("oo")
+                              || input.contains("ou")
+                             \s
+                              || input.contains("ua")
+                              || input.contains("ue")
+                              || input.contains("ui")
+                              || input.contains("uo")
+                              || input.contains("uu");
+                            }
+                        
+            }
+            """;
+    public static final String attempt5 = """
+            import java.util.List;
+                        
+            /**
+             * This class makes the super awesome list of names
+             */
+            public class SuperAwesomeNameService {
+                      String previous = "";
+                        
+                public List<String> doTheThings(List<String> names) {
+                        
+                    return names.stream()
+                      .sorted((a,b)-> {
+                        return a.toLowerCase().compareTo(b.toLowerCase()) ;
+                                                                 })
+                      .map(a -> {
+                      	if (previous.contains("a")) {
+                        return reverse(a);
+                        } return a;
+                      })
+                      .peek(a -> previous = a)
+                      .toList();
+                }
+             \s
+              public String reverse(String input){
+                System.out.println("+++++++" + input);
+              if (input.length() == 1) {
+                return input;
+              }
+                return reverse(input.substring(1,input.length())) + input.charAt(0);
+              }
+                        
+            }
+                        
+            """;
+
+    public static final String correctSolution = """
+            import java.util.List;
+
+            /**
+             * This class makes the super awesome list of names
+             */
+            public class SuperAwesomeNameService {
+                      String previous = "";
+
+                public List<String> doTheThings(List<String> names) {
+
+                    return names.stream()
+                      .sorted((a,b)-> {
+                        return a.toLowerCase().compareTo(b.toLowerCase()) ;
+                                                                 })
+                      .map(a -> {
+                      	if (previous.contains("a")) {
+                        return fixCapitals(reverse(a));
+                        } return a;
+                      })
+                      .peek(a -> previous = a)
+                      .toList();
+                }
+             \s
+              public String reverse(String input){
+              if (input.length() == 1) {
+                return input;
+              }
+               \s
+                return reverse(input.substring(1,input.length())) + input.charAt(0);
+              }
+             \s
+              public String fixCapitals(String input) {
+              	input = input.toLowerCase()
+                ;
+                return input.substring(0,1).toUpperCase() + input.substring(1, input.length());
+              }
+
+            }
+                        """;
 
 }
