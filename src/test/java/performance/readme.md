@@ -20,3 +20,7 @@ performancewise since it has many unittests that call eachother.
 
 ## Run the script
 run ```mvn gatling:test``` in the root directory of this project.
+
+## Debugging
+If you want more logging, you can use the logback.xml file in this folder by running with this command:
+```mvn gatling:test -"Dlogback.configurationFile"=src\test\java\performance\logback.xml```
