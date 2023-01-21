@@ -63,20 +63,28 @@
         <div class="col-9">
             <ul class="nav nav-tabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button type="button" class="nav-link active" id="tab-active" data-bs-toggle="tab" role="tab" aria-controls="active"
-                       aria-selected="true" data-bs-target="#active">Competition</button>
+                    <button type="button" class="nav-link active" id="tab-active" data-bs-toggle="tab" role="tab"
+                            aria-controls="active"
+                            aria-selected="true" data-bs-target="#active">Competition
+                    </button>
                 </li>
                 <li class="nav-item">
-                    <button type="button" class="nav-link" id="tab-competitions" data-bs-toggle="tab" role="tab" aria-controls="competitions"
-                            aria-selected="true" data-bs-target="#competitions">Competitions</button>
+                    <button type="button" class="nav-link" id="tab-competitions" data-bs-toggle="tab" role="tab"
+                            aria-controls="competitions"
+                            aria-selected="true" data-bs-target="#competitions">Competitions
+                    </button>
                 </li>
                 <li class="nav-item">
-                    <button type="button" class="nav-link" id="tab-assignments" data-bs-toggle="tab" role="tab" aria-controls="assignments"
-                            aria-selected="true" data-bs-target="#assignments">Assignments</button>
+                    <button type="button" class="nav-link" id="tab-assignments" data-bs-toggle="tab" role="tab"
+                            aria-controls="assignments"
+                            aria-selected="true" data-bs-target="#assignments">Assignments
+                    </button>
                 </li>
                 <li class="nav-item">
-                    <button type="button" class="nav-link" id="tab-admin" data-bs-toggle="tab" role="tab" aria-controls="admin"
-                            aria-selected="true" data-bs-target="#admin">Admin</button>
+                    <button type="button" class="nav-link" id="tab-admin" data-bs-toggle="tab" role="tab"
+                            aria-controls="admin"
+                            aria-selected="true" data-bs-target="#admin">Admin
+                    </button>
                 </li>
             </ul>
 
@@ -101,17 +109,87 @@
                             <td th:text="${assignment.getDuration()}"/>
                             <td th:text="${assignment.getSubmits()}"/>
                             <td th:text="${assignment.getStarted()}"/>
-                            <td th:text="${assignment.getEnded()()}"/>
+                            <td th:text="${assignment.getEnded()}"/>
                             <td th:text=""/>
                         </tr>
                         </tbody>
                     </table>
                 </div>
                 <div class="tab-pane" id="competitions" role="tabpanel" aria-labelledby="tab-competitions">
-                    competitions
+                    <table class="table table-borderless table-sm table-responsive">
+                        <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col">Name</th>
+                            <th scope="col"># Assignments</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <th:block th:each="comp,status : ${competitions}">
+                            <tr data-bs-toggle="collapse" th:data-bs-target="${'#r'+status.index}">
+                                <td><i class="fa fa-chevron-down"></i></td>
+                                <td th:text="${comp.getName()}"></td>
+                                <td th:text="${comp.getAssignments().size()}"></td>
+                                <td></td>
+                            </tr>
+                            <tr class="collapse accordion-collapse" th:id="${'r'+status.index}" data-bs-parent=".table">
+                                <td colspan="3">
+                                    <table class="table table-borderless table-sm table-responsive">
+                                        <thead>
+                                        <tr>
+                                            <th scope="col">Name</th>
+                                            <th scope="col">Duration</th>
+                                            <th scope="col">Attempts</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="assignment,status : ${comp.getAssignments()}">
+                                            <td th:text="${assignment.getName()}"/>
+                                            <td th:text="${assignment.getDuration()}"/>
+                                            <td th:text="${assignment.getSubmits()}"/>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        </th:block>
+                        </tbody>
+                    </table>
                 </div>
                 <div class="tab-pane" id="assignments" role="tabpanel" aria-labelledby="tab-assignments">
-                    assignments
+                    <form id ="create-competition" class="row gy-2 gx-3 align-items-center" data-xhr="createCompetition">
+                        <p>Quickly create a competition with selected assignments.</p>
+                        <div class="row">
+                            <div class="col">
+                                <input type="text" name="quick_comp_name" class="form-control"
+                                       placeholder="Competition name ..."/>
+                            </div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-primary">Add</button>
+                            </div>
+                        </div>
+                        <table class="table table-borderless table-sm table-responsive">
+                            <thead>
+                            <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Duration</th>
+                                <th scope="col">Attempts</th>
+                                <th scope="col">Collections</th>
+                                <th scope="col">Selected</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="assignment,status : ${assignments}">
+                                <td th:text="${assignment.getName()}"/>
+                                <td th:text="${assignment.getDuration()}"/>
+                                <td th:text="${assignment.getSubmits()}"/>
+                                <td th:text="${assignment.getCollection()}"/>
+                                <td><input class="form-check-input assignment-cb" type="checkbox" name="assignment" th:value="${assignment.getUuid()}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </form>
                 </div>
                 <div class="tab-pane" id="admin" role="tabpanel" aria-labelledby="tab-admin">
                     <button onclick="scanAssignments()">Scan Assignments</button>

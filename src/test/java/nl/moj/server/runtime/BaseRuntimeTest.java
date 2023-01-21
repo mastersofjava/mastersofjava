@@ -16,6 +16,19 @@
 */
 package nl.moj.server.runtime;
 
+import javax.persistence.EntityManager;
+import javax.transaction.Transactional;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
@@ -55,19 +68,6 @@ import org.keycloak.representations.AccessToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.Assert;
-
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.Principal;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static nl.moj.server.TestUtil.classpathResourceToPath;
 
@@ -219,7 +219,7 @@ public abstract class BaseRuntimeTest {
         team = addTeam();
         user = addUser(team);
 
-        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/runtime/assignments"));
+        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/runtime/assignments"), "runtime");
         AtomicInteger count = new AtomicInteger(0);
         final Competition c = new Competition();
         c.setUuid(UUID.randomUUID());

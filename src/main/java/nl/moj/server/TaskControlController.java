@@ -16,8 +16,19 @@
 */
 package nl.moj.server;
 
+import javax.annotation.security.RolesAllowed;
+import java.io.File;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.*;
+import lombok.extern.jackson.Jacksonized;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
@@ -29,6 +40,7 @@ import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.CompetitionCleaningService;
 import nl.moj.server.competition.service.CompetitionService;
+import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.rankings.service.RankingsService;
 import nl.moj.server.runtime.AssignmentRuntime;
@@ -43,6 +55,9 @@ import nl.moj.server.user.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.security.core.Authentication;
@@ -52,17 +67,8 @@ import org.springframework.ui.Model;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.annotation.security.RolesAllowed;
-import java.io.File;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Controller
 @RequiredArgsConstructor
@@ -346,9 +352,9 @@ public class TaskControlController {
             if (assignments.isEmpty()) {
                 return "No assignments found in folder " + mojServerProperties.getAssignmentRepo() + ".";
             }
-            log.info("Found {} assignments in folder {}.",assignments.size(),mojServerProperties.getAssignmentRepo()) ;
+            log.info("Found {} assignments in folder {}.", assignments.size(), mojServerProperties.getAssignmentRepo());
 
-            return "Assignments scanned from location "+mojServerProperties.getAssignmentRepo()+" ("+assignments.size()+"), reloading to show them.";
+            return "Assignments scanned from location " + mojServerProperties.getAssignmentRepo() + " (" + assignments.size() + "), reloading to show them.";
         } catch (Exception e) {
             log.error("Scanning assignments failed.", e);
             return e.getMessage();
@@ -502,13 +508,33 @@ public class TaskControlController {
     }*/
 
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/competition", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> addCompetition(@RequestBody AddCompetition addCompetition) {
+        try {
+            competitionService.createCompetition(addCompetition.getName(), addCompetition.getAssignments());
+            return ResponseEntity.noContent().build();
+        } catch (CompetitionServiceException cse) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @Value
+    @Builder
+    @Jacksonized
+    public static class AddCompetition {
+        String name;
+        List<UUID> assignments;
+    }
+
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     @GetMapping("/control")
     public String taskControl(Model model, Authentication principal) {
         // TODO maybe move this creat or update stuff to a filter.
         User user = userService.createOrUpdate(principal);
 
-        //ActiveAssignment state = competition.getActiveAssignment();
-        model.addAttribute("competition", toCompetitionVO(competition));
+        model.addAttribute("assignments", allAssignments());
+        model.addAttribute("competitions", allCompetitions());
+        model.addAttribute("competition", toCompetitionSessionVO(competition));
 
         //model.addAttribute("running", state.isRunning());
         model.addAttribute("clockStyle", "active");
@@ -522,7 +548,25 @@ public class TaskControlController {
         return "control";
     }
 
-    private CompetitionSessionVO toCompetitionVO(CompetitionRuntime runtime) {
+    private List<AssignmentVO> allAssignments() {
+        return assignmentRepository.findAll(Sort.by("collection", "name")).stream()
+                .map(this::toAssignmentVO).toList();
+    }
+
+    private List<CompetitionVO> allCompetitions() {
+        return competitionRepository.findAll(Sort.by("name")).stream()
+                .map(this::toCompetitionVO).toList();
+    }
+
+    private CompetitionVO toCompetitionVO(Competition co) {
+        return CompetitionVO.builder()
+                .uuid(co.getUuid())
+                .name(co.getName())
+                .assignments(co.getAssignments().stream().map(ca -> toAssignmentVO(ca.getAssignment())).toList())
+                .build();
+    }
+
+    private CompetitionSessionVO toCompetitionSessionVO(CompetitionRuntime runtime) {
         Competition competition = runtime.getCompetition();
         CompetitionSession session = runtime.getCompetitionSession();
         ActiveAssignment activeAssignment = runtime.getActiveAssignment();
@@ -530,15 +574,22 @@ public class TaskControlController {
         List<AssignmentStatus> assignmentStatuses = session.getAssignmentStatuses();
         List<AssignmentVO> assignments = new ArrayList<>();
         competition.getAssignmentsInOrder().forEach(ca -> {
-            Optional<AssignmentStatus> as = assignmentStatuses.stream().filter(a -> a.getAssignment().equals(ca.getAssignment())).findFirst();
+            Optional<AssignmentStatus> as = assignmentStatuses.stream()
+                    .filter(a -> a.getAssignment().equals(ca.getAssignment()))
+                    .findFirst();
             assignments.add(toAssignmentVO(ca, as));
         });
 
         ActiveAssignmentVO active = null;
         if (activeAssignment.isRunning()) {
-            Optional<CompetitionAssignment> oca = competition.getAssignments().stream().filter(a -> a.getAssignment().equals(activeAssignment.getAssignment())).findFirst();
+            Optional<CompetitionAssignment> oca = competition.getAssignments()
+                    .stream()
+                    .filter(a -> a.getAssignment().equals(activeAssignment.getAssignment()))
+                    .findFirst();
             if (oca.isPresent()) {
-                Optional<AssignmentStatus> as = assignmentStatuses.stream().filter(a -> a.getAssignment().equals(activeAssignment.getAssignment())).findFirst();
+                Optional<AssignmentStatus> as = assignmentStatuses.stream()
+                        .filter(a -> a.getAssignment().equals(activeAssignment.getAssignment()))
+                        .findFirst();
                 active = ActiveAssignmentVO.builder()
                         .assignment(toAssignmentVO(oca.get(), as))
                         .seconds(oca.get().getAssignment().getAssignmentDuration().toSeconds())
@@ -555,16 +606,36 @@ public class TaskControlController {
                 .build();
     }
 
-    private static AssignmentVO toAssignmentVO(CompetitionAssignment ca, Optional<AssignmentStatus> as) {
+    private AssignmentVO toAssignmentVO(CompetitionAssignment ca, Optional<AssignmentStatus> as) {
         return AssignmentVO.builder()
                 .idx(ca.getOrder())
                 .uuid(ca.getAssignment().getUuid())
                 .name(ca.getAssignment().getName())
+                .collection(ca.getAssignment().getCollection())
                 .started(as.map(AssignmentStatus::getDateTimeStart).orElse(null))
                 .ended(as.map(AssignmentStatus::getDateTimeEnd).orElse(null))
                 .duration(ca.getAssignment().getAssignmentDuration())
                 .submits(ca.getAssignment().getAllowedSubmits())
                 .build();
+    }
+
+    private AssignmentVO toAssignmentVO(Assignment assignment) {
+        return AssignmentVO.builder()
+                .idx(-1)
+                .uuid(assignment.getUuid())
+                .name(assignment.getName())
+                .collection(assignment.getCollection())
+                .duration(assignment.getAssignmentDuration())
+                .submits(assignment.getAllowedSubmits())
+                .build();
+    }
+
+    @Value
+    @Builder
+    public static class CompetitionVO {
+        UUID uuid;
+        String name;
+        List<AssignmentVO> assignments;
     }
 
     @Value
@@ -586,6 +657,7 @@ public class TaskControlController {
     public static class AssignmentVO {
         UUID uuid;
         String name;
+        String collection;
         int idx;
         Instant started;
         Instant ended;

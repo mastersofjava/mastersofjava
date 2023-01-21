@@ -47,7 +47,7 @@ public class AssignmentServiceTest {
 
     @Test
     public void shouldDiscoverAssignments() throws Exception {
-        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
+        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"), "assignments");
 
         assignments.forEach(a -> {
             assertThat(a.getId()).isNotNull();
@@ -58,7 +58,7 @@ public class AssignmentServiceTest {
 
     @Test
     public void shouldUpdateAssignments() throws Exception {
-        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
+        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"), "assignments");
 
         assertThat(assignments.size()).isEqualTo(2);
         assignments.forEach(a -> {
@@ -67,7 +67,7 @@ public class AssignmentServiceTest {
             assertThat(a.getAssignmentDescriptor()).contains(File.separator + "assignments" + File.separator);
         });
 
-        List<Assignment> updatedAssignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments-updated"));
+        List<Assignment> updatedAssignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments-updated"), "assignments");
 
         assertThat(updatedAssignments.size()).isEqualTo(2);
         updatedAssignments.forEach(a -> {
@@ -80,7 +80,7 @@ public class AssignmentServiceTest {
 
     @Test
     public void shouldGetAssignmentDescriptor() throws Exception {
-        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"));
+        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"), "assignments");
 
         assertThat(assignments.size()).isEqualTo(2);
         assignments.forEach(a -> {
