@@ -20,10 +20,7 @@ import javax.annotation.security.RolesAllowed;
 import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -507,6 +504,8 @@ public class TaskControlController {
         }
     }*/
 
+    //-- rest endpoints
+
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     @PostMapping(value = "/api/competition", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> addCompetition(@RequestBody AddCompetition addCompetition) {
@@ -518,12 +517,30 @@ public class TaskControlController {
         }
     }
 
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/competition/session", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String,String>> startSession(@RequestBody StartSession startSession) {
+        try {
+            CompetitionSession session = competitionService.startSession(comp);
+            return ResponseEntity.ok(Map.of("name",session.getCompetition().getName(), "id", session.getUuid().toString()));
+        } catch (CompetitionServiceException cse) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @Value
     @Builder
     @Jacksonized
     public static class AddCompetition {
         String name;
         List<UUID> assignments;
+    }
+
+    @Value
+    @Builder
+    @Jacksonized
+    public static class StartSession {
+        UUID uuid;
     }
 
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
