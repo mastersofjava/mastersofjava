@@ -17,6 +17,7 @@
 package nl.moj.server.runtime;
 
 import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
@@ -42,8 +43,8 @@ import java.util.stream.Stream;
  * During integration testing this class is executed twice, one for sequential and one for parallel.
  * This test validates the Assignment Submit.
  * - with a long timeout ==> user gets zero points (because the solution is invalidated by timeout constraints)
- * - without timeout on first submit ==> users gets a score (while competition running)
- * - user submits in last second and process takes more than second ==> user gets a score (while competition not running)
+ * - without timeout on first submit ==> users gets a score (while session running)
+ * - user submits in last second and process takes more than second ==> user gets a score (while session not running)
  */
 @SpringBootTest
 public class AssignmentSubmitTest extends BaseRuntimeTest {
@@ -90,8 +91,13 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     }
 
     private void startSelectedAssignment(String assignment) {
-        CompetitionAssignment oa = getAssignment(assignment);
-        competitionRuntime.startAssignment(oa.getAssignment().getName());
+        try {
+            CompetitionAssignment oa = getAssignment(assignment);
+            competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+                    .getUuid());
+        } catch( CompetitionServiceException cse ) {
+            throw new RuntimeException(cse);
+        }
     }
 
     private CompileAttempt doCompile(SourceMessage src, Duration timeout) {

@@ -16,6 +16,15 @@
 */
 package nl.moj.server.submit.service;
 
+import javax.transaction.Transactional;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
@@ -35,15 +44,6 @@ import nl.moj.server.test.service.TestRequest;
 import nl.moj.server.test.service.TestService;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -144,9 +144,12 @@ public class SubmitService {
     public SubmitAttempt registerSubmitAttempt(SubmitRequest submitRequest) {
         log.info("Registering compile attempt for assignment {} by team {}.", submitRequest.getAssignment().getUuid(),
                 submitRequest.getTeam().getUuid());
-        final TeamAssignmentStatus tas = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam());
+        final TeamAssignmentStatus tas = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam())
+                .orElseThrow(() -> new IllegalStateException("Submit request received for assignment " + submitRequest.getAssignment()
+                        .getUuid() + " that was never joined by team " + submitRequest.getTeam().getUuid() + "."));
         final AssignmentStatus as = assignmentStatusRepository.findByCompetitionSessionAndAssignment(tas.getCompetitionSession(), tas.getAssignment())
-                .orElseThrow(() -> new IllegalStateException("Submit request received for assignment " + tas.getAssignment().getUuid() + " that was never started."));
+                .orElseThrow(() -> new IllegalStateException("Submit request received for assignment " + tas.getAssignment()
+                        .getUuid() + " that was never started."));
 
         Instant registered = Instant.now();
         long secondsRemaining = getSecondsRemaining(registered, as);
@@ -179,7 +182,8 @@ public class SubmitService {
     }
 
     private SubmitAttempt prepareSubmitAttempt(SubmitRequest submitRequest, Instant registered, Duration timeRemaining) {
-        final TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam());
+        final TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam())
+                .orElseThrow();
 
         TestAttempt testAttempt = testService.prepareTestAttempt(TestRequest.builder()
                 .tests(submitRequest.getTests())

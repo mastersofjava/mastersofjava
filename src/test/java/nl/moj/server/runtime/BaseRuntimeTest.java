@@ -48,6 +48,7 @@ import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
+import nl.moj.server.support.TestJmsListener;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.test.model.TestAttempt;
@@ -60,11 +61,6 @@ import org.assertj.core.api.AbstractLongAssert;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.adapters.OidcKeycloakAccount;
-import org.keycloak.adapters.spi.KeycloakAccount;
-import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
-import org.keycloak.representations.AccessToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.Assert;
@@ -132,7 +128,7 @@ public abstract class BaseRuntimeTest {
             bootstrapService.bootstrap();
             dbUtil.cleanup();
             competition = createCompetition();
-            competitionRuntime.startSession(competition);
+            competitionRuntime.startSession(competition.getUuid());
             mockJmsService.reset();
         } catch (NullPointerException npe) {
             log.error("Nullpointer: {}", npe.getMessage(), npe);
@@ -171,30 +167,31 @@ public abstract class BaseRuntimeTest {
     }
 
     protected Principal getPrincipal(User user) {
-        AccessToken token = new AccessToken() {
-            @Override
-            public String getSubject() {
-                return user.getUuid().toString();
-            }
-        };
-        KeycloakAccount ka = new OidcKeycloakAccount() {
-            @Override
-            public KeycloakSecurityContext getKeycloakSecurityContext() {
-                return new KeycloakSecurityContext(null, token, null, null);
-            }
-
-            @Override
-            public Principal getPrincipal() {
-                return () -> null;
-            }
-
-            @Override
-            public Set<String> getRoles() {
-                return Collections.emptySet();
-            }
-        };
-        KeycloakAuthenticationToken kat = new KeycloakAuthenticationToken(ka, false, Collections.emptyList());
-        return kat;
+//        AccessToken token = new AccessToken() {
+//            @Override
+//            public String getSubject() {
+//                return user.getUuid().toString();
+//            }
+//        };
+//        KeycloakAccount ka = new OidcKeycloakAccount() {
+//            @Override
+//            public KeycloakSecurityContext getKeycloakSecurityContext() {
+//                return new KeycloakSecurityContext(null, token, null, null);
+//            }
+//
+//            @Override
+//            public Principal getPrincipal() {
+//                return () -> null;
+//            }
+//
+//            @Override
+//            public Set<String> getRoles() {
+//                return Collections.emptySet();
+//            }
+//        };
+//        KeycloakAuthenticationToken kat = new KeycloakAuthenticationToken(ka, false, Collections.emptyList());
+//        return kat;
+        return () -> user.getUuid().toString();
     }
 
     protected User addUser(Team team) {

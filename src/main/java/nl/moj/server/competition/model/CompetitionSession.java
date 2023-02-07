@@ -34,7 +34,7 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competition_sessions_seq", sequenceName = "competition_sessions_seq")
 @EqualsAndHashCode(of = {"uuid"})
-@ToString(exclude = {"competition", "assignmentStatuses"})
+@ToString(exclude = {"session", "assignmentStatuses"})
 public class CompetitionSession {
 
     @Id

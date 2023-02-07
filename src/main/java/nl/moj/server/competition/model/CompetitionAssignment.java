@@ -33,7 +33,6 @@ import javax.persistence.*;
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competition_assignments_seq", sequenceName = "competition_assignments_seq")
 @EqualsAndHashCode(of = {"id"})
-@ToString(exclude = {"competition"})
 public class CompetitionAssignment {
 
     @Id

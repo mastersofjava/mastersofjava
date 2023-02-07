@@ -46,7 +46,7 @@ public class RankingsController {
     @GetMapping("/rankings")
     public ModelAndView getRankings() {
         CompetitionRuntime rankingProvider = competitionRuntime;
-        log.info("competition " + HttpUtil.getParam("competition") + " - " + rankingProvider);
+        log.info("session " + HttpUtil.getParam("session") + " - " + rankingProvider);
 
         Competition competition = rankingProvider.getCompetition();
         List<Ranking> rankings = enrich(rankingsService.getRankings(rankingProvider.getCompetitionSession()));

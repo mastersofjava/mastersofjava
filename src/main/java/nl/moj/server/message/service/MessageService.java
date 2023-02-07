@@ -18,12 +18,12 @@ package nl.moj.server.message.service;
 
 import javax.transaction.Transactional;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.TaskControlController.TaskMessage;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.message.model.*;
@@ -42,7 +42,7 @@ import org.springframework.stereotype.Controller;
 @Slf4j
 public class MessageService {
 
-    private static final String DEST_COMPETITION = "/queue/competition";
+    private static final String DEST_COMPETITION = "/queue/session";
     private static final String DEST_TESTRESULTS = "/queue/feedbackpage";
     private static final String DEST_CONTROL_FEEDBACK = "/queue/controlfeedback";
     private static final String DEST_START = "/queue/start";
@@ -118,7 +118,7 @@ public class MessageService {
 
     @Transactional(Transactional.TxType.MANDATORY)
     public void sendCompileFeedback(CompileAttempt ca) {//Team team, JMSCompileResponse compileResponse) {
-        if( ca != null ) {
+        if (ca != null) {
             Team team = ca.getAssignmentStatus().getTeam();
             TeamCompileFeedbackMessage msg = TeamCompileFeedbackMessage.builder()
                     .success(ca.getSuccess())
@@ -141,14 +141,14 @@ public class MessageService {
 
     public void sendStopToTeams(String taskname, String sessionId) {
         log.info("Sending stop: t={}, s={}", taskname, sessionId);
-        template.convertAndSend(DEST_STOP, new TaskMessage(taskname));
+        template.convertAndSend(DEST_STOP, Map.of("taskName", taskname));
         template.convertAndSend(DEST_COMPETITION, StopAssignmentMessage.builder()
                 .sessionId(sessionId)
                 .assignment(taskname)
                 .build());
     }
 
-    public void sendRemainingTime(Duration remainingTime, Duration totalTime, UUID session ) {
+    public void sendRemainingTime(Duration remainingTime, Duration totalTime, UUID session) {
         try {
             log.info("Sending time: r={}, t={}, s={}", remainingTime, totalTime, session.toString());
             TimerSyncMessage msg = TimerSyncMessage.builder()
@@ -207,7 +207,7 @@ public class MessageService {
 
     private void sendToActiveUsers(Team team, Object payload) {
         getActiveUsers(team).forEach(u -> {
-            template.convertAndSendToUser(u.getUuid().toString(), DEST_COMPETITION, payload);
+            template.convertAndSendToUser(u.getName(), DEST_COMPETITION, payload);
         });
     }
 

@@ -36,8 +36,8 @@ import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.message.service.MessageService;
@@ -89,8 +89,10 @@ public class AssignmentRuntime {
     private final TransactionHelper trx;
     private StopWatch timer;
 
+    private Duration initialRemaining;
+
     @Getter
-    private CompetitionAssignment orderedAssignment;
+    private CompetitionAssignment competitionAssignment;
     private Assignment assignment;
     private AssignmentDescriptor assignmentDescriptor;
     private Map<String, Future<?>> handlers;
@@ -103,6 +105,7 @@ public class AssignmentRuntime {
 
     private CompletableFuture<Void> done;
 
+    // TODO this is state and should not be here
     private CompetitionSession competitionSession;
 
     /**
@@ -114,9 +117,9 @@ public class AssignmentRuntime {
      * @param assignmentId the assignment to start
      * @return the {@link Future}
      */
-    public CompletableFuture<Void> start(UUID sessionId, UUID assignmentId) throws AssignmentStartException {
+    public CompletableFuture<Void> startCompletable(UUID sessionId, UUID assignmentId) throws AssignmentStartException {
 
-        trx.requiresNew(() -> {
+        AssignmentStatus as = trx.requiresNew(() -> {
             clearHandlers();
             this.competitionSession = competitionSessionRepository.findByUuid(sessionId);
             this.assignment = assignmentRepository.findByUuid(assignmentId);
@@ -129,19 +132,21 @@ public class AssignmentRuntime {
             initOriginalAssignmentFiles();
 
             // update assignment status
-            initAssignmentStatus(competitionSession, assignment, assignmentDescriptor);
+            AssignmentStatus assignmentStatus = initAssignmentStatus(competitionSession, assignment, assignmentDescriptor);
 
             initTeamsForAssignment();
 
             // update assignment status start times
             updateTeamAssignmentStatuses();
+
+            return assignmentStatus;
         });
 
         // play the gong
         taskScheduler.schedule(soundService::playGong, Instant.now());
 
         // start the timers
-        done = startTimers();
+        done = startTimers(as.getTimeRemaining());
 
         // mark assignment as running
         running = true;
@@ -154,16 +159,23 @@ public class AssignmentRuntime {
         return done;
     }
 
+    public AssignmentStatus start(UUID sessionId, UUID assignmentId) throws AssignmentStartException {
+        startCompletable(sessionId, assignmentId);
+        return assignmentStatusRepository.findByCompetitionSession_UuidAndAssignment_Uuid(sessionId, assignmentId)
+                .orElseThrow(() ->
+                        new IllegalStateException(String.format("No assignment status found for running assignment %s in session %s", assignmentId, sessionId)));
+    }
+
     /**
      * Stop the current assignment
      */
-    public void stop() {
+    public AssignmentStatus stop() {
         if (running) {
             trx.requiresNew(() -> {
                 messageService.sendStopToTeams(assignment.getName(), competitionSession.getUuid().toString());
                 teamService.getTeams().forEach(t -> {
                     TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment,
-                            competitionSession, t);
+                            competitionSession, t).orElse(null);
                     if (as != null) {
                         if (as.getDateTimeCompleted() == null) {
                             as = scoreService.finalizeScore(as, assignmentDescriptor);
@@ -179,11 +191,13 @@ public class AssignmentRuntime {
                 assignmentStatus.setDateTimeEnd(Instant.now());
                 clearHandlers();
                 running = false;
-                orderedAssignment = null;
+                competitionAssignment = null;
                 log.info("Stopped assignment {}", assignment.getName());
                 done.complete(null);
+                return assignmentStatus;
             });
         }
+        return null;
     }
 
     public ActiveAssignment getState() {
@@ -219,34 +233,34 @@ public class AssignmentRuntime {
         }
     }
 
-    private void initAssignmentStatus(CompetitionSession session, Assignment assignment, AssignmentDescriptor ad) {
-        assignmentStatusService.startAssignment(session, assignment, ad.getDuration());
+    private AssignmentStatus initAssignmentStatus(CompetitionSession session, Assignment assignment, AssignmentDescriptor ad) {
+        return assignmentStatusService.createOrGet(session, assignment, ad.getDuration());
     }
 
     private void initTeamsForAssignment() {
-        cleanupAssignmentStatuses();
         teamService.getTeams().forEach(this::initAssignmentForTeam);
     }
 
     public TeamAssignmentStatus initAssignmentForLateTeam(Team t) {
-        TeamAssignmentStatus as = initAssignmentForTeam(t);
-        as.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
-        return teamAssignmentStatusRepository.save(as);
+        TeamAssignmentStatus tas = initAssignmentForTeam(t);
+        tas.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
+        return teamAssignmentStatusRepository.save(tas);
     }
 
     private TeamAssignmentStatus initAssignmentForTeam(Team t) {
-        cleanupTeamAssignmentData(t);
-        TeamAssignmentStatus as = initTeamAssignmentStatus(t);
+        TeamAssignmentStatus tas = getOrCreateTeamAssignmentStatus(t);
         initTeamAssignmentData(t);
-        return as;
+        return tas;
     }
 
     private void updateTeamAssignmentStatuses() {
         Instant now = Instant.now();
         teamAssignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competitionSession)
                 .forEach(as -> {
-                    as.setDateTimeStart(now);
-                    teamAssignmentStatusRepository.save(as);
+                    if( as.getDateTimeStart() == null ) {
+                        as.setDateTimeStart(now);
+                        teamAssignmentStatusRepository.save(as);
+                    }
                 });
     }
 
@@ -260,15 +274,17 @@ public class AssignmentRuntime {
         }
     }
 
-    private TeamAssignmentStatus initTeamAssignmentStatus(Team team) {
-        TeamAssignmentStatus as = TeamAssignmentStatus.builder()
-                .assignment(assignment)
-                .competitionSession(competitionSession)
-                .uuid(UUID.randomUUID())
-                .team(team)
-                .dateTimeStart(Instant.now())
-                .build();
-        return teamAssignmentStatusRepository.save(as);
+    private TeamAssignmentStatus getOrCreateTeamAssignmentStatus(Team team) {
+        return teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment,competitionSession,team).orElseGet(() -> {
+            TeamAssignmentStatus as = TeamAssignmentStatus.builder()
+                    .assignment(assignment)
+                    .competitionSession(competitionSession)
+                    .uuid(UUID.randomUUID())
+                    .team(team)
+                    .dateTimeStart(Instant.now())
+                    .build();
+            return teamAssignmentStatusRepository.save(as);
+        });
     }
 
     private void cleanupTeamAssignmentData(Team team) {
@@ -288,12 +304,14 @@ public class AssignmentRuntime {
                 .forEach(teamAssignmentStatusRepository::delete);
     }
 
-    private CompletableFuture<Void> startTimers() {
+    private CompletableFuture<Void> startTimers(Duration timeRemaining) {
         timer = StopWatch.createStarted();
-        handlers.put(STOP, scheduleStop());
-        handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration()
+        initialRemaining = timeRemaining;
+
+        handlers.put(STOP, scheduleStop(timeRemaining));
+        handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(initialRemaining
                 .toSeconds() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
-        handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(assignmentDescriptor.getDuration()
+        handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(initialRemaining
                 .toSeconds() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
         handlers.put(TIMESYNC, scheduleTimeSync());
         return new CompletableFuture<>();
@@ -301,8 +319,8 @@ public class AssignmentRuntime {
 
     private Duration getTimeRemaining() {
         long remaining = 0;
-        if (assignmentDescriptor != null && timer != null) {
-            remaining = assignmentDescriptor.getDuration().getSeconds() - timer.getTime(TimeUnit.SECONDS);
+        if (initialRemaining != null && timer != null) {
+            remaining = initialRemaining.getSeconds() - timer.getTime(TimeUnit.SECONDS);
             if (remaining < 0) {
                 remaining = 0;
             }
@@ -332,9 +350,9 @@ public class AssignmentRuntime {
         this.handlers = new HashMap<>();
     }
 
-    private Future<?> scheduleStop() {
+    private Future<?> scheduleStop(Duration timeRemaining) {
         return taskScheduler.schedule(this::stop,
-                secondsFromNow(assignmentDescriptor.getDuration().getSeconds()));
+                secondsFromNow(timeRemaining.getSeconds()));
     }
 
     private Future<?> scheduleAssignmentEndingNotification(long start, long duration, Sound sound) {

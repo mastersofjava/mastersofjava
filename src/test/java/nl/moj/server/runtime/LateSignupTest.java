@@ -1,8 +1,8 @@
 package nl.moj.server.runtime;
 
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.runtime.model.TeamAssignmentStatus;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,8 +18,9 @@ public class LateSignupTest extends BaseRuntimeTest {
 
     @Test
     public void handleLateSignup() throws Exception {
-        String name = "parallel";
-        competitionRuntime.startAssignment(name);
+        CompetitionAssignment oa = getAssignment("parallel");
+        competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+                .getUuid());
         TeamAssignmentStatus status = competitionRuntime.handleLateSignup(addTeam());
         assertThat(status).isNotNull();
     }

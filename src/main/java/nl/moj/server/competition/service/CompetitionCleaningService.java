@@ -44,7 +44,7 @@ public class CompetitionCleaningService {
     public String doCleanComplete(CompetitionSession competitionSession) {
         competitionRuntime.getCompetitionState().getCompletedAssignments().clear();
         if (assignmentStatusRepository.count()==0) {
-            return "competition cleaned (no scores available anymore), reloading page";
+            return "session cleaned (no scores available anymore), reloading page";
         }
         log.info("delete contents of session " + competitionSession.getId());
 
@@ -89,6 +89,6 @@ public class CompetitionCleaningService {
 
        // correct cleaning: first delete all status items, afterwards delete all results
 
-        return "competition restarted, reloading page";
+        return "session restarted, reloading page";
     }
 }

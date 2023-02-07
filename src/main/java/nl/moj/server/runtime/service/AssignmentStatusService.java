@@ -19,7 +19,7 @@ public class AssignmentStatusService {
     private final AssignmentStatusRepository assignmentStatusRepository;
 
     @Transactional(Transactional.TxType.MANDATORY)
-    public AssignmentStatus startAssignment(CompetitionSession session, Assignment assignment, Duration timeRemaining) {
+    public AssignmentStatus createOrGet(CompetitionSession session, Assignment assignment, Duration timeRemaining) {
         AssignmentStatus assignmentStatus = assignmentStatusRepository.findByCompetitionSessionAndAssignment(session, assignment)
                 .orElseGet(() -> {
                     AssignmentStatus as = new AssignmentStatus();
@@ -30,8 +30,6 @@ public class AssignmentStatusService {
                     session.getAssignmentStatuses().add(as);
                     return assignmentStatusRepository.save(as);
                 });
-        assignmentStatus.setDateTimeStart(Instant.now());
-        assignmentStatus.setTimeRemaining(timeRemaining);
         return assignmentStatus;
     }
 

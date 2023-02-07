@@ -28,10 +28,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.runtime.model.TeamAssignmentStatus;
+import nl.moj.server.runtime.model.*;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.controller.TeamForm;
 import nl.moj.server.teams.model.Team;
@@ -71,22 +68,22 @@ public class GameController {
         // signup from the IDP (IDentity Provider).
         if (team == null) {
             // send to team create screen!
-            log.info("No team for user {}, redirecting to team creation.", user.getUuid());
+            log.info("No team for user {}, redirecting to team creation.", user.getName());
             model.addAttribute("teamForm", new TeamForm());
             return "createteam";
         }
 
         model.addAttribute("team", team.getName());
-        model.addAttribute("sessionId", competition.getCompetitionSession().getUuid());
         model.addAttribute("assignmentActive", competition.getActiveAssignment().isRunning());
 
         if (competition.getActiveAssignment().isRunning()) {
             ActiveAssignment state = competition.getActiveAssignment();
             TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(), state
-                    .getCompetitionSession(), team);
+                    .getCompetitionSession(), team).orElse(null);
             if (as == null) {
                 as = competition.handleLateSignup(team);
             }
+            model.addAttribute("sessionId", competition.getCompetitionSession().getUuid());
             model.addAttribute("assignmentId", state.getAssignment().getUuid());
             addTeamAssignmentStateToModel(model, state, as);
         }
@@ -111,6 +108,8 @@ public class GameController {
                     .stream()
                     .anyMatch(sa -> sa.getSuccess() != null && sa.getSuccess());
 
+        AssignmentResult ar = as.getAssignmentResult();
+
         TeamAssignmentModel tam = TeamAssignmentModel.builder()
                 .assignmentName(state.getAssignmentDescriptor().getDisplayName())
                 .teamName(as.getTeam().getName())
@@ -119,11 +118,11 @@ public class GameController {
                 .tests(state.getTestFiles())
                 .files(files)
                 .completed(completed)
-                .score(as.getAssignmentResult().getFinalScore())
+                .score(ar != null ? ar.getFinalScore() : 0L)
                 .submits(ad.getScoringRules().getMaximumResubmits() + 1)
                 .submitsRemaining(as.getRemainingSubmitAttempts())
                 // TODO this is used to render the clock after submit, can we do this smarter?
-                .submitTime(as.getAssignmentResult().getInitialScore())
+                .submitTime(ar != null ? ar.getInitialScore() : 0L)
                 .build();
 
         model.addAttribute("assignment", tam);

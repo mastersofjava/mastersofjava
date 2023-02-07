@@ -17,15 +17,13 @@
 package nl.moj.server.runtime;
 
 import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.message.service.MessageService;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 
 @SpringBootTest
 public class NonExistingJDKTest extends BaseRuntimeTest {
@@ -38,8 +36,10 @@ public class NonExistingJDKTest extends BaseRuntimeTest {
 
     @Test
     public void assignmentShouldNotStartWhenJDKVersionUnavailable() {
-        CompetitionAssignment oa = getAssignment("non-existing-jdk");
-        competitionRuntime.startAssignment(oa.getAssignment().getName());
-        Mockito.verify(messageService).sendStartFail(eq("non-existing-jdk"), any());
+        Assertions.assertThatExceptionOfType(CompetitionServiceException.class).isThrownBy(() -> {
+            CompetitionAssignment oa = getAssignment("non-existing-jdk");
+            competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+                    .getUuid());
+        });
     }
 }

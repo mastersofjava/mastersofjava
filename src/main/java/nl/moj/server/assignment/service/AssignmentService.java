@@ -16,6 +16,17 @@
 */
 package nl.moj.server.assignment.service;
 
+import javax.transaction.Transactional;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
@@ -30,17 +41,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.FileVisitOption;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -67,8 +67,18 @@ public class AssignmentService {
         this.mojServerProperties = mojServerProperties;
     }
 
+    @Transactional(Transactional.TxType.REQUIRED)
+    public Path getAssignmentContentFolder(UUID id) throws Exception {
+        return getAssignmentContentFolder(assignmentRepository.findByUuid(id));
+    }
+
     public Path getAssignmentContentFolder(Assignment assignment) throws IOException {
         return Path.of(assignment.getAssignmentDescriptor()).getParent();
+    }
+
+    @Transactional(Transactional.TxType.REQUIRED)
+    public AssignmentDescriptor resolveAssignmentDescriptor(UUID id) {
+        return resolveAssignmentDescriptor(assignmentRepository.findByUuid(id));
     }
 
     public AssignmentDescriptor resolveAssignmentDescriptor(Assignment assignment) {

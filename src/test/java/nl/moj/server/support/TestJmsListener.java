@@ -1,4 +1,4 @@
-package nl.moj.server.runtime;
+package nl.moj.server.support;
 
 import java.util.Map;
 import java.util.UUID;

@@ -161,18 +161,18 @@
             <div th:if="${assignmentActive}" class="p-2 text-center inlineBlock minWidth100">
                 <a class="btn btn-info text-white"
                    th:href="@{/feedback}"
-                   target="_blank"><span class="fa fa-gamepad pr-1"></span>Live Feedback</a>
+                   target="_blank"><span class="fa fa-gamepad pe-1"></span>Live Feedback</a>
             </div>
             <div th:if="${assignmentActive}" class="p-2 text-center inlineBlock minWidth100">
                 <a class="btn btn-info text-white"
                    th:href="@{/rankings}"
-                   target="_blank"><span class="fa fa-trophy pr-1"></span>Rankings</a>
+                   target="_blank"><span class="fa fa-trophy pe-1"></span>Rankings</a>
             </div>
         </div>
         <div class="mr-auto p-2">&nbsp;
         </div>
-        <div class="ml-auto pr-2 align-self-center" id="status"></div>
-        <div class="pr-2 align-self-center">
+        <div class="ms-auto pe-2 align-self-center" id="status"></div>
+        <div class="pe-2 align-self-center">
             <a th:href="@{/sso/logout}" class="btn btn-danger">Disconnect</a>
         </div>
     </div>
@@ -198,7 +198,6 @@
                         </label>
                     </div>
                 </form>
-<!--                <i><span th:if="${labels!=null && labels.size()>0}">. Points for each individual test: [[${labels.toString().replace("_","=")}]]</span></i>-->
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
@@ -218,9 +217,9 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>This will submit your code. If you reach the maximum allowed submits of [[${assignment.getMaximumSubmits()}]] you will no
+                <p>This will submit your code. If you reach the maximum allowed submits of [[${assignment.submits}]] you will no
                     longer be able
-                    to change your code. You have <span id="submits" th:text="${assignment.getRemainingSubmits()}"></span> left.</p>
+                    to change your code. You have <span id="submits" th:text="${assignment.submitsRemaining}"></span> left.</p>
                 <p>Do you want to continue?</p>
             </div>
             <div class="modal-footer">

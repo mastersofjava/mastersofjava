@@ -14,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of = {"uuid"})
+@EqualsAndHashCode(of = {"name"})
 public class User {
 
     @Id
@@ -22,10 +22,7 @@ public class User {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", nullable = false, unique = true, columnDefinition = "uuid")
-    private UUID uuid;
-
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
 
     @Column(name = "given_name", nullable = false)

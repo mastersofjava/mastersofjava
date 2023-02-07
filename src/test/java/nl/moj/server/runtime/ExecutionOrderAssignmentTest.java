@@ -62,12 +62,14 @@ public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
         src1.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
         return src1;
     }
-    private TestAttempt findSubmitResultByTeam(List<TestAttempt> results,Team team1) {
+
+    private TestAttempt findSubmitResultByTeam(List<TestAttempt> results, Team team1) {
         return results.stream()
                 .filter(r -> r.getAssignmentStatus().getTeam().getUuid().equals(team1.getUuid()))
                 .findFirst()
                 .orElse(null);
     }
+
     @Test
     public void sequentialExecutionShouldHaveNoOverlappingExecutionWindows() {
 
@@ -76,23 +78,23 @@ public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
         Team team2 = addTeam();
         User user2 = addUser(team2);
 
-        CompetitionAssignment oa = getAssignment("sequential");
-
-        competitionRuntime.startAssignment(oa.getAssignment().getName());
-
-        ActiveAssignment state = competitionRuntime.getActiveAssignment();
-        Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
-        timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
-        
         try {
+            CompetitionAssignment oa = getAssignment("sequential");
+            competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+                    .getUuid());
+            ActiveAssignment state = competitionRuntime.getActiveAssignment();
+            Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
+            timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
+
+
             // make sure team 1 runs for 0.1s and one for 0.5
 
             SourceMessage src1 = createWithDelay("100", state);
             SourceMessage src2 = createWithDelay("50", state);
 
             CompletableFuture<List<TestAttempt>> prepareForSubmit = CompletableFutures.allOf(
-                    doTest(src1,user1,Duration.ofSeconds(5)),
-                    doTest(src2,user2,Duration.ofSeconds(5)));
+                    doTest(src1, user1, Duration.ofSeconds(5)),
+                    doTest(src2, user2, Duration.ofSeconds(5)));
             // run them all at once and wait for the results.
             List<TestAttempt> results = prepareForSubmit.get(timeout.plusSeconds(20).toSeconds(), TimeUnit.SECONDS);
 
@@ -121,23 +123,23 @@ public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
         Team team2 = addTeam();
         User user2 = addUser(team2);
 
-        CompetitionAssignment oa = getAssignment("parallel");
-
-        competitionRuntime.startAssignment(oa.getAssignment().getName());
-
-        ActiveAssignment state = competitionRuntime.getActiveAssignment();
-        Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
-        timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
-
         try {
+            CompetitionAssignment oa = getAssignment("parallel");
+            competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+                    .getUuid());
+
+            ActiveAssignment state = competitionRuntime.getActiveAssignment();
+            Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
+            timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
+
             // make sure team 1 runs for 1s and one for 0.5
 
             SourceMessage src1 = createWithDelay("1000", state);
             SourceMessage src2 = createWithDelay("500", state);
 
             CompletableFuture<List<TestAttempt>> prepareForSubmit = CompletableFutures.allOf(
-                    doTest(src1,user1,Duration.ofSeconds(5)),
-                    doTest(src2,user2,Duration.ofSeconds(5)));
+                    doTest(src1, user1, Duration.ofSeconds(5)),
+                    doTest(src2, user2, Duration.ofSeconds(5)));
             // run them all at once and wait for the results.
             List<TestAttempt> results = prepareForSubmit.get(timeout.plusSeconds(20).toSeconds(), TimeUnit.SECONDS);
 
@@ -160,7 +162,7 @@ public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
 
     private CompletableFuture<TestAttempt> doTest(SourceMessage src, User user, Duration timeout) {
         return CompletableFuture.supplyAsync(() -> {
-            TestAttempt ta = submitFacade.registerTestRequest(src,getPrincipal(user));
+            TestAttempt ta = submitFacade.registerTestRequest(src, getPrincipal(user));
             awaitAttempt(ta.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
             return refresh(ta);
         });

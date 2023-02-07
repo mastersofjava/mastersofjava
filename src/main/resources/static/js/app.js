@@ -23,7 +23,7 @@ function connectCompetition() {
         brokerURL: ((window.location.protocol === "https:") ? "wss://" : "ws://")
             + window.location.hostname
             + ':' + window.location.port
-            + "/ws/competition/websocket",
+            + "/ws/session/websocket",
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000
@@ -33,7 +33,7 @@ function connectCompetition() {
         $('#status').html('<span>Connected</span>');
         // Do something, all subscribes must be done is this callback
         // This is needed because this will be executed after a (re)connect
-        stomp.subscribe('/user/queue/competition',
+        stomp.subscribe('/user/queue/session',
             function (data) {
                 var msg = JSON.parse(data.body);
                 console.log('received', msg);
@@ -49,7 +49,7 @@ function connectCompetition() {
                 data.ack();
             },
             {ack: 'client'});
-        stomp.subscribe("/queue/competition",
+        stomp.subscribe("/queue/session",
             function (data) {
                 var msg = JSON.parse(data.body);
                 if (competitionHandlers.hasOwnProperty(msg.messageType)) {

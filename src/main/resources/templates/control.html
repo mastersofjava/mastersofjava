@@ -25,18 +25,19 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h1 class="text-center">[[${competition.getName()}]]</h1>
+
+            <h1 class="text-center">[[${cs.getName()}]]</h1>
         </div>
     </div>
     <div class="row">
         <!-- status sidebar -->
         <div class="col-3">
-            <div class="text-center" th:if="${competition.isAssignmentActive()}"
-                 th:with="assignment=${competition.getActiveAssignment()}">
+            <div class="text-center" th:if="${cs.isAssignmentActive()}"
+                 th:with="assignment=${cs.getActiveAssignment().getAssignment()}">
                 <h3><span>'[[${assignment.getName()}]]'</span></h3>
             </div>
             <div id="assignment-clock"
-                 th:if="${competition.isAssignmentActive()}" th:with="assignment=${competition.getActiveAssignment()}"
+                 th:if="${cs.isAssignmentActive()}" th:with="assignment=${cs.getActiveAssignment()}"
                  th:attrappend="data-time-left=${assignment.getSecondsLeft()},data-time=${assignment.getSeconds()}"
                  class="align-self-center">
                 <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
@@ -59,13 +60,13 @@
             </div>
         </div>
 
-        <!-- competition tabs -->
+        <!-- session tabs -->
         <div class="col-9">
             <ul class="nav nav-tabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button type="button" class="nav-link active" id="tab-active" data-bs-toggle="tab" role="tab"
                             aria-controls="active"
-                            aria-selected="true" data-bs-target="#active">Competition
+                            aria-selected="true" data-bs-target="#active">Session
                     </button>
                 </li>
                 <li class="nav-item">
@@ -90,12 +91,13 @@
 
             <div class="tab-content">
                 <div class="tab-pane active" id="active" role="tabpanel" aria-labelledby="tab-active">
-                    <table class="table table-borderless">
+                    <table class="table table-borderless table-sm table-responsive mt-5">
                         <thead>
                         <tr>
                             <th scope="col">#</th>
                             <th scope="col">Name</th>
                             <th scope="col">Duration</th>
+                            <th scope="col">Remaining</th>
                             <th scope="col">Attempts</th>
                             <th scope="col">Started</th>
                             <th scope="col">Ended</th>
@@ -103,20 +105,43 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="assignment,status : ${competition.getAssignments()}">
+                        <tr th:each="assignment,status : ${cs.getAssignments()}" th:if="${cs.isActive()}">
                             <td th:text="${assignment.getIdx()}"/>
                             <td th:text="${assignment.getName()}"/>
                             <td th:text="${assignment.getDuration()}"/>
+                            <td th:text="${assignment.getRemaining()}"/>
                             <td th:text="${assignment.getSubmits()}"/>
                             <td th:text="${assignment.getStarted()}"/>
                             <td th:text="${assignment.getEnded()}"/>
-                            <td th:text=""/>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-primary me-5"
+                                        th:data-sid="${cs.getUuid()}"
+                                        th:data-name="${assignment.getName()}"
+                                        th:data-id="${assignment.getUuid()}"
+                                        onclick="startAssignment(this.getAttribute('data-sid'), this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                    Start
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger"
+                                        th:data-sid="${cs.getUuid()}"
+                                        th:data-name="${assignment.getName()}"
+                                        th:data-id="${assignment.getUuid()}"
+                                        onclick="stopAssignment(this.getAttribute('data-sid'), this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                    Stop
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger"
+                                        th:data-sid="${cs.getUuid()}"
+                                        th:data-name="${assignment.getName()}"
+                                        th:data-id="${assignment.getUuid()}"
+                                        onclick="resetAssignment(this.getAttribute('data-sid'), this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                    Reset
+                                </button>
+                            </td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
                 <div class="tab-pane" id="competitions" role="tabpanel" aria-labelledby="tab-competitions">
-                    <table class="table table-borderless table-sm table-responsive">
+                    <table class="table table-borderless table-sm table-responsive mt-5">
                         <thead>
                         <tr>
                             <th scope="col"></th>
@@ -132,7 +157,9 @@
                                 <td th:text="${comp.getName()}"></td>
                                 <td th:text="${comp.getAssignments().size()}"></td>
                                 <td>
-                                    <button type="button" th:onclick="${'startSession(\''+comp.getUuid()+'\')'}">Start</button>
+                                    <button type="button" th:data-id="${comp.getUuid()}" th:data-name="${comp.getName()}" class="btn btn-sm btn-primary"
+                                            onclick="startSession(this.getAttribute('data-id'),this.getAttribute('data-name'))">Start
+                                    </button>
                                 </td>
                             </tr>
                             <tr class="collapse accordion-collapse" th:id="${'r'+status.index}" data-bs-parent=".table">
@@ -160,7 +187,7 @@
                     </table>
                 </div>
                 <div class="tab-pane" id="assignments" role="tabpanel" aria-labelledby="tab-assignments">
-                    <form id ="create-competition" class="row gy-2 gx-3 align-items-center" data-xhr="createCompetition">
+                    <form id="create-competition" class="mt-5" data-xhr="createCompetition">
                         <p>Quickly create a competition with selected assignments.</p>
                         <div class="row">
                             <div class="col">
@@ -187,14 +214,29 @@
                                 <td th:text="${assignment.getDuration()}"/>
                                 <td th:text="${assignment.getSubmits()}"/>
                                 <td th:text="${assignment.getCollection()}"/>
-                                <td><input class="form-check-input assignment-cb" type="checkbox" name="assignment" th:value="${assignment.getUuid()}" /></td>
+                                <td><input class="form-check-input assignment-cb" type="checkbox" name="assignment"
+                                           th:value="${assignment.getUuid()}"/></td>
                             </tr>
                             </tbody>
                         </table>
                     </form>
                 </div>
                 <div class="tab-pane" id="admin" role="tabpanel" aria-labelledby="tab-admin">
-                    <button onclick="scanAssignments()">Scan Assignments</button>
+                    <form class="mt-5">
+                        <p>Scan assignments repository for new assignments.</p>
+                        <button onclick="scanAssignments()" class="btn btn-primary">Scan Assignments</button>
+                    </form>
+                    <form id="upload-assignments" class="mt-5" data-xhr="uploadAssignments">
+                        <p>Upload new assignments zip</p>
+                        <div class="row">
+                            <div class="col">
+                                <input type="file" class="form-control" placeholder="Assignments archive ..."/>
+                            </div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-primary">Upload &amp; Scan</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -203,138 +245,6 @@
 </div>
 
 <div id="toasts" class="toast-container p-3 top-0 end-0">
-</div>
-
-<div class="modal fade" id="createNewCompetition-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Aanmaken nieuwe competitie</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Wat is de naam van de competitie?</p>
-                <p contenteditable="true" class="paddingLeft50 w-50 p-2 roundGrayBorder" id="competitionCreateNew">
-                    Masters of Java</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleer</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal"
-                        onclick="return doCompetitionCreateNew($('#competitionCreateNew').html())">Maak aan
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="restartAssignment-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Herstarten van de opdracht</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Weet u zeker dat u deze opdracht wil herstarten (en hiermee ook de scores van deze opdracht wil
-                    resetten)?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleer</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal"
-                        onclick="return startTaskSmartRestart()">Doorgaan
-                </button>
-            </div>
-        </div>
-    </div>
-    <button type="button" class="hide openModalViaJs" data-toggle='modal' data-target='#restartAssignment-modal'>open
-        restartAssignment modal via js
-    </button>
-</div>
-<div class="modal fade" id="startAssignmentNow-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Afsluiten huidige opdracht en herstarten nieuwe</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Weet u zeker dat u deze runnende opdracht eerder wil sluiten (de scores hiervan blijven bewaard) en
-                    direct een nieuwe opdracht wil starten?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleer</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal"
-                        onclick="return startTaskSmartStartNow()">Doorgaan
-                </button>
-            </div>
-        </div>
-    </div>
-    <button type="button" class="hide openModalViaJs" data-toggle='modal' data-target='#startAssignmentNow-modal'>open
-        startAssignmentNow modal via js
-    </button>
-
-</div>
-<div class="modal fade" id="deleteCompetition-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Delete geselecteerde competitie</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Weet u zeker dat u deze competitie wil verwijderen?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleer</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal"
-                        onclick="return doCompetitionDelete()">Verwijder
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="deltaSolution-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog minWidth800" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <h5 class="modal-title">Toon oplossing</h5>
-                </div>
-                <div class="minWidth300 text-center font10px">
-                    <button class="cursorPointer" onclick="doValidateAssignment(this.title, false)">validate start
-                        situation
-                    </button>
-                    <button class="cursorPointer" onclick="doValidateAssignment(this.title, true)">validate solution
-                    </button>
-                    <button class="cursorPointer reviewButton toggle" text="review panel,diff panel"
-                            onclick="doShowReviewDialog(this.title, this)">review panel
-                    </button>
-                </div>
-                <div>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-            </div>
-            <div class="modal-body font10px">
-                <pre class="code"></pre>
-                <pre class="hide review" contenteditable="true"></pre>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Terug</button>
-            </div>
-        </div>
-    </div>
-    <button type="button" class="hide openModalViaJs" data-toggle='modal' data-target='#deltaSolution-modal'>open
-        deltaSolution modal via js
-    </button>
 </div>
 
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>

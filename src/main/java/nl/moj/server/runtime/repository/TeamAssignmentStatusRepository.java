@@ -17,6 +17,7 @@
 package nl.moj.server.runtime.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import nl.moj.server.assignment.model.Assignment;
@@ -36,7 +37,7 @@ public interface TeamAssignmentStatusRepository extends JpaRepository<TeamAssign
 
     List<TeamAssignmentStatus> findByCompetitionSession(CompetitionSession competitionSession);
 
-    TeamAssignmentStatus findByAssignmentAndCompetitionSessionAndTeam(Assignment assignment, CompetitionSession competitionSession, Team team);
+    Optional<TeamAssignmentStatus> findByAssignmentAndCompetitionSessionAndTeam(Assignment assignment, CompetitionSession competitionSession, Team team);
 
 //    List<TeamAssignmentStatus> findByCompetitionSessionAndTeam(CompetitionSession competitionSession, Team team);
 //

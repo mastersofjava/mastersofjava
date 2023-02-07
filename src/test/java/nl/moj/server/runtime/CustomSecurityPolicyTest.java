@@ -17,6 +17,7 @@
 package nl.moj.server.runtime;
 
 import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
@@ -50,7 +51,8 @@ public class CustomSecurityPolicyTest extends BaseRuntimeTest {
     public void shouldUseAssignmentSecurityPolicy() throws Exception {
 
         CompetitionAssignment oa = getAssignment("custom-security-policy");
-        competitionRuntime.startAssignment(oa.getAssignment().getName());
+        competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+                .getUuid());
         SubmitAttempt sa = doSubmitValidInput();
         assertSuccess(sa);
     }

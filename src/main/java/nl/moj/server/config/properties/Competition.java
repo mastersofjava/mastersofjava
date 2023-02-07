@@ -23,10 +23,5 @@ import lombok.Data;
 
 @Data
 public class Competition {
-
     private int successBonus = 400;
-
-    @NotNull
-    private UUID uuid;
-
 }

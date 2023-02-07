@@ -1,30 +1,30 @@
 -- drop previous schema
-drop table test_cases;
-drop table submit_attempts;
-drop table test_attempts;
-drop table compile_attempts;
-drop table assignment_results;
-drop table assignment_statuses;
-drop table ordered_assignments;
-drop table assignments;
-drop table competition_sessions;
-drop table competitions;
-drop table team_users;
-drop table teams;
-drop table users;
+drop table if exists test_cases;
+drop table if exists submit_attempts;
+drop table if exists test_attempts;
+drop table if exists compile_attempts;
+drop table if exists assignment_results;
+drop table if exists assignment_statuses;
+drop table if exists ordered_assignments;
+drop table if exists assignments;
+drop table if exists competition_sessions;
+drop table if exists competitions;
+drop table if exists team_users;
+drop table if exists teams;
+drop table if exists users;
 
-drop sequence assignment_results_seq;
-drop sequence assignment_statuses_seq;
-drop sequence assignments_seq;
-drop sequence competition_sessions_seq;
-drop sequence competitions_seq;
-drop sequence compile_attempts_seq;
-drop sequence ordered_assignments_seq;
-drop sequence submit_attempts_seq;
-drop sequence teams_seq;
-drop sequence test_attempts_seq;
-drop sequence test_cases_seq;
-drop sequence users_seq;
+drop sequence if exists assignment_results_seq;
+drop sequence if exists assignment_statuses_seq;
+drop sequence if exists assignments_seq;
+drop sequence if exists competition_sessions_seq;
+drop sequence if exists competitions_seq;
+drop sequence if exists compile_attempts_seq;
+drop sequence if exists ordered_assignments_seq;
+drop sequence if exists submit_attempts_seq;
+drop sequence if exists teams_seq;
+drop sequence if exists test_attempts_seq;
+drop sequence if exists test_cases_seq;
+drop sequence if exists users_seq;
 
 -- create new schema
 create sequence assignment_results_seq start with 1 increment by 50;
@@ -195,7 +195,6 @@ create table users
     family_name varchar(255) not null,
     given_name  varchar(255) not null,
     name        varchar(255) not null,
-    uuid        uuid         not null,
     team_id     bigint,
     primary key (id)
 );
@@ -228,7 +227,7 @@ alter table test_attempts
 alter table test_cases
     add constraint test_cases_uuid_uk unique (uuid);
 alter table users
-    add constraint users_uuid_uk unique (uuid);
+    add constraint users_name_uk unique (name);
 alter table assignment_results
     add constraint assignment_results_assignment_status_fk foreign key (team_assignment_status_id) references team_assignment_statuses;
 alter table assignment_statuses

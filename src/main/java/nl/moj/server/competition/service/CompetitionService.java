@@ -31,6 +31,7 @@ import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
@@ -55,13 +56,13 @@ public class CompetitionService {
         c.setUuid(UUID.randomUUID());
         c.setName(name);
         if( assignments == null || assignments.isEmpty()) {
-            throw new CompetitionServiceException("Could not create competition " + name + ", no assignments specified.");
+            throw new CompetitionServiceException("Could not create session " + name + ", no assignments specified.");
         }
 
         for (UUID uuid : assignments) {
             Assignment a = assignmentRepository.findByUuid(uuid);
             if (a == null) {
-                throw new CompetitionServiceException("Could not find assignment " + uuid + " to add to competition " + name + ".");
+                throw new CompetitionServiceException("Could not find assignment " + uuid + " to add to session " + name + ".");
             }
             CompetitionAssignment ca = new CompetitionAssignment();
             ca.setCompetition(c);
@@ -71,6 +72,8 @@ public class CompetitionService {
         }
         return competitionRepository.save(c);
     }
+
+    //-- old stuff
 
     public Function<Assignment, CompetitionAssignment> createOrderedAssignments(Competition c) {
         AtomicInteger count = new AtomicInteger(0);
@@ -109,4 +112,6 @@ public class CompetitionService {
         }
         return file;
     }
+
+
 }

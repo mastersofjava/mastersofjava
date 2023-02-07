@@ -17,6 +17,7 @@
 package nl.moj.server.runtime;
 
 import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import nl.moj.server.teams.service.TeamService;
@@ -45,16 +46,20 @@ public class TeamServiceTest extends BaseRuntimeTest {
         return Stream.of("sequential","parallel");
     }
 
-    private void startSelectedAssignmment(String assignment) {
-        CompetitionAssignment oa = getAssignment(assignment);
-
-        competitionRuntime.startAssignment(oa.getAssignment().getName());
+    private void startSelectedAssignment(String assignment) {
+        try {
+            CompetitionAssignment oa = getAssignment(assignment);
+            competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+                    .getUuid());
+        } catch( CompetitionServiceException cse ) {
+            throw new RuntimeException(cse);
+        }
     }
 
     @ParameterizedTest
     @MethodSource("assignments")
     public void invisibleTestsShouldHaveContentIntentionallyHidden(String assignment) throws Exception {
-        startSelectedAssignmment(assignment);
+        startSelectedAssignment(assignment);
         List<AssignmentFile> files = teamService.getTeamAssignmentFiles(competitionRuntime.getCompetitionSession(),
                 competitionRuntime.getActiveAssignment().getAssignment(),getTeam().getUuid());
 

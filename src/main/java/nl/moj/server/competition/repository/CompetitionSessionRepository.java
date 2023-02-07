@@ -17,11 +17,13 @@
 package nl.moj.server.competition.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionSession;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -30,5 +32,8 @@ public interface CompetitionSessionRepository extends JpaRepository<CompetitionS
     List<CompetitionSession> findByCompetition(Competition competition);
 
     CompetitionSession findByUuid(UUID session);
+
+    @Query(value = "SELECT * FROM COMPETITION_SESSIONS ORDER BY id DESC LIMIT 1", nativeQuery = true)
+    Optional<CompetitionSession> findMostRecent();
 }
 
