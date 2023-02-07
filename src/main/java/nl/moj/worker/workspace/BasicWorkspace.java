@@ -18,16 +18,18 @@ import nl.moj.common.messages.JMSFile;
 
 public class BasicWorkspace implements Workspace {
 
-    private Path base;
-    private Path sources;
-    private Path target;
-    private AssignmentDescriptor assignmentDescriptor;
+    private final Path base;
+    private final Path sources;
+    private final Path target;
+    private final AssignmentDescriptor assignmentDescriptor;
 
     public BasicWorkspace(AssignmentDescriptor assignmentDescriptor, List<JMSFile> replacements) throws IOException {
         this.base = Files.createTempDirectory("workspace");
         this.sources = this.base.resolve("sources");
         this.target = this.base.resolve("target");
         this.assignmentDescriptor = assignmentDescriptor;
+        Files.createDirectories(sources);
+        Files.createDirectories(target);
         prepare();
         if (replacements != null && !replacements.isEmpty()) {
             replaceFiles(replacements);

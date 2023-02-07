@@ -16,15 +16,6 @@ moj:
       uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
       success-bonus: 400
 
-#keycloak:
-#   auth-server-url: http://localhost:8180/auth
-#   realm: moj
-#   resource: moj
-#   public-client: true
-#   principal-attribute: preferred_username
-
-debug: true
-
 spring:
   h2:
     console:
@@ -60,7 +51,6 @@ spring:
             token-uri: http://nowhere.none/token
             user-info-authentication-method: client_secret_post
             user-name-attribute: preferred_username
-server:
 logging:
   level:
     nl.moj.server: debug

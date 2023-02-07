@@ -115,24 +115,24 @@
                             <td th:text="${assignment.getEnded()}"/>
                             <td>
                                 <button type="button" class="btn btn-sm btn-primary me-5"
-                                        th:data-sid="${cs.getUuid()}"
-                                        th:data-name="${assignment.getName()}"
-                                        th:data-id="${assignment.getUuid()}"
-                                        onclick="startAssignment(this.getAttribute('data-sid'), this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                        th:data-xhr-sid="${cs.getUuid()}"
+                                        th:data-xhr-name="${assignment.getName()}"
+                                        th:data-xhr-id="${assignment.getUuid()}"
+                                        data-xhr="startAssignment">
                                     Start
                                 </button>
                                 <button type="button" class="btn btn-sm btn-danger"
-                                        th:data-sid="${cs.getUuid()}"
-                                        th:data-name="${assignment.getName()}"
-                                        th:data-id="${assignment.getUuid()}"
-                                        onclick="stopAssignment(this.getAttribute('data-sid'), this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                        th:data-xhr-sid="${cs.getUuid()}"
+                                        th:data-xhr-name="${assignment.getName()}"
+                                        th:data-xhr-id="${assignment.getUuid()}"
+                                        data-xhr="stopAssignment">
                                     Stop
                                 </button>
                                 <button type="button" class="btn btn-sm btn-danger"
-                                        th:data-sid="${cs.getUuid()}"
-                                        th:data-name="${assignment.getName()}"
-                                        th:data-id="${assignment.getUuid()}"
-                                        onclick="resetAssignment(this.getAttribute('data-sid'), this.getAttribute('data-id'), this.getAttribute('data-name'))">
+                                        th:data-xhr-sid="${cs.getUuid()}"
+                                        th:data-xhr-name="${assignment.getName()}"
+                                        th:data-xhr-id="${assignment.getUuid()}"
+                                        data-xhr="resetAssignment">
                                     Reset
                                 </button>
                             </td>
@@ -152,13 +152,13 @@
                         </thead>
                         <tbody>
                         <th:block th:each="comp,status : ${competitions}">
-                            <tr data-bs-toggle="collapse" th:data-bs-target="${'#r'+status.index}">
-                                <td><i class="fa fa-chevron-down"></i></td>
+                            <tr>
+                                <td data-bs-toggle="collapse" th:data-bs-target="${'#r'+status.index}"><i class="fa fa-chevron-down"></i></td>
                                 <td th:text="${comp.getName()}"></td>
                                 <td th:text="${comp.getAssignments().size()}"></td>
                                 <td>
-                                    <button type="button" th:data-id="${comp.getUuid()}" th:data-name="${comp.getName()}" class="btn btn-sm btn-primary"
-                                            onclick="startSession(this.getAttribute('data-id'),this.getAttribute('data-name'))">Start
+                                    <button type="button" th:data-xhr-id="${comp.getUuid()}" th:data-xhr-name="${comp.getName()}" class="btn btn-sm btn-primary"
+                                            data-xhr="startSession">Start
                                     </button>
                                 </td>
                             </tr>
@@ -224,7 +224,7 @@
                 <div class="tab-pane" id="admin" role="tabpanel" aria-labelledby="tab-admin">
                     <form class="mt-5">
                         <p>Scan assignments repository for new assignments.</p>
-                        <button onclick="scanAssignments()" class="btn btn-primary">Scan Assignments</button>
+                        <button data-xhr="scanAssignments" class="btn btn-primary">Scan Assignments</button>
                     </form>
                     <form id="upload-assignments" class="mt-5" data-xhr="uploadAssignments">
                         <p>Upload new assignments zip</p>

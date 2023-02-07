@@ -25,6 +25,8 @@ import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -39,6 +41,7 @@ public class SubmitFacade {
 
     private final SubmitService submitService;
 
+    @Transactional
     public CompileAttempt registerCompileRequest(SourceMessage message, Principal principal) {
         try {
             return compileService.registerCompileAttempt(createCompileRequest(message, principal));
@@ -48,6 +51,7 @@ public class SubmitFacade {
         return null;
     }
 
+    @Transactional
     public TestAttempt registerTestRequest(SourceMessage message, Principal principal) {
         try {
             return testService.registerTestAttempt(createTestRequest(message, principal));
@@ -57,6 +61,7 @@ public class SubmitFacade {
         return null;
     }
 
+    @Transactional
     public SubmitAttempt registerSubmitRequest(SourceMessage message, Principal principal) {
         try {
             return submitService.registerSubmitAttempt(createSubmitRequest(message, principal));

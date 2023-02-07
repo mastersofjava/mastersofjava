@@ -25,7 +25,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "test_cases")
-@SequenceGenerator(name = "id_seq", sequenceName = "test_cases_seq")
+@SequenceGenerator(name = "test_cases_id_seq", sequenceName = "test_cases_seq")
 
 @Builder(toBuilder = true)
 @NoArgsConstructor(force = true)
@@ -36,7 +36,7 @@ import lombok.*;
 public class TestCase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_seq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "test_cases_id_seq")
     @Column(name = "id", nullable = false)
     private Long id;
 

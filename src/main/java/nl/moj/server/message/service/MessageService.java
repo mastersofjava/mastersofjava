@@ -75,7 +75,8 @@ public class MessageService {
         TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder()
                 .success(tc.getSuccess())
                 .uuid(team.getUuid())
-                .test(tc.getUuid())
+                .testId(tc.getUuid())
+                .test(tc.getName())
                 .message(tc.getTestOutput())
                 .build();
         log.info("Sending test feedback: {}", msg);
@@ -104,6 +105,7 @@ public class MessageService {
                 .uuid(team.getUuid())
                 .team(team.getName())
                 .success(sa != null && sa.getSuccess() != null && sa.getSuccess())
+                .completed(as.getDateTimeCompleted() != null)
                 .message("TODO")
                 .build();
 
@@ -171,16 +173,19 @@ public class MessageService {
                 .assignment(name).cause(cause).build());
     }
 
+    @Transactional(Transactional.TxType.MANDATORY)
     public void sendCompilingStarted(Team team) {
         log.info("Sending compiling started for team '{}' ", team.getUuid());
         sendToActiveUsers(team, CompilingStarted.builder().team(team.getUuid()).build());
     }
 
+    @Transactional(Transactional.TxType.MANDATORY)
     public void sendCompilingEnded(Team team, boolean success) {
         log.info("Sending compiling ended for team uuid '{}'", team.getUuid());
         sendToActiveUsers(team, CompilingEnded.builder().team(team.getUuid()).success(success).build());
     }
 
+    @Transactional(Transactional.TxType.MANDATORY)
     public void sendTestingStarted(Team team) {
         log.info("Sending testing started for team uuid '{}'", team.getUuid());
         sendToActiveUsers(team, TestingStarted.builder().team(team.getUuid()).build());
@@ -189,16 +194,19 @@ public class MessageService {
                 .build());
     }
 
+    @Transactional(Transactional.TxType.MANDATORY)
     public void sendTestingEnded(Team team, boolean success) {
         log.info("Sending testing ended for team uuid '{}'", team.getUuid());
         sendToActiveUsers(team, TestingEnded.builder().team(team.getUuid()).success(success).build());
     }
 
+    @Transactional(Transactional.TxType.MANDATORY)
     public void sendSubmitStarted(Team team) {
         log.info("Sending submit started for team uuid '{}'", team.getUuid());
         sendToActiveUsers(team, SubmitStarted.builder().team(team.getUuid()).build());
     }
 
+    @Transactional(Transactional.TxType.MANDATORY)
     public void sendSubmitEnded(Team team, boolean success, Long score) {
         log.info("Sending submit ended for team uuid '{}'", team.getUuid());
         sendToActiveUsers(team, SubmitEnded.builder().team(team.getUuid()).success(success)

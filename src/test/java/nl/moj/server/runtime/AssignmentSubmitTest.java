@@ -58,9 +58,6 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     @Autowired
     private MojServerProperties mojServerProperties;
 
-    @Autowired
-    private TransactionHelper trx;
-
     private static Stream<String> assignments() {
         return Stream.of("sequential", "parallel");
     }
@@ -118,8 +115,10 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         return sa;
     }
 
-    private void stopSelectedAssignment() {
-        competitionRuntime.stopCurrentAssignment();
+    private void stopSelectedAssignment() throws Exception {
+        if( competitionRuntime.getCurrentAssignment() != null ) {
+            competitionRuntime.stopAssignment(getSessionId(), competitionRuntime.getCurrentAssignment());
+        }
     }
 
 

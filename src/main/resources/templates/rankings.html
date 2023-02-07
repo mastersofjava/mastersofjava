@@ -78,9 +78,9 @@
                         <tr th:each="ranking,status : ${top}" th:class="${'rank-'+status.index}">
                             <td class="text-center" th:text="${ranking.rank}"></td>
                             <td th:text="${ranking.team}">teamname</td>
-                            <th:block th:each="assignment : ${oas}">
+                            <th:block th:each="rh : ${oas}">
                                 <td class="text-center"
-                                    th:text="${ranking.getAssignmentResult(assignment.orderedAssignment).getScore()}">
+                                    th:text="${ranking.getAssignmentResult(rh).getScore()}">
                                     0
                                 </td>
                             </th:block>

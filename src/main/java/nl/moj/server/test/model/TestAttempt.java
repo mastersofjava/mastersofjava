@@ -28,7 +28,7 @@ import nl.moj.server.runtime.model.TeamAssignmentStatus;
 
 @Entity
 @Table(name = "test_attempts")
-@SequenceGenerator(name = "id_seq", sequenceName = "test_attempts_seq")
+@SequenceGenerator(name = "test_attempts_id_seq", sequenceName = "test_attempts_seq")
 
 @Builder(toBuilder = true)
 @NoArgsConstructor(force = true)
@@ -39,7 +39,7 @@ import nl.moj.server.runtime.model.TeamAssignmentStatus;
 public class TestAttempt {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_seq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "test_attempts_id_seq")
     @Column(name = "id", nullable = false)
     private Long id;
 

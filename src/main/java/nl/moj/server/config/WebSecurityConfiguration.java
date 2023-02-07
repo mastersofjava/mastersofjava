@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.nimbusds.jose.shaded.json.JSONObject;
+import lombok.RequiredArgsConstructor;
 import nl.moj.server.authorization.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,36 +21,34 @@ import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMap
 import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
 import org.springframework.security.web.SecurityFilterChain;
-
-//@KeycloakConfiguration
-
 @Configuration
 @EnableGlobalMethodSecurity(jsr250Enabled = true)
 @EnableWebSecurity
-public class WebSecurityConfiguration { //KeycloakWebSecurityConfigurerAdapter {
+@RequiredArgsConstructor
+public class WebSecurityConfiguration {
 
-    // Submits the KeycloakAuthenticationProvider to the AuthenticationManager
-//    @Autowired
-//    public void configureGlobal(AuthenticationManagerBuilder auth) {
-//        SimpleAuthorityMapper simpleAuthorityMapper = new SimpleAuthorityMapper();
-//        simpleAuthorityMapper.setConvertToUpperCase(true);
-//        KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
-//        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(simpleAuthorityMapper);
-//        auth.authenticationProvider(keycloakAuthenticationProvider);
-//    }
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
     @Bean
     public SessionRegistry sessionRegistry() {
         return new SessionRegistryImpl();
     }
 
+    OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler() {
+        OidcClientInitiatedLogoutSuccessHandler successHandler = new OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository);
+        successHandler.setPostLogoutRedirectUri("{baseUrl}");
+        return successHandler;
+    }
+
     @Bean //(name = BeanIds.SPRING_SECURITY_FILTER_CHAIN)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.authorizeRequests(a -> a
-                        .antMatchers("/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico")
+                        .antMatchers("/","/error", "/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico")
                         .permitAll()
                         .antMatchers("/play", "/feedback", "/rankings")
                         .hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
@@ -59,6 +58,7 @@ public class WebSecurityConfiguration { //KeycloakWebSecurityConfigurerAdapter {
                         .authenticated())
                 .headers(h -> h.frameOptions().disable())
                 .csrf(AbstractHttpConfigurer::disable)
+                .logout( l -> l.logoutSuccessHandler(oidcLogoutSuccessHandler()))
                 .oauth2Login();
         return http.build();
     }
@@ -95,9 +95,4 @@ public class WebSecurityConfiguration { //KeycloakWebSecurityConfigurerAdapter {
             return sam.mapAuthorities(mappedAuthorities);
         };
     }
-
-//    @Bean
-//    public SessionAuthenticationStrategy sessionAuthenticationStrategy() {
-//        return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
-//    }
 }

@@ -57,16 +57,16 @@ public class Ranking {
         return b.toString();
     }
 
-    public AssignmentScore getAssignmentResult(CompetitionAssignment oa) {
+    public AssignmentScore getAssignmentResult(RankingHeader rh) {
         return assignmentScores.stream()
-                .filter(r -> r.getAssignmentUuid().equals(oa.getAssignment().getUuid()))
+                .filter(r -> r.getAssignmentUuid().equals(rh.getAssignment()))
                 .findFirst()
                 .orElse(
-                        emptyResult(oa.getAssignment()));
+                        emptyResult(rh));
     }
 
-    private AssignmentScore emptyResult(Assignment a) {
-        return new AssignmentScore(a.getUuid(), a.getName(), 0L);
+    private AssignmentScore emptyResult(RankingHeader rh) {
+        return new AssignmentScore(rh.getAssignment(), rh.getDisplayName(), 0L);
     }
 
     public void addAssignmentScore(Assignment assignment, Long finalScore) {

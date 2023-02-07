@@ -92,7 +92,6 @@ public class AssignmentRuntime {
     private Duration initialRemaining;
 
     @Getter
-    private CompetitionAssignment competitionAssignment;
     private Assignment assignment;
     private AssignmentDescriptor assignmentDescriptor;
     private Map<String, Future<?>> handlers;
@@ -171,7 +170,7 @@ public class AssignmentRuntime {
      */
     public AssignmentStatus stop() {
         if (running) {
-            trx.requiresNew(() -> {
+            return trx.requiresNew(() -> {
                 messageService.sendStopToTeams(assignment.getName(), competitionSession.getUuid().toString());
                 teamService.getTeams().forEach(t -> {
                     TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment,
@@ -191,8 +190,9 @@ public class AssignmentRuntime {
                 assignmentStatus.setDateTimeEnd(Instant.now());
                 clearHandlers();
                 running = false;
-                competitionAssignment = null;
+                //competitionAssignment = null;
                 log.info("Stopped assignment {}", assignment.getName());
+                assignment = null;
                 done.complete(null);
                 return assignmentStatus;
             });

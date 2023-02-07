@@ -105,14 +105,18 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
     }
 
     private void userConnected(SessionConnectedEvent evt) {
-        User user = findUser(evt.getUser());
-        log.info("User {} connected.", user.getName());
-        ACTIVE_USERS.add(user);
+        if( evt.getUser() != null ) {
+            User user = findUser(evt.getUser());
+            log.info("User {} connected.", user.getName());
+            ACTIVE_USERS.add(user);
+        }
     }
 
     private void userDisconnected(SessionDisconnectEvent evt) {
-        User user = findUser(evt.getUser());
-        log.info("User {} disconnected.", user.getName());
-        ACTIVE_USERS.remove(user);
+        if( evt.getUser() != null ) {
+            User user = findUser(evt.getUser());
+            log.info("User {} disconnected.", user.getName());
+            ACTIVE_USERS.remove(user);
+        }
     }
 }

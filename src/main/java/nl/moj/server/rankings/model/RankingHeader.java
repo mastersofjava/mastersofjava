@@ -20,10 +20,12 @@ import lombok.Builder;
 import lombok.Getter;
 import nl.moj.server.competition.model.CompetitionAssignment;
 
+import java.util.UUID;
+
 @Getter
 @Builder
 public class RankingHeader {
 
-    private final CompetitionAssignment orderedAssignment;
+    private final UUID assignment;
     private final String displayName;
 }

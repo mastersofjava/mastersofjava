@@ -200,7 +200,7 @@ public class JavaService {
 
     private String concat(String a, String b) {
         StringBuilder sb = new StringBuilder();
-        if (a != null && b.length() > 0) {
+        if (a != null && a.length() > 0) {
             sb.append(a);
         }
         if (sb.length() > 0 && b != null && b.length() > 0) {

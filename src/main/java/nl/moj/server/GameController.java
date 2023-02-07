@@ -16,12 +16,6 @@
 */
 package nl.moj.server;
 
-import javax.transaction.Transactional;
-import java.security.Principal;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.util.List;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,6 +33,12 @@ import nl.moj.server.user.service.UserService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import javax.transaction.Transactional;
+import java.security.Principal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.List;
 
 @Controller
 @AllArgsConstructor
@@ -59,6 +59,7 @@ public class GameController {
     }
 
     @GetMapping("/play")
+    @Transactional
     public String play(Model model, Principal principal) {
 
         User user = userService.createOrUpdate(principal);
@@ -104,9 +105,9 @@ public class GameController {
             return 10;
         });
 
-        boolean completed = as.getRemainingSubmitAttempts() <= 0 || as.getSubmitAttempts()
-                    .stream()
-                    .anyMatch(sa -> sa.getSuccess() != null && sa.getSuccess());
+        boolean completed = as.getDateTimeCompleted() != null;
+//        || as.getRemainingSubmitAttempts() <= 0
+//                || as.getSubmitAttempts().stream().anyMatch(sa -> sa.getSuccess() != null && sa.getSuccess());
 
         AssignmentResult ar = as.getAssignmentResult();
 

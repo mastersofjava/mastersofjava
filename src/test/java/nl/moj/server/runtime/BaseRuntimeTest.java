@@ -40,6 +40,7 @@ import nl.moj.server.bootstrap.service.BootstrapService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
+import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -117,6 +118,9 @@ public abstract class BaseRuntimeTest {
     private Competition competition;
 
     @Getter
+    private UUID sessionId;
+
+    @Getter
     private Team team;
 
     @Getter
@@ -128,7 +132,7 @@ public abstract class BaseRuntimeTest {
             bootstrapService.bootstrap();
             dbUtil.cleanup();
             competition = createCompetition();
-            competitionRuntime.startSession(competition.getUuid());
+            sessionId = competitionRuntime.startSession(competition.getUuid()).getUuid();
             mockJmsService.reset();
         } catch (NullPointerException npe) {
             log.error("Nullpointer: {}", npe.getMessage(), npe);
@@ -160,8 +164,10 @@ public abstract class BaseRuntimeTest {
     }
 
     @AfterEach
-    public void cleanup() throws IOException {
-        competitionRuntime.stopCurrentAssignment();
+    public void cleanup() throws Exception {
+        if( competitionRuntime.getCurrentAssignment() != null) {
+            competitionRuntime.stopAssignment(sessionId, competitionRuntime.getCurrentAssignment());
+        }
         dbUtil.cleanup();
         PathUtil.delete(mojServerProperties.getDirectories().getBaseDirectory(), true);
     }
@@ -191,14 +197,13 @@ public abstract class BaseRuntimeTest {
 //        };
 //        KeycloakAuthenticationToken kat = new KeycloakAuthenticationToken(ka, false, Collections.emptyList());
 //        return kat;
-        return () -> user.getUuid().toString();
+        return user::getName;
     }
 
     protected User addUser(Team team) {
         User user = new User();
-        user.setUuid(UUID.randomUUID());
         user.setTeam(team);
-        user.setName("username");
+        user.setName("username-"+team.getId());
         user.setGivenName("User");
         user.setFamilyName("Name");
         user.setEmail("user.name@example.com");

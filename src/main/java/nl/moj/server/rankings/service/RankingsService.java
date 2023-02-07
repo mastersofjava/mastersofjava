@@ -30,11 +30,14 @@ import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.rankings.model.Ranking;
 import nl.moj.server.rankings.model.RankingHeader;
 import nl.moj.server.runtime.model.AssignmentResult;
+import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.springframework.stereotype.Component;
+
+import javax.transaction.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -78,15 +81,15 @@ public class RankingsService {
         return rankings;
     }
 
-    public List<RankingHeader> getRankingHeaders(CompetitionState competitionState) {
-        return competitionState.getCompletedAssignments()
+    @Transactional(Transactional.TxType.MANDATORY)
+    public List<RankingHeader> getRankingHeaders(CompetitionSession session) {
+        return session.getAssignmentStatuses()
                 .stream()
-                .map(oa -> RankingHeader.builder()
-                        .orderedAssignment(oa)
-                        .displayName(assignmentService.resolveAssignmentDescriptor(oa.getAssignment()).getDisplayName())
-                        .build())
-                .collect(Collectors.toList());
-
+                .sorted(Comparator.comparing(AssignmentStatus::getDateTimeStart))
+                .map( as -> RankingHeader.builder()
+                        .assignment(as.getAssignment().getUuid())
+                        .displayName(assignmentService.resolveAssignmentDescriptor(as.getAssignment()).getDisplayName())
+                        .build()).toList();
     }
 
     private Stream<AssignmentResult> getTeamAssignments(List<AssignmentResult> assignmentResults, Team t) {

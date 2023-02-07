@@ -16,11 +16,6 @@
 */
 package nl.moj.server;
 
-import javax.annotation.security.RolesAllowed;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -34,17 +29,12 @@ import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.competition.service.CompetitionCleaningService;
 import nl.moj.server.competition.service.CompetitionService;
 import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.rankings.service.RankingsService;
-import nl.moj.server.runtime.AssignmentRuntime;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
-import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import nl.moj.server.util.TransactionHelper;
@@ -54,13 +44,18 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import javax.annotation.security.RolesAllowed;
+import javax.transaction.Transactional;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -78,21 +73,9 @@ public class TaskControlController {
 
     private final CompetitionRepository competitionRepository;
 
-    private final TeamRepository teamRepository;
-
-    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
-
-    private final AssignmentRuntime assignmentRuntime;
-
     private final CompetitionSessionRepository competitionSessionRepository;
 
-    private final CompetitionCleaningService competitionCleaningService;
-
-    private final RankingsService rankingsService;
-
     private final CompetitionService competitionService;
-
-    private final SessionRegistry sessionRegistry;
 
     private final UserService userService;
 
@@ -181,44 +164,18 @@ public class TaskControlController {
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     @PostMapping(value = "/api/session/{sid}/assignment/{aid}/reset", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> resetAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
-        //        ActiveAssignment state = session.getActiveAssignment();
-//        boolean isStopCurrentAssignment=state!=null && state.getAssignment()!=null && state.getAssignment().getName().equals(message.taskName);
-//
-//        if (isStopCurrentAssignment) {
-//            session.stopCurrentSession();
-//        }
-//        Assignment assignment = assignmentRepository.findByName(message.taskName);
-//        List<TeamAssignmentStatus> ready4deletionList = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, session.getCompetitionSession());
-//        if (!ready4deletionList.isEmpty()) {
-//            for (TeamAssignmentStatus status: ready4deletionList) {
-//                teamAssignmentStatusRepository.deleteById(status.getId());// correct cleaning: first delete all status items, afterwards delete all results
-//            }
-//        }
-//        List<OrderedAssignment> operatableList = new ArrayList<>(session.getCompetitionState().getCompletedAssignments());
-//        for (OrderedAssignment orderedAssignment: operatableList) {
-//            if (orderedAssignment.getAssignment().getName().equals(assignment.getName())) {
-//                session.getCompetitionState().getCompletedAssignments().remove(orderedAssignment);
-//            }
-//        }
-//        boolean isWithRestartDirectly = !StringUtils.isEmpty(message.getValue());
-//
-//        if (isWithRestartDirectly) {
-//            long timeLeft = assignmentService.resolveAssignmentDescriptor(assignment).getDuration().toSeconds();
-//            session.getCompetitionSession().setRunning(true);
-//            session.startAssignment(message.getValue(),timeLeft);// start fresh
-//            return "Assignment restarted directly: " + message.taskName + ", reload page";
-//        } else {
-//            session.getCompetitionSession().setTimeLeft(null);
-//            session.getCompetitionSession().setDateTimeLastUpdate(null);
-//            session.getCompetitionSession().setRunning(false);
-//            competitionSessionRepository.save(session.getCompetitionSession());
-//        }
-
-        return ResponseEntity.badRequest().build();
+        try {
+            competition.resetAssignment(sid, aid);
+            return ResponseEntity.ok(Map.of("m", "ok"));
+        } catch (CompetitionServiceException cse) {
+            log.error("Unable to stop assignment {} for session {}.", aid, sid, cse);
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     @GetMapping("/control")
+    @Transactional
     public String taskControl(Model model, Authentication principal) {
         // TODO maybe move this creat or update stuff to a filter.
         User user = userService.createOrUpdate(principal);
@@ -228,12 +185,6 @@ public class TaskControlController {
         model.addAttribute("cs", toCompetitionSessionVO(competition));
 
         model.addAttribute("clockStyle", "active");
-
-//        if (session.getActiveAssignment().isRunning()) {
-//            model.addAttribute("timeLeft", state.getTimeRemaining().toSeconds());
-//            model.addAttribute("time", state.getAssignmentDescriptor().getDuration().toSeconds());
-//        }
-
         return "control";
     }
 

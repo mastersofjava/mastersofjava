@@ -50,13 +50,8 @@ public class RankingsController {
 
         Competition competition = rankingProvider.getCompetition();
         List<Ranking> rankings = enrich(rankingsService.getRankings(rankingProvider.getCompetitionSession()));
-        CompetitionState competitionState = rankingProvider.getCompetitionState();
         ModelAndView model = new ModelAndView("rankings");
-        if (competitionState.getCompletedAssignments().isEmpty()) {
-            model.addObject("oas", Collections.emptyList());
-        } else {
-            model.addObject("oas", rankingsService.getRankingHeaders(competitionState));
-        }
+        model.addObject("oas", rankingsService.getRankingHeaders(rankingProvider.getCompetitionSession()));
         model.addObject("top", rankings.subList(0, Math.min(5, rankings.size())));
 
         List<List<Ranking>> parts = partitionRemaining(rankings, 5);

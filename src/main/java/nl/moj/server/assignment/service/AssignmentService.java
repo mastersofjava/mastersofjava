@@ -142,20 +142,17 @@ public class AssignmentService {
     }
 
     public List<AssignmentFile> getAssignmentFiles(Assignment assignment) {
-        return getAssignmentFiles(assignment.getUuid(), assignment.getAssignmentDescriptor());
+        return getAssignmentFiles(assignment.getUuid());
     }
 
-    public List<AssignmentFile> getAssignmentFiles(UUID uuid) throws IOException {
+    @Transactional(Transactional.TxType.REQUIRED)
+    public List<AssignmentFile> getAssignmentFiles(UUID uuid) {
         Assignment assignment = assignmentRepository.findByUuid(uuid);
         if (assignment == null) {
             return Collections.emptyList();
         }
-        return getAssignmentFiles(assignment);
-    }
-
-    private List<AssignmentFile> getAssignmentFiles(UUID uuid, String assignmentDescriptor) {
         if (!ASSIGNMENT_FILES.containsKey(uuid)) {
-            ASSIGNMENT_FILES.put(uuid, new JavaAssignmentFileResolver().resolve(resolveAssignmentDescriptor(assignmentDescriptor)));
+            ASSIGNMENT_FILES.put(uuid, new JavaAssignmentFileResolver().resolve(resolveAssignmentDescriptor(assignment.getAssignmentDescriptor())));
         }
         return ASSIGNMENT_FILES.get(uuid);
     }

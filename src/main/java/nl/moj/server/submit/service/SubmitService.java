@@ -142,7 +142,7 @@ public class SubmitService {
 
     @Transactional
     public SubmitAttempt registerSubmitAttempt(SubmitRequest submitRequest) {
-        log.info("Registering compile attempt for assignment {} by team {}.", submitRequest.getAssignment().getUuid(),
+        log.info("Registering submit attempt for assignment {} by team {}.", submitRequest.getAssignment().getUuid(),
                 submitRequest.getTeam().getUuid());
         final TeamAssignmentStatus tas = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam())
                 .orElseThrow(() -> new IllegalStateException("Submit request received for assignment " + submitRequest.getAssignment()

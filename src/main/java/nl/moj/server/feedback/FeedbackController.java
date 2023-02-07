@@ -116,7 +116,7 @@ public class FeedbackController {
     Submission getSubmission(@PathVariable("assignment") UUID assignment, @PathVariable("team") UUID uuid) {
         return Submission.builder()
                 .team(uuid)
-                .files(competitionRuntime.getTeamSolutionFiles(assignment, teamRepository.findByUuid(uuid)).stream()
+                .files(competitionRuntime.getTeamSolutionFiles(assignment, uuid).stream()
                         .filter(f -> f.getFileType() == AssignmentFileType.EDIT)
                         .map(f -> FileSubmission.builder()
                                 .uuid(f.getUuid())

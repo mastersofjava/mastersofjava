@@ -36,7 +36,7 @@
 
             <div id="content" th:if="${assignmentActive}" th:attr="finished=${assignment.isCompleted()},submittime=${assignment.getSubmitTime()}">
                 <div class="p-2">
-                    <h3>Assignment: [[${assignmentName}]]</h3>
+                    <h3>Assignment: [[${assignment.assignmentName}]]</h3>
                 </div>
                 <div id="alert-container">
                     <div th:if="${assignment.isCompleted() and (assignment.getScore() &gt; 0)}" class="alert alert-success p-4" role="alert">
@@ -52,12 +52,14 @@
                 </div>
                 <div th:unless="${assignment.isCompleted()}" id="tabs">
                     <ul class="nav nav-tabs" role="tablist">
-                        <li class="nav-item" th:each="file,status : ${assignment.getFiles()}">
-                            <a class="nav-link"
-                               th:classappend="${(status.index==0?'active':'') + (file.readOnly?'':' editable')}"
-                               th:id="${'cm-'+file.uuid}"
-                               th:href="${'#tab-'+file.uuid}" data-toggle="tab"
-                            >
+                        <li class="nav-item" role="presentation" th:each="file,status : ${assignment.getFiles()}">
+                            <button type="button"
+                                    class="nav-link"
+                                    th:classappend="${(status.index==0?'active':'') + (file.readOnly?'':' editable')}"
+                                    th:id="${'cm-'+file.uuid}"
+                                    th:aria-controls="${'tab-'+file.uuid}"
+                                    th:data-bs-target="${'#tab-'+file.uuid}"
+                                    role="tab" aria-selected="true" data-bs-toggle="tab">
                                 <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}"
                                       class="fas fa-tasks"></span>
                                 <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).EDIT}"
@@ -71,27 +73,28 @@
                                 <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TEST_RESOURCE}"
                                       class="fas fa-vial"></span>
                                 <span th:id="${'tabLink_'+file.shortName}"  class='unitTestTab' th:title="${file.shortName}" th:text="${file.shortName}"></span>
-                            </a>
+                            </button>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="output" href="#output-tab" data-toggle="tab"><span
-                                    class="fas fa-terminal"></span> Output</a>
+                            <button type="button" class="nav-link" id="output" data-bs-target="#tab-output"
+                                    aria-controls="output" data-bs-toggle="tab" role="tab" aria-selected="true"><span
+                                    class="fas fa-terminal"></span> Output</button>
                         </li>
                     </ul>
                     <div class="tab-content">
                         <div class="tab-pane" th:classappend="${status.index==0?'show active':''}" role="tabpanel"
-                             th:each="file,status : ${assignment.getFiles()}" th:id="${'tab-'+file.uuid}">
-                            <div class="tab-pane-content">
-                                <div class="content" th:switch="${file.getMediaTypeString()}" th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}">
-                                    <div class="markdown markdown-body" th:case="'text/x-web-markdown'" th:utext="${file.getContentAsString()}"></div>
-                                    <pre class="text" th:case="*" th:utext="${file.getContentAsString()}"></pre>
-                                </div>
-                                <textarea th:if="${file.fileType != T(nl.moj.server.runtime.model.AssignmentFileType).TASK}"
-                                        th:attr="data-cm=${'cm-'+file.uuid},data-cm-id=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
-                                        th:utext="${file.getContentAsString()}"></textarea>
+                             th:each="file,status : ${assignment.getFiles()}" th:id="${'tab-'+file.uuid}"
+                             th:aria-labelledby="${'cm-'+file.uuid}"
+                        >
+                            <div class="content" th:switch="${file.getMediaTypeString()}" th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}">
+                                <div class="markdown markdown-body" th:case="'text/x-web-markdown'" th:utext="${file.getContentAsString()}"></div>
+                                <pre class="text" th:case="*" th:utext="${file.getContentAsString()}"></pre>
                             </div>
+                            <textarea th:if="${file.fileType != T(nl.moj.server.runtime.model.AssignmentFileType).TASK}"
+                                    th:attr="data-cm=${'cm-'+file.uuid},data-cm-id=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
+                                    th:utext="${file.getContentAsString()}"></textarea>
                         </div>
-                        <div class="tab-pane fade" role="tabpanel" id="output-tab">
+                        <div class="tab-pane" role="tabpanel" id="tab-output" aria-labelledby="output">
                             <div id="output-content" class="content">
                             </div>
                         </div>
@@ -118,7 +121,7 @@
                     <h3>Time Left</h3>
                 </div>
                 <div id="assignment-clock"
-                     th:attrappend="data-time-left=${assignment.getTimeRemaining().toSeconds()},data-time=${assignment.getTime()},running=${assignmentActive}"
+                     th:attrappend="data-time-left=${assignment.getTimeRemaining().toSeconds()},data-time=${assignment.getTime().toSeconds()},running=${assignmentActive}"
                      class="align-self-center">
                     <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
                         <h2 class="align-self-center">--:--</h2>
@@ -141,13 +144,13 @@
                 <button id="compile" class="btn w-50 btn-success" th:disabled="${assignment.isCompleted()}">Compile</button>
             </div>
             <div th:if="${assignmentActive}" class="p-2  text-center">
-                <button id="show-tests" class="btn w-50 btn-success" data-toggle="modal" data-target="#test-modal"
+                <button id="show-tests" class="btn w-50 btn-success" data-bs-toggle="modal" data-bs-target="#test-modal"
                         onclick="resetTabColor();" th:disabled="${assignment.isCompleted()}">Test
                 </button>
             </div>
             <div th:if="${assignmentActive}" class="mt-5 p-2 text-center">
-                <button id="btn-open-submit" class="btn w-50 btn-danger" data-toggle="modal"
-                        data-target="#confirm-submit-modal" th:disabled="${assignment.isCompleted()}">SUBMIT
+                <button id="btn-open-submit" class="btn w-50 btn-danger" data-bs-toggle="modal"
+                        data-bs-target="#confirm-submit-modal" th:disabled="${assignment.isCompleted()}">SUBMIT
                 </button>
             </div>
 

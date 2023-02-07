@@ -11,6 +11,7 @@ function Clock(initialOffset) {
         var $circle = $('.circle_animation', $assignmentClock);
         var timeleft = $assignmentClock.attr('data-time-left');
         var clock = this;
+
         if (clock.finished) {
             timeleft = $('#content').attr('submittime');
         }

@@ -230,11 +230,20 @@ function initializeAssignmentClock() {
 
 // used from html
 function scanAssignments() {
-    clientSend('/app/control/assignment/scan', {})
+    post('/api/assignment/discover').then( r => {
+        showSuccess(`${r.m}`)
+        if( r.reload ) {
+            reloadPage()
+        }
+      },
+      r => {
+        console.log(r)
+          showAlert(`${r.m}`)
+      })
 }
 
 // used from html
-function createCompetition(form) {
+function createCompetition(args,form) {
     const d = formToObject(form)
     post('/api/competition', {'name': d.quick_comp_name, 'assignments': d.assignment})
         .then(() => {
@@ -247,8 +256,8 @@ function createCompetition(form) {
 }
 
 // used from html
-function startSession(id,name) {
-    post(`/api/competition/${id}/session`)
+function startSession(args) {
+    post(`/api/competition/${args.id}/session`)
         .then(r => {
                 showSuccess(`Started competition session for competition ${name}, reloading.`)
                 reloadPage();
@@ -258,42 +267,45 @@ function startSession(id,name) {
             })
 }
 
-function startAssignment(sid, aid, name) {
-    confirm(`Start assignment '${name}'?`).then(ok => {
-        post(`/api/session/${sid}/assignment/${aid}/start`)
+// used from html
+function startAssignment(args) {
+    confirm(`Start assignment '${args.name}'?`).then(ok => {
+        post(`/api/session/${args.sid}/assignment/${args.id}/start`)
             .then(r => {
                     console.log(r)
-                    showSuccess(`Started assignment '${name}'.`)
+                    showSuccess(`Started assignment '${args.name}'.`)
                 },
                 () => {
-                    showAlert(`Unable to start assignment '${name}'.`)
+                    showAlert(`Unable to start assignment '${args.name}'.`)
                 })
     }, () => {})
 }
 
-function stopAssignment(sid, aid, name) {
-    confirm(`Stop assignment '${name}'and finalize scores for teams?`).then(ok => {
-        post(`/api/session/${sid}/assignment/${aid}/stop`)
+function stopAssignment(args) {
+    confirm(`Stop assignment '${args.name}'and finalize scores for teams?`).then(ok => {
+        post(`/api/session/${args.sid}/assignment/${args.id}/stop`)
             .then(r => {
                     console.log(r)
-                    showSuccess(`Stopped assignment '${name}'.`)
+                    showSuccess(`Stopped assignment '${args.name}', reloading.`)
+                    reloadPage()
                 },
                 () => {
-                    showAlert(`Unable to stop assignment '${name}'.`)
+                    showAlert(`Unable to stop assignment '${args.name}'.`)
                 })
     }, () => {})
 
 }
 
-function resetAssignment(sid, aid, name) {
-    confirm(`Stop assignment '${name}' and reset scores for teams?`).then( ok => {
-        post(`/api/session/${sid}/assignment/${aid}/reset`)
+function resetAssignment(args) {
+    confirm(`Stop assignment '${args.name}' and reset scores for teams?`).then( ok => {
+        post(`/api/session/${args.sid}/assignment/${args.id}/reset`)
             .then(r => {
                     console.log(r)
-                    showSuccess(`Reset assignment '${name}'.`)
+                    showSuccess(`Reset assignment '${args.name}', reloading.`)
+                    reloadPage()
                 },
                 () => {
-                    showAlert(`Unable to reset assignment '${name}'.`)
+                    showAlert(`Unable to reset assignment '${args.name}'.`)
                 })
     }, () => {})
 }
@@ -317,13 +329,31 @@ function initXHR() {
     $('form[data-xhr]').each((idx, el) => {
         el.addEventListener('submit', evt => {
             evt.preventDefault()
-            const ref = $(el).attr('data-xhr')
-            if (validFuncRef(ref)) {
-                let fn = eval(ref)
-                fn(el)
-            }
+            invoke(el)
         })
     })
+    $('button[data-xhr]').each((idx, el) => {
+        el.addEventListener('click', evt => {
+            evt.preventDefault()
+            invoke(el)
+        })
+    })
+}
+
+function invoke( el ) {
+    const $el = $(el)
+    const ref = $el.attr('data-xhr')
+    const args = Object.entries($(el).data()).reduce((pv,cv) => {
+        if (cv[0].startsWith('xhr') && cv[0].length > 3) {
+            let k = cv[0].substring(3);
+            pv[k.substring(0,1).toLowerCase() + k.substring(1)] = cv[1]
+        }
+        return pv;
+    }, {})
+    if (validFuncRef(ref)) {
+        let fn = eval(ref)
+        fn(args,el)
+    }
 }
 
 function post(uri, data = {}) {
