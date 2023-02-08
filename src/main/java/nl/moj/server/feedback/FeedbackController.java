@@ -18,6 +18,7 @@ package nl.moj.server.feedback;
 
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -46,24 +47,19 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class FeedbackController {
 
-    private final TeamRepository teamRepository;
     private final FeedbackService feedbackService;
-
     private final CompetitionRuntime competitionRuntime;
 
     @GetMapping("/feedback")
+    @Transactional(Transactional.TxType.REQUIRED)
     public ModelAndView feedback(HttpServletRequest request) {
-        CompetitionRuntime resultsProvider = competitionRuntime;
-
         ModelAndView model = new ModelAndView("testfeedback");
+        ActiveAssignment state = competitionRuntime.getActiveAssignment();
+        Assignment assignment = state.getAssignment();
+        UUID sessionId = competitionRuntime.getSessionId();
 
-        Assignment assignment = null;
-        CompetitionSession session = null;
-        if (competitionRuntime.getActiveAssignment() != null) {
-            assignment = competitionRuntime.getActiveAssignment().getAssignment();
-            session = competitionRuntime.getCompetitionSession();
-        }
-        List<TeamFeedback> assignmentFeedback = feedbackService.getAssignmentFeedback(assignment, session);
+        // TODO this should be fixed once competition runtime gets cleaned up.
+        List<TeamFeedback> assignmentFeedback = feedbackService.getAssignmentFeedback(assignment != null ? assignment.getUuid() : null, sessionId);
         orderTeamsByName(assignmentFeedback);
 
         List<List<TeamFeedback>> partitionedTeams = CollectionUtil.partition(assignmentFeedback, 3);
@@ -72,9 +68,7 @@ public class FeedbackController {
         model.addObject("teams3", partitionedTeams.get(2));
 
         List<UUID> testIds = new ArrayList<>();
-
-        if (resultsProvider.getActiveAssignment() != null) {
-            ActiveAssignment state = resultsProvider.getActiveAssignment();
+        if (state.isRunning()) {
             testIds = state.getTestUuids();
             model.addObject("uuid", state.getAssignment().getUuid().toString());
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
@@ -113,10 +107,10 @@ public class FeedbackController {
     @GetMapping(value = "/feedback/solution/{assignment}/team/{team}", produces = MediaType.APPLICATION_JSON_VALUE)
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     public @ResponseBody
-    Submission getSubmission(@PathVariable("assignment") UUID assignment, @PathVariable("team") UUID uuid) {
+    Submission getSubmission(@PathVariable("assignment") UUID assignment, @PathVariable("team") UUID team) {
         return Submission.builder()
-                .team(uuid)
-                .files(competitionRuntime.getTeamSolutionFiles(assignment, uuid).stream()
+                .team(team)
+                .files(competitionRuntime.getTeamSolutionFiles(team,competitionRuntime.getSessionId(),assignment).stream()
                         .filter(f -> f.getFileType() == AssignmentFileType.EDIT)
                         .map(f -> FileSubmission.builder()
                                 .uuid(f.getUuid())

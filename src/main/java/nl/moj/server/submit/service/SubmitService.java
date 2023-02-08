@@ -77,11 +77,14 @@ public class SubmitService {
         sa = update(sa, submitResponse);
 
         // score if needed
-        if (isSuccess(sa, submitResponse) && sa.getAssignmentStatus().getRemainingSubmitAttempts() >= 0) {
+        if (isSuccess(sa, submitResponse)) {
             sa.setSuccess(true);
             scoreService.finalizeScore(sa, ad);
         } else {
             sa.setSuccess(false);
+            if( sa.getAssignmentStatus().getRemainingSubmitAttempts() <= 0 ) {
+                scoreService.finalizeScore(sa, ad);
+            }
         }
         return sa;
     }

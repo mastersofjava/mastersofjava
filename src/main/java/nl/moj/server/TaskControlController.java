@@ -216,13 +216,14 @@ public class TaskControlController {
     }
 
     private CompetitionSessionVO toCompetitionSessionVO(CompetitionRuntime runtime) {
-        if (runtime.getCompetitionSession() == null) {
+        if (runtime.getSessionId() == null) {
             return CompetitionSessionVO.builder().active(false).build();
         }
 
         return trx.required(() -> {
-            CompetitionSession session = competitionSessionRepository.findById(runtime.getCompetitionSession().getId())
-                    .orElseThrow();
+            CompetitionSession session = competitionSessionRepository.findByUuid(runtime.getSessionId());
+            Objects.requireNonNull(session);
+
             Competition competition = session.getCompetition();
             ActiveAssignment activeAssignment = runtime.getActiveAssignment();
 

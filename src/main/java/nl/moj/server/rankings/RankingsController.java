@@ -34,6 +34,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.transaction.Transactional;
+
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -44,14 +46,16 @@ public class RankingsController {
     private final RankingsService rankingsService;
 
     @GetMapping("/rankings")
+    @Transactional(Transactional.TxType.REQUIRED)
     public ModelAndView getRankings() {
-        CompetitionRuntime rankingProvider = competitionRuntime;
-        log.info("session " + HttpUtil.getParam("session") + " - " + rankingProvider);
+        ActiveAssignment state = competitionRuntime.getActiveAssignment();
 
-        Competition competition = rankingProvider.getCompetition();
-        List<Ranking> rankings = enrich(rankingsService.getRankings(rankingProvider.getCompetitionSession()));
+        log.info("session " + HttpUtil.getParam("session") + " - " + competitionRuntime);
+
+        Competition competition = competitionRuntime.getCompetition();
+        List<Ranking> rankings = enrich(rankingsService.getRankings(competitionRuntime.getSessionId()));
         ModelAndView model = new ModelAndView("rankings");
-        model.addObject("oas", rankingsService.getRankingHeaders(rankingProvider.getCompetitionSession()));
+        model.addObject("oas", rankingsService.getRankingHeaders(competitionRuntime.getSessionId()));
         model.addObject("top", rankings.subList(0, Math.min(5, rankings.size())));
 
         List<List<Ranking>> parts = partitionRemaining(rankings, 5);
@@ -61,8 +65,7 @@ public class RankingsController {
         model.addObject("bottom2", parts.get(1));
         model.addObject("bottom3", parts.get(2));
         model.addObject("bottom4", parts.get(3));
-        if (rankingProvider.getActiveAssignment() != null) {
-            ActiveAssignment state = rankingProvider.getActiveAssignment();
+        if (state.isRunning()) {
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addObject("timeLeft", state.getSecondsRemaining());
             model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());

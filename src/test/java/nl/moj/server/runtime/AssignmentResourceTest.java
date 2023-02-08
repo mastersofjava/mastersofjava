@@ -24,7 +24,7 @@ public class AssignmentResourceTest extends BaseRuntimeTest {
     @Test
     public void testOk() throws Exception {
         CompetitionAssignment oa = getAssignment("parallel");
-        competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+        competitionRuntime.startAssignment(competitionRuntime.getSessionId(), oa.getAssignment()
                 .getUuid());
 
         mockMvc.perform(MockMvcRequestBuilders.get("/public/asset/{assignment}/{file}", oa.getAssignment()
@@ -36,7 +36,7 @@ public class AssignmentResourceTest extends BaseRuntimeTest {
     @Test
     public void testNonExisting() throws Exception {
         CompetitionAssignment oa = getAssignment("parallel");
-        competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+        competitionRuntime.startAssignment(competitionRuntime.getSessionId(), oa.getAssignment()
                 .getUuid());
 
         mockMvc.perform(MockMvcRequestBuilders.get("/public/asset/{assignment}/{file}", oa.getAssignment()

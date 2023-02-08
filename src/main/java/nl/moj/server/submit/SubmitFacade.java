@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.service.CompileRequest;
 import nl.moj.server.compiler.service.CompileService;
@@ -40,6 +42,8 @@ public class SubmitFacade {
     private final TestService testService;
 
     private final SubmitService submitService;
+
+    private final AssignmentRepository assignmentRepository;
 
     @Transactional
     public CompileAttempt registerCompileRequest(SourceMessage message, Principal principal) {
@@ -73,12 +77,21 @@ public class SubmitFacade {
 
     private SubmitRequest createSubmitRequest(SourceMessage message, Principal principal) {
         User user = userService.findUser(principal);
+
+        // TODO we rely on volatile game state here, need to fix this
         ActiveAssignment activeAssignment = competitionRuntime.getActiveAssignment();
+
+        // in case games state has no assigment load using the name.
+        Assignment assignment = activeAssignment.getAssignment();
+        if( activeAssignment.getCompetitionSession() != null && assignment == null) {
+            assignment = assignmentRepository.findByName(message.getAssignmentName());
+        }
+
         var testCases = activeAssignment.getSubmitTestFiles();
         return SubmitRequest.builder()
                 .team(user.getTeam())
                 .session(activeAssignment.getCompetitionSession())
-                .assignment(activeAssignment.getAssignment())
+                .assignment(assignment)
                 .sources(convertSources(message.getSources(), activeAssignment))
                 .tests(testCases)
                 .build();
@@ -113,6 +126,7 @@ public class SubmitFacade {
                 .build();
     }
 
+    // TODO fix this!
     // incoming editable files have the uuid from the AssignmentFile, we need to translate that
     // to a relative path inside the assignment.
     private Map<Path, String> convertSources(Map<String, String> s, ActiveAssignment activeAssignment) {

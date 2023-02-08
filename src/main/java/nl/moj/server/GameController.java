@@ -75,6 +75,7 @@ public class GameController {
         }
 
         model.addAttribute("team", team.getName());
+        model.addAttribute("sessionId", competition.getSessionId());
         model.addAttribute("assignmentActive", competition.getActiveAssignment().isRunning());
 
         if (competition.getActiveAssignment().isRunning()) {
@@ -84,7 +85,6 @@ public class GameController {
             if (as == null) {
                 as = competition.handleLateSignup(team);
             }
-            model.addAttribute("sessionId", competition.getCompetitionSession().getUuid());
             model.addAttribute("assignmentId", state.getAssignment().getUuid());
             addTeamAssignmentStateToModel(model, state, as);
         }
@@ -94,8 +94,7 @@ public class GameController {
 
     private void addTeamAssignmentStateToModel(Model model, ActiveAssignment state, TeamAssignmentStatus as) {
         AssignmentDescriptor ad = state.getAssignmentDescriptor();
-        List<AssignmentFile> files = teamService.getTeamAssignmentFiles(competition.getCompetitionSession(), state.getAssignment(), as.getTeam()
-                .getUuid());
+        List<AssignmentFile> files = teamService.getTeamAssignmentFiles(as.getTeam().getUuid(), competition.getSessionId(), state.getAssignment().getUuid());
 
         // TODO ugly
         files.sort((arg0, arg1) -> {

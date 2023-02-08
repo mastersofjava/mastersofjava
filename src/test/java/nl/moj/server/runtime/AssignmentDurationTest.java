@@ -47,8 +47,7 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 
         AssignmentDescriptor ad = assignmentService.resolveAssignmentDescriptor(oa.getAssignment());
 
-        CompletableFuture<Void> done = assignmentRuntime.startCompletable(competitionRuntime.getCompetitionSession()
-                .getUuid(), oa.getAssignment().getUuid());
+        CompletableFuture<Void> done = assignmentRuntime.startCompletable(competitionRuntime.getSessionId(), oa.getAssignment().getUuid());
 
         try {
             done.get(ad.getDuration().toSeconds() + 10, TimeUnit.SECONDS);

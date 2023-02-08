@@ -73,6 +73,9 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
 
         SourceMessage src = new SourceMessage();
         src.setSources(files);
+        src.setUuid(getTeam().getUuid().toString());
+        src.setAssignmentName(state.getAssignment().getName());
+        src.setTimeLeft(""+state.getTimeRemaining().toSeconds());
         src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
 
         return src;
@@ -90,7 +93,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     private void startSelectedAssignment(String assignment) {
         try {
             CompetitionAssignment oa = getAssignment(assignment);
-            competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+            competitionRuntime.startAssignment(competitionRuntime.getSessionId(), oa.getAssignment()
                     .getUuid());
         } catch( CompetitionServiceException cse ) {
             throw new RuntimeException(cse);
@@ -99,19 +102,25 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
 
     private CompileAttempt doCompile(SourceMessage src, Duration timeout) {
         CompileAttempt ca = submitFacade.registerCompileRequest(src, getPrincipal(getUser()));
-        awaitAttempt(ca.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
+        if( ca != null ) {
+            awaitAttempt(ca.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
+        }
         return ca;
     }
 
     private TestAttempt doTest(SourceMessage src, Duration timeout) {
         TestAttempt ta = submitFacade.registerTestRequest(src, getPrincipal(getUser()));
-        awaitAttempt(ta.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
+        if( ta != null ) {
+            awaitAttempt(ta.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
+        }
         return ta;
     }
 
     private SubmitAttempt doSubmit(SourceMessage src, Duration timeout) {
         SubmitAttempt sa = submitFacade.registerSubmitRequest(src, getPrincipal(getUser()));
-        awaitAttempt(sa.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
+        if( sa != null ) {
+            awaitAttempt(sa.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
+        }
         return sa;
     }
 
@@ -171,10 +180,12 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         startSelectedAssignment(assignment);
         Duration timeout = createDurationThatIsLarge();
         SourceMessage src = createSourceMessageWithNoTimeout();
+
         stopSelectedAssignment();
 
         SubmitAttempt submitAttempt = doSubmit(src, timeout);
 
-        Assertions.assertThat(submitAttempt).isNotNull();
+        Assertions.assertThat(submitAttempt).isNull();
+        assertFinalScore(src).isEqualTo(0);
     }
 }

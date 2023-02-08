@@ -16,37 +16,26 @@
 */
 package nl.moj.server.runtime;
 
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.Principal;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.DbUtil;
 import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.bootstrap.service.BootstrapService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionRepository;
-import nl.moj.server.competition.service.CompetitionServiceException;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentFileType;
+import nl.moj.server.runtime.model.*;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
+import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
 import nl.moj.server.support.TestJmsListener;
@@ -65,6 +54,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.Assert;
+
+import javax.persistence.EntityManager;
+import javax.transaction.Transactional;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static nl.moj.server.TestUtil.classpathResourceToPath;
 
@@ -107,6 +108,15 @@ public abstract class BaseRuntimeTest {
 
     @Autowired
     private SubmitAttemptRepository submitAttemptRepository;
+
+    @Autowired
+    private TeamAssignmentStatusRepository teamAssignmentStatusRepository;
+
+    @Autowired
+    private CompetitionSessionRepository competitionSessionRepository;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
 
     @Autowired
     private TransactionHelper trx;
@@ -165,7 +175,7 @@ public abstract class BaseRuntimeTest {
 
     @AfterEach
     public void cleanup() throws Exception {
-        if( competitionRuntime.getCurrentAssignment() != null) {
+        if (competitionRuntime.getCurrentAssignment() != null) {
             competitionRuntime.stopAssignment(sessionId, competitionRuntime.getCurrentAssignment());
         }
         dbUtil.cleanup();
@@ -203,7 +213,7 @@ public abstract class BaseRuntimeTest {
     protected User addUser(Team team) {
         User user = new User();
         user.setTeam(team);
-        user.setName("username-"+team.getId());
+        user.setName("username-" + team.getId());
         user.setGivenName("User");
         user.setFamilyName("Name");
         user.setEmail("user.name@example.com");
@@ -322,6 +332,21 @@ public abstract class BaseRuntimeTest {
             Assertions.assertThat(r.getAssignmentStatus()).isNotNull();
             Assertions.assertThat(r.getAssignmentStatus().getAssignmentResult()).isNotNull();
             return Assertions.assertThat(r.getAssignmentStatus().getAssignmentResult().getFinalScore());
+        });
+    }
+
+    protected AbstractLongAssert<?> assertFinalScore(SourceMessage src) {
+        return trx.required(() -> {
+            Assignment assignment = assignmentRepository.findByName(src.getAssignmentName());
+            CompetitionSession session = competitionSessionRepository.findByUuid(getSessionId());
+            Team team = teamRepository.findByUuid(UUID.fromString(src.getUuid()));
+            TeamAssignmentStatus tas = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment, session, team).orElse(null);
+
+            Assertions.assertThat(tas).isNotNull();
+            AssignmentResult r = tas.getAssignmentResult();
+
+            Assertions.assertThat(r).isNotNull();
+            return Assertions.assertThat(r.getFinalScore());
         });
     }
 

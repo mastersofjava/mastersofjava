@@ -32,6 +32,7 @@ import nl.moj.server.runtime.model.*;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 import org.springframework.stereotype.Service;
 
@@ -52,6 +53,8 @@ public class CompetitionRuntime {
 
     private final TeamService teamService;
 
+    private final TeamRepository teamRepository;
+
     private final CompetitionSessionRepository competitionSessionRepository;
 
     private final AssignmentStatusRepository assignmentStatusRepository;
@@ -68,7 +71,7 @@ public class CompetitionRuntime {
 
     //TODO this is state we should not have
     @Getter
-    private CompetitionSession competitionSession;
+    private UUID sessionId;
 
     @Transactional(Transactional.TxType.REQUIRED)
     public CompetitionSession startSession(UUID id) throws CompetitionServiceException {
@@ -82,19 +85,23 @@ public class CompetitionRuntime {
     @Transactional(Transactional.TxType.MANDATORY)
     public CompetitionSession startSession(Competition competition) {
         log.info("Starting new session for session {}", competition.getName());
+        CompetitionSession session = competitionSessionRepository.save(createNewCompetitionSession(competition));
+
         this.competition = competition;
-        this.competitionSession = competitionSessionRepository.save(createNewCompetitionSession(this.competition));
-        restoreSession(this.competitionSession.getUuid());
-        return this.competitionSession;
+        this.sessionId = session.getUuid();
+        return session;
     }
 
-    public void loadSession(CompetitionSession session) {
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void continueSession(CompetitionSession session) {
         this.competition = session.getCompetition();
-        this.competitionSession = session;
-        log.info("Loaded session {} for competition {}", session.getUuid(), this.competition.getName());
+        this.sessionId = session.getUuid();
+        log.info("Continuing session {} for competition {}", session.getUuid(), this.competition.getName());
+
         restoreSession(session.getUuid());
     }
 
+    // TODO do we really need this?
     private void restoreSession(UUID sid) {
         try {
             if (getCurrentAssignment() != null) {
@@ -126,7 +133,7 @@ public class CompetitionRuntime {
                 stopAssignment(sid, getCurrentAssignment());
             }
             try {
-                AssignmentStatus as = assignmentRuntime.start(competitionSession.getUuid(), ca.get()
+                AssignmentStatus as = assignmentRuntime.start(sid, ca.get()
                         .getAssignment()
                         .getUuid());
                 log.debug("Assignment '{}' '{}' started.", id, ca.get().getAssignment().getName());
@@ -187,13 +194,13 @@ public class CompetitionRuntime {
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public List<AssignmentFile> getTeamSolutionFiles(UUID assignment, UUID team) {
-        return getTeamAssignmentFiles(assignmentRepository.findByUuid(assignment), team).stream()
+    public List<AssignmentFile> getTeamSolutionFiles(UUID team, UUID session, UUID assignment) {
+        return getTeamAssignmentFiles(team, session,assignment).stream()
                 .filter(f -> f.getFileType() == AssignmentFileType.EDIT).collect(Collectors.toList());
     }
 
-    private List<AssignmentFile> getTeamAssignmentFiles(Assignment assignment, UUID team) {
-        return teamService.getTeamAssignmentFiles(competitionSession, assignment, team);
+    private List<AssignmentFile> getTeamAssignmentFiles(UUID team,UUID session, UUID assignment) {
+        return teamService.getTeamAssignmentFiles(team,session, assignment);
     }
 
     @Transactional(Transactional.TxType.MANDATORY)
@@ -212,6 +219,6 @@ public class CompetitionRuntime {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public void loadMostRecentSession() {
-        competitionSessionRepository.findMostRecent().ifPresent(this::loadSession);
+        competitionSessionRepository.findMostRecent().ifPresent(this::continueSession);
     }
 }

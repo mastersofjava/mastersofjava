@@ -30,8 +30,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @SpringBootTest
 public class TeamServiceTest extends BaseRuntimeTest {
 
@@ -43,15 +41,15 @@ public class TeamServiceTest extends BaseRuntimeTest {
 
 
     private static Stream<String> assignments() {
-        return Stream.of("sequential","parallel");
+        return Stream.of("sequential", "parallel");
     }
 
     private void startSelectedAssignment(String assignment) {
         try {
             CompetitionAssignment oa = getAssignment(assignment);
-            competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+            competitionRuntime.startAssignment(competitionRuntime.getSessionId(), oa.getAssignment()
                     .getUuid());
-        } catch( CompetitionServiceException cse ) {
+        } catch (CompetitionServiceException cse) {
             throw new RuntimeException(cse);
         }
     }
@@ -60,11 +58,12 @@ public class TeamServiceTest extends BaseRuntimeTest {
     @MethodSource("assignments")
     public void invisibleTestsShouldHaveContentIntentionallyHidden(String assignment) throws Exception {
         startSelectedAssignment(assignment);
-        List<AssignmentFile> files = teamService.getTeamAssignmentFiles(competitionRuntime.getCompetitionSession(),
-                competitionRuntime.getActiveAssignment().getAssignment(),getTeam().getUuid());
+        List<AssignmentFile> files = teamService.getTeamAssignmentFiles(getTeam().getUuid(),
+                competitionRuntime.getSessionId(),
+                competitionRuntime.getActiveAssignment().getAssignment().getUuid());
 
         Assertions.assertThat(files).hasSize(6);
-        Assertions.assertThat(files.stream().filter( f -> f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
-                .allMatch( f -> f.getContentAsString().equals("-- content intentionally hidden --"))).isTrue();
+        Assertions.assertThat(files.stream().filter(f -> f.getFileType() == AssignmentFileType.INVISIBLE_TEST)
+                .allMatch(f -> f.getContentAsString().equals("-- content intentionally hidden --"))).isTrue();
     }
 }

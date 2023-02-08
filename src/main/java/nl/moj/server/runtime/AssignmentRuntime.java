@@ -100,7 +100,7 @@ public class AssignmentRuntime {
     private List<AssignmentFile> originalAssignmentFiles;
 
     @Getter
-    private boolean running;
+    private boolean running = false;
 
     private CompletableFuture<Void> done;
 
@@ -265,7 +265,7 @@ public class AssignmentRuntime {
     }
 
     private void initTeamAssignmentData(Team team) {
-        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession.getUuid(), team.getUuid(), assignment.getName());
+        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(team.getUuid(), competitionSession.getUuid(), assignment.getName());
         try {
             // create empty assignment directory
             Files.createDirectories(assignmentDirectory);
@@ -289,7 +289,7 @@ public class AssignmentRuntime {
 
     private void cleanupTeamAssignmentData(Team team) {
         // delete historical submitted data.
-        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(competitionSession.getUuid(), team.getUuid(), assignment.getName());
+        Path assignmentDirectory = teamService.getTeamAssignmentDirectory(team.getUuid(), competitionSession.getUuid(), assignment.getName());
         try {
             if (Files.exists(assignmentDirectory)) {
                 PathUtil.delete(assignmentDirectory);

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
+import javax.transaction.Transactional;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Set;
@@ -36,6 +37,7 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
     // TODO this should probably be persisted somewhere in the future.
     private static final Set<User> ACTIVE_USERS = new CopyOnWriteArraySet<>();
 
+    @Transactional
     public User createOrUpdate(Principal principal) {
 //        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 //        if (authentication != null) {

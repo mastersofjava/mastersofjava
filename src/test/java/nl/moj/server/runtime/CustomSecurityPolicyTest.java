@@ -51,7 +51,7 @@ public class CustomSecurityPolicyTest extends BaseRuntimeTest {
     public void shouldUseAssignmentSecurityPolicy() throws Exception {
 
         CompetitionAssignment oa = getAssignment("custom-security-policy");
-        competitionRuntime.startAssignment(competitionRuntime.getCompetitionSession().getUuid(), oa.getAssignment()
+        competitionRuntime.startAssignment(competitionRuntime.getSessionId(), oa.getAssignment()
                 .getUuid());
         SubmitAttempt sa = doSubmitValidInput();
         assertSuccess(sa);

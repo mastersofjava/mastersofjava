@@ -297,11 +297,11 @@ function stopAssignment(args) {
 }
 
 function resetAssignment(args) {
-    confirm(`Stop assignment '${args.name}' and reset scores for teams?`).then( ok => {
+    confirm(`Reset assignment '${args.name}'? This will reset scores for all teams.`).then( ok => {
         post(`/api/session/${args.sid}/assignment/${args.id}/reset`)
             .then(r => {
                     console.log(r)
-                    showSuccess(`Reset assignment '${args.name}', reloading.`)
+                    showSuccess(`Assignment '${args.name}' reset, reloading.`)
                     reloadPage()
                 },
                 () => {

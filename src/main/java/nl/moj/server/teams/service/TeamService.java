@@ -28,6 +28,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.config.properties.MojServerProperties;
@@ -37,6 +38,8 @@ import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -45,28 +48,32 @@ public class TeamService {
     private final MojServerProperties mojServerProperties;
     private final TeamRepository teamRepository;
     private final AssignmentService assignmentService;
+    private final AssignmentRepository assignmentRepository;
 
-    public Path getTeamDirectory(UUID competitionSessionUUID, UUID teamUUID) {
+    private Path getTeamDirectory(UUID teamId, UUID sessionId) {
         return mojServerProperties.getDirectories().getBaseDirectory()
                 .resolve(mojServerProperties.getDirectories().getSessionDirectory())
-                .resolve(competitionSessionUUID.toString())
+                .resolve(sessionId.toString())
                 .resolve(mojServerProperties.getDirectories().getTeamDirectory())
-                .resolve(teamUUID.toString());
+                .resolve(teamId.toString());
     }
 
-    public Path getTeamAssignmentDirectory(UUID competitionSessionUUID, UUID teamUUID, String assignmentName) {
-        return getTeamDirectory(competitionSessionUUID, teamUUID).resolve(assignmentName);
+    public Path getTeamAssignmentDirectory(UUID teamId, UUID sessionId, String assignmentName) {
+        return getTeamDirectory(teamId,sessionId).resolve(assignmentName);
     }
 
     public List<Team> getTeams() {
         return teamRepository.findAll();
     }
 
-    public List<AssignmentFile> getTeamAssignmentFiles(CompetitionSession session, Assignment assignment, UUID teamUUID) {
+    @Transactional(Transactional.TxType.REQUIRED)
+    public List<AssignmentFile> getTeamAssignmentFiles(UUID teamId, UUID sessionId, UUID assignmentId) {
         List<AssignmentFile> teamFiles = new ArrayList<>();
-        Path teamAssignmentBase = getTeamAssignmentDirectory(session.getUuid(),  teamUUID, assignment.getName()).resolve("sources");
 
-        assignmentService.getAssignmentFiles(assignment).stream()
+        // TODO assignment directory is based on name, files are stored based on UUID need to resolve this
+        Path teamAssignmentBase = getTeamAssignmentDirectory(teamId, sessionId, assignmentRepository.findByUuid(assignmentId).getName()).resolve("sources");
+
+        assignmentService.getAssignmentFiles(assignmentId).stream()
                 .filter(f -> f.getFileType().isVisible())
                 .forEach(f -> {
                     Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
