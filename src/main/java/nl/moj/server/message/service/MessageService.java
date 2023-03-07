@@ -16,15 +16,6 @@
 */
 package nl.moj.server.message.service;
 
-import javax.transaction.Transactional;
-import java.time.Duration;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import brave.Span;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
@@ -37,9 +28,18 @@ import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.sleuth.Span;
 import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+
+import javax.transaction.Transactional;
+import java.time.Duration;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Controller
 @Slf4j
@@ -57,6 +57,7 @@ public class MessageService {
     private final SimpMessagingTemplate template;
     private final Tracer tracer;
 
+    @Autowired
     public MessageService(SimpMessagingTemplate template, CompetitionSessionRepository competitionSessionRepository, UserService userService, Tracer tracer) {
         super();
         this.template = template;
@@ -251,6 +252,10 @@ public class MessageService {
     }
 
     private String getTraceId() {
-        return Objects.requireNonNull(tracer.currentSpan(), "Unable to get traceId, no active span.").context().traceId();
+        Span s = tracer.currentSpan();
+        if (s != null && s.context() != null) {
+            return s.context().traceId();
+        }
+        return null;
     }
 }
