@@ -19,10 +19,12 @@ package nl.moj.server.message.service;
 import javax.transaction.Transactional;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import brave.Span;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
@@ -35,6 +37,7 @@ import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
+import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
@@ -52,12 +55,14 @@ public class MessageService {
     private final CompetitionSessionRepository competitionSessionRepository;
     private final UserService userService;
     private final SimpMessagingTemplate template;
+    private final Tracer tracer;
 
-    public MessageService(SimpMessagingTemplate template, CompetitionSessionRepository competitionSessionRepository, UserService userService) {
+    public MessageService(SimpMessagingTemplate template, CompetitionSessionRepository competitionSessionRepository, UserService userService, Tracer tracer) {
         super();
         this.template = template;
         this.competitionSessionRepository = competitionSessionRepository;
         this.userService = userService;
+        this.tracer = tracer;
     }
 
     @Transactional(Transactional.TxType.MANDATORY)
@@ -78,6 +83,8 @@ public class MessageService {
                 .testId(tc.getUuid())
                 .test(tc.getName())
                 .message(tc.getTestOutput())
+                .rejected(false)
+                .traceId(getTraceId())
                 .build();
         log.info("Sending test feedback: {}", msg);
         sendToActiveUsers(team, msg);
@@ -96,6 +103,22 @@ public class MessageService {
         sendSubmitFeedback(sa, as);
     }
 
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void sendSubmitRejected(Team team, String reason) {
+        TeamSubmitFeedbackMessage msg = TeamSubmitFeedbackMessage.builder()
+                .score(0L)
+                .remainingSubmits(0)
+                .uuid(team.getUuid())
+                .team(team.getName())
+                .success(false)
+                .completed(false)
+                .rejected(true)
+                .traceId(getTraceId())
+                .message(reason)
+                .build();
+        sendToActiveUsers(team, msg);
+    }
+
     private void sendSubmitFeedback(SubmitAttempt sa, TeamAssignmentStatus as) {
         AssignmentResult ar = as.getAssignmentResult();
         Team team = as.getTeam();
@@ -106,6 +129,8 @@ public class MessageService {
                 .team(team.getName())
                 .success(sa != null && sa.getSuccess() != null && sa.getSuccess())
                 .completed(as.getDateTimeCompleted() != null)
+                .rejected(false)
+                .traceId(getTraceId())
                 .message("TODO")
                 .build();
 
@@ -126,6 +151,8 @@ public class MessageService {
                     .success(ca.getSuccess())
                     .team(team.getName())
                     .message(ca.getCompilerOutput() == null ? "" : ca.getCompilerOutput())
+                    .rejected(false)
+                    .traceId(getTraceId())
                     .build();
             log.info("Sending compile feedback: {}", msg);
             sendToActiveUsers(team, msg);
@@ -221,5 +248,9 @@ public class MessageService {
 
     private Set<User> getActiveUsers(Team t) {
         return userService.getActiveUsers().stream().filter(u -> t.getUsers().contains(u)).collect(Collectors.toSet());
+    }
+
+    private String getTraceId() {
+        return Objects.requireNonNull(tracer.currentSpan(), "Unable to get traceId, no active span.").context().traceId();
     }
 }

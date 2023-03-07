@@ -29,8 +29,11 @@ import org.zeroturnaround.exec.listener.ProcessListener;
 public class TestRunnerService {
 
     public static final String SECURITY_POLICY_FOR_UNIT_TESTS = "securityPolicyForUnitTests.policy";
-    private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^(JUnit version 4.12)?\\s*\\.?",
-            Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
+    private static  final Pattern JUNIT_PREFIX_P = Pattern.compile("^JUnit version.*$|^\\.$|^I$|^E$",
+            Pattern.MULTILINE);
+    private static final Pattern WARN_SECURITY_MANAGER = Pattern.compile("^WARNING:.+Security Manager.*$",
+            Pattern.MULTILINE);
 
     private final MojServerProperties mojServerProperties;
     private final ClasspathService classpathService;
@@ -110,8 +113,8 @@ public class TestRunnerService {
                     to.setReason(se.getMessage());
                 }
 
-                to.setOutput(stripJUnitPrefix(jUnitOutput.getBuffer()));
-                to.setErrorOutput(stripJUnitPrefix(jUnitError.getBuffer()));
+                to.setOutput(cleanupOutput(jUnitOutput.getBuffer()));
+                to.setErrorOutput(cleanupOutput(jUnitError.getBuffer()));
 
                 log.info("Test case {} {} finished.", test.getTestCase(), test.getName());
                 return to;
@@ -141,15 +144,21 @@ public class TestRunnerService {
         return policy;
     }
 
-    private String stripJUnitPrefix(StringBuilder result) {
-        final Matcher matcher = JUNIT_PREFIX_P.matcher(result);
-        if (matcher.find()) {
-            result.delete(0, matcher.end());
-            if (result.length() > 0 && result.charAt(0) == '\n') {
-                result.deleteCharAt(0);
-            }
+    private String cleanupOutput(StringBuilder result) {
+        Matcher matcher = JUNIT_PREFIX_P.matcher(result);
+        result = new StringBuilder();
+        while (matcher.find()) {
+            matcher.appendReplacement(result, "");
         }
-        return result.toString();
-    }
+        matcher.appendTail(result);
 
+        // strip security manager warnings
+        matcher = WARN_SECURITY_MANAGER.matcher(result);
+        result = new StringBuilder();
+        while (matcher.find()) {
+            matcher.appendReplacement(result, "");
+        }
+        matcher.appendTail(result);
+        return result.toString().trim();
+    }
 }

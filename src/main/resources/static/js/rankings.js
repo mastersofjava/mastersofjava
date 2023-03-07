@@ -1,6 +1,6 @@
-var stompClient = null;
-var stompControlClient = null;
-var clock = null;
+let stompClient = null;
+let stompControlClient = null;
+let clock = null;
 
 $(document).ready(function () {
     connect();
@@ -94,7 +94,9 @@ function initializeAssignmentClock() {
 }
 
 function initPopovers() {
-    $('[data-toggle="popover"]').popover();
+    $('[data-bs-toggle="popover"]').each( (_,el) => {
+        new bootstrap.Popover(el)
+    })
 
     function html(json) {
         var val = JSON.parse(json);
@@ -106,17 +108,15 @@ function initPopovers() {
         return txt;
     }
 
-    $('[data-score-popup]').each(function () {
-        var $popup = $(this);
-        $popup.popover({
+    $('[data-score-popup]').each((_,el) => {
+        let $popup = $(el)
+        new bootstrap.Popover(el,{
             container: 'body',
-            content: html($popup.attr('data-score-popup')),
+            content: html($popup.data('score-popup')),
             html: true,
             placement: 'top',
             title: 'Individual Assignment Scores',
             trigger: 'hover'
         });
     })
-
-
 }

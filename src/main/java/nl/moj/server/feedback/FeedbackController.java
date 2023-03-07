@@ -59,7 +59,7 @@ public class FeedbackController {
         UUID sessionId = competitionRuntime.getSessionId();
 
         // TODO this should be fixed once competition runtime gets cleaned up.
-        List<TeamFeedback> assignmentFeedback = feedbackService.getAssignmentFeedback(assignment != null ? assignment.getUuid() : null, sessionId);
+        List<TeamFeedback> assignmentFeedback = feedbackService.getAssignmentFeedback(sessionId, assignment != null ? assignment.getUuid() : null);
         orderTeamsByName(assignmentFeedback);
 
         List<List<TeamFeedback>> partitionedTeams = CollectionUtil.partition(assignmentFeedback, 3);
@@ -67,9 +67,10 @@ public class FeedbackController {
         model.addObject("teams2", partitionedTeams.get(1));
         model.addObject("teams3", partitionedTeams.get(2));
 
-        List<UUID> testIds = new ArrayList<>();
+        // TODO probably use ids/uuids here, but they are not being used in the feedback messages atm.
+        List<String> testIds = new ArrayList<>();
         if (state.isRunning()) {
-            testIds = state.getTestUuids();
+            testIds = state.getTestNames();
             model.addObject("uuid", state.getAssignment().getUuid().toString());
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addObject("timeLeft", state.getSecondsRemaining());

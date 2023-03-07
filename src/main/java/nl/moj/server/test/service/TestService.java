@@ -16,6 +16,12 @@
 */
 package nl.moj.server.test.service;
 
+import javax.transaction.Transactional;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.messages.*;
@@ -26,6 +32,7 @@ import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
+import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.test.repository.TestAttemptRepository;
@@ -34,27 +41,17 @@ import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
-import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class TestService {
 
     private final CompileService compileService;
-
     private final TestCaseRepository testCaseRepository;
-
     private final TestAttemptRepository testAttemptRepository;
-
     private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
-
+    private final TeamService teamService;
     private final JmsTemplate jmsTemplate;
-
     private final MessageService messageService;
 
     @Transactional
@@ -68,8 +65,14 @@ public class TestService {
     @NewSpan
     public TestAttempt registerTestAttempt(TestRequest testRequest) {
 
-        log.info("Registering test attempt for assignment {} by team {}.", testRequest.getAssignment().getUuid(), testRequest.getTeam().getUuid());
+        log.info("Registering test attempt for assignment {} by team {}.", testRequest.getAssignment()
+                .getUuid(), testRequest.getTeam().getUuid());
         messageService.sendTestingStarted(testRequest.getTeam());
+
+        // save the team progress
+        teamService.updateAssignment(testRequest.getTeam().getUuid(), testRequest.getSession().getUuid(),
+                testRequest.getAssignment().getUuid(), testRequest.getSources());
+
         TestAttempt testAttempt = prepareTestAttempt(testRequest);
         // send JMS test request
         jmsTemplate.convertAndSend("test_request", JMSTestRequest.builder()
@@ -86,7 +89,8 @@ public class TestService {
                         .collect(Collectors.toList()))
                 .build());
 
-        log.info("Test attempt {} for assignment {} by team {} registered.", testAttempt.getUuid(), testRequest.getAssignment().getUuid(), testRequest.getTeam().getUuid());
+        log.info("Test attempt {} for assignment {} by team {} registered.", testAttempt.getUuid(), testRequest.getAssignment()
+                .getUuid(), testRequest.getTeam().getUuid());
         return testAttempt;
     }
 

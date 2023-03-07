@@ -196,7 +196,7 @@
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>webjars-locator</artifactId>
-            <version>0.45</version>
+            <version>0.46</version>
         </dependency>
 
         <dependency>
@@ -219,6 +219,12 @@
 
         <dependency>
             <groupId>org.webjars</groupId>
+            <artifactId>jquery</artifactId>
+            <version>3.6.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.webjars</groupId>
             <artifactId>jquery-ui</artifactId>
             <version>1.13.2</version>
         </dependency>
@@ -226,7 +232,7 @@
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>codemirror</artifactId>
-            <version>5.40.2</version>
+            <version>5.62.2</version>
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
@@ -236,12 +242,13 @@
         <dependency>
             <groupId>org.webjars.npm</groupId>
             <artifactId>marked</artifactId>
-            <version>1.1.1</version>
+<!--            <version>1.1.1</version>-->
+            <version>4.2.5</version>
         </dependency>
         <dependency>
             <groupId>org.webjars.bower</groupId>
-            <artifactId>howler</artifactId>
-            <version>1.1.29</version>
+            <artifactId>howler.js</artifactId>
+            <version>2.2.1</version>
         </dependency>
     </dependencies>
 

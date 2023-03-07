@@ -33,5 +33,7 @@ public class TeamTestFeedbackMessage {
     private final String test;
     private final String message;
     private final boolean success;
+    private final boolean rejected;
+    private String traceId;
 
 }

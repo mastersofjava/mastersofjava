@@ -46,7 +46,7 @@
                 <svg width="160" height="160" xmlns="http://www.w3.org/2000/svg">
                     <g>
                         <circle class="clock circle_animation" r="69.85699" cy="81" cx="81" stroke-width="8"
-                                stroke="#6fdb6f" fill="none"></circle>
+                                stroke="#6fdb6f" fill="none" stroke-dashoffset="440"></circle>
                     </g>
                 </svg>
             </div>
@@ -247,6 +247,7 @@
 <div id="toasts" class="toast-container p-3 top-0 end-0">
 </div>
 
+<script type="text/javascript" th:src="@{/webjars/howler.js/dist/howler.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>

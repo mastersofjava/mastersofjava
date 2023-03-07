@@ -16,29 +16,30 @@
 */
 package nl.moj.server.teams.service;
 
+import javax.transaction.Transactional;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
 
 @Slf4j
 @Service
@@ -59,11 +60,27 @@ public class TeamService {
     }
 
     public Path getTeamAssignmentDirectory(UUID teamId, UUID sessionId, String assignmentName) {
-        return getTeamDirectory(teamId,sessionId).resolve(assignmentName);
+        return getTeamDirectory(teamId, sessionId).resolve(assignmentName);
     }
 
     public List<Team> getTeams() {
         return teamRepository.findAll();
+    }
+
+    public void updateAssignment(UUID teamId, UUID sessionId, UUID assignmentId, Map<Path, String> content) {
+        // TODO assignment directory is based on name, files are stored based on UUID need to resolve this
+        Path teamAssignmentBase = getTeamAssignmentDirectory(teamId, sessionId, assignmentRepository.findByUuid(assignmentId)
+                .getName()).resolve("sources");
+
+        content.forEach((k, v) -> {
+            try {
+                Path taf = teamAssignmentBase.resolve(k);
+                Files.createDirectories(taf.getParent());
+                Files.copy(new ByteArrayInputStream(v.getBytes(StandardCharsets.UTF_8)), taf, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException ioe) {
+                throw new UncheckedIOException(ioe);
+            }
+        });
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -71,19 +88,22 @@ public class TeamService {
         List<AssignmentFile> teamFiles = new ArrayList<>();
 
         // TODO assignment directory is based on name, files are stored based on UUID need to resolve this
-        Path teamAssignmentBase = getTeamAssignmentDirectory(teamId, sessionId, assignmentRepository.findByUuid(assignmentId).getName()).resolve("sources");
+        Path teamAssignmentBase = getTeamAssignmentDirectory(teamId, sessionId, assignmentRepository.findByUuid(assignmentId)
+                .getName()).resolve("sources");
 
         assignmentService.getAssignmentFiles(assignmentId).stream()
                 .filter(f -> f.getFileType().isVisible())
                 .forEach(f -> {
                     Path resolvedFile = teamAssignmentBase.resolve(f.getFile());
-                    log.info("resolvedFile " +resolvedFile.toFile().getAbsoluteFile());
+                    log.info("resolvedFile " + resolvedFile.toFile().getAbsoluteFile());
                     if (resolvedFile.toFile().exists() && Files.isReadable(resolvedFile)) {
                         teamFiles.add(f.toBuilder()
                                 .content(readPathContent(resolvedFile))
                                 .build());
-                    } else if( f.getFileType().isContentHidden()){
-                        teamFiles.add(f.toBuilder().content("-- content intentionally hidden --".getBytes(StandardCharsets.UTF_8)).build());
+                    } else if (f.getFileType().isContentHidden()) {
+                        teamFiles.add(f.toBuilder()
+                                .content("-- content intentionally hidden --".getBytes(StandardCharsets.UTF_8))
+                                .build());
                     } else {
                         teamFiles.add(f.toBuilder().build());
                     }
@@ -93,7 +113,7 @@ public class TeamService {
 
     public Team createTeam(String name, String company, String country) {
         Team t = teamRepository.findByName(name);
-        if( t == null ) {
+        if (t == null) {
             t = teamRepository.save(Team.builder()
                     .company(company)
                     .name(name)

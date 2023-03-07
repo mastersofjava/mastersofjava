@@ -21,10 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -48,8 +45,6 @@ import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.runtime.service.AssignmentStatusService;
-import nl.moj.server.sound.Sound;
-import nl.moj.server.sound.SoundService;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.PathUtil;
@@ -63,12 +58,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class AssignmentRuntime {
 
-    public static final long WARNING_TIMER = 30L; // seconds
-    public static final long CRITICAL_TIMER = 10L; // seconds
     public static final long TIMESYNC_FREQUENCY = 10000L; // millis
     public static final String STOP = "STOP";
-    public static final String WARNING_SOUND = "WARNING_SOUND";
-    public static final String CRITICAL_SOUND = "CRITICAL_SOUND";
     public static final String TIMESYNC = "TIMESYNC";
 
     private final MojServerProperties mojServerProperties;
@@ -76,7 +67,6 @@ public class AssignmentRuntime {
     private final MessageService messageService;
     private final TeamService teamService;
     private final ScoreService scoreService;
-    private final SoundService soundService;
     private final TaskScheduler taskScheduler;
     private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
     private final AssignmentStatusRepository assignmentStatusRepository;
@@ -141,9 +131,6 @@ public class AssignmentRuntime {
             return assignmentStatus;
         });
 
-        // play the gong
-        taskScheduler.schedule(soundService::playGong, Instant.now());
-
         // start the timers
         done = startTimers(as.getTimeRemaining());
 
@@ -168,7 +155,7 @@ public class AssignmentRuntime {
     /**
      * Stop the current assignment
      */
-    public AssignmentStatus stop() {
+    public Optional<AssignmentStatus> stop() {
         if (running) {
             return trx.requiresNew(() -> {
                 messageService.sendStopToTeams(assignment.getName(), competitionSession.getUuid().toString());
@@ -194,10 +181,10 @@ public class AssignmentRuntime {
                 log.info("Stopped assignment {}", assignment.getName());
                 assignment = null;
                 done.complete(null);
-                return assignmentStatus;
+                return Optional.of(assignmentStatus);
             });
         }
-        return null;
+        return Optional.empty();
     }
 
     public ActiveAssignment getState() {
@@ -257,7 +244,7 @@ public class AssignmentRuntime {
         Instant now = Instant.now();
         teamAssignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, competitionSession)
                 .forEach(as -> {
-                    if( as.getDateTimeStart() == null ) {
+                    if (as.getDateTimeStart() == null) {
                         as.setDateTimeStart(now);
                         teamAssignmentStatusRepository.save(as);
                     }
@@ -275,16 +262,17 @@ public class AssignmentRuntime {
     }
 
     private TeamAssignmentStatus getOrCreateTeamAssignmentStatus(Team team) {
-        return teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment,competitionSession,team).orElseGet(() -> {
-            TeamAssignmentStatus as = TeamAssignmentStatus.builder()
-                    .assignment(assignment)
-                    .competitionSession(competitionSession)
-                    .uuid(UUID.randomUUID())
-                    .team(team)
-                    .dateTimeStart(Instant.now())
-                    .build();
-            return teamAssignmentStatusRepository.save(as);
-        });
+        return teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment, competitionSession, team)
+                .orElseGet(() -> {
+                    TeamAssignmentStatus as = TeamAssignmentStatus.builder()
+                            .assignment(assignment)
+                            .competitionSession(competitionSession)
+                            .uuid(UUID.randomUUID())
+                            .team(team)
+                            .dateTimeStart(Instant.now())
+                            .build();
+                    return teamAssignmentStatusRepository.save(as);
+                });
     }
 
     private void cleanupTeamAssignmentData(Team team) {
@@ -309,10 +297,6 @@ public class AssignmentRuntime {
         initialRemaining = timeRemaining;
 
         handlers.put(STOP, scheduleStop(timeRemaining));
-        handlers.put(WARNING_SOUND, scheduleAssignmentEndingNotification(initialRemaining
-                .toSeconds() - WARNING_TIMER, WARNING_TIMER - CRITICAL_TIMER, Sound.SLOW_TIC_TAC));
-        handlers.put(CRITICAL_SOUND, scheduleAssignmentEndingNotification(initialRemaining
-                .toSeconds() - CRITICAL_TIMER, CRITICAL_TIMER, Sound.FAST_TIC_TAC));
         handlers.put(TIMESYNC, scheduleTimeSync());
         return new CompletableFuture<>();
     }
@@ -353,10 +337,6 @@ public class AssignmentRuntime {
     private Future<?> scheduleStop(Duration timeRemaining) {
         return taskScheduler.schedule(this::stop,
                 secondsFromNow(timeRemaining.getSeconds()));
-    }
-
-    private Future<?> scheduleAssignmentEndingNotification(long start, long duration, Sound sound) {
-        return taskScheduler.schedule(() -> soundService.play(sound, duration), secondsFromNow(start));
     }
 
     private Future<?> scheduleTimeSync() {

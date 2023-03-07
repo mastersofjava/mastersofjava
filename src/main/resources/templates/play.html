@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <title>Masters of Java</title>
 
     <link rel="stylesheet" th:href="@{/webjars/font-awesome/css/solid.min.css}"/>
@@ -23,7 +23,7 @@
 </head>
 
 <!--/*@thymesVar id="assignment" type="nl.moj.server.GameController.TeamAssignmentModel"*/-->
-<body class="m-2">
+<body>
 <div class="container-fluid">
     <!-- content -->
     <div class="row">
@@ -34,17 +34,20 @@
                     shown the assignment. (If not press F5 to reload the page.)</p>
             </div>
 
-            <div id="content" th:if="${assignmentActive}" th:attr="finished=${assignment.isCompleted()},submittime=${assignment.getSubmitTime()}">
+            <div id="content" th:if="${assignmentActive}"
+                 th:attr="finished=${assignment.isCompleted()},submittime=${assignment.getSubmitTime()}">
                 <div class="p-2">
                     <h3>Assignment: [[${assignment.assignmentName}]]</h3>
                 </div>
                 <div id="alert-container">
-                    <div th:if="${assignment.isCompleted() and (assignment.getScore() &gt; 0)}" class="alert alert-success p-4" role="alert">
+                    <div th:if="${assignment.isCompleted() and (assignment.getScore() &gt; 0)}"
+                         class="alert alert-success p-4" role="alert">
                         <h4 class="alert-heading">Assignment Submitted</h4>
                         <p>Well done!. You have submitted the assignment for final review. Chill out and wait until the
                             next assignment starts.</p>
                     </div>
-                    <div th:if="${assignment.isCompleted() and assignment.getScore() == 0}" class="alert alert-danger p-4" role="alert">
+                    <div th:if="${assignment.isCompleted() and assignment.getScore() == 0}"
+                         class="alert alert-danger p-4" role="alert">
                         <h4 class="alert-heading">Assignment Tests Failed :-(</h4>
                         <p>Your score is 0. Chill out and wait until the next assignment starts. Better luck next
                             time!</p>
@@ -72,13 +75,15 @@
                                       class="fas fa-vial"></span>
                                 <span th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TEST_RESOURCE}"
                                       class="fas fa-vial"></span>
-                                <span th:id="${'tabLink_'+file.shortName}"  class='unitTestTab' th:title="${file.shortName}" th:text="${file.shortName}"></span>
+                                <span th:id="${'tabLink_'+file.shortName}" class='unitTestTab'
+                                      th:title="${file.shortName}" th:text="${file.shortName}"></span>
                             </button>
                         </li>
                         <li class="nav-item">
                             <button type="button" class="nav-link" id="output" data-bs-target="#tab-output"
                                     aria-controls="output" data-bs-toggle="tab" role="tab" aria-selected="true"><span
-                                    class="fas fa-terminal"></span> Output</button>
+                                    class="fas fa-terminal"></span> Output
+                            </button>
                         </li>
                     </ul>
                     <div class="tab-content">
@@ -86,13 +91,15 @@
                              th:each="file,status : ${assignment.getFiles()}" th:id="${'tab-'+file.uuid}"
                              th:aria-labelledby="${'cm-'+file.uuid}"
                         >
-                            <div class="content" th:switch="${file.getMediaTypeString()}" th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}">
-                                <div class="markdown markdown-body" th:case="'text/x-web-markdown'" th:utext="${file.getContentAsString()}"></div>
+                            <div class="content" th:switch="${file.getMediaTypeString()}"
+                                 th:if="${file.fileType == T(nl.moj.server.runtime.model.AssignmentFileType).TASK}">
+                                <div class="markdown markdown-body" th:case="'text/x-web-markdown'"
+                                     th:utext="${file.getContentAsString()}"></div>
                                 <pre class="text" th:case="*" th:utext="${file.getContentAsString()}"></pre>
                             </div>
                             <textarea th:if="${file.fileType != T(nl.moj.server.runtime.model.AssignmentFileType).TASK}"
-                                    th:attr="data-cm=${'cm-'+file.uuid},data-cm-id=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
-                                    th:utext="${file.getContentAsString()}"></textarea>
+                                      th:attr="data-cm=${'cm-'+file.uuid},data-cm-id=${file.uuid},data-cm-file-type=${file.fileType},data-cm-readonly=${file.readOnly},data-cm-name=${file.shortName}"
+                                      th:utext="${file.getContentAsString()}"></textarea>
                         </div>
                         <div class="tab-pane" role="tabpanel" id="tab-output" aria-labelledby="output">
                             <div id="output-content" class="content">
@@ -111,11 +118,6 @@
             <div class="p-2 align-self-center">
                 <h2 th:if="${team!=null}">Team: [[${team}]]</h2>
             </div>
-            <div class="p-2 text-center">
-                <br/>
-                <br/>
-                <br/>
-            </div>
             <div th:if="${assignmentActive}" class="p-2 align-self-center">
                 <div class="text-center">
                     <h3>Time Left</h3>
@@ -129,31 +131,35 @@
                     <svg width="160" height="160" xmlns="http://www.w3.org/2000/svg">
                         <g>
                             <circle class="clock circle_animation" r="69.85699" cy="81" cx="81"
-                                    stroke-width="8"
+                                    stroke-width="8" stroke-dashoffset="440"
                                     stroke="#6fdb6f" fill="none"></circle>
                         </g>
                     </svg>
                 </div>
             </div>
-            <div th:if="${assignmentActive}" class="p-2 text-center">
-                <a class="btn w-50 btn-warning text-white"
-                   th:href="@{/javadoc/api/index.html}"
-                   target="_blank">Javadoc</a>
+            <div th:if="${assignmentActive}">
+                <div class="p-2 text-center">
+                    <a class="btn w-50 btn-warning text-white"
+                       th:href="@{/javadoc/api/index.html}"
+                       target="_blank">Javadoc</a>
+                </div>
+                <div class="p-2 text-center">
+                    <button id="compile" class="btn w-50 btn-success" th:disabled="${assignment.isCompleted()}">
+                        Compile
+                    </button>
+                </div>
+                <div class="p-2  text-center">
+                    <button id="show-tests" class="btn w-50 btn-success" data-bs-toggle="modal"
+                            data-bs-target="#test-modal"
+                            onclick="resetTabColor();" th:disabled="${assignment.isCompleted()}">Test
+                    </button>
+                </div>
+                <div class="mt-5 p-2 text-center">
+                    <button id="btn-open-submit" class="btn w-50 btn-danger" data-bs-toggle="modal"
+                            data-bs-target="#confirm-submit-modal" th:disabled="${assignment.isCompleted()}">SUBMIT
+                    </button>
+                </div>
             </div>
-            <div th:if="${assignmentActive}" class="p-2 text-center">
-                <button id="compile" class="btn w-50 btn-success" th:disabled="${assignment.isCompleted()}">Compile</button>
-            </div>
-            <div th:if="${assignmentActive}" class="p-2  text-center">
-                <button id="show-tests" class="btn w-50 btn-success" data-bs-toggle="modal" data-bs-target="#test-modal"
-                        onclick="resetTabColor();" th:disabled="${assignment.isCompleted()}">Test
-                </button>
-            </div>
-            <div th:if="${assignmentActive}" class="mt-5 p-2 text-center">
-                <button id="btn-open-submit" class="btn w-50 btn-danger" data-bs-toggle="modal"
-                        data-bs-target="#confirm-submit-modal" th:disabled="${assignment.isCompleted()}">SUBMIT
-                </button>
-            </div>
-
         </div>
     </div>
     <!-- footer -->
@@ -175,9 +181,6 @@
         <div class="mr-auto p-2">&nbsp;
         </div>
         <div class="ms-auto pe-2 align-self-center" id="status"></div>
-        <div class="pe-2 align-self-center">
-            <a th:href="@{/sso/logout}" class="btn btn-danger">Disconnect</a>
-        </div>
     </div>
 </div>
 
@@ -186,9 +189,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="exampleModalLabel">Test Selection</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p>Please select the tests you want to run.</p>
@@ -203,43 +204,45 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" id="test" class="btn btn-primary" th:disabled="${assignment.isCompleted()}">Run Tests</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="test" class="btn btn-primary" th:disabled="${assignment.isCompleted()}">Run
+                    Tests
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<div th:if="${assignmentActive}" class="modal fade" id="confirm-submit-modal" tabindex="-1" role="dialog" aria-hidden="true">
+<div th:if="${assignmentActive}" class="modal fade" id="confirm-submit-modal" tabindex="-1" role="dialog"
+     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Are you sure you want to submit?</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>This will submit your code. If you reach the maximum allowed submits of [[${assignment.submits}]] you will no
-                    longer be able
-                    to change your code. You have <span id="submits" th:text="${assignment.submitsRemaining}"></span> left.</p>
+                <p>This will submit your code. If you reach the maximum allowed submits of [[${assignment.submits}]] you
+                    will no longer be able to change your code. You have <span id="submits"
+                                                                               th:text="${assignment.submitsRemaining}"></span>
+                    left.</p>
                 <p>Do you want to continue?</p>
             </div>
             <div class="modal-footer">
-                <button type="cancel-submit" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button id="submit" class="btn w-50 btn-danger" th:disabled="${assignment.isCompleted()}">SUBMIT</button>
+                <button type="button" class="btn btn-secondary" data-ds-dismiss="modal">Cancel</button>
+                <button id="submit" class="btn w-50 btn-danger" th:disabled="${assignment.isCompleted()}">SUBMIT
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <script type="text/javascript">
-    session='[[${sessionId}]]'
-    assignment='[[${assignmentId}]]';
-    assignmentName='[[${assignmentName}]]';
+    session = '[[${sessionId}]]'
+    assignment = '[[${assignmentId}]]';
+    assignmentName = '[[${assignmentName}]]';
 </script>
 
-<script type="text/javascript" th:src="@{/webjars/howler/howler.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/jquery-ui/jquery-ui.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>

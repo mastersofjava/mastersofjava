@@ -31,6 +31,7 @@ import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
+import nl.moj.server.teams.service.TeamService;
 import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,7 @@ public class CompileService {
 
     private final CompileAttemptRepository compileAttemptRepository;
     private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
+    private final TeamService teamService;
     private final JmsTemplate jmsTemplate;
     private final MessageService messageService;
 
@@ -57,6 +59,11 @@ public class CompileService {
     public CompileAttempt registerCompileAttempt(CompileRequest compileRequest) {
         log.info("Registering compile attempt for assignment {} by team {}.", compileRequest.getAssignment().getUuid(),
                 compileRequest.getTeam().getUuid());
+
+        // save the team progress
+        teamService.updateAssignment(compileRequest.getTeam().getUuid(), compileRequest.getSession().getUuid(),
+                compileRequest.getAssignment().getUuid(), compileRequest.getSources());
+
         CompileAttempt compileAttempt = prepareCompileAttempt(compileRequest);
         // send JMS compile request
         jmsTemplate.convertAndSend("compile_request", JMSCompileRequest.builder()

@@ -38,10 +38,12 @@ import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.repository.SubmitAttemptRepository;
+import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.test.service.TestRequest;
 import nl.moj.server.test.service.TestService;
+import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
@@ -54,12 +56,11 @@ public class SubmitService {
     private final TestService testService;
     private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
     private final AssignmentStatusRepository assignmentStatusRepository;
-
+    private final TeamService teamService;
     private final SubmitAttemptRepository submitAttemptRepository;
     private final ScoreService scoreService;
     private final AssignmentService assignmentService;
     private final JmsTemplate jmsTemplate;
-
     @Transactional
     public void receiveSubmitResponse(JMSSubmitResponse submitResponse) {
         log.info("Received submit attempt response {}", submitResponse.getAttempt());
@@ -156,8 +157,14 @@ public class SubmitService {
 
         Instant registered = Instant.now();
         long secondsRemaining = getSecondsRemaining(registered, as);
-        if (tas.getRemainingSubmitAttempts() >= 0 && isRegisteredBeforeEnding(registered, as)) {
+        int remainingAttempts = tas.getRemainingSubmitAttempts();
+        if ( remainingAttempts > 0 && isRegisteredBeforeEnding(registered, as)) {
             messageService.sendSubmitStarted(submitRequest.getTeam());
+
+            // save the team progress
+            teamService.updateAssignment(submitRequest.getTeam().getUuid(), submitRequest.getSession().getUuid(),
+                    submitRequest.getAssignment().getUuid(), submitRequest.getSources());
+
             SubmitAttempt submitAttempt = prepareSubmitAttempt(submitRequest, registered, Duration.ofSeconds(secondsRemaining));
 
             jmsTemplate.convertAndSend("submit_request", JMSSubmitRequest.builder()
@@ -181,6 +188,9 @@ public class SubmitService {
         }
         log.warn("Submit is not allowed for team '{}' named '{}'", submitRequest.getTeam()
                 .getUuid(), submitRequest.getTeam().getName());
+
+        // send submit rejected
+        messageService.sendSubmitRejected(submitRequest.getTeam(), remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
         return null;
     }
 
@@ -209,11 +219,14 @@ public class SubmitService {
     }
 
     private boolean isRegisteredBeforeEnding(Instant registered, AssignmentStatus as) {
-        Duration d = as.getAssignment().getAssignmentDuration();
+
+        // if finished check we are before the ending time.
         if (as.getDateTimeEnd() != null) {
             return as.getDateTimeEnd().isAfter(registered);
         }
-        return as.getDateTimeStart().plus(d).isAfter(registered);
+
+        // assume ok when started
+        return as.getDateTimeStart() != null;
     }
 
     private long getSecondsRemaining(Instant registered, AssignmentStatus as) {

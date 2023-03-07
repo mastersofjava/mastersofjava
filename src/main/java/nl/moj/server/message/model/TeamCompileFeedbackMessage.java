@@ -29,5 +29,7 @@ public class TeamCompileFeedbackMessage {
     private final boolean success;
     private final String team;
     private final String message;
+    private final boolean rejected;
+    private final String traceId;
 
 }

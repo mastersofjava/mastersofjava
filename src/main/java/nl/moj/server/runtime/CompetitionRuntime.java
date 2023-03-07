@@ -16,6 +16,12 @@
 */
 package nl.moj.server.runtime;
 
+import javax.transaction.Transactional;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,12 +41,6 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -121,10 +121,15 @@ public class CompetitionRuntime {
         // refresh competition
         competition = competitionRepository.findByUuid(competition.getUuid());
 
+        if (isAssignmentRunning(sid, id)) {
+            log.info("Not starting assignment {} for session {}, already running.", id, sid);
+            return assignmentStatusRepository.findByCompetitionSession_UuidAndAssignment_Uuid(sid, id)
+                    .orElseThrow(() -> new CompetitionServiceException(String.format("Cannot start assignment %s, assignment not found.", id)));
+        }
+
         Optional<CompetitionAssignment> ca = competition.getAssignments().stream()
                 .filter(a -> a.getAssignment().getUuid().equals(id))
                 .findFirst();
-
         if (ca.isPresent()) {
             if (getCurrentAssignment() != null) {
                 log.debug("Stopping current assignment to start assignment '{}' '{}'", id, ca.get()
@@ -147,17 +152,12 @@ public class CompetitionRuntime {
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public AssignmentStatus stopAssignment(UUID sid, UUID id) throws CompetitionServiceException {
-        if (assignmentRuntime.isRunning()) {
-            Assignment ca = assignmentRuntime.getAssignment();
-            if (ca.getUuid().equals(id)) {
-                log.info("Stopping assignment {}", id);
-                competition = competitionRepository.findByUuid(competition.getUuid());
-                return assignmentRuntime.stop();
-            }
+    public Optional<AssignmentStatus> stopAssignment(UUID sid, UUID id) throws CompetitionServiceException {
+        if (isAssignmentRunning(sid, id)) {
+            log.info("Stopping assignment {} in session {}.", id, sid);
+            return assignmentRuntime.stop();
         }
-        return assignmentStatusRepository.findByCompetitionSession_UuidAndAssignment_Uuid(sid, id).orElseThrow(
-                () -> new CompetitionServiceException(String.format("Unable to stop assignment %s, not found in session %s.", id, sid)));
+        return Optional.empty();
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -165,15 +165,21 @@ public class CompetitionRuntime {
 
         CompetitionSession cs = competitionSessionRepository.findByUuid(sid);
         if (cs == null) {
-            throw new CompetitionServiceException(String.format("Unable to stop assignment %s, session %s not found.", id, sid));
+            throw new CompetitionServiceException(String.format("Unable to reset assignment %s, session %s not found.", id, sid));
         }
         Assignment assignment = assignmentRepository.findByUuid(id);
         if (assignment == null) {
-            throw new CompetitionServiceException(String.format("Unable to stop assignment %s, assignment %s not found.", id, sid));
+            throw new CompetitionServiceException(String.format("Unable to reset assignment %s, assignment %s not found.", id, sid));
         }
 
+        // stop assignment it might be running
+        stopAssignment(sid, id);
+
         // clean up all matching assignment statuses
-        cs.getAssignmentStatuses().stream().filter(as -> as.getAssignment().getUuid().equals(id)).forEach(assignmentStatusRepository::delete);
+        cs.getAssignmentStatuses()
+                .stream()
+                .filter(as -> as.getAssignment().getUuid().equals(id))
+                .forEach(assignmentStatusRepository::delete);
 
         // clean up all team assignment statuses
         teamAssignmentStatusRepository.deleteAll(teamAssignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, cs));
@@ -186,6 +192,10 @@ public class CompetitionRuntime {
         return null;
     }
 
+    private boolean isAssignmentRunning(UUID sid, UUID id) {
+        return sid != null && sid.equals(getSessionId()) && id != null && id.equals(getCurrentAssignment());
+    }
+
     private CompetitionSession createNewCompetitionSession(Competition competition) {
         var newCompetitionSession = new CompetitionSession();
         newCompetitionSession.setUuid(UUID.randomUUID());
@@ -195,12 +205,12 @@ public class CompetitionRuntime {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public List<AssignmentFile> getTeamSolutionFiles(UUID team, UUID session, UUID assignment) {
-        return getTeamAssignmentFiles(team, session,assignment).stream()
+        return getTeamAssignmentFiles(team, session, assignment).stream()
                 .filter(f -> f.getFileType() == AssignmentFileType.EDIT).collect(Collectors.toList());
     }
 
-    private List<AssignmentFile> getTeamAssignmentFiles(UUID team,UUID session, UUID assignment) {
-        return teamService.getTeamAssignmentFiles(team,session, assignment);
+    private List<AssignmentFile> getTeamAssignmentFiles(UUID team, UUID session, UUID assignment) {
+        return teamService.getTeamAssignmentFiles(team, session, assignment);
     }
 
     @Transactional(Transactional.TxType.MANDATORY)

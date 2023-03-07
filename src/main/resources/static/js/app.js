@@ -5,7 +5,6 @@ let activeAction = null;
 let failed = false;
 
 $(document).ready(function () {
-    console.log("Connecting websockets!")
     connectCompetition();
     connectButtons();
 
@@ -28,6 +27,10 @@ function connectCompetition() {
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000
     });
+
+    stomp.onDisconnect = function(frame) {
+        $('#status').html('<span>Reconnecting ...</span>');
+    }
 
     stomp.onConnect = function (frame) {
         $('#status').html('<span>Connected</span>');
@@ -88,6 +91,7 @@ function connectCompetition() {
             }
             updateSubmits(msg.remainingSubmits);
             updateAlertContainerWithScore(msg);
+            resizeContent();
         };
 
         const competitionHandlers = {};
@@ -167,7 +171,7 @@ function initializeTextPanes() {
     $('div.markdown').each(
         function (idx) {
             $(this).html(function (idx, content) {
-                return marked(content)
+                return marked.parse(content)
             })
         }
     )
@@ -177,7 +181,6 @@ function resizeContent() {
     let pos = $('#tabs .tab-content').position();
     if (pos) {
         const height = window.innerHeight - pos.top - 80;
-
         $('#tabs .content').each(function (idx) {
             $(this).css('height', height + 'px');
         })
@@ -268,8 +271,14 @@ function updateAlertContainerWithScore(message) {
             .empty()
             .append(
                 '<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Completed</h4>'
-                + '<p>your final score is</p><strong>'
+                + '<p>Your final score is</p><strong>'
                 + message.score + '</strong></div>');
+    } else if( message.rejected ) {
+        $('#alert-container')
+            .empty()
+            .append(
+                '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Submit Rejected</h4>'
+                + '<p>'+ message.message +'</p></div>');
     } else {
         if (message.completed) {
             $('#alert-container')
@@ -283,7 +292,7 @@ function updateAlertContainerWithScore(message) {
                     .empty()
                     .append(
                         '<div class="alert alert-warning p-4" role="alert"><h4 class="alert-heading">Assignment Not OK!</h4>'
-                        + '<p>No worries, you still have ' + message.remainingSubmits + ' submit attempts left.</p></div>');
+                        + '<p>No worries, you still have ' + message.remainingSubmits + ' attempts left.</p></div>');
             }
         }
     }
@@ -395,6 +404,7 @@ function doUserActionSubmit() {
         'timeLeft': getTimeleft()
     }));
     showSubmitDetails();
+    resizeContent();
 }
 
 function getTimeleft() {

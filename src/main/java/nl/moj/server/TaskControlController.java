@@ -141,8 +141,9 @@ public class TaskControlController {
     @PostMapping(value = "/api/session/{sid}/assignment/{aid}/stop", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AssignmentVO> stopAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
         try {
-            AssignmentStatus as = competition.stopAssignment(sid, aid);
-            return ResponseEntity.ok(toAssignmentVO(as));
+            Optional<AssignmentStatus> as = competition.stopAssignment(sid, aid);
+            return as.map(assignmentStatus -> ResponseEntity.ok(toAssignmentVO(assignmentStatus)))
+                    .orElseGet(() -> ResponseEntity.notFound().build());
         } catch (CompetitionServiceException cse) {
             log.error("Unable to stop assignment {} for session {}.", aid, sid, cse);
             return ResponseEntity.badRequest().build();
@@ -163,10 +164,10 @@ public class TaskControlController {
 
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     @PostMapping(value = "/api/session/{sid}/assignment/{aid}/reset", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, String>> resetAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
+    public ResponseEntity<Void> resetAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
         try {
             competition.resetAssignment(sid, aid);
-            return ResponseEntity.ok(Map.of("m", "ok"));
+            return ResponseEntity.noContent().build();
         } catch (CompetitionServiceException cse) {
             log.error("Unable to stop assignment {} for session {}.", aid, sid, cse);
             return ResponseEntity.badRequest().build();
