@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
+import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.user.repository.UserRepository;
@@ -38,9 +39,11 @@ public class DbUtil {
     private final CompetitionSessionRepository competitionSessionRepository;
     private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
     private final UserRepository userRepository;
+    private final AssignmentResultRepository assignmentResultRepository;
 
     @Transactional
     public void cleanup() {
+        assignmentResultRepository.deleteAll();
         teamAssignmentStatusRepository.deleteAll();
         competitionSessionRepository.deleteAll();
         competitionRepository.deleteAll();
