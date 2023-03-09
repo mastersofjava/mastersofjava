@@ -19,7 +19,7 @@ package nl.moj.server.assignment.service;
 import java.nio.file.Path;
 import java.util.List;
 
-import nl.moj.server.assignment.descriptor.*;
+import nl.moj.common.assignment.descriptor.*;
 import nl.moj.server.assignment.model.AssignmentDescriptorValidationResult;
 import org.springframework.stereotype.Service;
 

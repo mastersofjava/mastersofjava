@@ -29,6 +29,9 @@ import nl.moj.server.submit.json.SourceMessageDeserializer;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+/**
+ * Compile or test command straight from the client. 
+ */
 public class SourceMessage {
 
     private Map<String, String> sources;

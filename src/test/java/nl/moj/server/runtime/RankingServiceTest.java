@@ -37,12 +37,12 @@ public class RankingServiceTest extends BaseRuntimeTest {
 
     @Test
     public void shouldGiveRankingsWithZeroScoreIfNoResultsAreFound() {
-        // add some extra teams to trigger sorting, its smart and wont
+        // add some extra teams to trigger sorting, its smart and won't
         // do anything with only one team.
         addTeam();
         addTeam();
 
-        List<Ranking> rankings = rankingsService.getRankings(competitionRuntime.getCompetitionSession());
+        List<Ranking> rankings = rankingsService.getRankings(competitionRuntime.getSessionId());
         assertThat(rankings).isNotEmpty();
         rankings.forEach(r -> assertThat(r.getTotalScore()).isEqualTo(0));
     }

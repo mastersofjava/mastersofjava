@@ -19,11 +19,8 @@ package nl.moj.server.compiler.repository;
 import java.util.List;
 import java.util.UUID;
 
-import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.teams.model.Team;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -31,6 +28,6 @@ import org.springframework.stereotype.Repository;
 public interface CompileAttemptRepository extends JpaRepository<CompileAttempt, Long> {
     CompileAttempt findByUuid(UUID compileAttemptUuid);
 
-    List<CompileAttempt> findByAssignmentStatus(AssignmentStatus assignment);
+    List<CompileAttempt> findByAssignmentStatus(TeamAssignmentStatus assignment);
 
 }

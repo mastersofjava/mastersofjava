@@ -25,7 +25,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "test_cases")
-@SequenceGenerator(name = "id_seq", sequenceName = "test_cases_seq")
+@SequenceGenerator(name = "test_cases_id_seq", sequenceName = "test_cases_seq")
 
 @Builder(toBuilder = true)
 @NoArgsConstructor(force = true)
@@ -36,31 +36,46 @@ import lombok.*;
 public class TestCase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_seq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "test_cases_id_seq")
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", nullable = false, updatable = false)
+    @Column(name = "uuid", nullable = false, unique = true, columnDefinition = "uuid")
     private UUID uuid;
+
+    @Column(name = "name", nullable = false)
+    private String name;
 
     @ManyToOne
     @JoinColumn(name = "test_attempt_id", nullable = false)
     private TestAttempt testAttempt;
 
-    @Column(name = "date_time_start", nullable = false)
+    @Column(name = "date_time_register", nullable = false)
+    private Instant dateTimeRegister;
+
+    @Column(name = "worker", columnDefinition = "TEXT")
+    private String worker;
+
+    @Column(name = "trace", columnDefinition = "TEXT")
+    private String trace;
+
+    @Column(name = "date_time_start")
     private Instant dateTimeStart;
 
-    @Column(name = "date_time_end", nullable = false)
+    @Column(name = "date_time_end")
     private Instant dateTimeEnd;
 
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "success")
+    private Boolean success;
 
-    @Column(name = "success", nullable = false)
-    private boolean success;
+    @Column(name = "timeout")
+    private Boolean timeout;
 
-    @Column(name = "timeout", nullable = false)
-    private boolean timeout;
+    @Column(name = "aborted")
+    private Boolean aborted;
+
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
 
     @Column(name = "test_output", columnDefinition = "TEXT")
     private String testOutput;

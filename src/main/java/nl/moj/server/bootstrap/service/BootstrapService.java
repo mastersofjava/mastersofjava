@@ -45,11 +45,7 @@ public class BootstrapService {
 
     private static String[] SOUNDS = {
             "gong.wav",
-            "slowtictac.wav",
-            "slowtictaclong.wav",
-            "tictac1.wav",
-            "tictac2.wav",
-            "tikking.wav"
+            "clock-tick.mp3"
     };
 
 

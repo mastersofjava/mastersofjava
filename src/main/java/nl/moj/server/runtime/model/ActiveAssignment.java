@@ -18,19 +18,23 @@ package nl.moj.server.runtime.model;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.descriptor.ExecutionModel;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.ExecutionModel;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 
 @Getter
 @Builder
 @Slf4j
+/**
+ * Holds the state of the current assignment (the assignment itself, the session it is part of and how long it has been running.)
+ */
 public class ActiveAssignment {
 
     private CompetitionSession competitionSession;
@@ -38,10 +42,12 @@ public class ActiveAssignment {
     private AssignmentDescriptor assignmentDescriptor;
 
     private Duration timeElapsed;
-    private Long timeRemaining;
-    private List<AssignmentFile> assignmentFiles;
+    private Long secondsRemaining;
+    private Duration timeRemaining;
+    private List<AssignmentFile> assignmentFiles; // this is a reference to AssignmentExecutionModel.originalAssignmentFiles, which is a reference to assignmentService.getAssignmentFiles(model.assignment)
     private boolean running;
 
+    
 
     @Override
     public String toString() {
@@ -53,6 +59,13 @@ public class ActiveAssignment {
                 .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST ||
                         f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
                 .map(AssignmentFile::getName).collect(Collectors.toList());
+    }
+
+    public List<UUID> getTestUuids() {
+        return assignmentFiles
+                .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST ||
+                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
+                .map(AssignmentFile::getUuid).collect(Collectors.toList());
     }
 
     public List<AssignmentFile> getTestFiles() {
@@ -76,10 +89,15 @@ public class ActiveAssignment {
                 .collect(Collectors.toList());
     }
 
+    public List<AssignmentFile> getFiles() {
+        return assignmentFiles;
+    }
+
     public ExecutionModel getExecutionModel() {
         if (assignmentDescriptor==null || assignmentDescriptor.getExecutionModel() == null) {
             return ExecutionModel.PARALLEL;
         }
         return assignmentDescriptor.getExecutionModel();
     }
+
 }

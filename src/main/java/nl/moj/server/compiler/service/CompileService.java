@@ -16,435 +16,112 @@
 */
 package nl.moj.server.compiler.service;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
+import javax.transaction.Transactional;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.assignment.repository.AssignmentRepository;
-import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.common.messages.JMSCompileRequest;
+import nl.moj.common.messages.JMSCompileResponse;
+import nl.moj.common.messages.JMSFile;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
-import nl.moj.server.config.properties.Languages;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.submit.model.SourceMessage;
-import nl.moj.server.teams.model.Team;
+import nl.moj.server.message.service.MessageService;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.service.TeamService;
-import nl.moj.server.util.HttpUtil;
-import nl.moj.server.util.LengthLimitedOutputCatcher;
-import org.apache.commons.io.FileUtils;
+import org.springframework.cloud.sleuth.annotation.NewSpan;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.ProcessResult;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class CompileService {
 
-    private CompileAttemptRepository compileAttemptRepository;
-    private AssignmentStatusRepository assignmentStatusRepository;
-    private AssignmentRepository assignmentRepository;
-    private AssignmentService assignmentService;
-    private MojServerProperties mojServerProperties;
-    private TeamService teamService;
-    private static final boolean OS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
+    private final CompileAttemptRepository compileAttemptRepository;
+    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
+    private final TeamService teamService;
+    private final JmsTemplate jmsTemplate;
+    private final MessageService messageService;
 
-    public CompileService(MojServerProperties mojServerProperties,
-                          CompileAttemptRepository compileAttemptRepository, AssignmentStatusRepository assignmentStatusRepository,
-                          TeamService teamService, AssignmentService assignmentService, AssignmentRepository assignmentRepository) {
-        this.mojServerProperties = mojServerProperties;
-        this.compileAttemptRepository = compileAttemptRepository;
-        this.assignmentStatusRepository = assignmentStatusRepository;
-        this.teamService = teamService;
-        this.assignmentRepository = assignmentRepository;
-        this.assignmentService = assignmentService;
+    @Transactional
+    public void receiveCompileResponse(JMSCompileResponse compileResponse) {
+        log.info("Received compile attempt response {}", compileResponse.getAttempt());
+        CompileAttempt compileAttempt = registerCompileResponse(compileResponse);
+        messageService.sendCompileFeedback(compileAttempt);
     }
 
-    public CompletableFuture<CompileResult> scheduleCompile(CompileRequest compileRequest, Executor executor, ActiveAssignment state) {
-        // determine compiler version to use.
-        Assert.isTrue(state != null, "Active Assignment is missing.");
-        AssignmentDescriptor input = state.getAssignmentDescriptor();
-        final CompileInputWrapper compileInputWrapper = new CompileInputWrapper(state);
-        Assert.isTrue(input != null, "assignment descriptor is missing.");
-        var javaVersion = mojServerProperties.getLanguages()
-                .getJavaVersion(input
-                        .getJavaVersion());
+    @Transactional
+    @NewSpan
+    public CompileAttempt registerCompileAttempt(CompileRequest compileRequest) {
+        log.info("Registering compile attempt for assignment {} by team {}.", compileRequest.getAssignment().getUuid(),
+                compileRequest.getTeam().getUuid());
 
-        log.info("supplyAsync.javaCompile {} {}{}", compileRequest.getSourceMessage().getAssignmentName(), javaVersion, input.isJavaPreviewEnabled()?" with preview features.":" without preview features.");
-        // compile code.
-        return CompletableFuture.supplyAsync(() -> javaCompile(javaVersion, input.isJavaPreviewEnabled(), compileRequest, compileInputWrapper), executor);
+        // save the team progress
+        teamService.updateAssignment(compileRequest.getTeam().getUuid(), compileRequest.getSession().getUuid(),
+                compileRequest.getAssignment().getUuid(), compileRequest.getSources());
+
+        CompileAttempt compileAttempt = prepareCompileAttempt(compileRequest);
+        // send JMS compile request
+        jmsTemplate.convertAndSend("compile_request", JMSCompileRequest.builder()
+                .attempt(compileAttempt.getUuid())
+                .assignment(compileRequest.getAssignment().getUuid())
+                .sources(compileRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()
+                        .type(JMSFile.Type.SOURCE)
+                        .path(e.getKey().toString())
+                        .content(e.getValue())
+                        .build()).collect(Collectors.toList()))
+                .build());
+
+        log.info("Compile attempt {} for assignment {} by team {} registered.", compileAttempt.getUuid(), compileRequest.getAssignment()
+                .getUuid(), compileRequest.getTeam().getUuid());
+        return compileAttempt;
     }
 
-    public static class CompileInputWrapper {
-        List<AssignmentFile> resources;
-        List<AssignmentFile> readonlyAssignmentFiles;
-        List<AssignmentFile> allAssignmentFiles;
-        Assignment assignment;
-        AssignmentDescriptor assignmentDescriptor;
-        Instant startTimeSinceQueue;
-        private UUID compileAttemptId;
-        private ActiveAssignment state;
+    @Transactional
+    public CompileAttempt
+    prepareCompileAttempt(CompileRequest compileRequest) {
+        TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignment_IdAndCompetitionSession_IdAndTeam_Id(
+                compileRequest.getAssignment().getId(), compileRequest.getSession().getId(),
+                compileRequest.getTeam().getId());
 
-        CompileInputWrapper(ActiveAssignment state) {
-            this.state = state;
-            //AssignmentFileType: RESOURCE, TEST_RESOURCE, HIDDEN_TEST_RESOURCE
-            resources = getResourcesToCopy(state);
-            //AssignmentFileType: READONLY, TEST, HIDDEN_TEST, HIDDEN
-            readonlyAssignmentFiles = getReadonlyAssignmentFilesToCompile(state);
-            assignment = state.getAssignment();
-            assignmentDescriptor = state.getAssignmentDescriptor();
-            allAssignmentFiles = state.getAssignmentFiles();
-        }
-
-        public void destroy() {
-            assignment = null;
-            assignmentDescriptor = null;
-            resources = null;
-            readonlyAssignmentFiles = null;
-            allAssignmentFiles = null;
-        }
-
-        private List<AssignmentFile> getReadonlyAssignmentFilesToCompile(ActiveAssignment state) {
-            return getReadonlyAssignmentFilesToCompile(state.getAssignmentFiles());
-        }
-
-        /**
-         * AssignmentFileType: READONLY, TEST, HIDDEN_TEST, HIDDEN
-         */
-        private List<AssignmentFile> getReadonlyAssignmentFilesToCompile(List<AssignmentFile> fileList) {
-            return fileList
-                    .stream()
-                    .filter(f -> f.getFileType() == AssignmentFileType.READONLY ||
-                            f.getFileType() == AssignmentFileType.TEST ||
-                            f.getFileType() == AssignmentFileType.HIDDEN_TEST ||
-                            f.getFileType() == AssignmentFileType.HIDDEN ||
-                            f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
-                    .collect(Collectors.toList());
-        }
-
-        private List<AssignmentFile> getResourcesToCopy(ActiveAssignment state) {
-            return getResourcesToCopy(state.getAssignmentFiles());
-        }
-
-        /**
-         * AssignmentFileType: RESOURCE, TEST_RESOURCE, HIDDEN_TEST_RESOURCE
-         */
-        private List<AssignmentFile> getResourcesToCopy(List<AssignmentFile> fileList) {
-            return fileList
-                    .stream()
-                    .filter(f -> f.getFileType() == AssignmentFileType.RESOURCE ||
-                            f.getFileType() == AssignmentFileType.TEST_RESOURCE ||
-                            f.getFileType() == AssignmentFileType.HIDDEN_TEST_RESOURCE ||
-                            f.getFileType() == AssignmentFileType.INVISIBLE_TEST_RESOURCE )
-                    .collect(Collectors.toList());
-        }
-
-        private AssignmentFile getOriginalAssignmentFile(String uuid) {
-            return allAssignmentFiles
-                    .stream()
-                    .filter(f -> f.getUuid().toString().equals(uuid))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Could not find original assignment file for UUID " + uuid));
-        }
-    }
-
-    public class TeamProjectPathModel {
-        private Path teamAssignmentDir;
-        private Path sourcesDir;
-        private Path classesDir;
-        private String errorMessage;
-
-        public TeamProjectPathModel(Team team, Assignment assignment, ActiveAssignment state) {
-            teamAssignmentDir = teamService.getTeamAssignmentDirectory(state.getCompetitionSession(), team, assignment);
-            sourcesDir = teamAssignmentDir.resolve("sources");
-            classesDir = teamAssignmentDir.resolve("classes");
-        }
-
-        public boolean cleanCompileLocationForTeam() {
-            boolean isValidCleanStart = false;
-            try {
-                if (teamAssignmentDir.toFile().exists()) {
-
-                    Collection<File> fileList = FileUtils.listFiles(teamAssignmentDir.toFile(), new String[]{"java", "class"}, true);
-
-                    for (File file : fileList) {
-                        if (file.exists()) {
-                            FileUtils.deleteQuietly(file);
-                            File project = file.getParentFile().getParentFile();
-                            FileUtils.deleteQuietly(project);
-                        }
-                    }
-                    isValidCleanStart = !teamAssignmentDir.toFile().exists() || teamAssignmentDir.toFile().list().length == 0;
-                } else {
-                    isValidCleanStart = true;
-                }
-            } catch (Exception e) {
-                log.error("error while cleaning teamdir: " + teamAssignmentDir.toFile(), e);
-            }
-            boolean isValidSources = sourcesDir.toFile().mkdirs();
-            boolean isValidClasses = classesDir.toFile().mkdirs();
-            isValidCleanStart &= isValidSources && isValidClasses;
-            log.info("cleanedDirectory: {} isValidCleanStart {}", teamAssignmentDir, isValidCleanStart);
-            log.info("sources created? -> {} isValidSources {}", sourcesDir, isValidSources);
-            log.info("classes created? -> {} isValidClasses {}", classesDir, isValidClasses);
-            return isValidCleanStart;
-        }
-
-        public void destroy() {
-            sourcesDir = null;
-            classesDir = null;
-            teamAssignmentDir = null;
-        }
-
-        private void prepareResources(List<AssignmentFile> resources) {
-            resources.forEach(r -> {
-                try {
-                    File target = this.classesDir.resolve(r.getFile()).toFile();
-                    File parentFile = target.getParentFile();
-                    if (parentFile != null) {
-                        parentFile.mkdirs();
-                        target.getParentFile().mkdirs();
-                    }
-                    FileUtils.copyFile(r.getAbsoluteFile().toFile(), target);
-                } catch (IOException e) {
-                    log.error("error while writing resources to classes dir", e);
-                    this.errorMessage = e.getMessage();
-                }
-            });
-        }
-
-        private void prepareInputSources(SourceMessage message, CompileInputWrapper compileInputWrapper) {
-            message.getSources().forEach((uuid, v) -> {
-                try {
-                    AssignmentFile orig = compileInputWrapper.getOriginalAssignmentFile(uuid);
-                    File f = this.sourcesDir.resolve(orig.getFile()).toFile();
-                    File parentFile = f.getParentFile();
-                    if (!parentFile.exists()) {
-                        parentFile.mkdirs();
-                    }
-                    Files.deleteIfExists(f.toPath());
-                    FileUtils.writeStringToFile(f, v, StandardCharsets.UTF_8);
-                    compileInputWrapper.readonlyAssignmentFiles.add(orig.toBuilder()
-                            .absoluteFile(f.toPath())
-                            .build());
-                } catch (IOException | RuntimeException e) {
-                    log.error("error while writing sourcefiles to sources dir", e);
-                    this.errorMessage = e.getMessage();
-                }
-
-            });
-            Assert.isTrue(this.errorMessage == null, this.errorMessage);
-        }
-    }
-
-    private String toSafeFilePathInputForEachOperatingSystem(File file) {
-        String safePathForEarchOperatingSystem = file.toString();
-        if (safePathForEarchOperatingSystem.contains(" ") && OS_WINDOWS) {
-            // if with space then make safe for javac execution (otherwise windows execution would go wrong)
-            safePathForEarchOperatingSystem = "\"" + safePathForEarchOperatingSystem + "\"";
-        }
-        return safePathForEarchOperatingSystem;
-    }
-
-    private CompileResult javaCompile(Languages.JavaVersion javaVersion, boolean enablePreviewFeatures, CompileRequest compileRequest, CompileInputWrapper compileInputWrapper) {
-        compileInputWrapper.startTimeSinceQueue = Instant.now();
-        // TODO should not be here.
-        AssignmentStatus as = assignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(compileInputWrapper.assignment, compileInputWrapper.state.getCompetitionSession(), compileRequest.getTeam());
-        log.info("javaCompile: {} for team {} ", compileInputWrapper.assignment.getName(), compileRequest.getTeam().getName());
-        compileInputWrapper.compileAttemptId = UUID.randomUUID();
         CompileAttempt compileAttempt = CompileAttempt.builder()
                 .assignmentStatus(as)
-                .dateTimeStart(Instant.now())
-                .uuid(compileInputWrapper.compileAttemptId)
+                .uuid(UUID.randomUUID())
+                .dateTimeRegister(Instant.now())
                 .build();
-        List<AssignmentFile> resources = compileInputWrapper.resources;
-        List<AssignmentFile> assignmentFiles = compileInputWrapper.readonlyAssignmentFiles;
-        log.info("resources: {}, assignmentFiles: {}", resources.size(), assignmentFiles.size());
-
-        TeamProjectPathModel pathModel = new TeamProjectPathModel(compileRequest.getTeam(), compileInputWrapper.assignment, compileInputWrapper.state);
-        pathModel.cleanCompileLocationForTeam();
-        // copy resources
-        pathModel.prepareResources(compileInputWrapper.resources);
-        try {
-            pathModel.prepareInputSources(compileRequest.getSourceMessage(), compileInputWrapper);
-        } catch (Exception e) {
-            log.error("error while preparing sources.", e);
-            return createCompileResult(compileInputWrapper, "error while preparing sources: " + pathModel.errorMessage, false);
-        }
-
-        // C) Java compiler options
-        try {
-            boolean timedOut = false;
-            int exitvalue = 0;
-            final LengthLimitedOutputCatcher compileOutput = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
-                    .getCompileOutputLimits());
-            final LengthLimitedOutputCatcher compileErrorOutput = new LengthLimitedOutputCatcher(mojServerProperties.getLimits()
-                    .getCompileOutputLimits());
-            final Duration timeout = compileInputWrapper.assignmentDescriptor.getCompileTimeout() != null ? compileInputWrapper.assignmentDescriptor
-                    .getCompileTimeout() : mojServerProperties.getLimits().getCompileTimeout();
-            try {
-                List<String> cmd = new ArrayList<>();
-                cmd.add(javaVersion.getCompiler().toString());
-                cmd.add("-Xlint:all");
-                boolean isWebModus = HttpUtil.getCurrentHttpRequest()!=null;
-                // online in webmodus preview features are enabled (during testing preview features are disabled).
-                if (javaVersion.getVersion() >= 11 && enablePreviewFeatures) {
-                    cmd.add("--enable-preview");
-                    cmd.add("--release");
-                    cmd.add("" + javaVersion.getVersion());
-                }
-
-                cmd.add("-encoding");
-                cmd.add("UTF8");
-                cmd.add("-g:source,lines,vars");
-                cmd.add("-cp");
-                cmd.add(makeClasspath(pathModel.classesDir).stream()
-                        .map(f -> f.getAbsoluteFile().toString())
-                        .collect(Collectors.joining(File.pathSeparator)));
-                cmd.add("-d");
-                cmd.add(toSafeFilePathInputForEachOperatingSystem(pathModel.classesDir.toAbsolutePath().toFile()));
-                assignmentFiles.forEach(a -> {
-                    Assert.isTrue(a.getAbsoluteFile().toFile().exists(), "file does not exist: " + a.getAbsoluteFile().toFile());
-                    cmd.add(toSafeFilePathInputForEachOperatingSystem(a.getAbsoluteFile().toFile()));
-                });
-
-                long closeTimeout = timeout.toSeconds() + 4;
-
-                final ProcessExecutor commandExecutor = new ProcessExecutor().command(cmd);
-                commandExecutor.destroyOnExit().closeTimeout(closeTimeout, TimeUnit.SECONDS).directory(pathModel.teamAssignmentDir.toFile())
-                        .timeout(timeout.toSeconds(), TimeUnit.SECONDS).redirectOutput(compileOutput)
-                        .redirectError(compileErrorOutput);
-
-                log.debug("Executing command {}", String.join(" \\\n", cmd));
-                ProcessResult processResult = commandExecutor.execute();
-                exitvalue = processResult.getExitValue();
-
-                InputStream is = commandExecutor.pumps().getInput();
-                OutputStream error = commandExecutor.pumps().getErr();
-                OutputStream out = commandExecutor.pumps().getOut();
-                commandExecutor.pumps().flush();
-                if (is != null) {
-                    is.close();
-                }
-                if (error != null) {
-                    error.close();
-                }
-                if (out != null) {
-                    out.close();
-                }
-                log.debug("commandExecutor stop ");
-                commandExecutor.pumps().stop();
-
-            } catch (TimeoutException e) {
-                // process is automatically destroyed
-                log.debug("Compile timed out and got killed for team {}.", compileRequest.getTeam().getName());
-                timedOut = true;
-            } catch (SecurityException se) {
-                log.error(se.getMessage(), se);
-            }
-            log.debug("exitValue {}, timeoutConfiguration {} ", exitvalue, timeout.toSeconds());
-            if (timedOut) {
-                compileOutput.getBuffer()
-                        .append('\n')
-                        .append(mojServerProperties.getLimits().getCompileOutputLimits().getTimeoutMessage());
-            }
-            compileAttempt.setDateTimeEnd(Instant.now());//always provide a attempt end timeslot before saving (because cannot be null)
-            // TODO can this be done nicer?
-            if (compileOutput.length() > 0) {
-                // if we still have some output left and exitvalue = 0
-                if (compileOutput.length() > 0 && exitvalue == 0 && !timedOut) {
-                    compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
-                            .success(true)
-                            .build());
-                } else {
-                    String output = stripTeamPathInfo(compileOutput.getBuffer(), FileUtils.getFile(pathModel.teamAssignmentDir.toFile(), "sources"));
-                    compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
-                            .success(false)
-                            .compilerOutput(output)
-                            .build());
-                }
-            } else {
-                log.debug(compileOutput.toString());
-                String output = stripTeamPathInfo(compileErrorOutput.getBuffer(), FileUtils.getFile(pathModel.teamAssignmentDir.toFile(), "sources"));
-                if ((exitvalue == 0) && !timedOut) {
-                    compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
-                            .compilerOutput("OK")
-                            .success(true)
-                            .build());
-                } else {
-                    compileAttempt = compileAttemptRepository.save(compileAttempt.toBuilder()
-                            .success(false)
-                            .compilerOutput(output)
-                            .build());
-                }
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        return createCompileResult(compileInputWrapper, compileAttempt.getCompilerOutput(), compileAttempt.isSuccess());
+        as.getCompileAttempts().add(compileAttempt);
+        return compileAttemptRepository.save(compileAttempt);
     }
 
-    private CompileResult createCompileResult(CompileInputWrapper compileInputWrapper, String outputMessage, boolean isSuccess) {
-        return CompileResult.builder()
-                .compileAttemptUuid(compileInputWrapper.compileAttemptId)
-                .dateTimeStart(compileInputWrapper.startTimeSinceQueue)
-                .dateTimeEnd(Instant.now())
-                .compileOutput(outputMessage)
-                .success(isSuccess)
-                .build();
+    @Transactional
+    public CompileAttempt registerCompileResponse(JMSCompileResponse compileResponse) {
+        CompileAttempt compileAttempt = compileAttemptRepository.findByUuid(compileResponse.getAttempt());
+        return update(compileAttempt, compileResponse);
     }
 
-    private String stripTeamPathInfo(StringBuilder result, File prefix) {
-        if (result != null) {
-            return result.toString().replace(prefix.getAbsolutePath() + File.separator, "");
-        }
-        return "";
-    }
+    @Transactional(Transactional.TxType.MANDATORY)
+    public CompileAttempt update(CompileAttempt compileAttempt, JMSCompileResponse compileResponse) {
 
-
-    private List<File> makeClasspath(Path classesDir) {
-        final List<File> classPath = new ArrayList<>();
-        classPath.add(classesDir.toFile());
-        classPath.add(
-                FileUtils.getFile(mojServerProperties.getDirectories()
-                        .getBaseDirectory()
-                        .toFile(), mojServerProperties.getDirectories().getLibDirectory(), "junit-4.12.jar"));
-        classPath.add(FileUtils.getFile(mojServerProperties.getDirectories()
-                        .getBaseDirectory()
-                        .toFile(), mojServerProperties.getDirectories().getLibDirectory(),
-                "hamcrest-all-1.3.jar"));
-        classPath.add(FileUtils.getFile(mojServerProperties.getDirectories().getBaseDirectory().toFile(),
-                mojServerProperties.getDirectories().getLibDirectory(), "asciiart-core-1.1.0.jar"));
-        for (File file : classPath) {
-            if (!file.exists()) {
-                log.error("not found: {}", file.getAbsolutePath());
-            } else {
-                log.trace("found: {}", file.getAbsolutePath());
-            }
+        if (compileAttempt == null) {
+            return null;
         }
-        return classPath;
+        if (compileResponse == null) {
+            return compileAttempt;
+        }
+
+        compileAttempt.setWorker(compileResponse.getWorker());
+        compileAttempt.setTrace(compileResponse.getTraceId());
+        compileAttempt.setDateTimeStart(compileResponse.getStarted());
+        compileAttempt.setDateTimeEnd(compileResponse.getEnded());
+        compileAttempt.setSuccess(compileResponse.isSuccess());
+        compileAttempt.setTimeout(compileResponse.isTimeout());
+        compileAttempt.setCompilerOutput(compileResponse.getOutput());
+        compileAttempt.setAborted(compileResponse.isAborted());
+        compileAttempt.setReason(compileResponse.getReason());
+        return compileAttemptRepository.save(compileAttempt);
     }
 }

@@ -16,33 +16,19 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.competition.model.OrderedAssignment;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.submit.model.SourceMessage;
-import nl.moj.server.submit.service.SubmitRequest;
-import nl.moj.server.submit.service.SubmitResult;
-import nl.moj.server.submit.service.SubmitService;
 import nl.moj.server.teams.service.TeamService;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.util.Assert;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 public class TeamServiceTest extends BaseRuntimeTest {
@@ -55,24 +41,29 @@ public class TeamServiceTest extends BaseRuntimeTest {
 
 
     private static Stream<String> assignments() {
-        return Stream.of("sequential","parallel");
+        return Stream.of("sequential", "parallel");
     }
 
-    private void startSelectedAssignmment(String assignment) {
-        OrderedAssignment oa = getAssignment(assignment);
-
-        competitionRuntime.startAssignment(oa.getAssignment().getName());
+    private void startSelectedAssignment(String assignment) {
+        try {
+            CompetitionAssignment oa = getAssignment(assignment);
+            competitionRuntime.startAssignment(competitionRuntime.getSessionId(), oa.getAssignment()
+                    .getUuid());
+        } catch (CompetitionServiceException cse) {
+            throw new RuntimeException(cse);
+        }
     }
 
     @ParameterizedTest
     @MethodSource("assignments")
     public void invisibleTestsShouldHaveContentIntentionallyHidden(String assignment) throws Exception {
-        startSelectedAssignmment(assignment);
-        List<AssignmentFile> files = teamService.getTeamAssignmentFiles(competitionRuntime.getCompetitionSession(),
-                competitionRuntime.getActiveAssignment().getAssignment(),getTeam());
+        startSelectedAssignment(assignment);
+        List<AssignmentFile> files = teamService.getTeamAssignmentFiles(getTeam().getUuid(),
+                competitionRuntime.getSessionId(),
+                competitionRuntime.getActiveAssignment().getAssignment().getUuid());
 
         Assertions.assertThat(files).hasSize(6);
-        Assertions.assertThat(files.stream().filter( f -> f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
-                .allMatch( f -> f.getContentAsString().equals("-- content intentionally hidden --"))).isTrue();
+        Assertions.assertThat(files.stream().filter(f -> f.getFileType() == AssignmentFileType.INVISIBLE_TEST)
+                .allMatch(f -> f.getContentAsString().equals("-- content intentionally hidden --"))).isTrue();
     }
 }

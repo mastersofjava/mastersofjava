@@ -17,9 +17,6 @@
 package nl.moj.server.runtime.model;
 
 import javax.persistence.*;
-import java.time.Instant;
-import java.util.Calendar;
-import java.util.UUID;
 
 import lombok.*;
 
@@ -31,7 +28,6 @@ import lombok.*;
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of = {"uuid"})
 @ToString(exclude = {"assignmentStatus"})
 public class AssignmentResult {
 
@@ -39,13 +35,9 @@ public class AssignmentResult {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "assignment_result_id_seq")
     @Column(name = "id", nullable = false)
     private Long id;
-
-    @Column(name = "uuid", nullable = false, updatable = false)
-    private UUID uuid;
-
     @OneToOne
-    @JoinColumn(name = "assignment_status_id", nullable = false)
-    private AssignmentStatus assignmentStatus;
+    @JoinColumn(name = "team_assignment_status_id", nullable = false)
+    private TeamAssignmentStatus assignmentStatus;
 
     @Column(name = "initial_score", nullable = false)
     private Long initialScore;
@@ -59,11 +51,4 @@ public class AssignmentResult {
     @Column(name = "final_score", nullable = false)
     private Long finalScore;
 
-
-    public boolean isAssignmentEnded(Instant maxStartTime) {
-        if (assignmentStatus.getDateTimeEnd()!=null) {
-            return true;
-        }
-        return assignmentStatus.getDateTimeStart().isBefore(maxStartTime);
-    }
 }

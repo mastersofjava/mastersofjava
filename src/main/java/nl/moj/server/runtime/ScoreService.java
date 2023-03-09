@@ -23,19 +23,15 @@ import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentResult;
-import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.model.Score;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
-import nl.moj.server.test.model.TestAttempt;
-import nl.moj.server.test.model.TestCase;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 
 /**
  * The ScoreService calculates the score.
@@ -94,51 +90,79 @@ import org.springframework.util.Assert;
 public class ScoreService {
 
     private final MojServerProperties mojServerProperties;
-    private final AssignmentStatusRepository assignmentStatusRepository;
+    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
     private final AssignmentResultRepository assignmentResultRepository;
 
-    public void initializeScoreAtStart(AssignmentStatus as) {
-        AssignmentResult ar = assignmentResultRepository.save(AssignmentResult.builder()
-                .assignmentStatus(as)
-                .bonus(0L)
-                .penalty(0L)
-                .initialScore(0L)
-                .finalScore(0L)
-                .uuid(UUID.randomUUID())
-                .build());
-        as.setAssignmentResult(ar);
+//    public void initializeScoreAtStart(AssignmentStatus as) {
+//        AssignmentResult ar = assignmentResultRepository.save(AssignmentResult.builder()
+//                .assignmentStatus(as)
+//                .bonus(0L)
+//                .penalty(0L)
+//                .initialScore(0L)
+//                .finalScore(0L)
+//                .uuid(UUID.randomUUID())
+//                .build());
+//        as.setAssignmentResult(ar);
+//    }
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    public TeamAssignmentStatus finalizeScore(SubmitAttempt sa, AssignmentDescriptor ad) {
+        return finalizeScore(sa, sa.getAssignmentStatus(), ad);
     }
 
-    private Score calculateScore(ActiveAssignment state, AssignmentStatus as) {
-        AssignmentDescriptor ad = state.getAssignmentDescriptor();
-        Assert.isTrue(ad!= null && ad.getLabels()!=null,"assignment should have enough rules configured.");
+    @Transactional(Transactional.TxType.MANDATORY)
+    public TeamAssignmentStatus finalizeScore(TeamAssignmentStatus as, AssignmentDescriptor ad) {
+        return finalizeScore(null, as, ad);
+    }
+
+    private TeamAssignmentStatus finalizeScore(SubmitAttempt sa, TeamAssignmentStatus as, AssignmentDescriptor ad) {
+        Score score = calculateScore(sa, as, ad);
+        AssignmentResult ar = as.getAssignmentResult();
+        if (ar == null) {
+            ar = AssignmentResult.builder()
+                    .assignmentStatus(as)
+                    .build();
+        }
+        ar.setInitialScore(score.getInitialScore());
+        ar.setBonus(score.getTotalBonus());
+        ar.setPenalty(score.getTotalPenalty());
+        ar.setFinalScore(score.getTotalScore());
+        as.setAssignmentResult(ar);
+        as.setDateTimeCompleted(Instant.now());
+        assignmentResultRepository.save(ar);
+
+        return teamAssignmentStatusRepository.save(as);
+    }
+
+    private Score calculateScore(SubmitAttempt sa, TeamAssignmentStatus as, AssignmentDescriptor ad) {
         return Score.builder()
-                .initialScore(calculateInitialScore(state.getTimeRemaining(), as))
-                .submitBonus(calculateSubmitBonus(ad, as))
-                .testBonus(calculateTestBonus(state.getTimeRemaining(), as, ad))
-                .resubmitPenalty(calculateSubmitPenalty(ad, state.getTimeRemaining(), as))
-                .testPenalty(calculateTestPenalty(ad, state.getTimeRemaining(), as))
+                .initialScore(calculateInitialScore(sa))
+                .submitBonus(calculateSubmitBonus(sa, ad))
+                .testBonus(calculateTestBonus(sa, as, ad))
+                .resubmitPenalty(calculateSubmitPenalty(sa, ad))
+                .testPenalty(calculateTestPenalty(sa, ad))
                 .build();
     }
 
     /**
      * InitialScore: if success-submit then count time remaining (otherwise 0 )
      */
-    private Long calculateInitialScore(Long timeRemaining, AssignmentStatus as) {
-        if (isSuccessSubmit(as)) {
-            return timeRemaining;
+    private Long calculateInitialScore(SubmitAttempt sa) {
+        if (sa != null && sa.getSuccess() != null && sa.getSuccess()) {
+            return sa.getAssignmentTimeRemaining().toSeconds();
         }
         return 0L;
     }
 
-    private Long calculateSubmitPenalty(AssignmentDescriptor ad, Long initialScore, AssignmentStatus as) {
-        if (isSuccessSubmit(as)) {
+    private Long calculateSubmitPenalty(SubmitAttempt sa, AssignmentDescriptor ad) {
+        if (sa != null && sa.getSuccess() != null && sa.getSuccess()) {
+            TeamAssignmentStatus as = sa.getAssignmentStatus();
             int submits = as.getSubmitAttempts().size();
             if (submits > 1 && ad.getScoringRules().getResubmitPenalty() != null) {
                 String penalty = ad.getScoringRules().getResubmitPenalty().trim();
                 try {
                     // the first submit is always free, hence submits - 1.
-                    return calculatePenaltyValue(initialScore, submits - 1, penalty);
+                    return calculatePenaltyValue(sa.getAssignmentTimeRemaining().toSeconds(), submits - 1, penalty);
                 } catch (Exception nfe) {
                     log.warn("Cannot use submit penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty);
                     log.trace("Cannot use submit penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty, nfe);
@@ -148,14 +172,15 @@ public class ScoreService {
         return 0L;
     }
 
-    private Long calculateTestPenalty(AssignmentDescriptor ad, Long initialScore, AssignmentStatus as) {
-        if (isSuccessSubmit(as)) {
-            // get the test run count, the submit test is free, hence test runs - submit attempts
+    private Long calculateTestPenalty(SubmitAttempt sa, AssignmentDescriptor ad) {
+        if (sa != null && sa.getSuccess() != null && sa.getSuccess()) {
+            TeamAssignmentStatus as = sa.getAssignmentStatus();
+            // get the test run count, the first submit test is free, hence test runs - submit attempts
             int testRuns = as.getTestAttempts().size() - as.getSubmitAttempts().size();
             if (testRuns > 0 && ad.getScoringRules().getTestPenalty() != null) {
                 String penalty = ad.getScoringRules().getTestPenalty().trim();
                 try {
-                    return calculatePenaltyValue(initialScore, testRuns, penalty);
+                    return calculatePenaltyValue(sa.getAssignmentTimeRemaining().toSeconds(), testRuns, penalty);
                 } catch (Exception nfe) {
                     log.warn("Cannot use test penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty);
                     log.trace("Cannot use test penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty, nfe);
@@ -167,13 +192,13 @@ public class ScoreService {
 
     private Long calculatePenaltyValue(Long initialScore, Integer count, String penalty) throws NumberFormatException {
         if (penalty.endsWith("%") && initialScore != null && initialScore > 0 && count > 0) {
-            Long p = 100L - Long.valueOf(penalty.substring(0, penalty.length() - 1));
+            long p = 100L - Long.parseLong(penalty.substring(0, penalty.length() - 1));
             if (p < 0) {
                 throw new IllegalArgumentException("Penalty percentage value must be <= 100%");
             }
-            return initialScore - Math.round(initialScore * Math.pow((p.doubleValue() / 100.0), count.doubleValue()));
+            return initialScore - Math.round(initialScore * Math.pow((p / 100.0), count.doubleValue()));
         } else {
-            Long p = Long.valueOf(penalty);
+            long p = Long.parseLong(penalty);
             if (p < 0) {
                 throw new IllegalArgumentException("Penalty value must be >= 0.");
             }
@@ -184,8 +209,8 @@ public class ScoreService {
     /**
      * submitbonus: if success-submit then count success bonus (otherwise 0)
      */
-    private long calculateSubmitBonus(AssignmentDescriptor ad, AssignmentStatus as) {
-        if (isSuccessSubmit(as)) {
+    private long calculateSubmitBonus(SubmitAttempt sa, AssignmentDescriptor ad) {
+        if (sa != null && sa.getSuccess() != null && sa.getSuccess()) {
             long submitBonus;
             if (ad.getScoringRules().getSuccessBonus() != null) {
                 submitBonus = ad.getScoringRules().getSuccessBonus();
@@ -203,97 +228,45 @@ public class ScoreService {
      * - default: timeRemaining * 0.05 * succesvolle tests.
      * - per individuele test: volgens geconfigureerde score.
      */
-    private long calculateTestBonus(Long timeRemaining, AssignmentStatus as,AssignmentDescriptor configuration) {
-        //
-        Set<String> succeededTestCases = Optional.ofNullable(as.getTestAttempts()).orElse(Collections.emptyList()).stream()
-                .flatMap(ta -> ta.getTestCases().stream() )
-                .filter(TestCase::isSuccess)
-                .map(tc -> tc.getName().toLowerCase() )
+    private long calculateTestBonus(SubmitAttempt sa, TeamAssignmentStatus as, AssignmentDescriptor ad) {
+        Set<String> succeededTestCases = Optional.ofNullable(as.getTestAttempts())
+                .orElse(Collections.emptyList())
+                .stream()
+                .flatMap(ta -> ta.getTestCases().stream())
+                .filter(tc -> tc.getSuccess() != null && tc.getSuccess())
+                .map(tc -> tc.getName().toLowerCase())
                 .collect(Collectors.toSet());
 
-        log.info("team {}[{}] will get test bonus for {}", as.getTeam().getName(), as.getTeam().getUuid(), String.join(",",succeededTestCases));
-
+        long defBonus = 0L;
+        if (sa != null) {
+            defBonus = Math.round(sa.getAssignmentTimeRemaining().toSeconds() * 0.05);
+        }
         if (!succeededTestCases.isEmpty()) {
-            boolean useDefaultBonus = configuration.getLabels().stream().noneMatch( l -> l.startsWith("test"));
+            boolean useDefaultBonus = ad.getLabels().stream().noneMatch(l -> l.startsWith("test"));
             if (useDefaultBonus) {
-                return Math.max(Math.round(timeRemaining * 0.05), 10) * succeededTestCases.size();
+                return Math.max(defBonus, 10) * succeededTestCases.size();
             }
-            return calculateTestBonusViaConfiguration(succeededTestCases, configuration);
+            return calculateTestBonusViaConfiguration(succeededTestCases, ad);
         }
         return 0L;
     }
-    private long calculateTestBonusViaConfiguration(Set<String> succeededTestCases ,AssignmentDescriptor configuration) {
+
+    private long calculateTestBonusViaConfiguration(Set<String> succeededTestCases, AssignmentDescriptor configuration) {
         Map<String, Integer> configDetails = new LinkedHashMap<>();
         long sum = 0;
-        for (String label: configuration.getLabels()) {
-            if( label.startsWith("test") && label.contains("_")) {
+        for (String label : configuration.getLabels()) {
+            if (label.startsWith("test") && label.contains("_")) {
                 String[] parts = label.split("_");
                 configDetails.put(parts[0].toLowerCase(), Integer.parseInt(parts[1]));
             }
         }
 
-        for (String testCase: succeededTestCases) {
-            String key = testCase.replace(".java","").toLowerCase();
+        for (String testCase : succeededTestCases) {
+            String key = testCase.replace(".java", "").toLowerCase();
             if (configDetails.containsKey(key)) {
                 sum += configDetails.get(key);
             }
         }
         return sum;
-    }
-
-    private Optional<SubmitAttempt> getLastSubmitAttempt(AssignmentStatus as) {
-        return as.getSubmitAttempts()
-                .stream()
-                .max(Comparator.comparing(SubmitAttempt::getDateTimeStart));
-    }
-
-    private boolean isSuccessSubmit(AssignmentStatus as) {
-        return getLastSubmitAttempt(as).map(SubmitAttempt::isSuccess).orElse(false);
-    }
-
-    private void registerScore(AssignmentStatus as, Score score) {
-        AssignmentResult ar = as.getAssignmentResult();
-        if (as.getAssignmentResult() == null) {
-            ar = AssignmentResult.builder()
-                    .assignmentStatus(as)
-                    .uuid(UUID.randomUUID())
-                    .build();
-        }
-
-        ar.setInitialScore(score.getInitialScore());
-        ar.setBonus(score.getTotalBonus());
-        ar.setPenalty(score.getTotalPenalty());
-        ar.setFinalScore(score.getTotalScore());
-        as.setAssignmentResult(ar);
-        assignmentResultRepository.save(ar);
-
-    }
-
-    @Transactional
-    public AssignmentStatus finalizeScore(AssignmentStatus as, ActiveAssignment activeAssignment) {
-        // attach entity?
-        as = assignmentStatusRepository.save(as);
-
-        if (needsFinalize(as)) {
-
-            Score score = calculateScore(activeAssignment, as);
-            registerScore(as, score);
-
-            // make sure cannot finalize twice.
-            as.setDateTimeEnd(Instant.now());
-
-            as = assignmentStatusRepository.save(as);
-
-            log.info("Registered final score of {} composed of {} for team {} in assignment {}.", score.getTotalScore(), score, as
-                    .getTeam()
-                    .getName(), activeAssignment.getAssignment().getName());
-        } else {
-            return as;
-        }
-        return as;
-    }
-
-    private boolean needsFinalize(AssignmentStatus as) {
-        return as.getDateTimeEnd() == null;
     }
 }

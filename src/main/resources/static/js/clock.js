@@ -1,26 +1,23 @@
 function Clock(initialOffset) {
-
     this.offset = initialOffset || '440';
     this.current = 0;
     this.time = $('#assignment-clock').attr('data-time');
     this.finished = false;
     this.isPaused = false;
+    this.soundPlayer = new SoundPlayer();
+    this.ticksStart = -1;
 
     this.start = function () {
-        var $assignmentClock = $('#assignment-clock');
-        var $circle = $('.circle_animation', $assignmentClock);
-        var timeleft = $assignmentClock.attr('data-time-left');
-        var clock = this;
+        let $assignmentClock = $('#assignment-clock');
+        let $circle = $('.circle_animation', $assignmentClock);
+        let timeleft = $assignmentClock.attr('data-time-left');
+        let clock = this;
+
         if (clock.finished) {
             timeleft = $('#content').attr('submittime');
         }
         // make sure it is rendered at least once in case this team has finished
         this.current = clock.time - timeleft;
-
-        var isStarting = 100*(this.current / clock.time)<1.7// on page load, sound the start gong if in first 20 seconds.
-        if (isStarting) {
-            doPlaySoundOnAssigmentStartGong();
-        }
         renderTime();
 
         function renderTime() {
@@ -30,7 +27,9 @@ function Clock(initialOffset) {
                 var seconds = ("0" + remaining % 60).slice(-2);
 
                 $('h2', $assignmentClock).text(minutes + ":" + seconds);
-                $circle.css('stroke-dashoffset', clock.offset - ((clock.current + 1) * (clock.offset / clock.time)));
+                const dashoff = clock.offset - (clock.current * (clock.offset / clock.time))
+                console.log('stroke-dashoffset', dashoff > 0 ? dashoff : 0 )
+                $circle.css('stroke-dashoffset', dashoff > 0 ? dashoff : 0 )
 
                 var fraction = clock.current / clock.time;
                 if (fraction > 0.5) {
@@ -42,25 +41,29 @@ function Clock(initialOffset) {
                 }
             }
         }
+
         // the countdown in the client (synchronized also from the server every 10 seconds)
-        var interval = setInterval(function () {
+        let interval = setInterval(() => {
             if (clock.finished || clock.current - clock.time >= 0) {
                 clearInterval(interval);
-                return;
+                clock.current = clock.time
+                renderTime();
             } else {
                 if (!clock.isPaused) {
                     renderTime();
-
-                    if (clock.current - clock.time===-15) {
-                        doPlaySoundOnAssigmentLast15Seconds();
-                    } else
-                    if (clock.current - clock.time===-25) {
-                        doPlaySoundOnAssigmentLast10SecondsBeforeLast15();
+                    if( this.soundPlayer.isReady()) {
+                        let remaining = clock.time - clock.current;
+                        if (remaining > 0 && remaining <= 10) {
+                            this.soundPlayer.playFastTicking()
+                        } else if (remaining > 10 && remaining <= 30) {
+                            this.soundPlayer.playSlowTicking()
+                        } else if (remaining <= 0) {
+                            this.soundPlayer.stopAll()
+                        }
                     }
-
                 }
+                clock.current++;
             }
-            clock.current++;
         }, 1000);
     };
 
@@ -70,11 +73,16 @@ function Clock(initialOffset) {
         }
     };
 
+    this.needsAudioAccess = function () {
+        if( this.ticksStart > -1 ) {
+            return (this.ticksStart - this.current) <= 60 && !this.soundPlayer.isReady();
+        }
+        return (this.time - this.current) <= 60 && !this.soundPlayer.isReady();
+    }
+
     this.stop = function () {
-        var $assignmentClock = $('#assignment-clock');
         this.finished = true;
-        this.current = this.time;
-        $('h2', $assignmentClock).text("0:00");
+        this.soundPlayer.stopAll()
     };
     this.setPaused = function (isPaused) {
         this.isPaused = isPaused;
@@ -82,24 +90,69 @@ function Clock(initialOffset) {
     this.getPaused = function () {
         return this.isPaused;
     }
-}
 
-function doPlaySoundOnUserStatus(fileName) {
-    var isAdminGUI = window['Howl']==null;
-    console.log('fileName '+fileName + ' isAdminGUI '+ isAdminGUI);
-
-    if (isAdminGUI) {
-        return;
+    this.playGong = () => {
+        this.soundPlayer.playGong();
     }
-    howl=new Howl({urls: [fileName]});
-    howl.play();
-}
-function doPlaySoundOnAssigmentStartGong() {
-    doPlaySoundOnUserStatus('/gong.wav');
-}
-function doPlaySoundOnAssigmentLast10SecondsBeforeLast15() {
-    doPlaySoundOnUserStatus('/tictac2.wav');
-}
-function doPlaySoundOnAssigmentLast15Seconds() {
-    doPlaySoundOnUserStatus('/tikking.wav');
+    function SoundPlayer() {
+        this.gong = null;
+        this.fastTick = null;
+        this.fastTickPlaying = false;
+        this.slowTick = null;
+        this.slowTickPlaying = false;
+        this.ready = false;
+
+        this.isReady = () => {
+            return this.ready;
+        }
+
+
+        this.playGong = () => {
+            if (this.ready) {
+                this.fastTick.stop()
+                this.slowTick.stop()
+                this.gong.play()
+            }
+        }
+
+        this.playSlowTicking = () => {
+            if (this.ready && !this.slowTickPlaying) {
+                this.slowTickPlaying = true;
+                this.gong.stop()
+                this.fastTick.stop()
+                this.slowTick.play()
+                this.fastTickPlaying = false;
+            }
+        }
+
+        this.playFastTicking = () => {
+            if (this.ready && !this.fastTickPlaying) {
+                this.fastTickPlaying = true;
+                this.gong.stop()
+                this.slowTick.stop()
+                this.fastTick.play()
+                this.slowTickPlaying = false;
+            }
+        }
+
+        this.stopAll = () => {
+            this.slowTickPlaying = false;
+            this.fastTickPlaying = false;
+            if (this.ready) {
+                Howler.stop();
+            }
+        }
+        const initSounds = () => {
+            if (window['Howl']) {
+                this.gong = new Howl({src: ['/gong.wav']})
+                this.fastTick = new Howl({src: ['/clock-tick.mp3'], loop: true, rate: 1.5})
+                this.slowTick = new Howl({src: ['/clock-tick.mp3'], loop: true, rate: 0.7})
+                this.ready = true;
+            }
+            window.removeEventListener("click", initSounds)
+        }
+
+        // can't use audio before a user event
+        window.addEventListener("click", initSounds)
+    }
 }

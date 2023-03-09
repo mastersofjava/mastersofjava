@@ -18,12 +18,14 @@ package nl.moj.server.rankings.model;
 
 import lombok.Builder;
 import lombok.Getter;
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
+
+import java.util.UUID;
 
 @Getter
 @Builder
 public class RankingHeader {
 
-    private final OrderedAssignment orderedAssignment;
+    private final UUID assignment;
     private final String displayName;
 }

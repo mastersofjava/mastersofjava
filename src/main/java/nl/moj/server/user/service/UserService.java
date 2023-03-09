@@ -1,27 +1,29 @@
 package nl.moj.server.user.service;
 
+import com.nimbusds.oauth2.sdk.token.AccessToken;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.repository.UserRepository;
-import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
-import org.keycloak.representations.AccessToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
+import javax.transaction.Transactional;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -35,24 +37,40 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
     // TODO this should probably be persisted somewhere in the future.
     private static final Set<User> ACTIVE_USERS = new CopyOnWriteArraySet<>();
 
+    @Transactional
     public User createOrUpdate(Principal principal) {
-        if (principal instanceof KeycloakAuthenticationToken) {
-            KeycloakAuthenticationToken kat = (KeycloakAuthenticationToken) principal;
-            AccessToken token = kat.getAccount().getKeycloakSecurityContext().getToken();
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        if (authentication != null) {
+//            if (authentication instanceof OAuth2User user) {
+//                String username = user.getName();
+//                try {
+//                    return (UserDto) userDetailsService.loadUserByUsername(username);
+//                } catch (Exception e) {
+//                    return null;
+//                }
+//            } else if( authentication instanceof OAuth2AuthenticationToken token ) {
+//                String username = token.getName();
+//                try {
+//                    return (UserDto) userDetailsService.loadUserByUsername(username);
+//                } catch (Exception e) {
+//                    return null;
+//                }
+//            }
+//        }
 
-            UUID uuid = UUID.fromString(token.getSubject());
-            User user = userRepository.findByUuid(uuid);
+        if (principal.getName() != null ) {
+            OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) principal;
+            User user = userRepository.findByName(principal.getName());
             if (user == null) {
                 user = User.builder()
-                        .uuid(uuid)
+                        .name(principal.getName())
                         .build();
-                LOG.info("Created new user {}", uuid);
+                LOG.info("Created new user {}", principal.getName());
             }
 
-            user.setName(token.getName());
-            user.setGivenName(token.getGivenName());
-            user.setFamilyName(token.getFamilyName());
-            user.setEmail(token.getEmail());
+            user.setGivenName(token.getPrincipal().getAttribute("given_name"));
+            user.setFamilyName(token.getPrincipal().getAttribute("family_name"));
+            user.setEmail(token.getPrincipal().getAttribute("email"));
 
             return userRepository.save(user);
         }
@@ -60,11 +78,8 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
     }
 
     public User findUser(Principal principal) {
-        if (principal instanceof KeycloakAuthenticationToken) {
-            KeycloakAuthenticationToken kat = (KeycloakAuthenticationToken) principal;
-            AccessToken token = kat.getAccount().getKeycloakSecurityContext().getToken();
-            UUID uuid = UUID.fromString(token.getSubject());
-            return userRepository.findByUuid(uuid);
+        if( principal.getName() != null ) {
+            return userRepository.findByName(principal.getName());
         }
         throw new IllegalArgumentException("Principal not a KeycloakAuthenticationToken, unable to find the user.");
     }
@@ -92,14 +107,18 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
     }
 
     private void userConnected(SessionConnectedEvent evt) {
-        User user = findUser(evt.getUser());
-        log.info("User {} connected.", user.getUuid());
-        ACTIVE_USERS.add(user);
+        if( evt.getUser() != null ) {
+            User user = findUser(evt.getUser());
+            log.info("User {} connected.", user.getName());
+            ACTIVE_USERS.add(user);
+        }
     }
 
     private void userDisconnected(SessionDisconnectEvent evt) {
-        User user = findUser(evt.getUser());
-        log.info("User {} disconnected.", user.getUuid());
-        ACTIVE_USERS.remove(user);
+        if( evt.getUser() != null ) {
+            User user = findUser(evt.getUser());
+            log.info("User {} disconnected.", user.getName());
+            ACTIVE_USERS.remove(user);
+        }
     }
 }

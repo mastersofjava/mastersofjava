@@ -67,10 +67,10 @@
                             <th></th>
                             <th class="text-center">Team</th>
                             <th class="text-center" th:each="a,iterStat : ${oas}">
-                                #[[${iterStat.count}]] <span class="fas fa-question-circle grey" data-container="body"
-                                                             data-trigger="hover" data-toggle="popover"
-                                                             data-placement="top"
-                                                             th:attrappend="data-content=${a.displayName}"></span></th>
+                                #[[${iterStat.count}]] <span class="fas fa-question-circle grey" data-bs-container="body"
+                                                             data-bs-trigger="hover focus" data-bs-toggle="popover"
+                                                             data-bs-placement="top"
+                                                             th:attrappend="data-bs-content=${a.displayName}"></span></th>
                             <th class="text-center">Total Score</th>
                         </tr>
                         </thead>
@@ -78,9 +78,9 @@
                         <tr th:each="ranking,status : ${top}" th:class="${'rank-'+status.index}">
                             <td class="text-center" th:text="${ranking.rank}"></td>
                             <td th:text="${ranking.team}">teamname</td>
-                            <th:block th:each="assignment : ${oas}">
+                            <th:block th:each="rh : ${oas}">
                                 <td class="text-center"
-                                    th:text="${ranking.getAssignmentResult(assignment.orderedAssignment).getScore()}">
+                                    th:text="${ranking.getAssignmentResult(rh).getScore()}">
                                     0
                                 </td>
                             </th:block>
@@ -100,9 +100,9 @@
                     <th></th>
                     <th class="text-center">Team</th>
                     <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
-                                                              data-trigger="hover" data-toggle="popover"
-                                                              data-placement="top"
-                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                                                              data-bs-trigger="hover focus" data-bs-toggle="popover"
+                                                              data-bs-placement="top"
+                                                              data-bs-content="You can hover over the scores to see the individual assignment breakdown."></span>
                     </th>
                 </tr>
                 </thead>
@@ -124,9 +124,9 @@
                     <th></th>
                     <th class="text-center">Team</th>
                     <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
-                                                              data-trigger="hover" data-toggle="popover"
-                                                              data-placement="top"
-                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                                                              data-bs-trigger="hover focus" data-bs-toggle="popover"
+                                                              data-bs-placement="top"
+                                                              data-bs-content="You can hover over the scores to see the individual assignment breakdown."></span>
                     </th>
                 </tr>
                 </thead>
@@ -149,9 +149,9 @@
                     <th></th>
                     <th class="text-center">Team</th>
                     <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
-                                                              data-trigger="hover" data-toggle="popover"
-                                                              data-placement="top"
-                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                                                              data-bs-trigger="hover focus" data-bs-toggle="popover"
+                                                              data-bs-placement="top"
+                                                              data-bs-content="You can hover over the scores to see the individual assignment breakdown."></span>
                     </th>
                 </tr>
                 </thead>
@@ -174,9 +174,9 @@
                     <th></th>
                     <th class="text-center">Team</th>
                     <th class="text-center">Total Score <span class="fas fa-question-circle grey" data-container="body"
-                                                              data-trigger="hover" data-toggle="popover"
-                                                              data-placement="top"
-                                                              data-content="You can hover over the scores to see the individual assignment breakdown."></span>
+                                                              data-bs-trigger="hover focus" data-bs-toggle="popover"
+                                                              data-bs-placement="top"
+                                                              data-bs-content="You can hover over the scores to see the individual assignment breakdown."></span>
                     </th>
                 </tr>
                 </thead>

@@ -16,10 +16,6 @@
 */
 package nl.moj.server.competition.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -27,11 +23,17 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
 @Data
 @Entity
 @Table(name = "competitions")
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competitions_seq", sequenceName = "competitions_seq")
+@EqualsAndHashCode(of = {"uuid"})
 public class Competition {
 
     @Id
@@ -39,31 +41,32 @@ public class Competition {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", unique = true, nullable = false)
+    @Column(name = "uuid", unique = true, nullable = false, columnDefinition = "uuid")
     private UUID uuid;
 
     @Column(name = "name", nullable = false)
     private String name;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "competition", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<OrderedAssignment> assignments = new ArrayList<>();
+    @OneToMany(mappedBy = "competition", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CompetitionAssignment> assignments = new ArrayList<>();
 
     @JsonIgnore
-    public List<OrderedAssignment> getAssignmentsInOrder() {
-        List<OrderedAssignment> copyFiltered = copyFilteredList();
-        copyFiltered.sort(Comparator.comparingInt(OrderedAssignment::getOrder));
+    public List<CompetitionAssignment> getAssignmentsInOrder() {
+        List<CompetitionAssignment> copyFiltered = copyFilteredList();
+        copyFiltered.sort(Comparator.comparingInt(CompetitionAssignment::getOrder));
         return copyFiltered;
     }
 
-    private List<OrderedAssignment> copyFilteredList() {
+    private List<CompetitionAssignment> copyFilteredList() {
         boolean isDefault = !name.contains("|20");
         if (isDefault) {
             return new ArrayList<>(assignments);
         }
         String collectionName = name.split("\\|")[1];
         return assignments.stream()
-                .filter(orderedAssignment -> orderedAssignment.getAssignment().getAssignmentDescriptor().contains(collectionName))
+                .filter(orderedAssignment -> orderedAssignment.getAssignment()
+                        .getAssignmentDescriptor()
+                        .contains(collectionName))
                 .collect(Collectors.toList());
     }
 

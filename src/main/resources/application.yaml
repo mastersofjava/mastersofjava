@@ -19,7 +19,7 @@ moj:
       javadoc-directory: javadoc
       base-directory: moj-data
     limits:
-      compile-timeout: PT4S
+      compile-timeout: PT30S
       compile-output-limits:
         max-feedback-lines: 1000
         max-chars: 100000
@@ -27,7 +27,7 @@ moj:
         line-truncated-message: "...{truncated}"
         output-trunc-message: "...{output truncated}"
         timeout-message: "...{terminated: compile time expired}"
-      test-timeout: PT4S
+      test-timeout: PT30S
       test-output-limits:
         max-feedback-lines: 1000
         max-chars: 100000
@@ -36,26 +36,28 @@ moj:
         output-trunc-message: "...{output truncated}"
         timeout-message: "...{terminated: test time expired}"
     runtime:
-      game-threads: 10
+      game-threads: 20
     competition:
       uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
       success-bonus: 400
 
-keycloak:
-  auth-server-url: http://localhost:8888
-  realm: moj
-  resource: moj
-  public-client: true
-  principal-attribute: subject
-  use-resource-role-mappings: true
+#keycloak:
+#  auth-server-url: http://localhost:8888
+#  realm: moj
+#  resource: moj
+#  public-client: true
+#  principal-attribute: subject
+#  use-resource-role-mappings: true
 
 spring:
+  jpa:
+    open-in-view: false
   h2:
     console:
       enabled: true
       path: /h2
   datasource:
-    url: jdbc:h2:file:/opt/mojserver/db/test
+    url: jdbc:h2:file:/opt/mojserver/db/test;db_close_on_exit=false
     username: sa
     password: sa
     driver-class-name: org.h2.Driver
@@ -67,17 +69,34 @@ spring:
   web:
     resources:
       static-locations: classpath:/bootstrap/sounds/,classpath:/static/
-#  jpa:
-#    generate-ddl: true
-
+  artemis:
+    embedded:
+      enabled: true
+      queues: compile_request,compile_response,test_request,test_response,submit_request,submit_response
+    mode: embedded
+    broker-url: vm://0
+    user: admin
+    password: admin
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: moj
+            authorization-grant-type: authorization_code
+            scope: openid,roles,email,profile
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8888/realms/moj
+            user-name-attribute: preferred_username
 server:
   forward-headers-strategy: native
 
-logging.level.nl.moj.server: DEBUG
-
-logging.level.nl.moj.server.persistence: INFO
-logging.level.nl.moj.server.persistence.TeamMapper: INFO
-logging.level.nl.moj.server.persistence.ResultMapper: INFO
-logging.level.org.springframework.integration.file.FileReadingMessageSource: FATAL
-logging.level.org.keycloak: DEBUG
-logging.level.org.apache.catalina.valves.RemoteIpValve: DEBUG
+logging:
+  level:
+    nl.moj.server: debug
+    org.keycloak: error
+    "org.apache.activemq.audit.base": error
+    "org.apache.activemq.audit.message": error
+    "org.apache.catalina.loader.WebappClassLoaderBase": error
