@@ -52,8 +52,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.sleuth.Span;
-import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.util.Assert;
 
@@ -64,7 +62,6 @@ import java.security.Principal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
