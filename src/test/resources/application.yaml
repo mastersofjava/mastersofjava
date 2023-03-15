@@ -57,5 +57,5 @@ logging:
     org.keycloak: debug
     "org.apache.activemq.audit.base": error
     "org.apache.activemq.audit.message": error
-    "org.hibernate.SQL": debug
-    "org.hibernate.type.descriptor.sql.BasicBinder": trace
+    "org.hibernate.SQL": info
+    "org.hibernate.type.descriptor.sql.BasicBinder": info

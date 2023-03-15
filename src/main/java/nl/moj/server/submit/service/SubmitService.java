@@ -100,6 +100,8 @@ public class SubmitService {
             return sa;
         }
 
+        sa.setDateTimeStart(sr.getStarted());
+        sa.setDateTimeEnd(sr.getEnded());
         sa.setAborted(sr.isAborted());
         sa.setReason(sr.getReason());
         sa.setWorker(sr.getWorker());
