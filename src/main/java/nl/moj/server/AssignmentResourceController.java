@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.zip.ZipInputStream;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +19,6 @@ import nl.moj.server.util.ZipUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.boot.web.server.MimeMappings;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -43,45 +40,46 @@ public class AssignmentResourceController {
     private void validateAssignmentsArchive(MultipartFile file) throws IOException {
         Assert.isTrue(file.getBytes().length > 0, "Empty assignments archive: " + file.getOriginalFilename() + ".");
         Assert.isTrue(file.getBytes().length < MAXIMUM_UPLOAD_SIZE_IN_BYTES, "Assignments archive exceeded maximum allowed size ");
-        Assert.isTrue(isZip(file), "Assignments archive should be a zip file.");
+        Assert.isTrue(ZipUtils.isZip(file.getInputStream()), "Assignments archive should be a zip file.");
+        Assert.isTrue(ZipUtils.containsSingleFolder(file.getInputStream()), "Assignments archive should have a single top level folder.");
     }
 
-    private boolean isZip(MultipartFile file) throws IOException {
-        try {
-            new ZipInputStream(file.getInputStream()).getNextEntry();
-        } catch (Exception e) {
-            return false;
-        }
-        return true;
-    }
-
-    @PostMapping(value = "/importAssignments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/api/assignment/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @RolesAllowed({Role.ADMIN})
-    public ResponseEntity<Map<String, String>> importAssignments(@RequestParam("file") MultipartFile file, @RequestParam("collection") String collection) {
+    public ResponseEntity<Map<String, String>> importAssignments(@RequestParam("file") MultipartFile file ) {
         Map<String, String> results = new HashMap<>();
         if (file == null) {
-            results.put("message", "Assignment archive upload failed, no archive found.");
+            results.put("m", "Assignment archive upload failed, no archive found.");
             return ResponseEntity.badRequest().body(results);
         }
 
         try {
+            validateAssignmentsArchive(file);
+
+            // use the first directory name as a collection
+            Path collection = ZipUtils.getFirstDirectoryName(file.getInputStream());
+            if( collection == null ){
+                results.put("m", "Assignment archive upload failed, zip has no top level directory.");
+                return ResponseEntity.badRequest().body(results);
+            }
+
             Path dest = mojServerProperties.getAssignmentRepo().resolve(collection);
             boolean destExistedAlready = Files.exists(dest);
 
-            validateAssignmentsArchive(file);
             Files.createDirectories(dest);
-            ZipUtils.unzip(file.getResource().getFile().toPath(), dest);
+            ZipUtils.unzip(file.getInputStream(), dest);
+            assignmentService.updateAssignments();
 
-            results.put("message", String.format("Assignment archive uploaded and assignments scanned. Assignments added to the collection %s.", collection));
+            results.put("m", String.format("Assignment archive uploaded and assignments scanned. Assignments added to the collection %s.", collection));
             if (destExistedAlready) {
-                results.put("message", results.get("message") + " The collection existed already, assignments are updated based on archive contents.");
+                results.put("m", results.get("m") + " The collection existed already, assignments updated based on archive contents. Removed assignments are not deleted.");
             }
 
             return ResponseEntity.ok(results);
 
         } catch (Throwable ex) {
             log.error(ex.getMessage(), ex);
-            results.put("message", String.format("Assignment archive upload failed. %s", ex.getMessage()));
+            results.put("m", String.format("Assignment archive upload failed. %s", ex.getMessage()));
             return ResponseEntity.badRequest().body(results);
         }
     }
@@ -124,31 +122,5 @@ public class AssignmentResourceController {
             log.error("Unexpected exception reading assignment resource {} for assignment {}.", file, assignment, e);
             return ResponseEntity.notFound().build();
         }
-    }
-
-    private static String getImageContentType(String fn) {
-        String contentType = "text/html";
-        if (fn.endsWith("svg")) {
-            contentType = "image/svg+xml";
-        }
-        if (fn.endsWith("pdf")) {
-            contentType = "application/pdf";
-        }
-        if (fn.endsWith("jpg") || fn.endsWith("jpeg")) {
-            contentType = "image/jpeg";
-        }
-        if (fn.endsWith("png")) {
-            contentType = "image/png";
-        }
-        if (fn.endsWith("txt")) {
-            contentType = "text/plain";
-        }
-        if (fn.endsWith("bmp")) {
-            contentType = "image/bmp";
-        }
-        if (fn.endsWith("gif")) {
-            contentType = "image/gif";
-        }
-        return contentType;
     }
 }

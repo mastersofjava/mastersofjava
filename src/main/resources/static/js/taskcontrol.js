@@ -76,9 +76,21 @@ function scanAssignments() {
             }
         },
         r => {
-            console.log(r)
             showAlert(`${r.m}`)
         })
+}
+
+function uploadAssignments(args, form) {
+    console.log(args,form, new FormData(form))
+    postFormData('/api/assignment/import', new FormData(form))
+        .then(r => {
+                form.reset()
+                showSuccess(`${r.m} Reloading.`)
+                reloadPage()
+            },
+            r => {
+                showAlert(`${r.m}`)
+            })
 }
 
 // used from html
@@ -205,6 +217,16 @@ function post(uri, data = {}) {
         data: JSON.stringify(data),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json'
+    })
+}
+
+function postFormData(uri, data) {
+    return $.ajax({
+        type: 'POST',
+        url: uri,
+        data: data,
+        processData: false,
+        contentType: false
     })
 }
 
