@@ -14,30 +14,14 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.config.properties;
+package nl.moj.common.config.properties;
 
 import javax.validation.constraints.NotNull;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.UUID;
 
 import lombok.Data;
 
 @Data
-public class Directories {
-
-    @NotNull
-    private Path baseDirectory;
-    private String sessionDirectory = "sessions";
-    private String teamDirectory = "teams";
-    private String libDirectory = "lib";
-    private String soundDirectory = "sounds";
-    private String javadocDirectory = "javadoc";
-
-    public Path getBaseDirectory() {
-        if (baseDirectory.isAbsolute()) {
-            return baseDirectory;
-        }
-        return Paths.get(System.getProperty("user.dir")).resolve(baseDirectory);
-    }
-
+public class Competition {
+    private int successBonus = 400;
 }

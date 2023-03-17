@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.common.messages.*;
-import nl.moj.server.runtime.service.RuntimeService;
+import nl.moj.worker.controller.ControllerClient;
 import nl.moj.server.util.CompletableFutures;
 import nl.moj.worker.ExecutionService;
 import nl.moj.worker.WorkerService;
@@ -31,14 +31,14 @@ public class JavaService {
 
     private final CompileRunnerService compileRunnerService;
     private final TestRunnerService testRunnerService;
-    private final RuntimeService runtimeService;
+    private final ControllerClient controllerClient;
     private final WorkspaceService workspaceService;
     private final ExecutionService executionService;
     private final WorkerService workerService;
 
     public CompletableFuture<JMSCompileResponse> compile(JMSCompileRequest compileRequest, String traceId) {
         try {
-            AssignmentDescriptor ad = runtimeService.getAssignmentDescriptor(compileRequest.getAssignment());
+            AssignmentDescriptor ad = controllerClient.getAssignmentDescriptor(compileRequest.getAssignment());
             Workspace workspace = workspaceService.getWorkspace(ad, compileRequest.getSources());
             return compile(workspace)
                     .thenApply(co -> {
@@ -61,7 +61,7 @@ public class JavaService {
 
     public CompletableFuture<JMSTestResponse> test(JMSTestRequest testRequest, String traceId) {
         try {
-            AssignmentDescriptor ad = runtimeService.getAssignmentDescriptor(testRequest.getAssignment());
+            AssignmentDescriptor ad = controllerClient.getAssignmentDescriptor(testRequest.getAssignment());
             Workspace workspace = workspaceService.getWorkspace(ad, testRequest.getSources());
             return test(workspace, testRequest.getTests())
                     .thenApply(to -> {
@@ -84,7 +84,7 @@ public class JavaService {
 
     public CompletableFuture<JMSSubmitResponse> submit(JMSSubmitRequest submitRequest, String traceId) {
         try {
-            AssignmentDescriptor ad = runtimeService.getAssignmentDescriptor(submitRequest.getAssignment());
+            AssignmentDescriptor ad = controllerClient.getAssignmentDescriptor(submitRequest.getAssignment());
             Workspace workspace = workspaceService.getWorkspace(ad, submitRequest.getSources());
             return test(workspace, submitRequest.getTests())
                     .thenApply(to -> {

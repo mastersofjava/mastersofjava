@@ -28,13 +28,16 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.common.assignment.descriptor.ScoringRules;
+import nl.moj.common.assignment.service.AssignmentDescriptorService;
+import nl.moj.common.config.properties.MojServerProperties;
+import nl.moj.common.storage.StorageService;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.model.AssignmentDescriptorValidationResult;
 import nl.moj.server.assignment.repository.AssignmentRepository;
-import nl.moj.server.config.properties.MojServerProperties;
 import nl.moj.server.runtime.JavaAssignmentFileResolver;
 import nl.moj.server.runtime.model.AssignmentFile;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +46,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class AssignmentService {
 
@@ -50,29 +54,29 @@ public class AssignmentService {
     // not persisted atm.
     private static final Map<UUID, List<AssignmentFile>> ASSIGNMENT_FILES = new ConcurrentHashMap<>();
 
-    private final ObjectMapper yamlObjectMapper;
-
     private final AssignmentRepository assignmentRepository;
 
     private final AssignmentDescriptorValidator assignmentDescriptorValidator;
 
+    private final AssignmentDescriptorService assignmentDescriptorService;
+
     private final MojServerProperties mojServerProperties;
 
-    public AssignmentService(@Qualifier("yamlObjectMapper") ObjectMapper yamlObjectMapper,
-                             AssignmentRepository assignmentRepository, AssignmentDescriptorValidator assignmentDescriptorValidator,
-                             MojServerProperties mojServerProperties) {
-        this.yamlObjectMapper = yamlObjectMapper;
-        this.assignmentRepository = assignmentRepository;
-        this.assignmentDescriptorValidator = assignmentDescriptorValidator;
-        this.mojServerProperties = mojServerProperties;
-    }
+    private final StorageService storageService;
+
+//    public AssignmentService(AssignmentRepository assignmentRepository, AssignmentDescriptorValidator assignmentDescriptorValidator,
+//                             MojServerProperties mojServerProperties) {
+//        this.assignmentRepository = assignmentRepository;
+//        this.assignmentDescriptorValidator = assignmentDescriptorValidator;
+//        this.mojServerProperties = mojServerProperties;
+//    }
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public Path getAssignmentContentFolder(UUID id) throws Exception {
+    public Path getAssignmentContentFolder(UUID id) {
         return getAssignmentContentFolder(assignmentRepository.findByUuid(id));
     }
 
-    public Path getAssignmentContentFolder(Assignment assignment) throws IOException {
+    public Path getAssignmentContentFolder(Assignment assignment) {
         return Path.of(assignment.getAssignmentDescriptor()).getParent();
     }
 
@@ -86,21 +90,11 @@ public class AssignmentService {
     }
 
     public AssignmentDescriptor resolveAssignmentDescriptor(String assignmentDescriptor) {
-        Path descriptor = Paths.get(assignmentDescriptor);
-        AssignmentDescriptor ad = null;
-        try {
-            ad = yamlObjectMapper.readValue(Files.newInputStream(descriptor),
-                    AssignmentDescriptor.class);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        ad.setDirectory(descriptor.getParent());
-        ad.setOriginalAssignmentDescriptor(assignmentDescriptor);
-        return ad;
+        return assignmentDescriptorService.parseAssignmentDescriptor(Paths.get(assignmentDescriptor));
     }
 
     public List<Assignment> updateAssignments() throws IOException, AssignmentServiceException {
-        return updateAssignments(mojServerProperties.getAssignmentRepo(), null);
+        return updateAssignments(storageService.getAssignmentsFolder(), null);
 
     }
 
@@ -176,11 +170,10 @@ public class AssignmentService {
     private List<Assignment> scanAssignments(Path base) throws IOException {
         List<Assignment> result = new ArrayList<>();
         try (Stream<Path> files = Files.walk(base)) {
-            files.filter(this::isAssignmentDescriptor)
+            files.filter(assignmentDescriptorService::isAssignmentDescriptor)
                     .forEach(file -> {
                         try {
-                            AssignmentDescriptor assignmentDescriptor = yamlObjectMapper
-                                    .readValue(file.toFile(), AssignmentDescriptor.class);
+                            AssignmentDescriptor assignmentDescriptor = assignmentDescriptorService.parseAssignmentDescriptor(file);
                             ScoringRules scoringRules = assignmentDescriptor.getScoringRules();
                             Assignment assignment = new Assignment();
                             assignment.setName(assignmentDescriptor.getName());
@@ -191,15 +184,12 @@ public class AssignmentService {
                             result.add(assignment);
                         } catch (Exception e) {
                             throw new RuntimeException(
-                                    "Unable to parse assignment descriptor " + file.toString(), e);
+                                    "Unable to parse assignment descriptor " + file, e);
                         }
                     });
         }
         return result;
     }
 
-    private boolean isAssignmentDescriptor(Path f) {
-        return f.getFileName().toString().equals("assignment.yaml")
-                || f.getFileName().toString().equals("assignment.yml");
-    }
+
 }

@@ -36,7 +36,7 @@ import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;

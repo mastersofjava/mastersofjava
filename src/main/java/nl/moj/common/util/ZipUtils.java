@@ -1,9 +1,11 @@
-package nl.moj.server.util;
+package nl.moj.common.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -48,8 +50,8 @@ public class ZipUtils {
         return null;
     }
 
-    public static void zip(Path source, Path dest) throws IOException {
-        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(dest, StandardOpenOption.WRITE))) {
+    public static void zip(Path source, OutputStream out, Predicate<Path> filter ) throws IOException {
+        try (ZipOutputStream zos = new ZipOutputStream(out)) {
             Files.walkFileTree(source, new SimpleFileVisitor<>() {
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     zos.putNextEntry(new ZipEntry(source.relativize(file).toString()));
@@ -60,6 +62,7 @@ public class ZipUtils {
             });
         }
     }
+
 
     public static void unzip(InputStream in, Path dest) throws IOException {
         try (ZipInputStream zipInputStream = new ZipInputStream(in)) {

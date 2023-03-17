@@ -14,34 +14,34 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.config.properties;
+package nl.moj.common.config.properties;
 
 import javax.validation.constraints.NotNull;
+import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
+import nl.moj.modes.Mode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @Data
-@ConfigurationProperties(prefix = "moj.server")
+@ConfigurationProperties(prefix = MojServerProperties.PREFIX )
 public class MojServerProperties {
 
+    public static final String PREFIX = "moj.server";
+    public static final String MODE_PROPERTY = PREFIX + ".mode";
+
     @NotNull
-    private Path assignmentRepo;
+    private Mode mode = Mode.DEFAULT;
 
-    private String authServerUrl;
+    private URI controllerEndpoint = null;
 
-    private boolean performanceValidation;
+    private Path dataDirectory = Paths.get("data");
 
-    public String getAuthServerUrl() {
-        return StringUtils.isEmpty(authServerUrl)?"":authServerUrl;
-    }
     @NestedConfigurationProperty
     private Limits limits = new Limits();
-    @NestedConfigurationProperty
-    private Directories directories = new Directories();
     @NestedConfigurationProperty
     private Languages languages = new Languages();
     @NestedConfigurationProperty
@@ -49,5 +49,10 @@ public class MojServerProperties {
     @NestedConfigurationProperty
     private Competition competition;
 
-
+    public Path getDataDirectory() {
+        if (dataDirectory.isAbsolute()) {
+            return dataDirectory;
+        }
+        return Paths.get(System.getProperty("user.dir")).resolve(dataDirectory);
+    }
 }

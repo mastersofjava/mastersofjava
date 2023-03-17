@@ -20,6 +20,7 @@ import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import nl.moj.common.storage.StorageService;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
@@ -31,7 +32,7 @@ import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.CompetitionService;
 import nl.moj.server.competition.service.CompetitionServiceException;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentStatus;
@@ -63,8 +64,6 @@ public class TaskControlController {
 
     private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
 
-    private final MojServerProperties mojServerProperties;
-
     private final CompetitionRuntime competition;
 
     private final AssignmentService assignmentService;
@@ -79,6 +78,8 @@ public class TaskControlController {
 
     private final UserService userService;
 
+    private final StorageService storageService;
+
     private final TransactionHelper trx;
 
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
@@ -89,7 +90,7 @@ public class TaskControlController {
             if (assignments.isEmpty()) {
                 return ResponseEntity.ok().body(Map.of("m", "No assignments discovered.", "reload", "false"));
             }
-            log.info("Found {} assignments in folder {}.", assignments.size(), mojServerProperties.getAssignmentRepo());
+            log.info("Found {} assignments in folder {}.", assignments.size(), storageService.getAssignmentsFolder());
             return ResponseEntity.ok()
                     .body(Map.of("m", String.format("Discovered %d assignments, reloading", assignments.size()), "reload", "true"));
         } catch (Exception e) {

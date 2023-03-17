@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.AssignmentResult;
 import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.model.Score;

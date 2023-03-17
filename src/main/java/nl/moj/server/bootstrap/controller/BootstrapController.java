@@ -23,7 +23,7 @@ import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.authorization.Role;
-import nl.moj.server.bootstrap.service.BootstrapService;
+import nl.moj.common.bootstrap.BootstrapService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;

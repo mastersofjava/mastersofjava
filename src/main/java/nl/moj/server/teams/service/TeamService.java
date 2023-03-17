@@ -32,9 +32,10 @@ import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.storage.StorageService;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
@@ -50,17 +51,10 @@ public class TeamService {
     private final TeamRepository teamRepository;
     private final AssignmentService assignmentService;
     private final AssignmentRepository assignmentRepository;
-
-    private Path getTeamDirectory(UUID teamId, UUID sessionId) {
-        return mojServerProperties.getDirectories().getBaseDirectory()
-                .resolve(mojServerProperties.getDirectories().getSessionDirectory())
-                .resolve(sessionId.toString())
-                .resolve(mojServerProperties.getDirectories().getTeamDirectory())
-                .resolve(teamId.toString());
-    }
+    private final StorageService storageService;
 
     public Path getTeamAssignmentDirectory(UUID teamId, UUID sessionId, String assignmentName) {
-        return getTeamDirectory(teamId, sessionId).resolve(assignmentName);
+        return storageService.getSessionTeamFolder(sessionId,teamId).resolve(assignmentName);
     }
 
     public List<Team> getTeams() {

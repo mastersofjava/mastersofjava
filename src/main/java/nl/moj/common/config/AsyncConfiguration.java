@@ -14,14 +14,14 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.config;
+package nl.moj.common.config;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.util.NamedThreadFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +34,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @Slf4j
 @AllArgsConstructor
-public class AsyncConfiguration { //implements AsyncConfigurer {
+public class AsyncConfiguration {
 
     private MojServerProperties mojServerProperties;
 

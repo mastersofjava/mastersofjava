@@ -12,10 +12,11 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.storage.StorageService;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.authorization.Role;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.util.ZipUtils;
+import nl.moj.common.config.properties.MojServerProperties;
+import nl.moj.common.util.ZipUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.boot.web.server.MimeMappings;
 import org.springframework.core.io.FileSystemResource;
@@ -36,6 +37,8 @@ public class AssignmentResourceController {
     private final MojServerProperties mojServerProperties;
 
     private final AssignmentService assignmentService;
+
+    private final StorageService storageService;
 
     private void validateAssignmentsArchive(MultipartFile file) throws IOException {
         Assert.isTrue(file.getBytes().length > 0, "Empty assignments archive: " + file.getOriginalFilename() + ".");
@@ -63,7 +66,7 @@ public class AssignmentResourceController {
                 return ResponseEntity.badRequest().body(results);
             }
 
-            Path dest = mojServerProperties.getAssignmentRepo().resolve(collection);
+            Path dest = storageService.getAssignmentsFolder().resolve(collection);
             boolean destExistedAlready = Files.exists(dest);
 
             Files.createDirectories(dest);

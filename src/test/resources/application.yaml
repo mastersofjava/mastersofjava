@@ -1,19 +1,16 @@
 moj:
   server:
-    assignment-repo: /tmp/assignments
+#    mode: single
+    data-directory: /tmp/moj-data
     languages:
       java-versions:
         - version: 17
           name: Java 17
           compiler: /tmp/bin/javac
           runtime: /tmp/bin/java
-    directories:
-      base-directory: /tmp/moj-data
     runtime:
       game-threads: 10
-      play-sounds: false
     competition:
-      uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
       success-bonus: 400
 
 spring:

@@ -30,8 +30,6 @@ import lombok.Data;
 public class AssignmentDescriptor {
 
     private Path directory;
-    private String originalAssignmentDescriptor;
-
     @JsonProperty("name")
     private String name;
     @JsonProperty("display-name")

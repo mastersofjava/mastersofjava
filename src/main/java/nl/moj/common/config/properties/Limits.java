@@ -14,7 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.config.properties;
+package nl.moj.common.config.properties;
 
 import java.time.Duration;
 

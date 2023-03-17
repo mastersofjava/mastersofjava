@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import nl.moj.server.competition.model.CompetitionAssignment;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.submit.SubmitFacade;
 import nl.moj.server.submit.model.SourceMessage;

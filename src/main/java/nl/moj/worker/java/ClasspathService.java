@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.storage.StorageService;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ClasspathService {
 
-    private final MojServerProperties mojServerProperties;
+    private final StorageService storageService;
 
     public String resolveClasspath(Collection<Path> paths) {
         final List<Path> classPath = new ArrayList<>();
@@ -41,8 +41,7 @@ public class ClasspathService {
     }
 
     private Path resolveLibrary(String library) {
-        return mojServerProperties.getDirectories().getBaseDirectory()
-                .resolve(mojServerProperties.getDirectories().getLibDirectory()).resolve(library);
+        return storageService.getLibsFolder().resolve(library);
     }
 
 }

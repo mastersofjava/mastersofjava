@@ -48,7 +48,7 @@ public class WebSecurityConfiguration {
     @Bean //(name = BeanIds.SPRING_SECURITY_FILTER_CHAIN)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.authorizeRequests(a -> a
-                        .antMatchers("/","/error", "/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico")
+                        .antMatchers("/","/error", "/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico", "/api/assignment/*/content")
                         .permitAll()
                         .antMatchers("/play", "/feedback", "/rankings")
                         .hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access

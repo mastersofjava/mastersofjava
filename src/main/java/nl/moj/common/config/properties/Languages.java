@@ -14,11 +14,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.config.properties;
+package nl.moj.common.config.properties;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.util.JavaVersionUtil;
+import nl.moj.common.util.JavaVersionUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.constraints.NotEmpty;

@@ -14,8 +14,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.common.messages.JMSTestCase;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.util.LengthLimitedOutputCatcher;
+import nl.moj.common.config.properties.MojServerProperties;
+import nl.moj.common.storage.StorageService;
+import nl.moj.worker.util.LengthLimitedOutputCatcher;
 import nl.moj.worker.java.ClasspathService;
 import nl.moj.worker.workspace.Workspace;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,8 @@ public class TestRunnerService {
 
     private final MojServerProperties mojServerProperties;
     private final ClasspathService classpathService;
+
+    private final StorageService storageService;
 
     public TestCaseOutput test(Workspace workspace, JMSTestCase test) {
         TestCaseOutput to = TestCaseOutput.builder()
@@ -137,8 +140,7 @@ public class TestRunnerService {
         if (policy != null) {
             policy = ad.getDirectory().resolve(policy);
         } else {
-            policy = mojServerProperties.getDirectories().getBaseDirectory()
-                    .resolve(mojServerProperties.getDirectories().getLibDirectory())
+            policy = storageService.getLibsFolder()
                     .resolve(SECURITY_POLICY_FOR_UNIT_TESTS);
         }
         return policy;

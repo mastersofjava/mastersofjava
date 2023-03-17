@@ -20,11 +20,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.storage.StorageService;
 import nl.moj.server.DbUtil;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.bootstrap.service.BootstrapService;
+import nl.moj.common.bootstrap.BootstrapService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.model.CompetitionSession;
@@ -32,7 +33,7 @@ import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.*;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.submit.model.SourceMessage;
@@ -121,9 +122,6 @@ public abstract class BaseRuntimeTest {
     @Autowired
     private TransactionHelper trx;
 
-    @Autowired
-    private EntityManager em;
-
     @Getter
     private Competition competition;
 
@@ -179,34 +177,10 @@ public abstract class BaseRuntimeTest {
             competitionRuntime.stopAssignment(sessionId, competitionRuntime.getCurrentAssignment());
         }
         dbUtil.cleanup();
-        PathUtil.delete(mojServerProperties.getDirectories().getBaseDirectory(), true);
+        PathUtil.delete(mojServerProperties.getDataDirectory(), true);
     }
 
     protected Principal getPrincipal(User user) {
-//        AccessToken token = new AccessToken() {
-//            @Override
-//            public String getSubject() {
-//                return user.getUuid().toString();
-//            }
-//        };
-//        KeycloakAccount ka = new OidcKeycloakAccount() {
-//            @Override
-//            public KeycloakSecurityContext getKeycloakSecurityContext() {
-//                return new KeycloakSecurityContext(null, token, null, null);
-//            }
-//
-//            @Override
-//            public Principal getPrincipal() {
-//                return () -> null;
-//            }
-//
-//            @Override
-//            public Set<String> getRoles() {
-//                return Collections.emptySet();
-//            }
-//        };
-//        KeycloakAuthenticationToken kat = new KeycloakAuthenticationToken(ka, false, Collections.emptyList());
-//        return kat;
         return user::getName;
     }
 

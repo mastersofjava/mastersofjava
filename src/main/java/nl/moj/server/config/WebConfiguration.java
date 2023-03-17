@@ -16,15 +16,9 @@
 */
 package nl.moj.server.config;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-
 import lombok.AllArgsConstructor;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.storage.StorageService;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.PathMatcher;
-import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -32,20 +26,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @AllArgsConstructor
 public class WebConfiguration {
 
-    private MojServerProperties mojServerProperties;
-    //private SessionRegistry sessionRegistry;
+    private StorageService storageService;
 
     @Configuration
     public class WebConfig implements WebMvcConfigurer {
 
         @Override
         public void addResourceHandlers(ResourceHandlerRegistry registry) {
-            Path path = Paths.get(mojServerProperties.getDirectories().getJavadocDirectory());
-            if (!path.isAbsolute()) {
-                path = mojServerProperties.getDirectories().getBaseDirectory()
-                        .resolve(mojServerProperties.getDirectories().getJavadocDirectory());
-            }
-            registry.addResourceHandler("/javadoc/**").addResourceLocations(path.toAbsolutePath().toUri().toString());
+            registry.addResourceHandler("/javadoc/**")
+                    .addResourceLocations(storageService.getJavadocFolder().toAbsolutePath().toUri().toString());
         }
     }
 }

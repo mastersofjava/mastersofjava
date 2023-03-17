@@ -16,14 +16,8 @@
 */
 package nl.moj.server.competition.service;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,22 +25,13 @@ import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionAssignment;
-import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionRepository;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.CompetitionRuntime;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class CompetitionService {
-    private static final String YEAR_PREFIX = "20";
-
-    private final MojServerProperties mojServerProperties;
-
-    private final CompetitionRuntime competitionRuntime;
-
     private final CompetitionRepository competitionRepository;
 
     private final AssignmentRepository assignmentRepository;
@@ -55,7 +40,7 @@ public class CompetitionService {
         Competition c = new Competition();
         c.setUuid(UUID.randomUUID());
         c.setName(name);
-        if( assignments == null || assignments.isEmpty()) {
+        if (assignments == null || assignments.isEmpty()) {
             throw new CompetitionServiceException("Could not create session " + name + ", no assignments specified.");
         }
 
@@ -72,46 +57,4 @@ public class CompetitionService {
         }
         return competitionRepository.save(c);
     }
-
-    //-- old stuff
-
-    public Function<Assignment, CompetitionAssignment> createOrderedAssignments(Competition c) {
-        AtomicInteger count = new AtomicInteger(0);
-        return a -> {
-            CompetitionAssignment oa = new CompetitionAssignment();
-            oa.setAssignment(a);
-            oa.setCompetition(c);
-            oa.setOrder(count.getAndIncrement());
-            return oa;
-        };
-    }
-
-    public List<File> locationList() {
-        List<File> locationList = new ArrayList<>();
-        File defaultLocation = mojServerProperties.getAssignmentRepo().toFile();
-        if (!defaultLocation.exists() || !defaultLocation.getParentFile().isDirectory()) {
-            mojServerProperties.getAssignmentRepo().toFile().mkdirs();
-            return locationList;
-        }
-        return Arrays.stream(defaultLocation.getParentFile().listFiles())
-                .filter(file -> file.getName().startsWith(YEAR_PREFIX) && file.isDirectory())
-                .collect(Collectors.toList());
-    }
-
-
-    public File getSelectedLocation() {
-        File file = mojServerProperties.getAssignmentRepo().toFile();
-        Competition c = competitionRuntime.getCompetition();
-        boolean isUseDefaultLocation = c.getName().contains("|" + YEAR_PREFIX);
-        if (!isUseDefaultLocation) {
-            return file;
-        }
-        var name = c.getName().split("\\|")[1];
-        if (new File(file.getParentFile(), name).isDirectory()) {
-            file = new File(file.getParentFile(), name);
-        }
-        return file;
-    }
-
-
 }

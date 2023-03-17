@@ -1,10 +1,9 @@
 package nl.moj.worker.java.compile;
 
+import java.time.Instant;
+
 import lombok.Builder;
 import lombok.Data;
-
-import java.time.Instant;
-import java.util.UUID;
 
 @Data
 @Builder(toBuilder = true)

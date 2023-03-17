@@ -14,14 +14,24 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.config.properties;
+package nl.moj.common.config;
 
 import javax.validation.constraints.NotNull;
-import java.util.UUID;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
 import lombok.Data;
 
-@Data
-public class Competition {
-    private int successBonus = 400;
+public class Directories {
+    public static final String SESSIONS = "sessions";
+    public static final String TEAMS = "teams";
+    public static final String LIBS = "lib";
+    public static final String SOUNDS = "sounds";
+    public static final String JAVADOC = "javadoc";
+    public static final String ASSIGNMENTS = "assignments";
+
+    public static Path getSessions(Path base) {
+        return base.resolve(SESSIONS);
+    }
 }

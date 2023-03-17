@@ -74,14 +74,14 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
 
             return userRepository.save(user);
         }
-        throw new IllegalArgumentException("Principal not a KeycloakAuthenticationToken, unable to create/update the user.");
+        throw new IllegalArgumentException("Principal not a OAuth2AuthenticationToken, unable to create/update the user.");
     }
 
     public User findUser(Principal principal) {
         if( principal.getName() != null ) {
             return userRepository.findByName(principal.getName());
         }
-        throw new IllegalArgumentException("Principal not a KeycloakAuthenticationToken, unable to find the user.");
+        throw new IllegalArgumentException("Principal not a OAuth2AuthenticationToken, unable to find the user.");
     }
 
     public User addUserToTeam(User user, Team team) {
@@ -109,6 +109,9 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
     private void userConnected(SessionConnectedEvent evt) {
         if( evt.getUser() != null ) {
             User user = findUser(evt.getUser());
+            if( user == null ) {
+                user = createOrUpdate(evt.getUser());
+            }
             log.info("User {} connected.", user.getName());
             ACTIVE_USERS.add(user);
         }
@@ -117,6 +120,9 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
     private void userDisconnected(SessionDisconnectEvent evt) {
         if( evt.getUser() != null ) {
             User user = findUser(evt.getUser());
+            if( user == null ) {
+                user = createOrUpdate(evt.getUser());
+            }
             log.info("User {} disconnected.", user.getName());
             ACTIVE_USERS.remove(user);
         }

@@ -17,8 +17,7 @@
 package nl.moj.server.runtime;
 
 import nl.moj.server.competition.model.CompetitionAssignment;
-import nl.moj.server.competition.service.CompetitionServiceException;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;

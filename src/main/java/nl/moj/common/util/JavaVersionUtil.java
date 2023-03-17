@@ -14,7 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package nl.moj.server.util;
+package nl.moj.common.util;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.config.properties.Languages;
+import nl.moj.common.config.properties.Languages;
 import org.apache.commons.io.IOUtils;
 
 @Slf4j

@@ -19,11 +19,8 @@ package nl.moj.server;
 import javax.transaction.Transactional;
 
 import lombok.AllArgsConstructor;
-import nl.moj.server.competition.model.Competition;
-import nl.moj.server.competition.model.CompetitionSession;
-import nl.moj.server.competition.repository.CompetitionRepository;
-import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.config.properties.MojServerProperties;
+import nl.moj.common.config.properties.MojServerProperties;
+import nl.moj.modes.Mode;
 import nl.moj.server.runtime.CompetitionRuntime;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -31,7 +28,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @AllArgsConstructor
-public class ApplicationEventListener implements ApplicationListener<ContextRefreshedEvent> {
+public class ServerStartupListener implements ApplicationListener<ContextRefreshedEvent> {
+
+    private final MojServerProperties mojServerProperties;
 
     private final CompetitionRuntime competitionRuntime;
 
@@ -42,8 +41,11 @@ public class ApplicationEventListener implements ApplicationListener<ContextRefr
 
     // TODO this should be removed. Admin should create/start/continue sessions.
     private void continueMostRecentSession() {
-        if (competitionRuntime.getCompetition() == null) {
-            competitionRuntime.loadMostRecentSession();
+        if (mojServerProperties.getMode().anyMatch(Mode.SINGLE, Mode.CONTROLLER)) {
+            if (competitionRuntime.getCompetition() == null) {
+                competitionRuntime.loadMostRecentSession();
+            }
         }
     }
 }
+
