@@ -28,58 +28,74 @@ Make sure you update the application.yaml to it works for the machine that is ru
 
 Use the following steps to get Keycloak up and running.
 
-- Download the latest standalone keycloak 19 from the link on the page [here](https://www.keycloak.org/getting-started/getting-started-zip)
+- Download the latest standalone keycloak ( >= 21 ) from the link on the page [here](https://www.keycloak.org/downloads)
 - Unpack the installation file to a directory
 - Copy the `src/main/keycloak-template/moj` directory from this project to `themes` directory within the keycloak 
   installation directory 
-- Run it using `bin/kc.sh --hostname localhost --hostname-strict-https false --http-enabled true --http-port 8888`
+- Run it using `bin/kc.sh start --hostname localhost --hostname-strict-https false --http-enabled true --http-port 8888`
   (or for windows users: `bin/kc.bat start --hostname localhost --hostname-strict-https false --http-enabled true --http-port 8888`)
 - Go the webpage at http://localhost:8888
    * Create an admin account and log in
    * Open the top left dropdown and select 'Add realm'
-     * Click on 'Browse' and select the file `keycloak-19-moj-realm.json` in the root of this project
+     * Click on 'Browse' and select the file `realm-mastersofjava.json` in the root of this project
      * Click 'Create'
-   * Click on 'Realm settings' in the menu bar on the left. 
-     * Click on 'Partial import' from the top right 'Action' dropdown.
-     * Click on 'Browse' and select the file `keycloak-19-moj-realm.json` in the root of this project again
-     * Select all checkboxes under 'Choose the resources you want to import'
-     * Select 'Skip' as resolution for resources already existing
-     * Click 'Import' and then 'Close'
-     * Due to https://github.com/keycloak/keycloak/issues/12256 the following steps need to be done also.
-       * Update the 'Display name' to 'Masters of Java' (see )
-       * Click the 'Login' tab and enable 'User registration'.
-       * Click the 'User registration tab' and then the tab 'Default groups'
-         * Click 'Add groups'
-         * Click `>` behind the `moj` group
-         * Select `users` and click 'Add'
-       * Click the 'General' tab and then 'Save'
-  * Click on 'Users' in the menu bar on the left.
-    * Click on 'Create new user' and fill in the following form values:
-      * Username: `admin`
-      * Email: <a valid email address>
-      * Email verified: toggle to 'On'
-      * Firstname: 'A'
-      * Lastname: 'Admin'
-      * Enabled: toggle to 'On'
-      * Required user actions: leave blank
-      * Click 'Join Groups'
-        * Click `>` behind the `moj` group
-        * Select `admins`
-        * Click 'Join' and then 'Create'
-      * Click on the 'Credentials' tab and then on 'Set password'
-        * Fill in the two password fields with the same password
-        * Toggle 'Temporary' to off
-        * Click 'Save' and then 'Save password'
+   * Click on 'Users' in the menu bar on the left.
+     * Click on 'Create new user' and fill in the following form values:
+       * Email: <a valid email address>
+       * Email verified: toggle to 'On'
+       * Firstname: 'A'
+       * Lastname: 'Admin'
+       * Enabled: toggle to 'On'
+       * Required user actions: leave blank
+       * Click 'Join Groups'
+         * Select `admin`
+         * Click 'Join' and then 'Create'
+       * Click on the 'Credentials' tab and then on 'Set password'
+         * Fill in the two password fields with the same password
+         * Toggle 'Temporary' to off
+         * Click 'Save' and then 'Save password'
    
 You should now have Keycloak running with a single admin user.
             
-#### Starting
-- From any IDE you can just run the `MojServerApplication.class`
-- Startup via commandline: `mvn compile spring-boot:run`
-- Advice: do not change the official application.yaml when not needed. 
-    - Use a customizable application-local.yaml via: `mvn compile spring-boot:run -Dspring.profiles.active=local`
+### Starting
+Masters of Java can run in three different modes:
 
-#### Gamemaster Dashboard
+* Single
+* Controller
+* Worker
+
+#### Mode Single
+The single mode runs both controller and worker in one. For running small competitions this will probably be good enough.
+To start in single mode you need to do the following:
+
+* Copy the `src/main/resources/application-single.yaml.tpl` to `src/main/resources/application-single-local.yaml`
+* Fill in the blanks
+* Compile everything: `mvn clean verify`
+* Start using `mvn spring-boot:run -Dspring.profiles.active=single-local`
+
+#### Mode Controller
+The controller mode starts only the controller part. You will need to attach a few workers, see Mode Worker for this. 
+Use this when running bigger competitions ( > 5 teams). To start in controller mode you need to de to following:
+
+* Copy the `src/main/resources/application-controller.yaml.tpl` to `src/main/resources/application-controller-local.yaml`
+* Fill in the blanks
+* Compile everything: `mvn clean verify`
+* Start using `mvn spring-boot:run -Dspring.profiles.active=controller-local`
+
+#### Mode Worker
+The worker mode starts only the worker part. You will need to have a controller running to which you can connect.
+See Mode Controller for this. To start in worker mode you need to do the following:
+
+* Copy the `src/main/resources/application-worker.yaml.tpl` to `src/main/resources/application-worker-local.yaml`
+* Fill in the blanks
+* Compile everything: `mvn clean verify`
+* Start using `mvn spring-boot:run -Dspring.profiles.active=worker-local`
+
+Depending on the amount of teams competing, you will need 1 or more workers. A good ratio is around 1 worker per 5 teams,
+though you might need more depending on the nature of the assignments. When assignments are heavy on testing or teams need
+to run tests or compiles all the time having more workers is better.
+
+### GUI
 
 The Gamemaster dashboard can be found on [http://localhost:8080/control](http://localhost:8080/control). The first time 
 you start the application you will have to log in using the admin credentials created in the keycloak setup and the 
@@ -88,7 +104,6 @@ MoJ game server admin console should appear.
 All following web sessions will also be redirected to keycloak and one can create a new account there and log in. When 
 you want to run the admin console and login with a user as well on the same desktop environment, you need to open a 
 separate browser session, e.g. using a 'private window' or another browser implementation.
-
 
 # License
 
