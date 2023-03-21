@@ -1,21 +1,26 @@
 package performance;
 
+import java.util.function.Supplier;
+
+import static performance.PerformanceTest.random;
+
 public class Conf {
 
     // number of users
-    public static int users = 100;
+    public static int users = 50;
     // time in seconds that users starting up (reading the assignment etc)
     public static long ramp = 20;
     // Every user will start with a compile, and then run 'x' attempts before submitting
-    public static int attemptCount = 5;
+    public static int attemptCount = 10;
+    public static Supplier<Integer> waitTimeBetweenSubmits = () -> random(0, 60);
 
-    public final static String mojServerUrl = "localhost:8080";
+    public final static String mojServerUrl = "mastersofjava.nljug";
 
-    public final static String keyCloakUrl = "localhost:8888";
+    public final static String keyCloakUrl = "auth.mastersofjava.nljug";
     // The secret of the keyCloak client named 'gatling' with 'Client authentication' set to true
-    public static final String keyCloakClientSecret = "2OTUkmLo2QxpjePtmQ8irIXsEyIKsO9g";
-    public static final String keyCloakAdminUsername = "admin";
-    public static final String keyCloakAdminPassword = "admin";
+    public static final String keyCloakClientSecret = "mde0YixqQDgoeeXyyRoCk7aNMzozYic9";
+    public static final String keyCloakAdminUsername = "keycloak";
+    public static final String keyCloakAdminPassword = "7d597bacdfbc41b8b067e3a5eef009c1";
 
 
     public static final String assigmentName = "requirement hell";
