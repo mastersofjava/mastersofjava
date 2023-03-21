@@ -12,8 +12,8 @@ performancewise since it has many unittests that call eachother.
 ### Get Keycloak client secret
 1. Go to keycloack and open realm 'moj'
 2. Go to Clients
-3. Add a client named 'gatling'
-4. In the settings tab, enable 'Client authentication' and save
+3. Add a client with ID and name 'gatling' (type OpenID Connect)
+4. In the next page, enable 'Client authentication' and save
 5. In the credentials tab, copy the client secret
 6. Paste it in the final field in KeyCloakHelper.keyCloakClientSecret
 

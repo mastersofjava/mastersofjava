@@ -144,8 +144,7 @@ public class PerformanceTest extends Simulation {
                                                                 Conf.attempt2,
                                                                 Conf.attempt3,
                                                                 Conf.attempt4,
-                                                                Conf.attempt5,
-                                                                Conf.correctSolution
+                                                                Conf.attempt5
                                                         ))))
 //                                .await(10).on(
 //                                        ws.checkTextMessage("Testing started")
@@ -178,7 +177,7 @@ public class PerformanceTest extends Simulation {
 //                                        ws.checkTextMessage("Testing ended")
 //                                                .check(regex(".*TESTING_ENDED.*")))
                         )
-                                .pause(session -> Duration.ofSeconds(random(10, 70)))
+                                .pause(session -> Duration.ofSeconds(Conf.waitTimeBetweenSubmits.get()))
                 )
                 .pause(1)
 
