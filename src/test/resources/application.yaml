@@ -1,27 +1,17 @@
 moj:
   server:
-    assignment-repo: /tmp/assignments
+#    mode: single
+    data-directory: /tmp/moj-data
     languages:
       java-versions:
         - version: 17
           name: Java 17
           compiler: /tmp/bin/javac
           runtime: /tmp/bin/java
-    directories:
-      base-directory: /tmp/moj-data
     runtime:
       game-threads: 10
-      play-sounds: false
     competition:
-      uuid: 77eff9b5-46cb-4420-bddf-fea52716fc6a
       success-bonus: 400
-
-keycloak:
-   auth-server-url: http://localhost:8180/auth
-   realm: moj
-   resource: moj
-   public-client: true
-   principal-attribute: preferred_username
 
 spring:
   h2:
@@ -38,8 +28,31 @@ spring:
     mode: HTML
   flyway:
     enabled: false
-  #    baseline-on-migrate: true
   jpa:
     generate-ddl: true
-
-logging.level.nl.moj.server: DEBUG
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: moj
+            authorization-grant-type: authorization_code
+            scope: openid,roles,email,profile
+            redirect-uri: http://nowhere.none/moj
+        provider:
+          keycloak:
+            authorization-uri: http://nowhere.none/auth
+            jwk-set-uri: http://nowhere.none/jwk
+            user-info-uri: http://nowhere.none/user
+            token-uri: http://nowhere.none/token
+            user-info-authentication-method: client_secret_post
+            user-name-attribute: preferred_username
+logging:
+  level:
+    nl.moj.server: debug
+    org.keycloak: debug
+    "org.apache.activemq.audit.base": error
+    "org.apache.activemq.audit.message": error
+    "org.hibernate.SQL": info
+    "org.hibernate.type.descriptor.sql.BasicBinder": info

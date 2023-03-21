@@ -36,6 +36,7 @@ import org.hibernate.annotations.LazyCollectionOption;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(of = {"uuid"})
+@ToString(exclude = "users")
 public class Team {
 
     @Id
@@ -43,7 +44,7 @@ public class Team {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", nullable = false, unique = true)
+    @Column(name = "uuid", nullable = false, unique = true, columnDefinition = "uuid")
     private UUID uuid;
 
     @Column(name = "name", nullable = false, unique = true)
@@ -58,13 +59,7 @@ public class Team {
     @Column(name = "indication")
     private String indication;
 
-    // TODO this is here to make sure we have the teams as FetchType.EAGER gives issues ...
-    // we should be able to do without this, figure out how.
-    @LazyCollection(LazyCollectionOption.FALSE)
-    @OneToMany
-    @JoinTable(name = "team_users",
-            joinColumns = @JoinColumn(name = "team_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"))
+    @OneToMany(mappedBy = "team")
     @Builder.Default
     private List<User> users = new ArrayList<>();
 

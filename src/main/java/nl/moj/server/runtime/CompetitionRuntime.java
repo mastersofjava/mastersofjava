@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,30 +16,31 @@
 */
 package nl.moj.server.runtime;
 
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.*;
+import javax.transaction.Transactional;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.model.CompetitionSession;
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.message.service.MessageService;
+import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.runtime.model.*;
-import nl.moj.server.runtime.repository.AssignmentResultRepository;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
 
 @Service
 @RequiredArgsConstructor
@@ -52,273 +53,147 @@ public class CompetitionRuntime {
 
     private final TeamService teamService;
 
+    private final TeamRepository teamRepository;
+
     private final CompetitionSessionRepository competitionSessionRepository;
 
-    private final AssignmentResultRepository assignmentResultRepository;
+    private final AssignmentStatusRepository assignmentStatusRepository;
 
-    private final MessageService messageService;
+    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
 
-    public static class CompetitionExecutionModel {
-        @Getter
-        private Competition competition;
+    private final CompetitionRepository competitionRepository;
 
-        @Getter
-        private CompetitionSession competitionSession;
-        @JsonIgnore
-        private List<OrderedAssignment> completedAssignments = new ArrayList<>();
+    private final AssignmentRepository assignmentRepository;
 
-        @JsonIgnore
-        private AssignmentRuntime.AssignmentExecutionModel assignmentExecutionModel = new AssignmentRuntime.AssignmentExecutionModel();
-
-        public AssignmentRuntime.AssignmentExecutionModel getAssignmentExecutionModel() {
-            return assignmentExecutionModel;
-        }
-
-        public boolean isRunning() {
-            return assignmentExecutionModel.isRunning();
-        }
-        public int getAmountOfCompletedAssignments() {
-            return completedAssignments.size();
-        }
-        public boolean isNewAssignmentInCompetition(OrderedAssignment orderedAssignment) {
-            return !completedAssignments.contains(orderedAssignment);
-        }
-
-        public String getRunningAssignmentName() {
-            if (assignmentExecutionModel.getOrderedAssignment()==null||assignmentExecutionModel.getOrderedAssignment().getAssignment()==null) {
-                return "none";
-            }
-            return assignmentExecutionModel.getOrderedAssignment().getAssignment().getName();
-        }
-        public String getTimer() {
-            if (assignmentExecutionModel.getTimer()==null) {
-                return "[no timer]";
-            }
-            return "[start " +new Date(assignmentExecutionModel.getTimer().getStartTime()) + ", left:" + assignmentExecutionModel.getTimeRemaining()+ "]";
-        }
-    }
-    private Map<Long, CompetitionExecutionModel> activeCompetitionsMap = new TreeMap<>();
-
-    public Map<Long, CompetitionExecutionModel> getActiveCompetitionsMap() {
-        return activeCompetitionsMap;
-    }
-    public Map<Long, String> getRunningCompetitionsQuickviewMap() {
-        Map<Long, String> result = new TreeMap<>();
-        for (CompetitionExecutionModel model : activeCompetitionsMap.values()) {
-            if (model.getAssignmentExecutionModel().isRunning()) {
-                result.put(model.competition.getId(), model.competition.getDisplayName());
-            }
-        }
-        return result;
-    }
-
+    //TODO this is state we should not have
     @Getter
-    private CompetitionExecutionModel competitionModel = new CompetitionExecutionModel();
+    private Competition competition;
 
-    public CompetitionSession getCompetitionSession() {
-        return competitionModel.getCompetitionSession();
-    }
-    public Competition getCompetition() {
-        return competitionModel.getCompetition();
-    }
+    //TODO this is state we should not have
+    @Getter
+    private UUID sessionId;
 
-
-    private void registerCurrentAdminCompetition(Competition competition) {
-        if (activeCompetitionsMap.containsKey(competition.getId())) {
-            competitionModel = activeCompetitionsMap.get(competition.getId());
-            competitionModel.competition = competition;
-            return;
+    @Transactional(Transactional.TxType.REQUIRED)
+    public CompetitionSession startSession(UUID id) throws CompetitionServiceException {
+        Competition competition = competitionRepository.findByUuid(id);
+        if (competition == null) {
+            throw new CompetitionServiceException("No competition for id " + id);
         }
-        competitionModel = new CompetitionExecutionModel();
-        competitionModel.competition = competition;
-        activeCompetitionsMap.put(competition.getId(), competitionModel);
+        return startSession(competition);
     }
 
-    public boolean isActiveCompetition(Competition competition) {
-        return activeCompetitionsMap.get(competition.getId())!=null;
+    @Transactional(Transactional.TxType.MANDATORY)
+    public CompetitionSession startSession(Competition competition) {
+        log.info("Starting new session for session {}", competition.getName());
+        CompetitionSession session = competitionSessionRepository.save(createNewCompetitionSession(competition));
+
+        this.competition = competition;
+        this.sessionId = session.getUuid();
+        return session;
     }
-    public Competition selectCompetitionByUUID(UUID uuid) {
-        Competition result = null;
-        for (CompetitionExecutionModel model: activeCompetitionsMap.values()) {
-            if (model.getCompetition().getUuid().equals(uuid) || model.getCompetitionSession().getUuid().equals(uuid)) {
-                result = model.getCompetition();
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void continueSession(CompetitionSession session) {
+        this.competition = session.getCompetition();
+        this.sessionId = session.getUuid();
+        log.info("Continuing session {} for competition {}", session.getUuid(), this.competition.getName());
+
+        restoreSession(session.getUuid());
+    }
+
+    // TODO do we really need this?
+    private void restoreSession(UUID sid) {
+        try {
+            if (getCurrentAssignment() != null) {
+                stopAssignment(sid, getCurrentAssignment());
             }
+        } catch (CompetitionServiceException e) {
+            log.warn("Stopping current assignment failed during session restore, ignoring.", e);
         }
-        return result;
-    }
-    public CompetitionRuntime selectCompetitionRuntimeForGameStart(Competition competition) {
-        CompetitionRuntime result = new CompetitionRuntime(assignmentRuntime, assignmentService,teamService, competitionSessionRepository,assignmentResultRepository,messageService);
-        if (activeCompetitionsMap.get(competition.getId())==null) {
-            return this;
-        }
-        result.competitionModel = activeCompetitionsMap.get(competition.getId());
-        return result;
-    }
-    public void startSession(Competition competition) {
-        log.info("Starting new session for competition {}", competition.getName());
-        registerCurrentAdminCompetition(competition);
-        competitionModel.competitionSession = competitionSessionRepository.save(createNewCompetitionSession(competition));
-        restoreSession();
-    }
-    public List<AssignmentDescriptor> getAssignmentInfoOrderedForCompetition() {
-        List<AssignmentDescriptor> notSortedList = this.getAssignmentInfo();
-        return competitionModel.competition.getAssignmentsInOrder().stream()
-                .map(OrderedAssignment::getAssignment)
-                .map(Assignment::getName)
-                .flatMap(name -> {
-                    return notSortedList.stream()
-                            .filter(assignmentDescriptor -> assignmentDescriptor.getName().equals(name));
-                })
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * load competition session, this also restores the competition assignments and the completed competition assignments
-     * @param competition
-     * @param session
-     */
-    public void loadSession(Competition competition, UUID session) {
-        log.info("Loading session {} for competition {}", session, competition.getName());
-        registerCurrentAdminCompetition(competition);
-        competitionModel.competitionSession = competitionSessionRepository.findByUuid(session);
-        restoreSession();
-    }
-    public void changeSession(UUID session) {
-        log.info("changeSession " +session );
-        CompetitionSession competitionSession = competitionSessionRepository.findByUuid(session);
-        registerCurrentAdminCompetition(competitionSession.getCompetition());
-        competitionModel.competitionSession = competitionSession;
-        restoreSession();
-    }
-    @Transactional
-    public void restoreSession() {
-        //stopCurrentAssignment();
-        Instant nowTime = Instant.now();
-        competitionModel.competitionSession.setAvailable(true);
-        List<CompetitionSession> sessions = competitionSessionRepository.findByCompetition(competitionModel.competition);
-
-        for (CompetitionSession session: sessions) {
-            if (session.isAvailable() && !session.getId().equals(competitionModel.competitionSession.getId())) {
-                session.setAvailable(false);
-                competitionSessionRepository.save(session);
-            }
-        }
-
-        competitionSessionRepository.save(competitionModel.competitionSession);
-        log.info("restoreSession " + competitionModel.competitionSession.getId() + " " +competitionModel.competitionSession.isRunning()  + " " +competitionModel.competitionSession.getTimeLeft() + " " +competitionModel.competition.getShortName());
-        Instant maxTime = nowTime.atZone(ZoneOffset.UTC).minusHours(1).toInstant();
-        // get the completed assignment uuids
-        List<UUID> completedAssignmentList = assignmentResultRepository.findByCompetitionSession(competitionModel.competitionSession).stream()
-                .filter(ar ->
-                    ar.isAssignmentEnded(maxTime)
-                )
-                .map(ar -> ar.getAssignmentStatus().getAssignment().getUuid())
-                .distinct().collect(Collectors.toList());
-
-        // this also eagerly loads the assignments in the competition object (needed for hibernate)
-        competitionModel.competition.getAssignments().forEach(oa -> {
-            if (completedAssignmentList.contains(oa.getAssignment().getUuid())) {
-                competitionModel.completedAssignments.add(oa);
-            }
-        });
-
-        competitionModel.assignmentExecutionModel.setCompetitionSession(competitionModel.competitionSession);
-    }
-
-    public OrderedAssignment getCurrentRunningAssignment() {
-        if (competitionModel.assignmentExecutionModel==null) {
-            return null;
-        }
-        if (competitionModel.assignmentExecutionModel.isRunning()) {
-            return competitionModel.assignmentExecutionModel.getOrderedAssignment();
-        }
-        return null;
-    }
-
-    public CompetitionState getCompetitionState() {
-        if (competitionModel.competitionSession != null) {
-            return CompetitionState.builder()
-                    .completedAssignments(competitionModel.completedAssignments)
-                    .build();
-        }
-        return CompetitionState.builder().build();
-    }
-
-    public OrderedAssignment determineNextAssignmentIfAny() {
-        List<OrderedAssignment> orderedAssignmentList = competitionModel.competition.getAssignmentsInOrder();
-
-        for (OrderedAssignment assigment: orderedAssignmentList) {
-            if (!competitionModel.completedAssignments.contains(assigment)) {
-                return assigment;
-            }
-        }
-        return null;
     }
 
     public ActiveAssignment getActiveAssignment() {
-        if (getActiveCompetitionsMap().containsKey(competitionModel.competition.getId())) {
-            competitionModel = getActiveCompetitionsMap().get(competitionModel.competition.getId());
-        }
-        if (competitionModel.assignmentExecutionModel.getOrderedAssignment()==null) {
-            return null;
-        }
-        return competitionModel.assignmentExecutionModel.getState();
+        return assignmentRuntime.getState();
     }
-    public void startAssignment(String name) {
-        startAssignment(name, -1);
-    }
-    public void startAssignment(String name, long timeLeft) {
 
-        Optional<OrderedAssignment> assignment = competitionModel.competition.getAssignments().stream()
-                .filter(a -> a.getAssignment().getName().equals(name))
+    @Transactional(Transactional.TxType.REQUIRED)
+    public AssignmentStatus startAssignment(UUID sid, UUID id) throws CompetitionServiceException {
+        // refresh competition
+        competition = competitionRepository.findByUuid(competition.getUuid());
+
+        if (isAssignmentRunning(sid, id)) {
+            log.info("Not starting assignment {} for session {}, already running.", id, sid);
+            return assignmentStatusRepository.findByCompetitionSession_UuidAndAssignment_Uuid(sid, id)
+                    .orElseThrow(() -> new CompetitionServiceException(String.format("Cannot start assignment %s, assignment not found.", id)));
+        }
+
+        Optional<CompetitionAssignment> ca = competition.getAssignments().stream()
+                .filter(a -> a.getAssignment().getUuid().equals(id))
                 .findFirst();
-        if (!assignment.isPresent()) {
-            log.error("Cannot start assignment '{}' since there is no such assignment with that name", name);
-            return;
+        if (ca.isPresent()) {
+            if (getCurrentAssignment() != null) {
+                log.debug("Stopping current assignment to start assignment '{}' '{}'", id, ca.get()
+                        .getAssignment()
+                        .getName());
+                stopAssignment(sid, getCurrentAssignment());
+            }
+            try {
+                AssignmentStatus as = assignmentRuntime.start(sid, ca.get()
+                        .getAssignment()
+                        .getUuid());
+                log.debug("Assignment '{}' '{}' started.", id, ca.get().getAssignment().getName());
+                return as;
+            } catch (AssignmentStartException ase) {
+                throw new CompetitionServiceException(String.format("Cannot start assignment %s.", id), ase);
+            }
+        } else {
+            throw new CompetitionServiceException(String.format("Cannot start assignment %s, assignment not found.", id));
         }
-        boolean isNew = competitionModel.isNewAssignmentInCompetition(assignment.get()) || competitionModel.getCompetitionSession().isRunning();
-        if (!isNew) {
-            log.error("Cannot start assignment '{}' because already started/completed in competition {}.", name , competitionModel.competition.getName());
-            return;
+    }
+
+    @Transactional(Transactional.TxType.REQUIRED)
+    public Optional<AssignmentStatus> stopAssignment(UUID sid, UUID id) throws CompetitionServiceException {
+        if (isAssignmentRunning(sid, id)) {
+            log.info("Stopping assignment {} in session {}.", id, sid);
+            return assignmentRuntime.stop();
         }
-        if (isWithAssignmentRunning() && !competitionModel.getCompetitionSession().isRunning() ) {
-            log.debug("stopping current assignment to start assignment '{}'", name);
-            stopCurrentSession();
+        return Optional.empty();
+    }
+
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void resetAssignment(UUID sid, UUID id) throws CompetitionServiceException {
+
+        CompetitionSession cs = competitionSessionRepository.findByUuid(sid);
+        if (cs == null) {
+            throw new CompetitionServiceException(String.format("Unable to reset assignment %s, session %s not found.", id, sid));
+        }
+        Assignment assignment = assignmentRepository.findByUuid(id);
+        if (assignment == null) {
+            throw new CompetitionServiceException(String.format("Unable to reset assignment %s, assignment %s not found.", id, sid));
         }
 
-        try {
-            log.info("startAssignment name {}, c {}", name , competitionModel.competition.getName());
-            assignmentRuntime.start(assignment.get(), competitionModel);
-            competitionModel.completedAssignments.add(assignment.get());
-            getCompetitionSession().setRunning(true);
-            getCompetitionSession().setAssignmentName(name);
-            getCompetitionSession().setDateTimeStart(Instant.now());
-            getCompetitionSession().setDateTimeLastUpdate(Instant.now());
-            if (timeLeft>0) {
-                assignmentRuntime.getModel().resetTimer();
-                getCompetitionSession().setTimeLeft(timeLeft);
-            }
-            competitionSessionRepository.save(getCompetitionSession());
-        } catch( AssignmentStartException ase ) {
-            competitionModel.completedAssignments.remove(assignment.get());
-            messageService.sendStartFail(name, ase.getMessage());
-            log.error("Cannot start assignment '{}'.", name);
-        }
+        // stop assignment it might be running
+        stopAssignment(sid, id);
+
+        // clean up all matching assignment statuses
+        cs.getAssignmentStatuses()
+                .stream()
+                .filter(as -> as.getAssignment().getUuid().equals(id))
+                .forEach(assignmentStatusRepository::delete);
+
+        // clean up all team assignment statuses
+        teamAssignmentStatusRepository.deleteAll(teamAssignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, cs));
     }
-    private boolean isWithAssignmentRunning() {
-        return competitionModel.assignmentExecutionModel!=null && competitionModel.assignmentExecutionModel.getOrderedAssignment() != null;
-    }
-    public void stopCurrentSession() {
-        if (isWithAssignmentRunning()) {
-            log.info("Stopping current assignment {} uuid {}.", competitionModel.assignmentExecutionModel.getOrderedAssignment()
-                            .getAssignment()
-                            .getName(),
-                    competitionModel.assignmentExecutionModel.getOrderedAssignment().getAssignment().getUuid());
-            assignmentRuntime.stop();
-            getCompetitionSession().setRunning(false);
-            getCompetitionSession().setDateTimeLastUpdate(Instant.now());
-            competitionSessionRepository.save(getCompetitionSession());
+
+    public UUID getCurrentAssignment() {
+        if (assignmentRuntime.getAssignment() != null) {
+            return assignmentRuntime.getAssignment().getUuid();
         }
+        return null;
+    }
+
+    private boolean isAssignmentRunning(UUID sid, UUID id) {
+        return sid != null && sid.equals(getSessionId()) && id != null && id.equals(getCurrentAssignment());
     }
 
     private CompetitionSession createNewCompetitionSession(Competition competition) {
@@ -328,36 +203,19 @@ public class CompetitionRuntime {
         return newCompetitionSession;
     }
 
-    public List<AssignmentDescriptor> getAssignmentInfo() {
-        if (competitionModel.competition == null) {
-            return Collections.emptyList();
-        }
-
-        return Optional.ofNullable(competitionModel.competition.getAssignmentsInOrder()).orElse(Collections.emptyList()).stream()
-                .map(v -> assignmentService.getAssignmentDescriptor(v.getAssignment())
-                ).sorted(Comparator.comparing(AssignmentDescriptor::getDisplayName)).collect(Collectors.toList());
-    }
-
-    public List<AssignmentFile> getTeamSolutionFiles(UUID assignment, Team team) {
-        return getTeamAssignmentFiles(assignment, team).stream()
+    @Transactional(Transactional.TxType.REQUIRED)
+    public List<AssignmentFile> getTeamSolutionFiles(UUID team, UUID session, UUID assignment) {
+        return getTeamAssignmentFiles(team, session, assignment).stream()
                 .filter(f -> f.getFileType() == AssignmentFileType.EDIT).collect(Collectors.toList());
     }
 
-    private List<AssignmentFile> getTeamAssignmentFiles(UUID assignment, Team team) {
-        return competitionModel.completedAssignments.stream().filter(o -> o.getAssignment().getUuid().equals(assignment)).findFirst()
-                .map(orderedAssignment -> teamService.getTeamAssignmentFiles(competitionModel.competitionSession, orderedAssignment.getAssignment(), team))
-                .orElse(Collections.emptyList());
+    private List<AssignmentFile> getTeamAssignmentFiles(UUID team, UUID session, UUID assignment) {
+        return teamService.getTeamAssignmentFiles(team, session, assignment);
     }
-    public AssignmentStatus handleLateSignup(Team team) {
-        return competitionModel.getAssignmentExecutionModel().initAssignmentForLateTeam(team);
-    }
-    public AssignmentStatus handleLateSignup(Team team, UUID uuidInput, String nameInput) {
-        UUID uuid   = competitionModel.getAssignmentExecutionModel().getCompetitionSession().getUuid();
-        String name = competitionModel.getAssignmentExecutionModel().getOrderedAssignment().getAssignment().getName();
 
-        Assert.isTrue(name.equals(nameInput),"name not valid: " + nameInput + ", expected " +name);
-        Assert.isTrue(uuid.equals(uuidInput),"uuid not valid: " + uuidInput + ", expected " +uuid);
-        return competitionModel.getAssignmentExecutionModel().initAssignmentForLateTeam(team);
+    @Transactional(Transactional.TxType.MANDATORY)
+    public TeamAssignmentStatus handleLateSignup(Team team) {
+        return assignmentRuntime.initAssignmentForLateTeam(team);
     }
 
     public List<AssignmentFile> getSolutionFiles(UUID assignment) {
@@ -366,27 +224,11 @@ public class CompetitionRuntime {
     }
 
     private List<AssignmentFile> getAssignmentFiles(UUID assignment) {
-        return competitionModel.completedAssignments.stream()
-                .filter(o -> o.getAssignment().getUuid().equals(assignment))
-                .findFirst()
-                .map(orderedAssignment -> assignmentService.getAssignmentFiles(orderedAssignment.getAssignment()))
-                .orElse(Collections.emptyList());
+        return assignmentService.getAssignmentFiles(assignment);
     }
 
-    public List<CompetitionSession> getSessions() {
-        return competitionSessionRepository.findByCompetition(competitionModel.competition);
-    }
-
-    public void loadMostRecentSession(Competition competition) {
-        CompetitionSession session = competitionSessionRepository.findByCompetition(competition)
-                .stream()
-                .max(Comparator.comparing(CompetitionSession::getId))
-                .orElse(null);
-
-        if (session == null) {
-            startSession(competition);
-        } else {
-            loadSession(competition, session.getUuid());
-        }
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void loadMostRecentSession() {
+        competitionSessionRepository.findMostRecent().ifPresent(this::continueSession);
     }
 }

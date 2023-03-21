@@ -16,16 +16,16 @@
 */
 package nl.moj.server.submit.repository;
 
-import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.submit.model.SubmitAttempt;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface SubmitAttemptRepository extends JpaRepository<SubmitAttempt, Long> {
-    List<SubmitAttempt> findByAssignmentStatus(AssignmentStatus assignment);
-
+    List<SubmitAttempt> findByAssignmentStatus(TeamAssignmentStatus assignment);
+    SubmitAttempt findByUuid(UUID attempt);
 }

@@ -16,16 +16,16 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.assignment.descriptor.AssignmentDescriptor;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 @SpringBootTest
 public class AssignmentDurationTest extends BaseRuntimeTest {
@@ -41,18 +41,18 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 
     @Test
     public void shouldRunForSpecifiedDuration() throws Exception {
-        OrderedAssignment oa = getAssignment("parallel");
+        CompetitionAssignment oa = getAssignment("parallel");
 
         Assertions.assertThat(oa).isNotNull();
 
-        AssignmentDescriptor ad = assignmentService.getAssignmentDescriptor(oa.getAssignment());
+        AssignmentDescriptor ad = assignmentService.resolveAssignmentDescriptor(oa.getAssignment());
 
-        Future<?> mainHandle = assignmentRuntime.start(oa, competitionRuntime.getCompetitionSession());
+        CompletableFuture<Void> done = assignmentRuntime.startCompletable(competitionRuntime.getSessionId(), oa.getAssignment().getUuid());
 
         try {
-            mainHandle.get(ad.getDuration().toSeconds() + 1, TimeUnit.SECONDS);
+            done.get(ad.getDuration().toSeconds() + 10, TimeUnit.SECONDS);
         } catch (Exception e) {
-            mainHandle.cancel(true);
+            done.cancel(true);
             Assertions.fail("Caught unexpected exception.", e);
         }
     }

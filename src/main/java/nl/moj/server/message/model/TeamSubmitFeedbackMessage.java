@@ -32,6 +32,9 @@ public class TeamSubmitFeedbackMessage {
     private final String team;
     private final String message;
     private final boolean success;
+    private final boolean completed;
     private final long score;
     private final int remainingSubmits;
+    private final boolean rejected;
+    private final String traceId;
 }

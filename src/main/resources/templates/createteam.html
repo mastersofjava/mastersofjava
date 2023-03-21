@@ -34,16 +34,16 @@
                 <p>This seems to be the first time you start the game. Please specify your team details.</p>
             </div>
             <form class="form" th:method="post" th:action="@{/team}" th:object="${teamForm}">
-                <div class="form-group">
+                <div class="mb-3">
                     <label for="team_name">Name</label>
                     <input type="text" class="form-control" th:field="*{name}" id="team_name" aria-describedby="teamHelp" placeholder="Enter team name you are competing for."/>
                     <small id="teamHelp" class="form-text text-muted">This is shown in the competition as your team.</small>
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <label for="team_name">Company</label>
                     <input type="text" class="form-control" th:field="*{company}" id="team_company" placeholder="The company you are competing for."/>
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <label for="team_name">Country</label>
                     <input type="text" class="form-control" th:field="*{country}" id="team_country" aria-describedby="teamHelp" placeholder="The country you reside in."/>
                 </div>

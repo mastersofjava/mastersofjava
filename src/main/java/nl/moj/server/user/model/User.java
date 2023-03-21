@@ -14,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of = {"uuid"})
+@EqualsAndHashCode(of = {"name"})
 public class User {
 
     @Id
@@ -22,10 +22,7 @@ public class User {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", nullable = false, unique = true)
-    private UUID uuid;
-
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
 
     @Column(name = "given_name", nullable = false)
@@ -38,8 +35,6 @@ public class User {
     private String email;
 
     @ManyToOne
-    @JoinTable(name = "team_users",
-            joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "team_id", referencedColumnName = "id"))
+    @JoinColumn(name="team_id")
     private Team team;
 }

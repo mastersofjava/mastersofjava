@@ -21,8 +21,8 @@ import java.util.UUID;
 
 import lombok.Builder;
 import lombok.Getter;
-import nl.moj.server.compiler.service.CompileResult;
-import nl.moj.server.test.service.TestResults;
+import nl.moj.worker.java.compile.CompileOutput;
+import nl.moj.worker.java.test.TestCaseOutput;
 
 @Builder(toBuilder = true)
 @Getter
@@ -40,9 +40,9 @@ public class SubmitResult {
     @Builder.Default
     private final long score = 0L;
 
-    private CompileResult compileResult;
+    private CompileOutput compileResult;
 
-    private TestResults testResults;
+    private TestCaseOutput testResults;
 
     @Builder.Default
     private boolean success = false;

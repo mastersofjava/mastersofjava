@@ -29,8 +29,11 @@ public class TeamTestFeedbackMessage {
 
     private final MessageType messageType = MessageType.TEST;
     private final UUID uuid;
-    private final String message;
+    private final UUID testId;
     private final String test;
+    private final String message;
     private final boolean success;
+    private final boolean rejected;
+    private String traceId;
 
 }

@@ -16,10 +16,7 @@
 */
 package nl.moj.server.rankings.service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,14 +24,18 @@ import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.rankings.model.Ranking;
 import nl.moj.server.rankings.model.RankingHeader;
 import nl.moj.server.runtime.model.AssignmentResult;
+import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import org.springframework.stereotype.Component;
+
+import javax.transaction.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -43,10 +44,24 @@ public class RankingsService {
     private final TeamRepository teamRepository;
     private final AssignmentService assignmentService;
     private final AssignmentResultRepository assignmentResultRepository;
+    private final CompetitionSessionRepository competitionSessionRepository;
 
+    @Transactional(Transactional.TxType.REQUIRED)
+    public List<Ranking> getRankings(UUID sessionId) {
+        return getRankings(competitionSessionRepository.findByUuid(sessionId));
+    }
+
+    @Transactional(Transactional.TxType.MANDATORY)
     public List<Ranking> getRankings(CompetitionSession session) {
         return getRankings(session, null);
     }
+
+    @Transactional(Transactional.TxType.REQUIRED)
+    public List<Ranking> getRankings(UUID sessionId, String selectedYearFilter) {
+        return getRankings(competitionSessionRepository.findByUuid(sessionId),null);
+    }
+
+    @Transactional(Transactional.TxType.MANDATORY)
     public List<Ranking> getRankings(CompetitionSession session, String selectedYearFilter) {
         List<Ranking> rankings = new ArrayList<>();
         if (session != null) {
@@ -78,15 +93,20 @@ public class RankingsService {
         return rankings;
     }
 
-    public List<RankingHeader> getRankingHeaders(CompetitionState competitionState) {
-        return competitionState.getCompletedAssignments()
-                .stream()
-                .map(oa -> RankingHeader.builder()
-                        .orderedAssignment(oa)
-                        .displayName(assignmentService.getAssignmentDescriptor(oa.getAssignment()).getDisplayName())
-                        .build())
-                .collect(Collectors.toList());
+    @Transactional(Transactional.TxType.REQUIRED)
+    public List<RankingHeader> getRankingHeaders(UUID sessionId) {
+        return getRankingHeaders(competitionSessionRepository.findByUuid(sessionId));
+    }
 
+    @Transactional(Transactional.TxType.MANDATORY)
+    public List<RankingHeader> getRankingHeaders(CompetitionSession session) {
+        return session.getAssignmentStatuses()
+                .stream()
+                .sorted(Comparator.comparing(AssignmentStatus::getDateTimeStart))
+                .map( as -> RankingHeader.builder()
+                        .assignment(as.getAssignment().getUuid())
+                        .displayName(assignmentService.resolveAssignmentDescriptor(as.getAssignment()).getDisplayName())
+                        .build()).toList();
     }
 
     private Stream<AssignmentResult> getTeamAssignments(List<AssignmentResult> assignmentResults, Team t) {

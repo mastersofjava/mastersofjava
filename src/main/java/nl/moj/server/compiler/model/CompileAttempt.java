@@ -16,12 +16,12 @@
 */
 package nl.moj.server.compiler.model;
 
+import lombok.*;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
+
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
-
-import lombok.*;
-import nl.moj.server.runtime.model.AssignmentStatus;
 
 @Entity
 @Table(name = "compile_attempts")
@@ -40,21 +40,39 @@ public class CompileAttempt {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", nullable = false, updatable = false)
+    @Column(name = "uuid", nullable = false, unique = true, columnDefinition = "uuid")
     private UUID uuid;
-
-    @Column(name = "date_time_start", nullable = false)
-    private Instant dateTimeStart;
-
-    @Column(name = "date_time_end", nullable = false)
-    private Instant dateTimeEnd;
 
     @ManyToOne
     @JoinColumn(name = "assignment_status_id", nullable = false)
-    private AssignmentStatus assignmentStatus;
+    private TeamAssignmentStatus assignmentStatus;
 
-    @Column(name = "success", nullable = false)
-    private boolean success;
+    @Column(name = "date_time_register", nullable = false)
+    private Instant dateTimeRegister;
+
+    @Column(name = "worker", columnDefinition = "TEXT")
+    private String worker;
+
+    @Column(name = "trace", columnDefinition = "TEXT")
+    private String trace;
+
+    @Column(name = "date_time_start")
+    private Instant dateTimeStart;
+
+    @Column(name = "date_time_end")
+    private Instant dateTimeEnd;
+
+    @Column(name = "success")
+    private Boolean success;
+
+    @Column(name = "timeout")
+    private Boolean timeout;
+
+    @Column(name = "aborted")
+    private Boolean aborted;
+
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
 
     @Column(name = "compiler_output", columnDefinition = "TEXT")
     private String compilerOutput;

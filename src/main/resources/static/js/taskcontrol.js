@@ -1,344 +1,333 @@
+let clock = null;
+let askingForAudio = false;
 
 $(document).ready(function () {
-    connect();
-    initializeAssignmentClock();
-    clientOnload();
-});
+    setTimeout(() => {
+        connect()
+        initializeAssignmentClock()
+        initXHR()
+        //toggleTicks()
+    }, 1000)
+})
 
 function connect() {
     window.stompClient = new StompJs.Client({
-        brokerURL: ((window.location.protocol === "https:") ? "wss://" : "ws://")
+        brokerURL: ((window.location.protocol === 'https:') ? 'wss://' : 'ws://')
             + window.location.hostname
             + ':' + window.location.port
-            + "/control/websocket",
+            + '/control/websocket',
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000
-    });
+    })
 
-    stompClient.onConnect = function(frame) {
-        console.log('Connected to control');
-        console.log('Subscribe to /user/queue/controlfeedback');
-        stompClient.subscribe('/user/queue/controlfeedback',
-            function (msg) {
-                console.log("/user/queue/controlfeedback ");
-                showAlert(msg.body);
-                if (msg.body.indexOf('reload')!==-1) {
-                    reloadPage();
+    stompClient.onConnect = function () {
+        stompClient.subscribe("/queue/session",
+            function (data) {
+                const msg = JSON.parse(data.body);
+                console.log('received:',msg)
+                if (competitionHandlers.hasOwnProperty(msg.messageType)) {
+                    competitionHandlers[msg.messageType](msg);
                 }
-                msg.ack();
+                data.ack();
             },
-            {ack: 'client'});
-        stompClient.subscribe('/queue/controlfeedback',
-            function(msg){
-                console.log("/queue/controlfeedback ");
-                console.log(msg);
-                var m = JSON.parse(msg.body);
-                showAlert('['+m.assignment +'] ' + m.cause);
-                msg.ack();
-            },
-            {ack: 'client'});
-        console.log('Subscribe to /control/queue/time');
-        stompClient.subscribe('/queue/time',
-            function (msg) {
-                console.log("/queue/time");
-                var message = JSON.parse(msg.body);
-                if (clock) {
-                    clock.sync(message.remainingTime, message.totalTime);
-                }
-                msg.ack();
-            },
-            {ack: 'client'});
-        console.log('subscribe to /control/queue/start');
-        stompClient.subscribe('/queue/start',
-            function (msg) {
-                console.log("/queue/start");
-                reloadPage();
-                msg.ack();
-            },
-            {ack: 'client'});
-        console.log('subscribe to /control/queue/stop');
-        stompClient.subscribe('/queue/stop',
-            function (msg) {
-                console.log("/queue/stop");
-                if (clock) {
-                    clock.stop();
-                }
-                msg.ack();
-            },
-            {ack: 'client'});
+            {ack: 'client'})
+    }
+
+    const competitionHandlers = {};
+    competitionHandlers['TIMER_SYNC'] = function (msg) {
+        if (clock) {
+            if (clock.needsAudioAccess()) {
+                askForAudio()
+            }
+            clock.sync(msg.remainingTime, msg.totalTime)
+        }
+    };
+    competitionHandlers['STOP_ASSIGNMENT'] = function (_) {
+        if (clock) {
+            clock.stop();
+        }
     };
 
-    stompClient.activate();
+    stompClient.activate()
 }
 
-function reloadPage() {
+function reloadPage(timeout = 1000) {
     window.setTimeout(function () {
-        window.location.reload();
-    }, 1000);
-}
-
-function isWithRunningAssignment() {
-    return $('#play:visible').length === 1;
-}
-function getActiveAssignmentIfAny() {
-    if (!isWithRunningAssignment()) {
-        return null;
-    }
-    return $('#pills-competitie').attr('title');
-}
-function getSelectedAssignmentIfAny() {
-    return $("input[name='assignment']:checked").val();
-}
-function isWithCompletedSelectedAssignment() {
-    return $("input[name='assignment']:checked").closest('.completed').length===1;
-}
-function startTask() {
-    var taskname = validateAssignmentSelected();
-    if (!taskname) {
-        return;// user gets feedback to first select an assigment beforehand.
-    }
-    var isDefaultStart = !isWithRunningAssignment() && !isWithCompletedSelectedAssignment();
-
-    if (isDefaultStart) {
-        clientSend("/app/control/starttask",  {'taskName': taskname});
-
-        var tasktime = $("input[name='assignment']:checked").attr('time');
-
-        console.log('tasktime ' + tasktime);
-        $assignmentClock = $('#assignment-clock');
-        $assignmentClock.attr('data-time', tasktime);
-        $assignmentClock.attr('data-time-left', tasktime);
-    } else {
-        var activeAssignment = getActiveAssignmentIfAny();
-        var selectedAssignment = getSelectedAssignmentIfAny();
-
-        if (activeAssignment===selectedAssignment||isWithCompletedSelectedAssignment()) {
-            $('#restartAssignment-modal').find('.openModalViaJs').click();
-        } else {
-            $('#startAssignmentNow-modal').find('.openModalViaJs').click();
-        }
-    }
-}
-function startTaskSmartStartNow() {
-    // start directly: ActiveAssignment !== SelectedAssignment
-    clientSend("/app/control/stoptask", {'taskName':getSelectedAssignmentIfAny()});
-}
-function startTaskSmartRestart() {
-    // restart smart: ActiveAssignment === SelectedAssignment
-    clientSend("/app/control/restartAssignment", {
-        'taskName': getSelectedAssignmentIfAny(),
-        'value':getSelectedAssignmentIfAny()
-    });
-}
-/**
- * this will stop the current running assignment and save all scores.
- */
-function stopTask() {
-    if (validateAssignmentSelected()) {
-        clientSend("/app/control/stoptask", {});
-    }
-}
-
-function restartAssignment() {
-    var taskname = validateAssignmentSelected();
-    if (!taskname) {
-        return;
-    }
-    clientSend("/app/control/restartAssignment", {
-        'taskName': taskname
-    });
-}
-
-function pauseResume() {
-    clientSend("/app/control/pauseResume", {});
-}
-function validateAssignmentSelected() {
-    $('#alert').empty();
-    var taskname = getSelectedAssignmentIfAny();
-    if (!taskname) {
-        showAlert("No assignment selected");
-    }
-    return taskname;
-}
-function clearCompetition() {
-    $('#alert').empty();
-    clientSend("/app/control/clearCompetition",{});
-    showAlert("competition has been restarted");
-}
-function updateSettingRegistrationFormDisabled(isInput) {
-    clientSend("/app/control/updateSettingRegistration", { taskName: 'updateSettingRegistration', value:''+ (isInput==true) });
-}
-function updateTeamStatus(uuid, value) {
-    clientSend("/app/control/updateTeamStatus", { taskName: 'updateTeamStatus', uuid: uuid, value:value });
-}
-function doCompetitionSaveName(node, uuid) {
-    var name = node.innerText.trim();
-    console.log('name ' + name + " " + uuid);
-    if (name) {
-        clientSend("/app/control/competitionSaveName", { taskName: 'competitionSaveName', uuid: uuid, value:name });
-    }
-}
-function doCompetitionToggleState(uuid, value) {
-    console.log('competitionToggleAvailability ' + value + " " + uuid);
-    clientSend("/app/control/competitionToggleAvailability", { taskName: 'competitionToggleAvailability', uuid: uuid, value:value });
-}
-function doCompetitionCreateNew(name) {
-    if (name) {
-        name = name.trim();
-        if (name.indexOf('|')===-1) {
-            name += '|'+ $('#selectedYear').val();
-        }
-        clientSend("/app/control/competitionCreateNew", { taskName: 'competitionCreateNew', value:name });
-    }
-    return name;
-}
-function doCompetitionDelete() {
-    var selectedUuid = $('.sessionTable .selected.tableSubHeader').attr('id');
-    clientSend("/app/control/competitionDelete", { taskName: 'competitionDelete', uuid:selectedUuid });
-}
-function clientSend(destinationUri, taskMap) {
-    console.log('clientSend '+ destinationUri);
-    console.log(taskMap);
-    if (stompClient.connected) {
-        stompClient.publish({destination: destinationUri, body: JSON.stringify(taskMap)})
-    } else {
-        showAlert('Uw connectie is verlopen, dus uw pagina wordt opnieuw geladen');
-        reloadPage();
-    }
-
-}
-
-function doValidatePerformance() {
-    clientSend("/app/control/performanceValidation", { });
-}
-function clientSelectSubtable(node, rowIdentifierValue) {
-    $(node).closest('table').find('tr').removeClass('selected');
-    $(node).closest('table').find('tr.subrows').addClass('hide');
-    $(node).closest('tbody').find('tr.subrows').removeClass('hide');
-    $(node).closest('tbody').find('tr').addClass('selected');
-    
-    // close row components in tab
-    var hiddenRowComponents = $(node).closest('.tab-pane').find('.rowComponent').addClass('hide');
-    console.log('hiddenRowComponents ' +hiddenRowComponents.length + ' val ' + rowIdentifierValue + ' hiddenRow '+ hiddenRowComponents.find('.rowIdentifier').length);
-    if (rowIdentifierValue) {
-        hiddenRowComponents.find('.rowIdentifier').val(rowIdentifierValue);
-    }
-}
-function clientOnload() {
-    clientStoreRender();
-    $('li.nav-item a.nav-link').click(function() {
-        window.setTimeout('clientStoreStateWrite()',200);
-    });
-    $('[data-toggle="popover"]').popover();// popovers are not used yet.
-}
-function clientStoreStateWrite() {
-
-    var idList = [];
-    $('.nav-link.active').each(function() {
-        idList.push(this.id);
-    });
-    console.log('clientStoreStateWrite '+JSON.stringify(idList));
-    localStorage.setItem('tabState', JSON.stringify(idList));
-}
-function clientUpdateRole(value) {
-    console.log('clientUpdateRole ' + value);
-    var roleSpecificFields = $('.role');
-    roleSpecificFields.addClass('hide');
-
-    if (value==='admin') {
-        roleSpecificFields.removeClass('hide');
-    }
-    if (value==='gamemaster') {
-        $('.role.gamemasterRole').removeClass('hide');
-    }
-}
-function clientStoreStateRead() {
-    console.log('clientStoreStateRead '+localStorage.getItem('tabState'));
-    idList = JSON.parse(localStorage.getItem('tabState'));
-    return idList;
-}
-function clientStoreRender() {
-    $(clientStoreStateRead()).each(function() {
-        var tabButton = $('#'+this);
-        if (tabButton.length) {
-            tabButton.click();
-        } else {
-            console.log("not existing tabButton with id: "+this);
-        }
-    });
-}
-function scanAssignments() {
-    var year = $('#selectedYear').val().split('-')[0];
-    clientSend("/app/control/scanAssignments", { 'taskName': year });
-}
-
-function showOutput(messageOutput) {
-    var response = $('#response');
-    response.empty();
-    var p = document.createElement('p');
-    p.style.wordWrap = 'break-word';
-    p.appendChild(document.createTextNode(messageOutput));
-    response.append(p);
-}
-
-function showAlert(txt) {
-    var alert = $('#alert');
-    alert.empty();
-    alert.append('<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-        '<span>'+txt+'</span>' +
-        '<button type="button" class="close" data-dismiss="alert" aria-label="Close"> <span aria-hidden="true">&times;</span></button>' +
-        '</div>');
+        window.location.reload()
+    }, timeout)
 }
 
 function initializeAssignmentClock() {
-    console.log('initializeAssignmentClock ' );
-    window.clock = new Clock('440');
-    clock.start();
-    var isPaused = $('#assignment-clock').hasClass('disabled');
-    console.log('isPaused ' + isPaused);
+    clock = new Clock('440')
+    clock.start()
+    let isPaused = $('#assignment-clock').hasClass('disabled')
     if (isPaused) {
-        clock.setPaused(true);
-    }
-
-}
-function doValidateAssignment(assignmentId, isWithSolution) {
-    var postFix = isWithSolution?'&solution':'';
-    if (assignmentId) {
-        window.open('/assignmentAdmin?assignment='+assignmentId+'&validate'+postFix,'admin');
+        clock.setPaused(true)
     }
 }
-function doViewDeltaSolution(assignmentId,node) {
-    var isOtherChildEvent = window.event.target.tagName.toLowerCase()==='select';
-    if (isOtherChildEvent) {
-        return;
-    }
-    $('#deltaSolution-modal').find('.openModalViaJs').click();
-    var title= node.title.split('-')[0];
-    $('#deltaSolution-modal .modal-title').html(title);
-    $('#deltaSolution-modal button').attr('title', assignmentId);
-    var codeTxt = $(node).find('textarea').val().replace(/</g,'&lt;').replace(/>/g,'&gt;');//small encoding into valid html
 
-    $('#deltaSolution-modal pre.code').removeClass('hide').html(codeTxt);
-    var reviewTxt = 'Plaats de review comments in de readme.md bij deze opdracht.';
-    var isWithReview = $(node).find('pre.review').length !== 0;
-    var toggleButton = $('button.reviewButton');
-    var startText = toggleButton.attr('text').split(',')[0];
-    if (isWithReview) {
-        reviewTxt = $(node).find('pre.review').html();
-
-        toggleButton.removeAttr('disabled');
-    } else {
-        toggleButton.attr('disabled', 'disabled').attr('title', reviewTxt);
-    }
-    toggleButton.html(startText);
-    $('#deltaSolution-modal pre.review').addClass('hide').html(reviewTxt);
+// used from html
+function scanAssignments() {
+    post('/api/assignment/discover').then(r => {
+            showSuccess(`${r.m}`)
+            if (r.reload) {
+                reloadPage()
+            }
+        },
+        r => {
+            showAlert(`${r.m}`)
+        })
 }
-function doShowReviewDialog(assignmentId, node) {
-    $('#deltaSolution-modal pre').toggleClass('hide');
-    var toggleButton = $('button.reviewButton');
-    var oldText = toggleButton.html();
-    var toggleValues = toggleButton.attr('text').split(',');
-    var newText = oldText===toggleValues[1]?toggleValues[0]:toggleValues[1];
-    toggleButton.html(newText);
+
+function uploadAssignments(args, form) {
+    console.log(args,form, new FormData(form))
+    postFormData('/api/assignment/import', new FormData(form))
+        .then(r => {
+                form.reset()
+                showSuccess(`${r.m} Reloading.`)
+                reloadPage()
+            },
+            r => {
+                showAlert(`${r.m}`)
+            })
+}
+
+// used from html
+function createCompetition(args, form) {
+    const d = formToObject(form)
+    post('/api/competition', {'name': d.quick_comp_name, 'assignments': d.assignment})
+        .then(() => {
+                form.reset()
+                showSuccess(`Created competition ${d.quick_comp_name}.`)
+                reloadPage()
+            },
+            () => {
+                showAlert(`Unable to create competition ${d.quick_comp_name}.`)
+            })
+}
+
+// used from html
+function startSession(args) {
+    post(`/api/competition/${args.id}/session`)
+        .then(r => {
+                showSuccess(`Started competition session for competition ${name}, reloading.`)
+                reloadPage();
+            },
+            () => {
+                showAlert(`Unable to start competition session for competition ${name}.`)
+            })
+}
+
+// used from html
+function startAssignment(args) {
+    confirm(`Start assignment '${args.name}'?`).then(ok => {
+        post(`/api/session/${args.sid}/assignment/${args.id}/start`)
+            .then(r => {
+                    showSuccess(`Started assignment '${args.name}'.`)
+                    clock.playGong();
+                    reloadPage(3000)
+                },
+                () => {
+                    showAlert(`Unable to start assignment '${args.name}'.`)
+                })
+    }, () => {
+    })
+}
+
+function stopAssignment(args) {
+    confirm(`Stop assignment '${args.name}'and finalize scores for teams?`).then(ok => {
+        post(`/api/session/${args.sid}/assignment/${args.id}/stop`)
+            .then(r => {
+                    showSuccess(`Stopped assignment '${args.name}', reloading.`)
+                    reloadPage()
+                },
+                () => {
+                    showAlert(`Unable to stop assignment '${args.name}'.`)
+                })
+    }, () => {
+    })
+
+}
+
+function resetAssignment(args) {
+    confirm(`Reset assignment '${args.name}'? This will first stop the assignment if running and then reset scores for all teams for this assignment.`).then(ok => {
+        post(`/api/session/${args.sid}/assignment/${args.id}/reset`)
+            .then(r => {
+                    showSuccess(`Assignment '${args.name}' reset, reloading.`)
+                    reloadPage()
+                },
+                () => {
+                    showAlert(`Unable to reset assignment '${args.name}'.`)
+                })
+    }, () => {
+    })
+}
+
+function formToObject(form) {
+    return $(form).serializeArray().reduce((pv, cv) => {
+        if (pv.hasOwnProperty(cv.name)) {
+            if (Array.isArray(pv[cv.name])) {
+                pv[cv.name] = [...pv[cv.name], cv.value]
+            } else {
+                pv[cv.name] = [pv[cv.name], cv.value]
+            }
+        } else {
+            pv[cv.name] = cv.value
+        }
+        return pv
+    }, {})
+}
+
+function initXHR() {
+    $('form[data-xhr]').each((idx, el) => {
+        el.addEventListener('submit', evt => {
+            evt.preventDefault()
+            invoke(el)
+        })
+    })
+    $('button[data-xhr]').each((idx, el) => {
+        el.addEventListener('click', evt => {
+            evt.preventDefault()
+            invoke(el)
+        })
+    })
+}
+
+function invoke(el) {
+    const $el = $(el)
+    const ref = $el.attr('data-xhr')
+    const args = Object.entries($(el).data()).reduce((pv, cv) => {
+        if (cv[0].startsWith('xhr') && cv[0].length > 3) {
+            let k = cv[0].substring(3);
+            pv[k.substring(0, 1).toLowerCase() + k.substring(1)] = cv[1]
+        }
+        return pv;
+    }, {})
+    if (validFuncRef(ref)) {
+        let fn = eval(ref)
+        fn(args, el)
+    }
+}
+
+function post(uri, data = {}) {
+    return $.ajax({
+        type: 'POST',
+        url: uri,
+        data: JSON.stringify(data),
+        contentType: 'application/json; charset=utf-8',
+        dataType: 'json'
+    })
+}
+
+function postFormData(uri, data) {
+    return $.ajax({
+        type: 'POST',
+        url: uri,
+        data: data,
+        processData: false,
+        contentType: false
+    })
+}
+
+function askForAudio() {
+    if (!askingForAudio) {
+        askingForAudio = true;
+        // a click will enable audio
+        notify('User action needed to enable audio, click Ok to enable it. Once we become a full single page application this won\'t be needed anymore.', false)
+    }
+}
+
+function validFuncRef(ref) {
+    return /^\w+$/.test(ref)
+}
+
+function showAlert(txt) {
+    showNotice(txt, 'bg-danger')
+}
+
+function showInfo(txt) {
+    showNotice(txt, 'bg-info')
+}
+
+function showSuccess(txt) {
+    showNotice(txt, 'bg-success')
+}
+
+function showNotice(txt, bg = 'bg-success', color = 'text-white') {
+    let toasts = $('#toasts')
+    let btn_color = color === 'text-white' ? 'btn-close-white' : '';
+    let toast = $.parseHTML(`<div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header ${bg} ${color}">
+            <strong class="me-auto">Alert</strong>
+            <button type="button" class="btn-close ${btn_color}" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">${txt}</div>
+    </div>`)
+    toasts.prepend(toast)
+    $(toast).on('hidden.bs.toast', evt => {
+        evt.target.remove()
+    })
+    new bootstrap.Toast(toast[0]).show()
+}
+
+function createModal(message, allowCancel = true) {
+    const cancel = allowCancel ? '<button type="button" class="btn btn-secondary cancel">Cancel</button>' : ''
+    let dialog = $.parseHTML(
+        `<div class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-body">
+                            <p>${message}</p>
+                        </div>
+                        <div class="modal-footer">
+                            ${cancel}
+                            <button type="button" class="btn btn-primary ok">Ok</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`)
+    return dialog[0];
+}
+
+function notify(message) {
+    const dialog = createModal(message, false)
+    const $body = $("body")
+    const $dialog = $(dialog)
+    $body.append(dialog)
+
+    const m = new bootstrap.Modal(dialog, {'backdrop': 'static'})
+    $dialog.find('.ok').on('click', evt => {
+        m.dispose()
+        dialog.remove()
+    })
+    m.show($body[0]);
+}
+
+function confirm(message, allowCancel = true) {
+    const dialog = createModal(message, allowCancel)
+    const $dialog = $(dialog)
+    const $body = $("body")
+    $body.append(dialog)
+    const m = new bootstrap.Modal(dialog, {'backdrop': 'static'})
+    m.show($body[0]);
+
+    return new Promise((resolve, reject) => {
+        if (reject) {
+            if (allowCancel) {
+                $dialog.find('.cancel').on('click', evt => {
+                    m.dispose()
+                    dialog.remove()
+                    reject('cancel')
+                })
+            }
+        }
+        if (resolve) {
+            $dialog.find('.ok').on('click', evt => {
+                m.dispose()
+                dialog.remove()
+                resolve({})
+            })
+        }
+    });
 }

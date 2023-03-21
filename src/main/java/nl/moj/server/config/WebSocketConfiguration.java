@@ -29,7 +29,7 @@ public class WebSocketConfiguration {
 
     @Configuration
     @EnableWebSocketMessageBroker
-    public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+    public static class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         @Override
         public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -40,7 +40,7 @@ public class WebSocketConfiguration {
 
         @Override
         public void registerStompEndpoints(StompEndpointRegistry registry) {
-            registry.addEndpoint("/ws/competition/websocket");
+            registry.addEndpoint("/ws/session/websocket");
             registry.addEndpoint("/submit/websocket");
             registry.addEndpoint("/control/websocket");
             registry.addEndpoint("/rankings/websocket");
@@ -49,7 +49,7 @@ public class WebSocketConfiguration {
     }
 
     @Configuration
-    public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
+    public static  class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
 
         protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
             messages.simpDestMatchers("/*").authenticated();

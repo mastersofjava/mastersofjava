@@ -1,11 +1,10 @@
-var stomp = null;
-var editors = [];
-var clock = null;
-var activeAction = null;
-var failed = false;
+let stomp = null;
+let editors = [];
+let clock = null;
+let activeAction = null;
+let failed = false;
 
 $(document).ready(function () {
-    console.log("Connecting websockets!")
     connectCompetition();
     connectButtons();
 
@@ -23,17 +22,21 @@ function connectCompetition() {
         brokerURL: ((window.location.protocol === "https:") ? "wss://" : "ws://")
             + window.location.hostname
             + ':' + window.location.port
-            + "/ws/competition/websocket",
+            + "/ws/session/websocket",
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000
     });
 
+    stomp.onDisconnect = function(frame) {
+        $('#status').html('<span>Reconnecting ...</span>');
+    }
+
     stomp.onConnect = function (frame) {
         $('#status').html('<span>Connected</span>');
         // Do something, all subscribes must be done is this callback
         // This is needed because this will be executed after a (re)connect
-        stomp.subscribe('/user/queue/competition',
+        stomp.subscribe('/user/queue/session',
             function (data) {
                 var msg = JSON.parse(data.body);
                 console.log('received', msg);
@@ -49,7 +52,7 @@ function connectCompetition() {
                 data.ack();
             },
             {ack: 'client'});
-        stomp.subscribe("/queue/competition",
+        stomp.subscribe("/queue/session",
             function (data) {
                 var msg = JSON.parse(data.body);
                 if (competitionHandlers.hasOwnProperty(msg.messageType)) {
@@ -62,7 +65,7 @@ function connectCompetition() {
         const userHandlers = {};
         userHandlers['COMPILE'] = function (msg) {
             enable();
-            appendOutput(msg.message);
+            appendOutput(msg.message && msg.message.length > 0 ? msg.message : ( msg.success ? 'OK' : 'FAILED' ) );
         };
         userHandlers['COMPILING_STARTED'] = function (msg) {
             updateOutputHeaderColorActionStarted();
@@ -81,41 +84,38 @@ function connectCompetition() {
             updateOutputHeaderColorActionEnded(msg.success);
         };
         userHandlers['SUBMIT'] = function (msg) {
-            if (!msg.success && msg.remainingSubmits > 0) {
+            if (!msg.completed) {
                 enable();
             } else {
                 disable();
             }
             updateSubmits(msg.remainingSubmits);
             updateAlertContainerWithScore(msg);
+            resizeContent();
         };
 
         const competitionHandlers = {};
         competitionHandlers['TIMER_SYNC'] = function (msg) {
             let lastMessage = msg;
-            if (clock && isSessionValid(msg)) {
+            if (clock) {
                 clock.sync(msg.remainingTime, msg.totalTime);
                 clock.isPaused = !msg.running;
                 if (msg.remainingTime === 0) {
                     disable();
                 }
             } else {
-                console.log('timer msg retrieved:' + msg.sessionId + " " + msg.remainingTime + ' ' + $('#sessions').val());
+                console.log('Unhandled timer sync received',msg);
             }
         };
         competitionHandlers['START_ASSIGNMENT'] = function (msg) {
             window.setTimeout(function () {
-                if (isSessionValid(msg)) {
-                    window.location.reload()
-                }
+                window.location.reload()
             }, 10);
         };
         competitionHandlers['STOP_ASSIGNMENT'] = function (msg) {
-            if (isSessionValid(msg)) {
-                disable();
-                if (clock) {
-                    clock.stop();
-                }
+            disable();
+            if (clock) {
+                clock.stop();
             }
         };
     };
@@ -130,10 +130,6 @@ function connectCompetition() {
     };
 
     stomp.activate();
-}
-
-function isSessionValid(msg) {
-    return msg.sessionId == null || $('#sessions').val() === msg.sessionId;
 }
 
 function connectButtons() {
@@ -160,11 +156,11 @@ function connectButtons() {
  */
 function codeMirror_insertImagesInAssignmentText() {
 
-    var list = $('.CodeMirror-code:visible .CodeMirror-line');
+    const list = $('.CodeMirror-code:visible .CodeMirror-line');
     $(list).each(function () {
-        var isHtml = this.innerHTML.indexOf('&gt;') !== -1 && this.innerHTML.indexOf('&lt;') !== -1;
+        const isHtml = this.innerHTML.indexOf('&gt;') !== -1 && this.innerHTML.indexOf('&lt;') !== -1;
         if (isHtml) {
-            var input = this.innerHTML.replace(/&gt;/g, '>').replace(/&lt;/g, '<');
+            const input = this.innerHTML.replace(/&gt;/g, '>').replace(/&lt;/g, '<');
             console.log(input);
             this.innerHTML = input;
         }
@@ -175,7 +171,7 @@ function initializeTextPanes() {
     $('div.markdown').each(
         function (idx) {
             $(this).html(function (idx, content) {
-                return marked(content)
+                return marked.parse(content)
             })
         }
     )
@@ -184,8 +180,7 @@ function initializeTextPanes() {
 function resizeContent() {
     let pos = $('#tabs .tab-content').position();
     if (pos) {
-        let height = window.innerHeight - pos.top - 80;
-
+        const height = window.innerHeight - pos.top - 80;
         $('#tabs .content').each(function (idx) {
             $(this).css('height', height + 'px');
         })
@@ -197,21 +192,21 @@ function resizeContent() {
 }
 
 function initializeCodeMirrors() {
-    texts = [];
-    cmList = [];
+    // let texts = [];
+    // let cmList = [];
     $('textarea[data-cm]').each(
         function (idx) {
-            var type = $(this).attr('data-cm-file-type');
-            texts.push(this);
-            var isTask = type === 'TASK';
-            var isReadOnly = $(this).attr('data-cm-readonly') === 'true';
-            var cm = CodeMirror.fromTextArea(this, {
+            let type = $(this).attr('data-cm-file-type');
+            // texts.push(this);
+            let isTask = type === 'TASK';
+            let isReadOnly = $(this).attr('data-cm-readonly') === 'true';
+            let cm = CodeMirror.fromTextArea(this, {
                 lineNumbers: true,
                 mode: isTask ? 'text/x-markdown' : "text/x-java",
                 matchBrackets: true,
                 readOnly: isReadOnly
             });
-            cmList.push(cm);
+            // cmList.push(cm);
             editors.push({
                 'cm': cm,
                 'readonly': cm.isReadOnly(),
@@ -220,14 +215,14 @@ function initializeCodeMirrors() {
                 'uuid': $(this).attr('data-cm-id')
             });
 
-            var tabLink = $('a[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
+            let tabLink = $('button[id="' + $(this).attr('data-cm') + '"]').on('shown.bs.tab',
                 function (e) {
                     cm.refresh();
                     if (isTask) codeMirror_insertImagesInAssignmentText();
                     $(window).resize();
                 });
 
-            var $wrapper = $(cm.getWrapperElement());
+            let $wrapper = $(cm.getWrapperElement());
             $wrapper.resizable({
                 resize: function () {
                     cm.setSize($(this).width(), $(this).height());
@@ -255,13 +250,13 @@ function resetTabColor() {
 }
 
 function updateOutputHeaderColorActionStarted() {
-    var $output = $('#output');
+    const $output = $('#output');
     $output.removeClass('failure success');
     $output.addClass('action-started');
 }
 
 function updateOutputHeaderColorActionEnded(success) {
-    var $output = $('#output');
+    const $output = $('#output');
     $output.removeClass('failure success action-started');
     if (success) {
         $output.addClass('success');
@@ -271,27 +266,33 @@ function updateOutputHeaderColorActionEnded(success) {
 }
 
 function updateAlertContainerWithScore(message) {
-    if (message.success === true) {
+    if (message.completed && message.success === true) {
         $('#alert-container')
             .empty()
             .append(
                 '<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Completed</h4>'
-                + '<p>your final score is</p><strong>'
+                + '<p>Your final score is</p><strong>'
                 + message.score + '</strong></div>');
+    } else if( message.rejected ) {
+        $('#alert-container')
+            .empty()
+            .append(
+                '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Submit Rejected</h4>'
+                + '<p>'+ message.message +'</p></div>');
     } else {
-        if (parseInt(message.remainingSubmits) <= 0) {
+        if (message.completed) {
             $('#alert-container')
                 .empty()
                 .append(
                     '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Not OK!</h4>'
-                    + '<p>You have no more submits attempts left. Your final score is ' + message.score + '</p></div>');
+                    + '<p>Your final score is ' + message.score + '</p></div>');
         } else {
             if (parseInt(message.remainingSubmits) > 0) {
                 $('#alert-container')
                     .empty()
                     .append(
                         '<div class="alert alert-warning p-4" role="alert"><h4 class="alert-heading">Assignment Not OK!</h4>'
-                        + '<p>No worries, you still have ' + message.remainingSubmits + ' submits attempts left.</p></div>');
+                        + '<p>No worries, you still have ' + message.remainingSubmits + ' attempts left.</p></div>');
             }
         }
     }
@@ -303,7 +304,7 @@ function appendOutput(txt) {
 }
 
 function escape(txt) {
-    var htmlEscapes = {
+    const htmlEscapes = {
         '&': '&amp;',
         '<': '&lt;',
         '>': '&gt;',
@@ -313,7 +314,7 @@ function escape(txt) {
     };
 
     // Regex containing the keys listed immediately above.
-    var htmlEscaper = /[&<>"'\/]/g;
+    const htmlEscaper = /[&<>"'\/]/g;
 
     // Escape a string for HTML interpolation.
     return ('' + txt).replace(htmlEscaper, function (match) {
@@ -339,7 +340,7 @@ function doUserActionTest() {
     disable();
     resetOutput();
     appendOutput("Compiling and testing ....");
-    var tests = $("#test-modal input:checkbox:checked").map(function () {
+    const tests = $("#test-modal input:checkbox:checked").map(function () {
         return $(this).val();
     }).get();
     showOutput();
@@ -378,7 +379,7 @@ function enable() {
 }
 
 function getContent() {
-    var editables = [];
+    const editables = [];
     $.each(editors, function (idx, val) {
         if (!val.readonly) {
             var file = {
@@ -403,6 +404,7 @@ function doUserActionSubmit() {
         'timeLeft': getTimeleft()
     }));
     showSubmitDetails();
+    resizeContent();
 }
 
 function getTimeleft() {

@@ -13,10 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 public class ErrorController {
-
-	@GetMapping("/error")
-	public String error(Model model, HttpServletRequest request) {
-		log.warn("An error occured request: {} model: {}", request, model);
-		return "error";
-	}
+//	@GetMapping("/error")
+//	public String error(Model model, HttpServletRequest request) {
+//		log.warn("An error occurred request: {} model: {}", request.getRequestURI(), model);
+//		return "error";
+//	}
 }

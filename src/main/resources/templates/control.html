@@ -18,438 +18,236 @@
     <link rel="manifest" th:href="@{//manifest.json}" href="/static/manifest.json"/>
     <meta name="theme-color" content="#ffffff"/>
 
-
     <title>Game Master GUI</title>
 
 </head>
 <body class="p-2">
-
-<div th:if="${error}" th:text="${error}" class="alert alert-danger" role="alert"
-     onClick="$(this).hide('slow', function(){ $(this).remove(); })">error
-</div>
-<div th:if="${success}" th:text="${success}" class="alert alert-success" role="alert"
-     onClick="$(this).hide('slow', function(){ $(this).remove(); })">success
-</div>
-<p id="response" style="text-align: center"></p>
 <div class="container-fluid">
-    <div class="row gamemasterRole adminRole role" >
-        <div class="col" id="alert">
-        </div>
+    <div class="row">
+        <div class="col-12">
 
-        <div class="col-9"  >
-        <ul class="nav nav-pills" id="pills-tab" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active" id="pills-competitie-tab" data-toggle="pill" href="#pills-competitie" role="tab" aria-controls="pills-competitie" aria-selected="true">Snel starten</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="pills-wedstrijdverloop-tab" data-toggle="pill" href="#pills-wedstrijdverloop" role="tab" aria-controls="pills-wedstrijdverloop" aria-selected="true">Dashboard</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="pills-sessiebeheer-tab" data-toggle="pill" href="#pills-sessiebeheer" role="tab" aria-controls="pills-sessiebeheer" aria-selected="false">Manage competities</a>
-            </li>
-            <li class="nav-item adminRole role" th:if="${isWithAdminRole}">
-                <a class="nav-link" id="pills-uitleg-tab" data-toggle="pill" href="#pills-uitleg" role="tab" aria-controls="pills-uitleg" aria-selected="false">Uitleg bij bouwen opdrachten</a>
-            </li>
-
-        </ul>
-
-        <div class="tab-content roundGrayBorder" id="pills-tabContent" >
-            <div class="tab-pane fade  adminRole role" id="pills-uitleg" role="tabpanel" aria-labelledby="pills-uitleg-tab" th:if="${isWithAdminRole}">
-                <h6>Belangrijke tips bij het maken van een opdracht:</h6>
-                <br/>
-                <div th:replace="fragments/authortips :: authortips"></div>
-                <br/>
-            </div>
-            <div class="tab-pane fade" id="pills-wedstrijdverloop" role="tabpanel" aria-labelledby="pills-wedstrijdverloop-tab">
-                <h6>De uitslag van elke opdracht [[${selectedYearLabel}]]. </h6>
-
-                <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
-            </div>
-            <div class="tab-pane fade  show active" id="pills-competitie" role="tabpanel" aria-labelledby="pills-competitie-tab" th:title="${currentAssignment}">
-                <div th:if="${!running}" >
-                    <h6>Selecteer een opdracht en start!</h6>
-                </div>
-                <div th:if="${!isWithAssignmentsLoaded}" >
-                    <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
-                </div>
-                <div th:if="${running}" >
-                    <h6>Met dit venster kunt u de competitie opdrachten pauzeren, stoppen en herstarten.</h6>
-                </div>
-                <br/>
-                <div class="row" th:if="${isWithAssignmentsLoaded}" >
-
-                    <div class="form-group col-4" >
-                        <th:block th:each="assignment : ${assignments}">
-                            <div class="form-check input-group radio"
-                                 th:classappend="${completedAssignments.contains(assignment.name)?'completed':''}"
-                                 th:title="${assignment.displayName}  +'='+  ${assignment.duration.toMinutes()+ ' minutes'}">
-                                <label class="form-check-label"  th:title="${assignment.displayName}  +'='+ ${assignment.duration.toMinutes()+ ' minutes'}">
-                                    <input class="form-check-input" type="radio" name="assignment" th:checked="${assignment.name==currentAssignment}"
-                                           th:text="' ' + ${assignment.name}" th:title="${assignment.displayName} +'='+  ${assignment.duration.toMinutes()+ ' minutes'}" th:value="${assignment.name}"
-                                           th:id="${assignment.name}" th:attr="time=${assignment.duration.toSeconds()}"/>
-                                    <span th:if="${completedAssignments.contains(assignment.name)}">
-                                        (gecompleteerd)
-                                    </span>
-                                </label>
-                            </div>
-                        </th:block>
-                    </div>
-
-                    <div class="form-group col-4">
-                        <div class="row">
-                            <div class="btn-group-vertical col-4">
-                                <div class="p-2 text-center" >
-                                    <button id="start" class="btn btn-success minWidth150" onclick="startTask();" title="Hoofdbutton voor het runnen van de competitie"><span class="fa fa-gamepad pr-1" ></span>Start Opdracht</button>
-                                </div>
-                                <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
-                                    <button id="play" class="btn btn-muted minWidth150" onclick="window.open('/play','competitie');" title="Speel de huidige opdracht zelf mee">Speel mee</button>
-                                </div>
-                                <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
-                                    <button id="pause" class="btn btn-muted minWidth150" onclick="pauseResume();" title="Pauzeren of activeren van de tijd"  >Pause/Resume</button>
-                                </div>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="form-group col-4">
-                        <div class="row">
-                            <div class="btn-group-vertical col-4" >
-                                <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
-                                    <button id="stop" class="btn btn-muted minWidth150" onclick="stopTask();" title="Stop met huidige assignment en bewaar scores">Finish Assignment</button>
-                                </div>
-                                <div class="p-2 text-center" th:if="${runningSelectedCompetition}">
-                                    <button id="restart" class="btn btn-muted minWidth150" onclick="restartAssignment();" title="Reset de geselecteerde opdracht, verwijder ook de bestaande scores hiervan" >Reset Assignment</button>
-                                </div>
-                                <div class="p-2 text-center" th:if="${runningSelectedCompetition||isWithCompetitionStarted}">
-                                    <button id="clear" class="btn btn-muted minWidth150" onclick="clearCompetition();"  title="Herstart deze gehele competitie, wis ook de scores">Reset Competition</button>
-                                </div>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-            </div>
-            <div class="tab-pane fade" id="pills-sessiebeheer" role="tabpanel" aria-labelledby="pills-sessiebeheer-tab">
-                <h6>Het beheren van sessies</h6><br/>
-
-                <div class="row">
-                        <div class="p-2 col-9 hide" th:if="${sessions.size()>1}">
-                            <form class="form" method="post" th:action="@{/control/select-session}" th:object="${selectSessionForm}">
-                                <div >
-                                    <label for="sessions" class="inlineBlock">Speelbare sessies: </label>
-                                    <select class="form-control inlineBlock maxWidth300 font10px" id="sessions" onchange="$(this).closest('form').submit()" th:field="*{session}">
-                                        <option th:each="s : ${sessions}" th:value="${s.uuid}" th:text="${'Session '+(sStat.index +1)+ ' (' + s.getCompetition().getName()+ ')'}">
-                                        </option>
-                                    </select>
-                                </div>
-                            </form>
-                        </div>
-
-                    <div class="p-2 col-2" >
-                        <form class="form" id="createNewSessionForm" method="post" th:action="@{/control/new-session}">
-                        </form>
-                    </div>
-                </div>
-                <div class="p-2 col-12" th:if="${!isWithAssignmentsLoaded}" >
-                    <div th:remove="tag" th:utext="${gameDetailCanvas}"></div>
-                </div>
-                <div class="p-2 col-12" th:if="${isWithAssignmentsLoaded && teams.size()<=1}" >
-                    <div th:remove="tag" th:utext="${activeTeamDetailCanvas}"></div>
-                </div>
-                <div class="p-2 col-12" th:if="${isWithAssignmentsLoaded && teams.size()>2}">
-
-                        Hieronder staan de beschikbare competities, met selecteerbare sessies voor beheer
-                        <i th:if="${nrOfRunningCompetitions>0}">
-                            (waarvan [[${nrOfRunningCompetitions}]] met nu actieve gebruikers).
-                        </i>
-                        <i th:if="${nrOfRunningCompetitions==0}">
-                            (op dit moment geen competities met actieve gebruikers).
-                        </i>
-                    <br/>
-                    <div th:remove="tag" th:utext="${sessionDetailCanvas}"></div>
-                </div>
-        </div>
-
-
-        </div><!-- TABS-->
+            <h1 class="text-center">[[${cs.getName()}]]</h1>
         </div>
     </div>
-    <div class="row" ><br/>
-    </div>
-    <div class="row adminRole role" th:if="${isWithAdminRole}">
-        <div class="col-3"  ></div>
-        <div class="col-9"  >
+    <div class="row">
+        <!-- status sidebar -->
+        <div class="col-3">
+            <div class="text-center" th:if="${cs.isAssignmentActive()}"
+                 th:with="assignment=${cs.getActiveAssignment().getAssignment()}">
+                <h3><span>'[[${assignment.getName()}]]'</span></h3>
+            </div>
+            <div id="assignment-clock"
+                 th:if="${cs.isAssignmentActive()}" th:with="assignment=${cs.getActiveAssignment()}"
+                 th:attrappend="data-time-left=${assignment.getSecondsLeft()},data-time=${assignment.getSeconds()}"
+                 class="align-self-center">
+                <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
+                    <h2 class="align-self-center">--:--</h2>
+                </div>
+                <svg width="160" height="160" xmlns="http://www.w3.org/2000/svg">
+                    <g>
+                        <circle class="clock circle_animation" r="69.85699" cy="81" cx="81" stroke-width="8"
+                                stroke="#6fdb6f" fill="none" stroke-dashoffset="440"></circle>
+                    </g>
+                </svg>
+            </div>
+            <div>
+                <div class="mt-auto">
+                    <a class="btn btn-primary w-100" href="/rankings" target="rankings"><span
+                            class="fa fa-trophy pr-1"></span>Ranking</a>
+                    <a class="btn btn-primary w-100" href="/feedback" target="feedback"><span
+                            class="fa fa-gamepad pr-1"></span>Feedback</a>
+                </div>
+            </div>
+        </div>
 
-            <ul class="nav nav-pills" id="pills-tab2" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link" id="pills-opdrachtdetails-tab" data-toggle="pill" href="#pills-opdrachtdetails" role="tab" aria-controls="pills-opdrachtdetails" aria-selected="false">Opdrachtdetails</a>
+        <!-- session tabs -->
+        <div class="col-9">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link active" id="tab-active" data-bs-toggle="tab" role="tab"
+                            aria-controls="active"
+                            aria-selected="true" data-bs-target="#active">Session
+                    </button>
                 </li>
-
-            <li class="nav-item">
-                <a class="nav-link" id="pills-opdrachtconfiguratie-tab" data-toggle="pill" href="#pills-opdrachtconfiguratie" role="tab" aria-controls="pills-opdrachtconfiguratie" aria-selected="false">Opdrachtbestanden</a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link show active" id="pills-configuratie-tab" data-toggle="pill" href="#pills-configuratie" role="tab" aria-controls="pills-configuratie" aria-selected="true">Configuratie</a>
-            </li>
                 <li class="nav-item">
-                    <a class="nav-link" id="pills-gebruikersbeheer-tab" data-toggle="pill" href="#pills-gebruikersbeheer" role="tab" aria-controls="pills-gebruikersbeheer" aria-selected="false">Gebruikersbeheer</a>
+                    <button type="button" class="nav-link" id="tab-competitions" data-bs-toggle="tab" role="tab"
+                            aria-controls="competitions"
+                            aria-selected="true" data-bs-target="#competitions">Competitions
+                    </button>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" id="pills-toptien-tab" data-toggle="pill" href="#pills-toptien" role="tab" aria-controls="pills-toptien" aria-selected="false">Top 10</a>
+                    <button type="button" class="nav-link" id="tab-assignments" data-bs-toggle="tab" role="tab"
+                            aria-controls="assignments"
+                            aria-selected="true" data-bs-target="#assignments">Assignments
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button type="button" class="nav-link" id="tab-admin" data-bs-toggle="tab" role="tab"
+                            aria-controls="admin"
+                            aria-selected="true" data-bs-target="#admin">Admin
+                    </button>
                 </li>
             </ul>
-            <div class="tab-content roundGrayBorder" id="pills-tabContent2">
 
-
-                <div class="tab-pane fade" id="pills-opdrachtdetails" role="tabpanel" aria-labelledby="pills-opdrachtdetails-tab">
-                    <h6>Bekijk hier de details van alle opdrachten[[${selectedYearLabel}]]. Klik op de opdracht voor extra inzage.</h6>
-
-                    <div th:remove="tag" th:utext="${assignmentDetailCanvas}"></div>
-                    <br/>
-                    <ul style="list-style-type: none">
-                        <li th:if="${isWithHiddenTests}"> <i ><sup>(*1) = heeft extra hidden tests.</sup></i></li>
-                        <li th:if="${isWithConfigurableTestScore}"> <i ><sup>(*2) = puntenverdeling per individuele test.</sup></i></li>
-                    </ul>
+            <div class="tab-content">
+                <div class="tab-pane active" id="active" role="tabpanel" aria-labelledby="tab-active">
+                    <table class="table table-borderless table-sm table-responsive mt-5">
+                        <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Duration</th>
+                            <th scope="col">Remaining</th>
+                            <th scope="col">Attempts</th>
+                            <th scope="col">Started</th>
+                            <th scope="col">Ended</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="assignment,status : ${cs.getAssignments()}" th:if="${cs.isActive()}">
+                            <td th:text="${assignment.getIdx()}"/>
+                            <td th:text="${assignment.getName()}"/>
+                            <td th:text="${assignment.getDuration()}"/>
+                            <td th:text="${assignment.getRemaining()}"/>
+                            <td th:text="${assignment.getSubmits()}"/>
+                            <td th:text="${assignment.getStarted()}"/>
+                            <td th:text="${assignment.getEnded()}"/>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-primary me-5"
+                                        th:data-xhr-sid="${cs.getUuid()}"
+                                        th:data-xhr-name="${assignment.getName()}"
+                                        th:data-xhr-id="${assignment.getUuid()}"
+                                        data-xhr="startAssignment">
+                                    Start
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger"
+                                        th:data-xhr-sid="${cs.getUuid()}"
+                                        th:data-xhr-name="${assignment.getName()}"
+                                        th:data-xhr-id="${assignment.getUuid()}"
+                                        data-xhr="stopAssignment">
+                                    Stop
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger"
+                                        th:data-xhr-sid="${cs.getUuid()}"
+                                        th:data-xhr-name="${assignment.getName()}"
+                                        th:data-xhr-id="${assignment.getUuid()}"
+                                        data-xhr="resetAssignment">
+                                    Reset
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="tab-pane fade" id="pills-opdrachtconfiguratie" role="tabpanel" aria-labelledby="pills-opdrachtconfiguratie-tab">
-                    <h6>Bekijk hier de bestandsdata van de geselecteerde opdracht(en)</h6>
-                    <br/>
-                    <div th:class="${isWithAssignmentsLoaded?'font10px':''}">
-                        <div th:remove="tag" th:utext="${opdrachtConfiguraties}"></div>
-                    </div>
-
+                <div class="tab-pane" id="competitions" role="tabpanel" aria-labelledby="tab-competitions">
+                    <table class="table table-borderless table-sm table-responsive mt-5">
+                        <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col">Name</th>
+                            <th scope="col"># Assignments</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <th:block th:each="comp,status : ${competitions}">
+                            <tr>
+                                <td data-bs-toggle="collapse" th:data-bs-target="${'#r'+status.index}"><i class="fa fa-chevron-down"></i></td>
+                                <td th:text="${comp.getName()}"></td>
+                                <td th:text="${comp.getAssignments().size()}"></td>
+                                <td>
+                                    <button type="button" th:data-xhr-id="${comp.getUuid()}" th:data-xhr-name="${comp.getName()}" class="btn btn-sm btn-primary"
+                                            data-xhr="startSession">Start
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="collapse accordion-collapse" th:id="${'r'+status.index}" data-bs-parent=".table">
+                                <td colspan="3">
+                                    <table class="table table-borderless table-sm table-responsive">
+                                        <thead>
+                                        <tr>
+                                            <th scope="col">Name</th>
+                                            <th scope="col">Duration</th>
+                                            <th scope="col">Attempts</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="assignment,status : ${comp.getAssignments()}">
+                                            <td th:text="${assignment.getName()}"/>
+                                            <td th:text="${assignment.getDuration()}"/>
+                                            <td th:text="${assignment.getSubmits()}"/>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        </th:block>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="tab-pane fade show active" id="pills-configuratie" role="tabpanel" aria-labelledby="pills-configuratie-tab">
-                    <h6>Voor configuratie kunt u met dit tabblad bestanden inladen en exporteren.</h6><br/>
-
-                    <div class="row">
-                        <div class="p-2 col-12" th:if="${locationList.size()==0}">
-                            U moet eerst de goede locatie configureren van de opdrachten.
+                <div class="tab-pane" id="assignments" role="tabpanel" aria-labelledby="tab-assignments">
+                    <form id="create-competition" class="mt-5" data-xhr="createCompetition">
+                        <p>Quickly create a competition with selected assignments.</p>
+                        <div class="row">
+                            <div class="col">
+                                <input type="text" name="quick_comp_name" class="form-control"
+                                       placeholder="Competition name ..."/>
+                            </div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-primary">Add</button>
+                            </div>
                         </div>
-                        <div class="p-2 col-5 roundGrayBorder" th:if="${locationList.size()>0}">
-                            <h6>Inladen van opdrachten</h6>
-                                &nbsp;&nbsp;<sup th:title="${repositoryLocation.getPath()}">(# locaties beschikbaar op server: [[${locationList.size()}]])</sup>
-                        </div>
-                        <div class="p-2 col-6 roundGrayBorder" th:if="${locationList.size()>=0}">
-                            <select class="p-2" th:disabled="${runningSelectedCompetition}" id="selectedYear" onchange="if (this.value) {scanAssignments(this.value)}">
-                                <option value="">Selecteer een ander jaar</option>
-                                <option th:each="team : ${locationList}" th:value="${team.getName()}"
-                                        th:text="${team.getName()}" th:selected="${team.getName().equals(repositoryLocation.getName())}"></option>
-                            </select>
-                            <button id="clone" class="btn btn-primary" onclick="scanAssignments();">
-                                <span th:if="${isWithAssignmentsLoaded}"> Herlaad assignments</span><span th:if="${!isWithAssignmentsLoaded}"> Laad assignments </span>
-                            </button>
-                        </div>
-                    </div>
-                    <br/><br/>
-                    <div class="row">
-                        <div class="p-2 col-5 roundGrayBorder" >
-                            <h6>U kunt nieuwe opdrachtcollecties als zip-file uploaden</h6><br/>
-                                &nbsp;<sup>let op:<br/>
-                            - hiermee kunt u eventueel bestaande opdrachtcollecties overschrijven<br/>
-                            - het invoerbestand moet beginnen met een (jaar)getal en het woord 'assignments' bevatten <br/>
-                            - bv 2018-assignments.zip<br/></sup>
-                        </div>
-                        <div class="p-2 col-6 roundGrayBorder">
-
-                            <form method="POST" action="/importAssignments" enctype="multipart/form-data" title="importeer een opdrachtenset">
-
-                                <div class="row p-2 m-2">
-                                    Stap 1. selecteer zip-file:&nbsp;&nbsp;&nbsp; <input id="zipfile" type="file" name="file"/>
-                                </div>
-                                <div class="row p-2 m-2">
-                                    Stap 2. &nbsp;<input class="btn btn-primary minWidth200" type="submit" value="upload assignments"/>
-                                </div>
-                            </form>
-
-                        </div>
-                    </div>
-                    <br/><br/>
-
-                    <div class="row">
-                        <div class="p-2 col-5 roundGrayBorder">
-                            <h6>Exporteer systeemstatus</h6>
-                            &nbsp;&nbsp;<sup>met name voor development</sup>
-                        </div>
-                        <div class="p-2 col-6 roundGrayBorder">
-                            <a class="btn btn-success" href="/getGameMasterState" target="getGameMasterState">Bekijk systeemstatus (export)</a><br/><br/>
-                            <a class="btn btn-success" href="/admin/systemState" target="systemState">Bekijk competitie uitvoering</a><br/><br/>
-                        </div>
-                    </div>
-                    <br>
+                        <table class="table table-borderless table-sm table-responsive">
+                            <thead>
+                            <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Duration</th>
+                                <th scope="col">Attempts</th>
+                                <th scope="col">Collections</th>
+                                <th scope="col">Selected</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="assignment,status : ${assignments}">
+                                <td th:text="${assignment.getName()}"/>
+                                <td th:text="${assignment.getDuration()}"/>
+                                <td th:text="${assignment.getSubmits()}"/>
+                                <td th:text="${assignment.getCollection()}"/>
+                                <td><input class="form-check-input assignment-cb" type="checkbox" name="assignment"
+                                           th:value="${assignment.getUuid()}"/></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </form>
                 </div>
-                <div class="tab-pane fade" id="pills-toptien" role="tabpanel" aria-labelledby="pills-toptien-tab">
-                    <h6>Bekijk hier de beste teams tot dusver [[${selectedYearLabel}]]</h6>
-                    <br>
-                    <div class="row">
-                        <div class="p-2 col-6">
-                            <div th:remove="tag" th:utext="${activeTeamDetailCanvas}"></div>
+                <div class="tab-pane" id="admin" role="tabpanel" aria-labelledby="tab-admin">
+                    <form class="mt-5">
+                        <p>Scan assignments repository for new assignments.</p>
+                        <button data-xhr="scanAssignments" class="btn btn-primary">Scan Assignments</button>
+                    </form>
+                    <form id="upload-assignments" class="mt-5" data-xhr="uploadAssignments">
+                        <p>Upload new assignments zip</p>
+                        <div class="row">
+                            <div class="col">
+                                <input type="file" name="file" class="form-control" placeholder="Assignments archive ..."/>
+                            </div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-primary">Upload &amp; Scan</button>
+                            </div>
                         </div>
-                        <div class="p-2 col-5">
-                        </div>
-                    </div>
-
-                </div>
-                <div class="tab-pane fade" id="pills-gebruikersbeheer" role="tabpanel" aria-labelledby="pills-gebruikersbeheer-tab">
-                    <h6>Beheren van teams (selecteer een team indien u deze wilt aanpassen, uw naam is: [[${currentUserName}]])</h6>
-                    <br>
-                    <div class="row">
-                        <div class="p-2 col-6">
-                            <div th:remove="tag" th:utext="${teamDetailCanvas}"></div>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </div>
 
-        </div>
+        </div><!-- TABS-->
     </div>
 </div>
-<div class="locationClock">
-    <div class="text-center"   >
-        <h4>[[${competitionName}]]</h4>
-        <h4><span th:if="${running}">'[[${currentAssignment}]]'</span><span th:if="${clockStyle=='disabled'}" class="italic">&nbsp;PAUSED</span></h4>
-        <b>Beschikbare tijd:</b>
-    </div>
-    <div id="assignment-clock"
-         th:attrappend="data-time-left=${timeLeft},data-time=${time},running=${running},class=${' '+clockStyle},title=${clockStyle}"
-         class="align-self-center">
-        <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
-            <h2 class="align-self-center">--:--</h2>
-        </div>
-        <svg width="160" height="160" xmlns="http://www.w3.org/2000/svg">
-            <g>
-                <circle class="clock circle_animation" r="69.85699" cy="81" cx="81" stroke-width="8"
-                        stroke="#6fdb6f" fill="none"></circle>
-            </g>
-        </svg>
-    </div>
-    <div>
 
-        <div class="p-2 col-12 roundGrayBorder" >
-            <h6>Rol: <select onchange="clientUpdateRole(this.value.toLowerCase())"><option th:if="${isWithAdminRole}">Admin</option><option>Gamemaster</option><option>User</option></select></h6>
-            <br/>
-            <a class="btn btn-primary w-100" href="/rankings" target="rankings"><span class="fa fa-trophy pr-1"></span>Ranglijst competitie</a><br/><br/>
-            <a class="btn btn-primary w-100" href="/feedback" target="feedback"><span class="fa fa-gamepad pr-1"></span>Tussenstand opdracht</a><br/><br/>
-        </div>
-
-    </div>
+<div id="toasts" class="toast-container p-3 top-0 end-0">
 </div>
 
-<div class="modal fade" id="createNewCompetition-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" >Aanmaken nieuwe competitie</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Wat is de naam van de competitie?</p>
-                <p contenteditable="true" class="paddingLeft50 w-50 p-2 roundGrayBorder" id="competitionCreateNew">Masters of Java</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleer</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="return doCompetitionCreateNew($('#competitionCreateNew').html())">Maak aan</button>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="restartAssignment-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Herstarten van de opdracht</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Weet u zeker dat u deze opdracht wil herstarten (en hiermee ook de scores van deze opdracht wil resetten)?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleer</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="return startTaskSmartRestart()">Doorgaan</button>
-            </div>
-        </div>
-    </div>
-    <button type="button" class="hide openModalViaJs" data-toggle='modal' data-target='#restartAssignment-modal'>open restartAssignment modal via js</button>
-</div>
-<div class="modal fade" id="startAssignmentNow-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Afsluiten huidige opdracht en herstarten nieuwe</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Weet u zeker dat u deze runnende opdracht eerder wil sluiten (de scores hiervan blijven bewaard) en direct een nieuwe opdracht wil starten?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleer</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="return startTaskSmartStartNow()">Doorgaan</button>
-            </div>
-        </div>
-    </div>
-    <button type="button" class="hide openModalViaJs" data-toggle='modal' data-target='#startAssignmentNow-modal'>open startAssignmentNow modal via js</button>
-
-</div>
-<div class="modal fade" id="deleteCompetition-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Delete geselecteerde competitie</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Weet u zeker dat u deze competitie wil verwijderen?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuleer</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="return doCompetitionDelete()">Verwijder</button>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="deltaSolution-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog minWidth800" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div >
-                <h5 class="modal-title">Toon oplossing</h5>
-                </div>
-                <div class="minWidth300 text-center font10px">
-                    <button class="cursorPointer" onclick="doValidateAssignment(this.title, false)">validate start situation</button>
-                    <button class="cursorPointer" onclick="doValidateAssignment(this.title, true)">validate solution</button>
-                    <button class="cursorPointer reviewButton toggle" text="review panel,diff panel" onclick="doShowReviewDialog(this.title, this)">review panel</button>
-                </div>
-                <div >
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-                </div>
-            </div>
-            <div class="modal-body font10px">
-                <pre class="code"></pre>
-                <pre class="hide review" contenteditable="true"></pre>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Terug</button>
-            </div>
-        </div>
-    </div>
-    <button type="button" class="hide openModalViaJs" data-toggle='modal' data-target='#deltaSolution-modal'>open deltaSolution modal via js</button>
-</div>
-
+<script type="text/javascript" th:src="@{/webjars/howler.js/dist/howler.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/popper.js/umd/popper.min.js}"></script>
 <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>

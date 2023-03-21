@@ -19,7 +19,7 @@ package nl.moj.server.assignment.service;
 /**
  * @author Ejnar Kaekebeke
  */
-public class AssignmentServiceException extends RuntimeException {
+public class AssignmentServiceException extends Exception {
     public AssignmentServiceException(String message) {
         super(message);
     }

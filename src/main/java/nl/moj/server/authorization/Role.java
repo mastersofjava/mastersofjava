@@ -17,10 +17,6 @@
 package nl.moj.server.authorization;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
-import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 
 public final class Role {
     public static final String ADMIN = "ROLE_ADMIN";
@@ -32,13 +28,13 @@ public final class Role {
 		return roles.contains(Role.ADMIN) || roles.contains(Role.GAME_MASTER);
 	}
 
-	public static boolean isWithControleRole(KeycloakAuthenticationToken user) {
-		if (user==null || user.getAuthorities()==null || user.getAuthorities().isEmpty()) {
-			return false;
-		}
-		return isWithControleRole(user
-    			.getAuthorities().stream()
-    			.map(GrantedAuthority::getAuthority)
-    			.collect(Collectors.toList()));
-	}
+//	public static boolean isWithControleRole(KeycloakAuthenticationToken user) {
+//		if (user==null || user.getAuthorities()==null || user.getAuthorities().isEmpty()) {
+//			return false;
+//		}
+//		return isWithControleRole(user
+//    			.getAuthorities().stream()
+//    			.map(GrantedAuthority::getAuthority)
+//    			.collect(Collectors.toList()));
+//	}
 }

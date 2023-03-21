@@ -27,11 +27,12 @@ import java.util.regex.Pattern;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.bootstrap.service.BootstrapService;
+import nl.moj.common.bootstrap.BootstrapService;
 import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-@WebFilter(urlPatterns = {"*"})
+@Component
 @AllArgsConstructor
 @Slf4j
 public class BootstrapFilter extends OncePerRequestFilter {

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.descriptor.*;
+import nl.moj.common.assignment.descriptor.*;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
 import org.apache.commons.io.IOUtils;

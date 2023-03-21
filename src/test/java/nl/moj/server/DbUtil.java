@@ -16,35 +16,40 @@
 */
 package nl.moj.server;
 
-import javax.transaction.Transactional;
-
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.repository.AssignmentResultRepository;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
+
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class DbUtil {
 
-    private CompetitionRepository competitionRepository;
-    private AssignmentRepository assignmentRepository;
-    private TeamRepository teamRepository;
-    private CompetitionSessionRepository competitionSessionRepository;
-    private AssignmentStatusRepository assignmentStatusRepository;
-    private UserRepository userRepository;
+
+    private final CompetitionRepository competitionRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final TeamRepository teamRepository;
+    private final CompetitionSessionRepository competitionSessionRepository;
+    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
+    private final UserRepository userRepository;
+    private final AssignmentResultRepository assignmentResultRepository;
 
     @Transactional
     public void cleanup() {
-        assignmentStatusRepository.deleteAll();
+        assignmentResultRepository.deleteAll();
+        teamAssignmentStatusRepository.deleteAll();
         competitionSessionRepository.deleteAll();
         competitionRepository.deleteAll();
         assignmentRepository.deleteAll();
-        teamRepository.deleteAll();
         userRepository.deleteAll();
+        teamRepository.deleteAll();
     }
+
 }

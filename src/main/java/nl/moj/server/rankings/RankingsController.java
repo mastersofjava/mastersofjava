@@ -34,6 +34,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.transaction.Transactional;
+
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -44,26 +46,16 @@ public class RankingsController {
     private final RankingsService rankingsService;
 
     @GetMapping("/rankings")
+    @Transactional(Transactional.TxType.REQUIRED)
     public ModelAndView getRankings() {
-        CompetitionRuntime rankingProvider = competitionRuntime;
-        log.info("competition " +HttpUtil.getParam("competition") + " - " +rankingProvider);
+        ActiveAssignment state = competitionRuntime.getActiveAssignment();
 
-        if (HttpUtil.hasParam("competition")) {
-            Long competitionId = Long.parseLong(HttpUtil.getParam("competition","1"));
-            if (competitionRuntime.getActiveCompetitionsMap().containsKey(competitionId)) {
-                Competition competition = competitionRuntime.getActiveCompetitionsMap().get(competitionId).getCompetition();
-                rankingProvider = competitionRuntime.selectCompetitionRuntimeForGameStart(competition);
-            }
-        }
-        Competition competition = rankingProvider.getCompetition();
-        List<Ranking> rankings = enrich(rankingsService.getRankings(rankingProvider.getCompetitionSession()));
-        CompetitionState competitionState = rankingProvider.getCompetitionState();
+        log.info("session " + HttpUtil.getParam("session") + " - " + competitionRuntime);
+
+        Competition competition = competitionRuntime.getCompetition();
+        List<Ranking> rankings = enrich(rankingsService.getRankings(competitionRuntime.getSessionId()));
         ModelAndView model = new ModelAndView("rankings");
-        if (competitionState.getCompletedAssignments().isEmpty()) {
-            model.addObject("oas", Collections.emptyList());
-        } else {
-            model.addObject("oas", rankingsService.getRankingHeaders(competitionState));
-        }
+        model.addObject("oas", rankingsService.getRankingHeaders(competitionRuntime.getSessionId()));
         model.addObject("top", rankings.subList(0, Math.min(5, rankings.size())));
 
         List<List<Ranking>> parts = partitionRemaining(rankings, 5);
@@ -73,10 +65,9 @@ public class RankingsController {
         model.addObject("bottom2", parts.get(1));
         model.addObject("bottom3", parts.get(2));
         model.addObject("bottom4", parts.get(3));
-        if (rankingProvider.getCurrentRunningAssignment() != null) {
-            ActiveAssignment state = rankingProvider.getActiveAssignment();
+        if (state.isRunning()) {
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
-            model.addObject("timeLeft", state.getTimeRemaining());
+            model.addObject("timeLeft", state.getSecondsRemaining());
             model.addObject("time", state.getAssignmentDescriptor().getDuration().toSeconds());
             model.addObject("running", state.isRunning());
         } else {

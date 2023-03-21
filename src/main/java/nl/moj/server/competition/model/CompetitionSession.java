@@ -18,17 +18,23 @@ package nl.moj.server.competition.model;
 
 
 import javax.persistence.*;
-import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+import nl.moj.server.runtime.model.AssignmentStatus;
 
 @Data
 @Entity
 @Table(name = "competition_sessions")
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competition_sessions_seq", sequenceName = "competition_sessions_seq")
+@EqualsAndHashCode(of = {"uuid"})
+@ToString(exclude = {"session", "assignmentStatuses"})
 public class CompetitionSession {
 
     @Id
@@ -36,34 +42,14 @@ public class CompetitionSession {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uuid", unique = true, nullable = false)
+    @Column(name = "uuid", unique = true, nullable = false, columnDefinition = "uuid")
     private UUID uuid;
 
-    @Column(name = "available")
-    private boolean available;
-
-    @Column(name = "running")
-    private boolean running;
-
-    @Column(name = "time_left")
-    private Long timeLeft;
-
-    @Column(name = "assignment_name")
-    private String assignmentName;
-
-    @Column(name = "date_time_start")
-    private Instant dateTimeStart;
-
-    @Column(name = "last_update")
-    private Instant dateTimeLastUpdate;
+    @OneToMany(mappedBy = "competitionSession", cascade = CascadeType.REMOVE)
+    private List<AssignmentStatus> assignmentStatuses = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "competition_id", nullable = false)
     private Competition competition;
-
-    public boolean isRunning() {
-        Instant maxDuration = Instant.now().minusSeconds(3600);// max duration is 1 hour
-        return running && !dateTimeStart.isBefore(maxDuration);
-    }
 
 }

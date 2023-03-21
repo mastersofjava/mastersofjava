@@ -16,148 +16,45 @@
 */
 package nl.moj.server.competition.service;
 
+import java.util.List;
+import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.model.Competition;
-import nl.moj.server.competition.model.CompetitionSession;
-import nl.moj.server.competition.model.OrderedAssignment;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
-import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.server.config.properties.MojServerProperties;
-import nl.moj.server.runtime.CompetitionRuntime;
-import nl.moj.server.runtime.repository.AssignmentResultRepository;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.service.TeamService;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.ResponseBody;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class CompetitionService {
-    private static final String YEAR_PREFIX = "20";
-
-    private final MojServerProperties mojServerProperties;
-
-    private final AssignmentResultRepository assignmentResultRepository;
-
-    private final AssignmentStatusRepository assignmentStatusRepository;
-
-    private final CompetitionRuntime competitionRuntime;
-
     private final CompetitionRepository competitionRepository;
 
-    private final CompetitionSessionRepository competitionSessionRepository;
+    private final AssignmentRepository assignmentRepository;
 
-    private final TeamService teamService;
+    public Competition createCompetition(String name, List<UUID> assignments) throws CompetitionServiceException {
+        Competition c = new Competition();
+        c.setUuid(UUID.randomUUID());
+        c.setName(name);
+        if (assignments == null || assignments.isEmpty()) {
+            throw new CompetitionServiceException("Could not create session " + name + ", no assignments specified.");
+        }
 
-    // TODO: Sort out if we can do this lazily when the team first submits.
-    public void addTeam(Team team) {
-        Path teamdir = teamService.getTeamDirectory(competitionRuntime.getCompetitionSession(), team);
-        if (!Files.exists(teamdir)) {
-            try {
-                Files.createDirectory(teamdir);
-            } catch (IOException e) {
-                log.error("error creating teamdir", e);
+        for (UUID uuid : assignments) {
+            Assignment a = assignmentRepository.findByUuid(uuid);
+            if (a == null) {
+                throw new CompetitionServiceException("Could not find assignment " + uuid + " to add to session " + name + ".");
             }
+            CompetitionAssignment ca = new CompetitionAssignment();
+            ca.setCompetition(c);
+            ca.setOrder(c.getAssignments().size());
+            ca.setAssignment(a);
+            c.getAssignments().add(ca);
         }
+        return competitionRepository.save(c);
     }
-
-    public String getSelectedYearLabel() {
-        String year = getSelectedYearValue();
-        if (!StringUtils.isNumeric(year)) {
-            year = "";
-        } else {
-            year = " ("+year + ")";
-        }
-        return year;
-    }
-    public String getSelectedYearValue() {
-        String year = getSelectedLocation().getName().split("-")[0];
-        if (!StringUtils.isNumeric(year)) {
-            year = "";
-        }
-        return year;
-    }
-    public File getLocationByYear(int year) {
-        File defaultLocation = mojServerProperties.getAssignmentRepo().toFile();
-        defaultLocation.mkdirs();
-        String token = ""+year  +"-";
-        for (File file: locationList()) {
-            if (file.getName().startsWith(token)) {
-                return file;
-            }
-        }
-        return defaultLocation;
-    }
-
-    public Function<Assignment, OrderedAssignment> createOrderedAssignments(Competition c) {
-        AtomicInteger count = new AtomicInteger(0);
-        return a -> {
-            OrderedAssignment oa = new OrderedAssignment();
-            oa.setAssignment(a);
-            oa.setCompetition(c);
-            oa.setUuid(UUID.randomUUID());
-            oa.setOrder(count.getAndIncrement());
-            return oa;
-        };
-    }
-    public List<File> locationList() {
-        List<File> locationList = new ArrayList<>();
-        File defaultLocation = mojServerProperties.getAssignmentRepo().toFile();
-        if (!defaultLocation.exists()||!defaultLocation.getParentFile().isDirectory()) {
-            mojServerProperties.getAssignmentRepo().toFile().mkdirs();
-            return locationList;
-        }
-        return Arrays.stream(defaultLocation.getParentFile().listFiles())
-                .filter(file -> file.getName().startsWith(YEAR_PREFIX) && file.isDirectory())
-                .collect(Collectors.toList());
-    }
-
-
-    public File getSelectedLocation() {
-        File file = mojServerProperties.getAssignmentRepo().toFile();
-        Competition c = competitionRuntime.getCompetition();
-        boolean isUseDefaultLocation = c.getName().contains("|" +YEAR_PREFIX);
-        if (!isUseDefaultLocation) {
-            return file;
-        }
-        var name = c.getName().split("\\|")[1];
-        if (new File(file.getParentFile(),name).isDirectory()) {
-            file = new File(file.getParentFile(),name);
-        }
-        return file;
-    }
-
-    public @ResponseBody
-    List<Competition> getAvailableCompetitions() {
-        List<Competition> listAll = competitionRepository.findAll();
-        List<Competition> result = new ArrayList<>();
-        for (Competition competition : listAll) {
-            List<CompetitionSession> sessions = competitionSessionRepository.findByCompetition(competition);
-
-            for (CompetitionSession session : sessions) {
-                if (session.isAvailable()) {
-                    result.add(competition);
-                }
-            }
-        }
-        return result;
-    }
-
 }

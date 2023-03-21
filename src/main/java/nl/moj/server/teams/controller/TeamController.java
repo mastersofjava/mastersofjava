@@ -27,7 +27,7 @@ public class TeamController {
         if (user.getTeam() == null ) {
 			Team team = teamService.createTeam(form.getName(),form.getCompany(), form.getCountry());
 			user = userService.addUserToTeam(user,team);
-			log.info("Registered team {} with uuid {} for user {}", team.getName(), team.getUuid(), user.getUuid());
+			log.info("Registered team {} with uuid {} for user {}", team.getName(), team.getUuid(), user.getName());
         }
         return "redirect:/play";
     }

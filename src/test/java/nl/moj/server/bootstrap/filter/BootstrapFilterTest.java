@@ -17,7 +17,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import nl.moj.server.bootstrap.service.BootstrapService;
+import nl.moj.common.bootstrap.BootstrapService;
 
 @ExtendWith(MockitoExtension.class)
 class BootstrapFilterTest {
