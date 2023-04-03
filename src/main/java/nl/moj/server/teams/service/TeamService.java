@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,8 @@ import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.user.model.User;
+import nl.moj.server.user.service.UserService;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 
@@ -52,6 +55,7 @@ public class TeamService {
     private final AssignmentService assignmentService;
     private final AssignmentRepository assignmentRepository;
     private final StorageService storageService;
+    private final UserService userService;
 
     public Path getTeamAssignmentDirectory(UUID teamId, UUID sessionId, String assignmentName) {
         return storageService.getSessionTeamFolder(sessionId,teamId).resolve(assignmentName);
@@ -105,16 +109,17 @@ public class TeamService {
         return teamFiles;
     }
 
-    public Team createTeam(String name, String company, String country) {
+    @Transactional
+    public Team createOrUpdate(String name, String company, String country) {
         Team t = teamRepository.findByName(name);
         if (t == null) {
             t = teamRepository.save(Team.builder()
-                    .company(company)
                     .name(name)
-                    .country(country)
                     .uuid(UUID.randomUUID())
                     .build());
         }
+        t.setCompany(company);
+        t.setCountry(country);
         return t;
     }
 
