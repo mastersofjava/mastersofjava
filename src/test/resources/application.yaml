@@ -48,6 +48,9 @@ spring:
             token-uri: http://nowhere.none/token
             user-info-authentication-method: client_secret_post
             user-name-attribute: preferred_username
+      resourceserver:
+        jwt:
+          issuer-uri: http://nowhere.none/issuer
 logging:
   level:
     nl.moj.server: debug

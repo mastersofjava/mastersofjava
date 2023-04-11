@@ -10,10 +10,10 @@ import lombok.RequiredArgsConstructor;
 import nl.moj.server.authorization.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,6 +26,10 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+
 @Configuration
 @EnableGlobalMethodSecurity(jsr250Enabled = true)
 @EnableWebSecurity
@@ -47,8 +51,13 @@ public class WebSecurityConfiguration {
 
     @Bean //(name = BeanIds.SPRING_SECURITY_FILTER_CHAIN)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.authorizeRequests( a -> a
+                        .requestMatchers(new RequestHeaderRequestMatcher("Authorization"))
+                        .authenticated())
+                .oauth2ResourceServer().jwt();
+
         http.authorizeRequests(a -> a
-                        .antMatchers("/","/error", "/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico", "/api/assignment/*/content")
+                        .antMatchers("/", "/error", "/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico", "/api/assignment/*/content")
                         .permitAll()
                         .antMatchers("/play", "/feedback", "/rankings")
                         .hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
@@ -58,8 +67,9 @@ public class WebSecurityConfiguration {
                         .authenticated())
                 .headers(h -> h.frameOptions().disable())
                 .csrf(AbstractHttpConfigurer::disable)
-                .logout( l -> l.logoutSuccessHandler(oidcLogoutSuccessHandler()))
+                .logout(l -> l.logoutSuccessHandler(oidcLogoutSuccessHandler()))
                 .oauth2Login();
+
         return http.build();
     }
 
