@@ -3,6 +3,8 @@ package nl.moj.server.user.service;
 import javax.transaction.Transactional;
 import java.security.Principal;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -16,7 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.ClaimAccessor;
+import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
@@ -37,23 +42,31 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
 
     @Transactional
     public User createOrUpdate(Principal principal) {
-        if (principal.getName() != null) {
-            OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) principal;
-            User user = userRepository.findByName(principal.getName());
-            if (user == null) {
-                user = User.builder()
-                        .name(principal.getName())
-                        .build();
-                LOG.info("Created new user {}", principal.getName());
+        if( principal instanceof Authentication a) {
+            Map<String,Object> attributes = new HashMap<>();
+            if( a.getPrincipal() instanceof ClaimAccessor ca ) {
+                attributes = ca.getClaims();
+            } else if( a.getPrincipal() instanceof OAuth2AuthenticatedPrincipal ap ) {
+                attributes = ap.getAttributes();
             }
 
-            user.setGivenName(token.getPrincipal().getAttribute("given_name"));
-            user.setFamilyName(token.getPrincipal().getAttribute("family_name"));
-            user.setEmail(token.getPrincipal().getAttribute("email"));
+            if( !attributes.isEmpty()) {
+                String name = (String)attributes.get("preferred_username");
+                User user = userRepository.findByName(name);
+                if (user == null) {
+                    user = User.builder()
+                            .name(principal.getName())
+                            .build();
+                    LOG.info("Created new user {}", principal.getName());
+                }
 
-            return userRepository.save(user);
+                user.setGivenName((String)attributes.get("given_name"));
+                user.setFamilyName((String)attributes.get("family_name"));
+                user.setEmail((String)attributes.get("email"));
+                return userRepository.save(user);
+            }
         }
-        throw new IllegalArgumentException("Principal not a OAuth2AuthenticationToken, unable to create/update the user.");
+        throw new IllegalArgumentException("Principal not an Authentication, unable to create/update the user.");
     }
 
     public User findUser(Principal principal) {
