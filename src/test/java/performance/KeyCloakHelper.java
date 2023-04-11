@@ -13,9 +13,12 @@ import java.util.Map;
 public class KeyCloakHelper {
 
     public static String createUserAndReturnToken(String keycloakUrl, String userName) {
-        System.out.println("++++++++++++ Create user " + userName);
+        System.out.println("++++++++++++ Creating user " + userName);
         createUser(userName, keycloakUrl);
-        return getToken(keycloakUrl, userName);
+        System.out.println("------------ User created");
+        String token = getToken(keycloakUrl, userName);
+        System.out.println("_____________ User creation successful. Token: " + token);
+        return token;
     }
 
     private static void createUser(String userName, String keycloakUrl) {
@@ -54,7 +57,7 @@ public class KeyCloakHelper {
         configuration.setCredentials(Map.of("secret", Conf.keyCloakClientSecret));
         AuthzClient authzClient = AuthzClient.create(configuration);
 
-        return authzClient.obtainAccessToken(userName, userName).getToken();
+        return authzClient.obtainAccessToken(userName + "@mail.com", userName).getToken();
     }
 
 

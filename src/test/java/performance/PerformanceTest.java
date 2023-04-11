@@ -91,7 +91,7 @@ public class PerformanceTest extends Simulation {
                                                         SUBSCRIBE
                                                         ack:client
                                                         id:sub-0
-                                                        destination:/user/queue/competition
+                                                        destination:/user/queue/session
                                                                                                                 
                                                         \u0000
                                                         """
@@ -100,18 +100,11 @@ public class PerformanceTest extends Simulation {
                 .pause(1)
                 .exec(ws("Compile")
                                 .sendText(session -> getCompileMessage(Conf.emptyCode))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Compile started")
-//                                        .check(regex(".*COMPILING_STARTED.*"))
-//                        )
-//                        .await(10).on(
-//                                ws.checkTextMessage("Compile success")
-//                                        .check(regex(".*COMPILE.*success.*true.*"))
-//                        )
-//                        .await(10).on(
-//                                ws.checkTextMessage("Compile ended with success")
-//                                        .check(regex(".*COMPILING_ENDED.*success.*true.*"))
-//                        )
+                        .await(10).on(
+                                ws.checkTextMessage("Compile started")
+                                        .check(regex(".*COMPILE.*"))
+                                        .check(regex(".*success\":true.*"))
+                        )
                 )
                 .exec(ws("Compile wrong code")
                                 .sendText(session -> getCompileMessage(Conf.doesNotCompile))
@@ -128,11 +121,6 @@ public class PerformanceTest extends Simulation {
 //                                        .check(regex(".*COMPILING_ENDED.*success.*false.*"))
 //                        )
                 )
-                //                .exec(session -> {
-//                    System.out.println("+++++++++++++++++++ " + session.get("test"));
-//                    return session;
-//                })
-//              .pause(1)
                 .repeat(Conf.attemptCount, "i").on(
                         exec(ws("Attempt #{i}")
                                         // 50% chance of code that doesn't compile, otherwise randomly choose how many UT's will fail.
@@ -228,6 +216,9 @@ public class PerformanceTest extends Simulation {
     }
 
     private void parseHtml(String html) {
+        System.out.println("-------------------------------------");
+        System.out.println(html);
+        System.out.println("--------------------------------------");
         // We are looking at the tab components. Each has an 'id' that starts with 'cm-' and then the UUID of the tab.
         String[] split = html.split("id=\"cm-");
 
@@ -248,8 +239,7 @@ public class PerformanceTest extends Simulation {
             testUUIDs.add(split[i].substring(0, 36));
         }
 
-        // The session UUID is in the html, I believe by accident. Eitherway..
-        sessionUUID = html.split("submit\\(\\)\" title=\"")[1].substring(0, 36);
+        sessionUUID = html.split("session = '")[1].substring(0, 36);
     }
 
     private String getCompileMessage(String code) {
