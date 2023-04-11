@@ -65,6 +65,9 @@ spring:
           keycloak:
             issuer-uri: http://localhost:8888/realms/moj
             user-name-attribute: preferred_username
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8888/realms/moj
 server:
   forward-headers-strategy: native
 
