@@ -21,7 +21,7 @@ The game server uses Spring Boot,Keycloak, Thymeleaf, H2 database and Websockets
 Make sure you update the application.yaml to it works for the machine that is running the game server.  
 - The resources are default located in: ./moj-data/
 - For downloading all javadocs via commandline: `mvn dependency:sources dependency:resolve -Dclassifier=javadoc`
-- Download the newest SDK documentation and extract (directory `api`) into directory: `./moj-data/javadoc/api` (now the participants have easily access to these docs via the GUI))
+- Download the newest SDK documentation and extract (directory `api`) into directory: `${moj.server.data-directory}/javadoc/api` (now the participants have easily access to these docs via the GUI))
 - This project requires a properly configured keycloak to run for user authentication, see below:
 
 #### Keycloak installation, execution and configuration
