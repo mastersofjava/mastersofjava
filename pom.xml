@@ -278,6 +278,8 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-authz-client</artifactId>
+            <version>21.0.1</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

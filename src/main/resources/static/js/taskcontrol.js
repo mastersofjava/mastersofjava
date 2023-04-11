@@ -96,6 +96,9 @@ function uploadAssignments(args, form) {
 // used from html
 function createCompetition(args, form) {
     const d = formToObject(form)
+    if (!(d.assignment instanceof Array)) {
+        d.assignment = [d.assignment];
+    }
     post('/api/competition', {'name': d.quick_comp_name, 'assignments': d.assignment})
         .then(() => {
                 form.reset()

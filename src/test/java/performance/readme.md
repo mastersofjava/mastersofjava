@@ -15,7 +15,7 @@ performancewise since it has many unittests that call eachother.
 3. Add a client with ID and name 'gatling' (type OpenID Connect)
 4. In the next page, enable 'Client authentication' and save
 5. In the credentials tab, copy the client secret
-6. Paste it in the final field in KeyCloakHelper.keyCloakClientSecret
+6. Paste it in the final field in Conf.keyCloakClientSecret
 
 
 ## Run the script
