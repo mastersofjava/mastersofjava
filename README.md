@@ -45,7 +45,6 @@ Use the following steps to get Keycloak up and running.
        * Email verified: toggle to 'On'
        * Firstname: 'A'
        * Lastname: 'Admin'
-       * Enabled: toggle to 'On'
        * Required user actions: leave blank
        * Click 'Join Groups'
          * Select `admin`
