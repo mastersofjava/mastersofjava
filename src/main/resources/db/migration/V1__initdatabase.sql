@@ -19,6 +19,7 @@ create table assignment_results
   penalty              bigint not null,
   uuid                 uuid   not null,
   assignment_status_id bigint not null,
+  score_explanation    varchar(255) null,
   primary key (id)
 );
 

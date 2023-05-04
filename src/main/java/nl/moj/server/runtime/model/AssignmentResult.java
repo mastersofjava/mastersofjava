@@ -50,5 +50,8 @@ public class AssignmentResult {
 
     @Column(name = "final_score", nullable = false)
     private Long finalScore;
+    
+    @Column(name = "score_explanation", nullable = false)
+    private String scoreExplanation;
 
 }

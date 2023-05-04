@@ -272,7 +272,9 @@ function updateAlertContainerWithScore(message) {
             .append(
                 '<div class="alert alert-success p-4" role="alert"><h4 class="alert-heading">Assignment Completed</h4>'
                 + '<p>Your final score is</p><strong>'
-                + message.score + '</strong></div>');
+                + message.score + '</strong>'
+                +'<p class="pre-wrap">' + message.scoreExplanation +'</p>'
+                +'</div>');
     } else if( message.rejected ) {
         $('#alert-container')
             .empty()
@@ -285,7 +287,9 @@ function updateAlertContainerWithScore(message) {
                 .empty()
                 .append(
                     '<div class="alert alert-danger p-4" role="alert"><h4 class="alert-heading">Assignment Not OK!</h4>'
-                    + '<p>Your final score is ' + message.score + '</p></div>');
+                    + '<p>Your final score is <strong>' + message.score + '</strong></p>'
+                	+'<p class="pre-wrap">' + message.scoreExplanation +'</p>'
+                    +'</div>');
         } else {
             if (parseInt(message.remainingSubmits) > 0) {
                 $('#alert-container')

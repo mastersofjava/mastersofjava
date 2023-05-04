@@ -127,6 +127,7 @@ public class ScoreService {
         ar.setBonus(score.getTotalBonus());
         ar.setPenalty(score.getTotalPenalty());
         ar.setFinalScore(score.getTotalScore());
+        ar.setScoreExplanation("<i>score explanation shown here</i>");
         as.setAssignmentResult(ar);
         as.setDateTimeCompleted(Instant.now());
         assignmentResultRepository.save(ar);
