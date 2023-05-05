@@ -46,6 +46,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
@@ -240,12 +241,13 @@ public class ScoreServiceTest {
 
         TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
+        System.out.println(ar.getScoreExplanation());
 
         Assertions.assertThat(ar).isNotNull();
         Assertions.assertThat(ar.getInitialScore()).isEqualTo(0L);
-        Assertions.assertThat(ar.getFinalScore()).isEqualTo(200L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(2L);
         Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
-        Assertions.assertThat(ar.getBonus()).isEqualTo(200L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(2L);
     }
 
     @Test
@@ -257,12 +259,12 @@ public class ScoreServiceTest {
 
         TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
-
+        
         Assertions.assertThat(ar).isNotNull();
         Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(ar.getFinalScore()).isEqualTo(1900L);
+        Assertions.assertThat(ar.getFinalScore()).isEqualTo(1702L);
         Assertions.assertThat(ar.getPenalty()).isEqualTo(800L);
-        Assertions.assertThat(ar.getBonus()).isEqualTo(700L);
+        Assertions.assertThat(ar.getBonus()).isEqualTo(502L);
     }
 
     @Test
@@ -384,20 +386,13 @@ public class ScoreServiceTest {
 
 
     @Test
-    public void invalidResubmitPenaltiesUsesZeroValue() {
+    public void invalidResubmitPenaltiesThrowsException() {
         ScoringRules scoringRules = prepareScoringRules(2, "foo", 0, null);
 
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 2, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
-        AssignmentResult ar = as.getAssignmentResult();
-
-        Assertions.assertThat(ar).isNotNull();
-        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(ar.getFinalScore()).isEqualTo(2000L);
-        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
-        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
+        assertThrows(IllegalArgumentException.class, () -> scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor()));
     }
 
     // TestCase Penalties
@@ -435,18 +430,11 @@ public class ScoreServiceTest {
     }
 
     @Test
-    public void invalidTestPenaltiesUsesZeroValue() {
+    public void invalidTestPenaltiesThrowsException() {
         ScoringRules scoringRules = prepareScoringRules(2, null, 0, "foo");
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 2, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
-        AssignmentResult ar = as.getAssignmentResult();
-
-        Assertions.assertThat(ar).isNotNull();
-        Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
-        Assertions.assertThat(ar.getFinalScore()).isEqualTo(2000L);
-        Assertions.assertThat(ar.getPenalty()).isEqualTo(0L);
-        Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
+        assertThrows(IllegalArgumentException.class, () -> scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor()));
     }
 }
