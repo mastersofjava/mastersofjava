@@ -77,8 +77,8 @@ public class ScoreService {
 
     private Score calculateScore(SubmitAttempt sa, TeamAssignmentStatus as, AssignmentDescriptor ad) {
     	Score score = new Score();
+    	calculateSubmitBonus(score, sa, ad);
     	calculateInitialScore(score, sa);
-        calculateSubmitBonus(score, sa, ad);
         calculateTestBonus(score, sa, as, ad);
         calculateTestPenalty(score, sa, ad);
     	calculateSubmitPenalty(score, sa, ad);
@@ -94,7 +94,7 @@ public class ScoreService {
         	score.addExplanation("" + sa.getAssignmentTimeRemaining().toMinutes() +":" + sa.getAssignmentTimeRemaining().toSecondsPart() + " left after successful submission: " + score.getInitialScore() + " points" );
         } else {
         	score.setInitialScore(0L);
-        	score.addExplanation("no successful submission: 0 points" );
+        	score.addExplanation("No successful submission bonus seconds: 0 points" );
         }
     }
 
@@ -106,10 +106,15 @@ public class ScoreService {
                 String penalty = ad.getScoringRules().getResubmitPenalty().trim();
                 try {
                     // the first submit is always free, hence submits - 1.
-                    calculatePenaltyValue(score, sa.getAssignmentTimeRemaining().toSeconds(), submits - 1, penalty);
+                	StringBuilder explanation = new StringBuilder();
+                    long finalPenalty = calculatePenaltyValue(score, score.getTotalScore(), submits - 1, penalty, "submit", explanation);
+                    score.setResubmitPenalty(finalPenalty);
+                    if (finalPenalty>0) {
+                    	score.addExplanation(explanation.toString());
+                    }
+                    return;
                 } catch (Exception nfe) {
-                    log.warn("Cannot use submit penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty);
-                    log.trace("Cannot use submit penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty, nfe);
+                	throw new IllegalArgumentException("Cannot use submit penalty '"+penalty+"'. Expected a number or valid percentage.");
                 }
             }
         }
@@ -125,36 +130,50 @@ public class ScoreService {
             if (testRuns > 0 && ad.getScoringRules().getTestPenalty() != null) {
                 String penalty = ad.getScoringRules().getTestPenalty().trim();
                 try {
-                    calculatePenaltyValue(score, score.getTotalScore(), testRuns, penalty);
+                	StringBuilder explanation = new StringBuilder();
+                    long finalPenalty = calculatePenaltyValue(score, score.getTotalScore(), testRuns, penalty, "test", explanation);
+                    score.setTestPenalty(finalPenalty);
+                    if (finalPenalty>0) {
+                    	score.addExplanation(explanation.toString());
+                    }
                 } catch (Exception nfe) {
-                    log.warn("Cannot use test penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty);
-                    log.trace("Cannot use test penalty from '{}'. Expected a number or valid percentage, ignoring and using a value of 0.", penalty, nfe);
+                	throw new IllegalArgumentException("Cannot use test penalty '"+penalty+"'. Expected a number or valid percentage.");
                 }
             }
         }
         
     }
 
-    private void calculatePenaltyValue(Score score, Long totalSubScore, Integer count, String penalty) throws NumberFormatException {
+    /**
+     * Both for test runs and 
+     * @param score the score object to record the penalty in
+     * @param baseScore the base score to use for penalty calculation
+     * @param count how many times to apply the penalty
+     * @param penalty the name of the penalty
+     * @param explanation a StringBuilder to append to explanation to
+     * @throws NumberFormatException
+     */
+    private long calculatePenaltyValue(Score score, Long baseScore, Integer count, String penalty, String penaltyName, StringBuilder explanation) throws NumberFormatException {
     	if (count==0) {
-    		score.setResubmitPenalty(0L);
-    		score.addExplanation("No resubmission penalty: 0 points");
+    		explanation.append("No "+penaltyName+" penalty: 0 points");
+    		return 0;
 		} else {
 	        if (penalty.endsWith("%") && count > 0) {
 	            long p = 100L - Long.parseLong(penalty.substring(0, penalty.length() - 1));
 	            if (p < 0) {
 	                throw new IllegalArgumentException("Penalty percentage value must be <= 100%");
 	            }
-	            Long resubmitPenalty = totalSubScore - Math.round(totalSubScore * Math.pow((p / 100.0), count.doubleValue()));
-	            score.setResubmitPenalty(resubmitPenalty);
-	            score.addExplanation("" + count + " resubmissions, deducting " + penalty + " " + count + " times from base score of "+totalSubScore+": -" + score.getResubmitPenalty() );
+	            long finalPenalty = baseScore - Math.round(baseScore * Math.pow((p / 100.0), count.doubleValue()));
+	            explanation.append("" + count + " "+penaltyName+"s, deducting " + penalty + " " + count + " times from base score of "+baseScore+": -" + finalPenalty + " points" );
+	            return finalPenalty;
 	        } else {
 	            long p = Long.parseLong(penalty);
 	            if (p < 0) {
 	                throw new IllegalArgumentException("Penalty value must be >= 0.");
 	            }
-	            score.setResubmitPenalty(p * count);
-	            score.addExplanation("" + count + " resubmissions, deducting " + penalty + " " + count + " times from base score of "+totalSubScore+": -" + score.getResubmitPenalty() + " points" );
+	            long finalPenalty = p * count;
+	            explanation.append("" + count + " "+penaltyName+", deducting " + penalty + " " + count + " times from base score of "+baseScore+": -" + finalPenalty + " points" );
+	            return finalPenalty;
 	        }
     	}
     }

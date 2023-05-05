@@ -125,7 +125,7 @@ public class MessageService {
         Team team = as.getTeam();
         TeamSubmitFeedbackMessage msg = TeamSubmitFeedbackMessage.builder()
                 .score(ar != null ? ar.getFinalScore() : 0L)
-                .scoreExplanation(ar.getScoreExplanation())
+                .scoreExplanation(ar != null ? ar.getScoreExplanation() : "")
                 .remainingSubmits(as.getAssignment().getAllowedSubmits() - as.getSubmitAttempts().size())
                 .uuid(team.getUuid())
                 .team(team.getName())
