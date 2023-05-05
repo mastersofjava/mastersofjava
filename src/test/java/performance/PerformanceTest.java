@@ -25,6 +25,7 @@ public class PerformanceTest extends Simulation {
 
     private final HttpProtocolBuilder httpProtocol = http
             .baseUrl("http://" + Conf.mojServerUrl)
+            .header("Authorization", session -> session.get("authToken"))
             .inferHtmlResources()
             .userAgentHeader("Gatling2")
             .wsBaseUrl("ws://" + Conf.mojServerUrl);
@@ -36,7 +37,7 @@ public class PerformanceTest extends Simulation {
 
     {
         // This is where the test starts:
-        setUp(scn.injectOpen(rampUsers(Conf.users).during(Conf.ramp))).protocols(httpProtocol);
+        setUp(scn.injectOpen(rampUsers(Conf.teams).during(Conf.ramp))).protocols(httpProtocol);
     }
 
     private ScenarioBuilder getScenario() {
@@ -46,27 +47,25 @@ public class PerformanceTest extends Simulation {
                     var now = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss:SSS"));
                     session = session.set("testUser", "TestUser" + now);
                     session = session.set("testTeam", "Team " + now);
+                    session = session.set("authToken", "Bearer " + KeyCloakHelper.createUserAndReturnToken("http://" + Conf.keyCloakUrl, session.get("testUser")));
                     return session;
                 })
-                .exec(
-                        http("Initiate connection and login automatically")
-                                .get("/play")
-                                .header("Authorization",
-                                        session -> "Bearer " + KeyCloakHelper.createUserAndReturnToken("http://" + Conf.keyCloakUrl, session.get("testUser")))
-                                .check(status().is(200))
+                .exec(http("Initiate connection")
+                        .get("/play")
+                        .check(status().is(200))
                 )
-                .exec(http(session -> "Add team")
-                                    .post("/team")
-                                    .formParam("name", session -> session.get("testTeam"))
-                                    .formParam("company", session -> session.get("testTeam"))
-                                    .formParam("country", session -> session.get("testTeam"))
-                                    .formParam("submit", "")
-                                    .check(status().is(200))
+                .exec(http("Add team")
+                        .post("/team")
+                        .formParam("name", session -> session.get("testTeam"))
+                        .formParam("company", session -> session.get("testTeam"))
+                        .formParam("country", session -> session.get("testTeam"))
+                        .formParam("submit", "")
+                        .check(status().is(200))
                 )
                 .exec(http("Get assignment info")
-                                .get("/play")
-                                .check(status().is(200))
-                                .check(bodyString().saveAs("assignmentHtml"))
+                        .get("/play")
+                        .check(status().is(200))
+                        .check(bodyString().saveAs("assignmentHtml"))
                 )
                 .exec(session -> {
                     parseHtml(session.getString("assignmentHtml"));
@@ -74,7 +73,7 @@ public class PerformanceTest extends Simulation {
                 })
 
                 .exec(ws("Connect WebSocket")
-                        .connect("/ws/competition/websocket")
+                        .connect("/ws/session/websocket")
                         .onConnected(
                                 exec(ws("Connect with Stomp").sendText(
                                                 """     
@@ -99,33 +98,24 @@ public class PerformanceTest extends Simulation {
                 )
                 .pause(1)
                 .exec(ws("Compile")
-                                .sendText(session -> getCompileMessage(Conf.emptyCode))
+                        .sendText(session -> getCompileMessage(Conf.emptyCode))
                         .await(10).on(
                                 ws.checkTextMessage("Compile started")
-                                        .check(regex(".*COMPILE.*"))
-                                        .check(regex(".*success\":true.*"))
+                                        .check(regex(".*COMPILE.*success\":true.*"))
                         )
                 )
                 .exec(ws("Compile wrong code")
                                 .sendText(session -> getCompileMessage(Conf.doesNotCompile))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Compile started")
-//                                        .check(regex(".*COMPILING_STARTED.*"))
-//                        )
-//                        .await(10).on(
-//                                ws.checkTextMessage("Compile success")
-//                                        .check(regex(".*COMPILE.*success.*false.*missing return statement.*"))
-//                        )
-//                        .await(10).on(
-//                                ws.checkTextMessage("Compile ended with success")
-//                                        .check(regex(".*COMPILING_ENDED.*success.*false.*"))
-//                        )
+                        .await(10).on(
+                                ws.checkTextMessage("Compile finished")
+                                        .check(regex(".*COMPILE.*success\":false.*"))
+                        )
                 )
                 .repeat(Conf.attemptCount, "i").on(
+                        either(
                         exec(ws("Attempt #{i}")
-                                        // 50% chance of code that doesn't compile, otherwise randomly choose how many UT's will fail.
+                                        // randomly choose how many UT's will fail.
                                         .sendText(session -> getTestMessage(
-                                                either(Conf.doesNotCompile,
                                                         either(
                                                                 Conf.emptyCode,
                                                                 Conf.attempt1,
@@ -133,38 +123,35 @@ public class PerformanceTest extends Simulation {
                                                                 Conf.attempt3,
                                                                 Conf.attempt4,
                                                                 Conf.attempt5
-                                                        ))))
-//                                .await(10).on(
-//                                        ws.checkTextMessage("Testing started")
-//                                                .check(regex(".*TESTING_STARTED.*")))
-//                                .await(10).on(
-//                                        ws.checkTextMessage("Compile success")
-//                                                .check(regex(".*COMPILE.*success.*true.*")))
-//                                .await(10).on(
-//                                        ws.checkTextMessage("Test0 done")
-//                                                .check(regex(".*Test0.*")))
-//                                .await(10).on(
-//                                        ws.checkTextMessage("Test1 done")
-//                                                .check(regex(".*Test1.*")))
-//                                .await(10).on(
-//                                        ws.checkTextMessage("Test2 done")
-//                                                .check(regex(".*Test2.*")))
-//                                .await(10).on(
-//                                        ws.checkTextMessage("Test3 done")
-//                                                .check(regex(".*Test3.*")))
-//                                .await(10).on(
-//                                        ws.checkTextMessage("Test4 done")
-//                                                .check(regex(".*Test4.*")))
-//                                .await(10).on(
-//                                        ws.checkTextMessage("Test5 done")
-//                                                .check(regex(".*Test5.*")))
-//                                .await(10).on(
-//                                        ws.checkTextMessage("Test6 done")
-//                                                .check(regex(".*Test6.*")))
-//                                .await(10).on(
-//                                        ws.checkTextMessage("Testing ended")
-//                                                .check(regex(".*TESTING_ENDED.*")))
-                        )
+                                                        )))
+                                .await(10).on(
+                                        ws.checkTextMessage("Testing started")
+                                                .check(regex(".*TESTING_STARTED.*")))
+                                .await(10).on(
+                                        ws.checkTextMessage("Compile success")
+                                                .check(regex(".*COMPILE.*success\":true.*")))
+                                .await(10).on(
+                                        ws.checkTextMessage("Test0 done")
+                                                .check(regex(".*Test0.*")))
+                                .await(10).on(
+                                        ws.checkTextMessage("Test1 done")
+                                                .check(regex(".*Test1.*")))
+                                .await(10).on(
+                                        ws.checkTextMessage("Test2 done")
+                                                .check(regex(".*Test2.*")))
+                                .await(10).on(
+                                        ws.checkTextMessage("Test3 done")
+                                                .check(regex(".*Test3.*")))
+                                .await(10).on(
+                                        ws.checkTextMessage("Test4 done")
+                                                .check(regex(".*Test4.*")))
+                                .await(10).on(
+                                        ws.checkTextMessage("Test5 done")
+                                                .check(regex(".*Test5.*")))
+                                .await(10).on(
+                                        ws.checkTextMessage("Test6 done")
+                                                .check(regex(".*Test6.*")))
+                        ))
                                 .pause(session -> Duration.ofSeconds(Conf.waitTimeBetweenSubmits.get()))
                 )
                 .pause(1)
@@ -172,42 +159,39 @@ public class PerformanceTest extends Simulation {
 
                 .exec(ws("Submit")
                                 .sendText(session -> getSubmitMessage(Conf.correctSolution))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Submit started")
-//                                        .check(regex(".*SUBMIT_STARTED.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Compile success")
-//                                        .check(regex(".*COMPILE.*success.*true.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Test0 done")
-//                                        .check(regex(".*Test0.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Hidden test done")
-//                                        .check(regex(".*HiddenTest.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Test1 done")
-//                                        .check(regex(".*Test1.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Test2 done")
-//                                        .check(regex(".*Test2.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Test3 done")
-//                                        .check(regex(".*Test3.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Test4 done")
-//                                        .check(regex(".*Test4.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Test5 done")
-//                                        .check(regex(".*Test5.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Test6 done")
-//                                        .check(regex(".*Test6.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Submit done")
-//                                        .check(regex(".*SUBMIT.*")))
-//                        .await(10).on(
-//                                ws.checkTextMessage("Submit ended")
-//                                        .check(regex(".*SUBMIT_ENDED.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Submit started")
+                                        .check(regex(".*SUBMIT_STARTED.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Compile success")
+                                        .check(regex(".*COMPILE.*success.*true.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Test0 done")
+                                        .check(regex(".*Test0.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Hidden test done")
+                                        .check(regex(".*HiddenTest.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Test1 done")
+                                        .check(regex(".*Test1.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Test2 done")
+                                        .check(regex(".*Test2.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Test3 done")
+                                        .check(regex(".*Test3.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Test4 done")
+                                        .check(regex(".*Test4.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Test5 done")
+                                        .check(regex(".*Test5.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Test6 done")
+                                        .check(regex(".*Test6.*")))
+                        .await(10).on(
+                                ws.checkTextMessage("Submit done")
+                                        .check(regex(".*SUBMIT.*")))
                 )
                 .pause(1)
 
@@ -216,9 +200,9 @@ public class PerformanceTest extends Simulation {
     }
 
     private void parseHtml(String html) {
-        System.out.println("-------------------------------------");
-        System.out.println(html);
-        System.out.println("--------------------------------------");
+//        System.out.println("-------------------------------------");
+//        System.out.println(html);
+//        System.out.println("--------------------------------------");
         // We are looking at the tab components. Each has an 'id' that starts with 'cm-' and then the UUID of the tab.
         String[] split = html.split("id=\"cm-");
 

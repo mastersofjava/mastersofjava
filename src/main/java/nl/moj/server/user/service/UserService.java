@@ -1,13 +1,5 @@
 package nl.moj.server.user.service;
 
-import javax.transaction.Transactional;
-import java.security.Principal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.teams.model.Team;
@@ -19,12 +11,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.ClaimAccessor;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+
+import javax.transaction.Transactional;
+import java.security.Principal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 @Slf4j
 @Service
@@ -51,13 +50,13 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
             }
 
             if( !attributes.isEmpty()) {
-                String name = (String)attributes.get("preferred_username");
+                String name = principal.getName();
                 User user = userRepository.findByName(name);
                 if (user == null) {
                     user = User.builder()
-                            .name(principal.getName())
+                            .name(name)
                             .build();
-                    LOG.info("Created new user {}", principal.getName());
+                    LOG.info("Created new user {}", name);
                 }
 
                 user.setGivenName((String)attributes.get("given_name"));

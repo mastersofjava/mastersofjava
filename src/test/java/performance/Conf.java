@@ -6,13 +6,13 @@ import static performance.PerformanceTest.random;
 
 public class Conf {
 
-    // number of users
-    public static int users = 1; // 50;
+    // number of teams
+    public static int teams = 50; // 50; (We streven nu naar 50 teams)
     // time in seconds that users starting up (reading the assignment etc)
-    public static long ramp = 20;
+    public static long ramp = 200; // 200; (Binnen 2 minuten heeft de helft van de teams voor het eerst getest, enkelen doen er veel langer over)
     // Every user will start with a compile, and then run 'x' attempts before submitting
-    public static int attemptCount = 1; // 10;
-    public static Supplier<Integer> waitTimeBetweenSubmits = () -> random(0, 60);
+    public static int attemptCount = 8; // 8; (een gemiddeld team doet 12,5 test pogingen, maar slechts 56% daarvan komt door de compile heen)
+    public static Supplier<Integer> waitTimeBetweenSubmits = () -> random(0, 360); // 8 submits in 24 minuten = om de 3 minuten gemiddeld een submit.
 
     public final static String mojServerUrl = "localhost:8080"; // "mastersofjava.nljug";
 
