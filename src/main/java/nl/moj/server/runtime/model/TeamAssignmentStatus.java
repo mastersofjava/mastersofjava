@@ -84,8 +84,7 @@ public class TeamAssignmentStatus {
     @OneToMany(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
     private List<SubmitAttempt> submitAttempts = new ArrayList<>();
 
-    @OneToOne(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
-    @JoinColumn(name="assignment_result_id")
+    @OneToOne(mappedBy="assignmentStatus", cascade = CascadeType.REMOVE)
     private AssignmentResult assignmentResult;
 
     public TestAttempt getMostRecentTestAttempt() {
