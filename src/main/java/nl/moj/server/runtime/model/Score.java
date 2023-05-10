@@ -16,37 +16,46 @@
 */
 package nl.moj.server.runtime.model;
 
-import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
-@Builder(toBuilder = true)
 @Getter
+@Setter
 @ToString
 public class Score {
 
-    @Builder.Default
-    private final Long initialScore = 0L;
-    @Builder.Default
-    private final Long submitBonus = 0L;
-    @Builder.Default
-    private final Long resubmitPenalty = 0L;
-    @Builder.Default
-    private final Long testPenalty = 0L;
-    @Builder.Default
-    private final Long testBonus = 0L;
+	private Long initialScore = 0L;
+	private Long submitBonus = 0L;
+	private Long resubmitPenalty = 0L;
+	private Long testPenalty = 0L;
+	private Long testBonus = 0L;
+	private String explanation;
 
-    public Long getTotalScore() {
-        Long score = initialScore + submitBonus + testBonus - resubmitPenalty - testPenalty;
-        if (score < 0) {
-            return 0L;
-        }
-        return score;
-    }
+	public Long getTotalScore() {
+		Long score = initialScore + submitBonus + testBonus - resubmitPenalty - testPenalty;
+		if (score < 0) {
+			return 0L;
+		}
+		return score;
+	}
 
-    public Long getTotalBonus() { return submitBonus + testBonus; }
+	public Long getTotalBonus() {
+		return submitBonus + testBonus;
+	}
 
-    public Long getTotalPenalty() {
-        return resubmitPenalty + testPenalty;
-    }
+	public Long getTotalPenalty() {
+		return resubmitPenalty + testPenalty;
+	}
+
+	public void addExplanation(String explanation) {
+		if (this.explanation == null) {
+			this.explanation = "";
+		}
+		this.explanation = this.explanation + "<li>" + explanation + "</li>";
+	}
+
+	public String getExplanation() {
+		return "<ul>" + explanation + "</ul>";
+	}
 }

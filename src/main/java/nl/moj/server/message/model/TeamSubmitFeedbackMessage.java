@@ -26,7 +26,6 @@ import lombok.ToString;
 @ToString
 @Builder
 public class TeamSubmitFeedbackMessage {
-
     private final MessageType messageType = MessageType.SUBMIT;
     private final UUID uuid;
     private final String team;
@@ -34,6 +33,7 @@ public class TeamSubmitFeedbackMessage {
     private final boolean success;
     private final boolean completed;
     private final long score;
+    private final String scoreExplanation;
     private final int remainingSubmits;
     private final boolean rejected;
     private final String traceId;

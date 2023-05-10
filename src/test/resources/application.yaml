@@ -24,12 +24,6 @@ spring:
     username: sa
     password: sa
     driver-class-name: org.h2.Driver
-  thymeleaf:
-    mode: HTML
-  flyway:
-    enabled: false
-  jpa:
-    generate-ddl: true
   security:
     oauth2:
       client:

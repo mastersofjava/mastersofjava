@@ -35,6 +35,7 @@ public class AssignmentResult {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "assignment_result_id_seq")
     @Column(name = "id", nullable = false)
     private Long id;
+
     @OneToOne
     @JoinColumn(name = "team_assignment_status_id", nullable = false)
     private TeamAssignmentStatus assignmentStatus;
@@ -50,5 +51,8 @@ public class AssignmentResult {
 
     @Column(name = "final_score", nullable = false)
     private Long finalScore;
+    
+    @Column(name = "score_explanation", nullable = false)
+    private String scoreExplanation;
 
 }

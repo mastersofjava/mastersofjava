@@ -19,6 +19,7 @@ package nl.moj.server.assignment.service;
 import javax.transaction.Transactional;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -169,7 +170,7 @@ public class AssignmentService {
 
     private List<Assignment> scanAssignments(Path base) throws IOException {
         List<Assignment> result = new ArrayList<>();
-        try (Stream<Path> files = Files.walk(base)) {
+        try (Stream<Path> files = Files.walk(base, FileVisitOption.FOLLOW_LINKS)) {
             files.filter(assignmentDescriptorService::isAssignmentDescriptor)
                     .forEach(file -> {
                         try {
