@@ -1,7 +1,9 @@
 package nl.moj.common.storage;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.UUID;
 
@@ -58,17 +60,28 @@ public class StorageService {
 
     public void initStorage() throws IOException {
         log.info("Initializing storage.");
-        Files.createDirectories(mojServerProperties.getDataDirectory());
+        createDirectories(mojServerProperties.getDataDirectory());
 
         if (mojServerProperties.getMode().anyMatch(Mode.CONTROLLER, Mode.SINGLE)) {
-            Files.createDirectories(getSessionsFolder());
-            Files.createDirectories(getLibsFolder());
-            Files.createDirectories(getSoundsFolder());
-            Files.createDirectories(getJavadocFolder());
-            Files.createDirectories(getAssignmentsFolder());
+            createDirectories(getSessionsFolder());
+            createDirectories(getLibsFolder());
+            createDirectories(getSoundsFolder());
+            createDirectories(getJavadocFolder());
+            createDirectories(getAssignmentsFolder());
         }
         if (mojServerProperties.getMode().anyMatch(Mode.WORKER)) {
-            Files.createDirectories(getLibsFolder());
+            createDirectories(getLibsFolder());
+        }
+    }
+
+    // allow symlinks as toplevel directory pointing to another directory
+    private void createDirectories(Path path) throws IOException {
+        if (Files.exists(path) && Files.isSymbolicLink(path)) {
+            if (!Files.isDirectory(path.toRealPath())) {
+                throw new FileAlreadyExistsException(path.toString());
+            }
+        } else {
+            Files.createDirectories(path);
         }
     }
 }
