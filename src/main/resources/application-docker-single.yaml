@@ -1,0 +1,4 @@
+moj:
+  server:
+    mode: single
+    data-directory: /data

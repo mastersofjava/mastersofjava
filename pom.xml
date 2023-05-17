@@ -23,7 +23,8 @@
 
     <properties>
         <java.version>17</java.version>
-        <moj.image>moj-game-server:17</moj.image>
+        <moj.image.base>moj-game-server</moj.image.base>
+        <moj.image.tag>17</moj.image.tag>
     </properties>
 
     <dependencyManagement>
@@ -371,23 +372,71 @@
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
                 <version>3.3.0</version>
-                <configuration>
-                    <from>
-                        <image>eclipse-temurin:17-jdk-focal</image>
-                    </from>
-                    <to>
-                        <image>${moj.image}</image>
-                    </to>
-                    <containerizingMode>packaged</containerizingMode>
-                    <container>
-                        <creationTime>${maven.build.timestamp}</creationTime>
-                        <ports>8080,5000,61616</ports>
-                        <args>--spring.profiles.active=docker</args>
-                        <labels>
-                            <commit>${git.commit.id.abbrev}</commit>
-                        </labels>
-                    </container>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>single</id>
+                        <configuration>
+                            <from>
+                                <image>eclipse-temurin:17-jdk-focal</image>
+                            </from>
+                            <to>
+                                <image>${moj.image.base}-single:${moj.image.tag}</image>
+                            </to>
+                            <containerizingMode>packaged</containerizingMode>
+                            <container>
+                                <creationTime>${maven.build.timestamp}</creationTime>
+                                <ports>8080,5000,61616</ports>
+                                <volumes>/data</volumes>
+                                <args>--spring.profiles.active=docker-single</args>
+                                <labels>
+                                    <commit>${git.commit.id.abbrev}</commit>
+                                </labels>
+                            </container>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>controller</id>
+                        <configuration>
+                            <from>
+                                <image>eclipse-temurin:17-jdk-focal</image>
+                            </from>
+                            <to>
+                                <image>${moj.image.base}-controller:${moj.image.tag}</image>
+                            </to>
+                            <containerizingMode>packaged</containerizingMode>
+                            <container>
+                                <creationTime>${maven.build.timestamp}</creationTime>
+                                <ports>8080,5000,61616</ports>
+                                <volumes>/data</volumes>
+                                <args>--spring.profiles.active=docker-controller</args>
+                                <labels>
+                                    <commit>${git.commit.id.abbrev}</commit>
+                                </labels>
+                            </container>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>worker</id>
+                        <configuration>
+                            <from>
+                                <image>eclipse-temurin:17-jdk-focal</image>
+                            </from>
+                            <to>
+                                <image>${moj.image.base}-controller:${moj.image.tag}</image>
+                            </to>
+                            <containerizingMode>packaged</containerizingMode>
+                            <container>
+                                <creationTime>${maven.build.timestamp}</creationTime>
+                                <ports>8080,5000,61616</ports>
+                                <volumes>/data</volumes>
+                                <args>--spring.profiles.active=docker-worker</args>
+                                <labels>
+                                    <commit>${git.commit.id.abbrev}</commit>
+                                </labels>
+                            </container>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

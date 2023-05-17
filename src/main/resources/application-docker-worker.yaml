@@ -1,0 +1,17 @@
+moj:
+  server:
+    mode: worker
+    controller-endpoint: "http://${CONTROLLER_HOST}:${CONTROLLER_PORT}"
+spring:
+  artemis:
+    embedded:
+      enabled: false
+    mode: native
+    broker-url: "tcp://${CONTROLLER_HOST}:61616"
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+  main:
+    web-application-type: none
