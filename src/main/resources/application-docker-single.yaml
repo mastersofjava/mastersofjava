@@ -2,3 +2,13 @@ moj:
   server:
     mode: single
     data-directory: /data
+spring:
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            issuer-uri: ${OIDC_ISSUER_URI}
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI}

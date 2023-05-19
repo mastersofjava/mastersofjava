@@ -1,0 +1,15 @@
+version: '2.4'
+services:
+  controller:
+    image: moj-controller:17
+    cpus: 1
+    mem_reservation: 2g
+    mem_limit: 4g
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:61616:61616"
+    environment:
+      OIDC_ISSUER_URI: http://host.docker.internal:8888/realms/moj
+#    volumes:
+#      - "./data:/data"
