@@ -60,4 +60,8 @@ public class TestSources {
         }
         return invisibleTests;
     }
+
+    public int getTotalTestCount() {
+        return getTests().size() + getHiddenTests().size() + getInvisibleTests().size();
+    }
 }

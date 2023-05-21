@@ -23,6 +23,7 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -92,6 +93,33 @@ public class AssignmentService {
 
     public AssignmentDescriptor resolveAssignmentDescriptor(String assignmentDescriptor) {
         return assignmentDescriptorService.parseAssignmentDescriptor(Paths.get(assignmentDescriptor));
+    }
+
+    public Duration resolveCompileAbortTimout(Assignment assignment) {
+        AssignmentDescriptor ad = resolveAssignmentDescriptor(assignment);
+        return ad.getCompileTimeout() != null ? ad.getCompileTimeout()
+                : mojServerProperties.getLimits().getCompileTimeout();
+    }
+
+    private Duration resolveCompileAbortTimout(AssignmentDescriptor ad) {
+        return ad.getCompileTimeout() != null ? ad.getCompileTimeout()
+                : mojServerProperties.getLimits().getCompileTimeout();
+    }
+
+    public Duration resolveTestAbortTimout(Assignment assignment, int numberOfTests) {
+        AssignmentDescriptor ad =resolveAssignmentDescriptor(assignment);
+        Duration timeout = resolveCompileAbortTimout(ad);
+        return timeout.plus(ad.getTestTimeout().multipliedBy(numberOfTests));
+    }
+
+    private Duration resolveTestAbortTimout(AssignmentDescriptor ad, int numberOfTests) {
+        Duration timeout = resolveCompileAbortTimout(ad);
+        return timeout.plus(ad.getTestTimeout().multipliedBy(numberOfTests));
+    }
+
+    public Duration resolveSubmitAbortTimout(Assignment assignment) {
+        AssignmentDescriptor ad =resolveAssignmentDescriptor(assignment);
+        return resolveTestAbortTimout(ad, ad.getAssignmentFiles().getTestSources().getTotalTestCount());
     }
 
     public List<Assignment> updateAssignments() throws IOException, AssignmentServiceException {

@@ -336,6 +336,18 @@ public abstract class BaseRuntimeTest {
         });
     }
 
+    protected void assertTimeout(SubmitAttempt sa) {
+        trx.required(() -> {
+            SubmitAttempt r = refresh(sa);
+            assertSuccess(r.getTestAttempt());
+            Assertions.assertThat(r).isNotNull();
+            Assertions.assertThat(r.getSuccess()).isTrue();
+            Assertions.assertThat(r.getAborted()).isFalse();
+            Assertions.assertThat(r.getAssignmentStatus()).isNotNull();
+            Assertions.assertThat(r.getAssignmentStatus().getAssignmentResult()).isNotNull();
+        });
+    }
+
     protected void assertSuccess(TestAttempt ta) {
         trx.required(() -> {
             TestAttempt r = testAttemptRepository.findByUuid(ta.getUuid());
@@ -381,6 +393,16 @@ public abstract class BaseRuntimeTest {
             Assertions.assertThat(r.getSuccess()).isFalse();
             Assertions.assertThat(r.getTimeout()).isTrue();
             Assertions.assertThat(r.getAborted()).isFalse();
+        });
+    }
+
+    protected void assertAbort(CompileAttempt ca) {
+        trx.required(() -> {
+            CompileAttempt r = refresh(ca);
+            Assertions.assertThat(r).isNotNull();
+            Assertions.assertThat(r.getSuccess()).isFalse();
+            Assertions.assertThat(r.getTimeout()).isFalse();
+            Assertions.assertThat(r.getAborted()).isTrue();
         });
     }
 
