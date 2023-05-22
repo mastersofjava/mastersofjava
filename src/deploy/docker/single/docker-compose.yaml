@@ -1,7 +1,7 @@
 version: '2.4'
 services:
-  moj:
-    image: moj-single:17
+  single:
+    image: docker.first8.nl/moj/moj-single:17
     cpus: 3
     mem_reservation: 2g
     mem_limit: 4g
@@ -9,6 +9,6 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      OIDC_ISSUER_URI: http://host.docker.internal:8888/realms/moj
+      OIDC_ISSUER_URI: "<oidc-issuer-url>"
 #    volumes:
 #      - "./data:/data"

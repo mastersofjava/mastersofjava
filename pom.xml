@@ -378,24 +378,24 @@
                         <configuration>
                             <from>
                                 <image>eclipse-temurin:17-jdk-focal</image>
+                                <platforms>
+                                    <platform>
+                                        <architecture>amd64</architecture>
+                                        <os>linux</os>
+                                    </platform>
+                                    <platform>
+                                        <architecture>arm64</architecture>
+                                        <os>linux</os>
+                                    </platform>
+                                </platforms>
                             </from>
                             <to>
                                 <image>${moj.image.base}-single:${moj.image.tag}</image>
+                                <auth>
+                                    <username>${env.REGISTRY_USERNAME}</username>
+                                    <password>${env.REGISTRY_PASSWORD}</password>
+                                </auth>
                             </to>
-                            <auth>
-                                <username>${env.REGISTRY_USERNAME}</username>
-                                <password>${env.REGISTRY_PASSWORD}</password>
-                            </auth>
-                            <platforms>
-                                <platform>
-                                    <architecture>amd64</architecture>
-                                    <os>linux</os>
-                                </platform>
-                                <platform>
-                                    <architecture>arm64/v8</architecture>
-                                    <os>linux</os>
-                                </platform>
-                            </platforms>
                             <containerizingMode>packaged</containerizingMode>
                             <container>
                                 <creationTime>${maven.build.timestamp}</creationTime>
@@ -413,24 +413,24 @@
                         <configuration>
                             <from>
                                 <image>eclipse-temurin:17-jdk-focal</image>
+                                <platforms>
+                                    <platform>
+                                        <architecture>amd64</architecture>
+                                        <os>linux</os>
+                                    </platform>
+                                    <platform>
+                                        <architecture>arm64</architecture>
+                                        <os>linux</os>
+                                    </platform>
+                                </platforms>
                             </from>
                             <to>
                                 <image>${moj.image.base}-controller:${moj.image.tag}</image>
+                                <auth>
+                                    <username>${env.REGISTRY_USERNAME}</username>
+                                    <password>${env.REGISTRY_PASSWORD}</password>
+                                </auth>
                             </to>
-                            <auth>
-                                <username>${env.REGISTRY_USERNAME}</username>
-                                <password>${env.REGISTRY_PASSWORD}</password>
-                            </auth>
-                            <platforms>
-                                <platform>
-                                    <architecture>amd64</architecture>
-                                    <os>linux</os>
-                                </platform>
-                                <platform>
-                                    <architecture>arm64/v8</architecture>
-                                    <os>linux</os>
-                                </platform>
-                            </platforms>
                             <containerizingMode>packaged</containerizingMode>
                             <container>
                                 <creationTime>${maven.build.timestamp}</creationTime>
@@ -448,24 +448,24 @@
                         <configuration>
                             <from>
                                 <image>eclipse-temurin:17-jdk-focal</image>
+                                <platforms>
+                                    <platform>
+                                        <architecture>amd64</architecture>
+                                        <os>linux</os>
+                                    </platform>
+                                    <platform>
+                                        <architecture>arm64</architecture>
+                                        <os>linux</os>
+                                    </platform>
+                                </platforms>
                             </from>
                             <to>
                                 <image>${moj.image.base}-worker:${moj.image.tag}</image>
+                                <auth>
+                                    <username>${env.REGISTRY_USERNAME}</username>
+                                    <password>${env.REGISTRY_PASSWORD}</password>
+                                </auth>
                             </to>
-                            <auth>
-                                <username>${env.REGISTRY_USERNAME}</username>
-                                <password>${env.REGISTRY_PASSWORD}</password>
-                            </auth>
-                            <platforms>
-                                <platform>
-                                    <architecture>amd64</architecture>
-                                    <os>linux</os>
-                                </platform>
-                                <platform>
-                                    <architecture>arm64/v8</architecture>
-                                    <os>linux</os>
-                                </platform>
-                            </platforms>
                             <containerizingMode>packaged</containerizingMode>
                             <container>
                                 <creationTime>${maven.build.timestamp}</creationTime>

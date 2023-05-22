@@ -101,7 +101,7 @@ public class ScoreService {
     private void calculateSubmitPenalty(Score score,SubmitAttempt sa, AssignmentDescriptor ad) {
         if (sa != null && sa.getSuccess() != null && sa.getSuccess()) {
             TeamAssignmentStatus as = sa.getAssignmentStatus();
-            int submits = as.getSubmitAttempts().size();
+            int submits = as.countNotAbortedSubmitAttempts();
             if (submits > 1 && ad.getScoringRules().getResubmitPenalty() != null) {
                 String penalty = ad.getScoringRules().getResubmitPenalty().trim();
                 try {

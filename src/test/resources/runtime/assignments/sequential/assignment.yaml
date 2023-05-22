@@ -14,7 +14,7 @@ labels:
 
 difficulty: 3
 java-version: 17
-duration: PT15S
+duration: PT30S
 submit-timeout: PT5S
 test-timeout: PT2S
 execution-model: sequential

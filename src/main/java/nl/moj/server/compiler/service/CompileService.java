@@ -112,6 +112,12 @@ public class CompileService {
     @Transactional
     public CompileAttempt registerCompileResponse(JMSCompileResponse compileResponse) {
         CompileAttempt compileAttempt = compileAttemptRepository.findByUuid(compileResponse.getAttempt());
+
+        if(  compileAttempt.getDateTimeEnd() != null ) {
+            log.info("Ignoring response for compile attempt {}, already have a response.", compileAttempt.getUuid());
+            return compileAttempt;
+        }
+
         return update(compileAttempt, compileResponse);
     }
 
@@ -142,7 +148,7 @@ public class CompileService {
         taskScheduler.schedule(() -> {
             trx.required(() -> {
                 CompileAttempt ca = compileAttemptRepository.findByUuid(compileAttempt.getUuid());
-                if( ca != null && ca.getDateTimeEnd() == null ) {
+                if( ca != null && ca.getDateTimeEnd() == null && ca.getAssignmentStatus().getDateTimeEnd() == null ) {
                     log.info("Aborting compile attempt {}, response took too long.", ca.getUuid());
                     receiveCompileResponse(responseHelper.abortResponse(ca));
                 }

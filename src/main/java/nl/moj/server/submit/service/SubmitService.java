@@ -81,6 +81,11 @@ public class SubmitService {
         AssignmentDescriptor ad = assignmentService.resolveAssignmentDescriptor(sa.getAssignmentStatus()
                 .getAssignment());
 
+        if(  sa.getDateTimeEnd() != null ) {
+            log.info("Ignoring response for submit attempt {}, already have a response.", sa.getUuid());
+            return sa;
+        }
+
         // update submit attempt
         sa = update(sa, submitResponse);
 
@@ -254,7 +259,7 @@ public class SubmitService {
         taskScheduler.schedule(() -> {
             trx.required(() -> {
                 SubmitAttempt sa = submitAttemptRepository.findByUuid(submitAttempt.getUuid());
-                if (sa != null && sa.getDateTimeEnd() == null) {
+                if (sa != null && sa.getDateTimeEnd() == null && sa.getAssignmentStatus().getDateTimeEnd() == null) {
                     log.info("Aborting submit attempt {}, response took too long.", sa.getUuid());
                     receiveSubmitResponse(responseHelper.abortResponse(sa));
                 }

@@ -145,6 +145,12 @@ public class TestService {
     @Transactional
     public TestAttempt registerTestResponse(JMSTestResponse testResponse) {
         TestAttempt testAttempt = testAttemptRepository.findByUuid(testResponse.getAttempt());
+
+        if(  testAttempt.getDateTimeEnd() != null ) {
+            log.info("Ignoring response for test attempt {}, already have a response.", testAttempt.getUuid());
+            return testAttempt;
+        }
+
         return update(testAttempt, testResponse);
     }
 
@@ -195,7 +201,7 @@ public class TestService {
         taskScheduler.schedule(() -> {
             trx.required(() -> {
                 TestAttempt ta = testAttemptRepository.findByUuid(testAttempt.getUuid());
-                if (ta != null && ta.getDateTimeEnd() == null) {
+                if (ta != null && ta.getDateTimeEnd() == null && ta.getAssignmentStatus().getDateTimeEnd() == null) {
                     log.info("Aborting test attempt {}, response took too long.", ta.getUuid());
                     receiveTestResponse(responseHelper.abortResponse(ta));
                 }

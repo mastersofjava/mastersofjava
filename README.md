@@ -16,12 +16,44 @@ The game server uses Spring Boot,Keycloak, Thymeleaf, H2 database and Websockets
 - Maven 3.5+
 - [Keycloak](www.keycloak.org)
 
+## Building
+
+Building consists of two parts:
+
+* Software
+* Containers
+
+### Software
+Building the software is done using maven. The command below will build the software and run all testcases.
+
+```shell
+$ mvn clean verify 
+```
+
+### Containers
+Building the containers is also done using maven but some additional configuration is needed.
+
+```shell
+$ export REGISTRY=<your-registry>
+$ export REGISTRY_USERNAME=<your-push-user>
+$ export REGISTRY_PASSWORD=<your-registry-password>
+
+$ mvn -Dmoj.image.base=${REGISTRY}/moj/moj git-commit-id:revision jib:build@single jib:build@controller jib:build@worker
+```
+This will push all containers to your registry.  
+
+## Running Containers Local
+To run everything local in containsers see [deploy using docker desktop](src/deploy/docker-desktop/README.md).
+
+## Running Local
+To run everything locally follow the steps below
+
 ### Preparation
 
 Make sure you update the application.yaml to it works for the machine that is running the game server.  
 - The resources are default located in: ./moj-data/
 - For downloading all javadocs via commandline: `mvn dependency:sources dependency:resolve -Dclassifier=javadoc`
-- Download the newest SDK documentation and extract (directory `api`) into directory: `${moj.server.data-directory}/javadoc/api` (now the participants have easily access to these docs via the GUI))
+- Download the newest SDK documentation and extract (directory `api`) into directory: `${moj.server.data-directory}/javadoc/api` (now the participants can easily access to these docs via the GUI))
 - This project requires a properly configured keycloak to run for user authentication, see below:
 
 #### Keycloak installation, execution and configuration
@@ -37,7 +69,7 @@ Use the following steps to get Keycloak up and running.
 - Go the webpage at http://localhost:8888
    * Create an admin account and log in
    * Open the top left dropdown and select 'Add realm'
-     * Click on 'Browse' and select the file `realm-mastersofjava.json` in the root of this project
+     * Click on 'Browse' and select the file `realm-mastersofjava.json` in the `src/deploy/docker-desktop/realms` folder.
      * Click 'Create'
    * Click on 'Users' in the menu bar on the left.
      * Click on 'Create new user' and fill in the following form values:
