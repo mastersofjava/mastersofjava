@@ -66,13 +66,6 @@ public class AssignmentService {
 
     private final StorageService storageService;
 
-//    public AssignmentService(AssignmentRepository assignmentRepository, AssignmentDescriptorValidator assignmentDescriptorValidator,
-//                             MojServerProperties mojServerProperties) {
-//        this.assignmentRepository = assignmentRepository;
-//        this.assignmentDescriptorValidator = assignmentDescriptorValidator;
-//        this.mojServerProperties = mojServerProperties;
-//    }
-
     @Transactional(Transactional.TxType.REQUIRED)
     public Path getAssignmentContentFolder(UUID id) {
         return getAssignmentContentFolder(assignmentRepository.findByUuid(id));
@@ -97,8 +90,7 @@ public class AssignmentService {
 
     public Duration resolveCompileAbortTimout(Assignment assignment) {
         AssignmentDescriptor ad = resolveAssignmentDescriptor(assignment);
-        return ad.getCompileTimeout() != null ? ad.getCompileTimeout()
-                : mojServerProperties.getLimits().getCompileTimeout();
+        return resolveCompileAbortTimout(ad).plusSeconds(5);
     }
 
     private Duration resolveCompileAbortTimout(AssignmentDescriptor ad) {
@@ -108,8 +100,7 @@ public class AssignmentService {
 
     public Duration resolveTestAbortTimout(Assignment assignment, int numberOfTests) {
         AssignmentDescriptor ad =resolveAssignmentDescriptor(assignment);
-        Duration timeout = resolveCompileAbortTimout(ad);
-        return timeout.plus(ad.getTestTimeout().multipliedBy(numberOfTests));
+        return resolveTestAbortTimout(ad,numberOfTests).plusSeconds(5);
     }
 
     private Duration resolveTestAbortTimout(AssignmentDescriptor ad, int numberOfTests) {
@@ -119,7 +110,7 @@ public class AssignmentService {
 
     public Duration resolveSubmitAbortTimout(Assignment assignment) {
         AssignmentDescriptor ad =resolveAssignmentDescriptor(assignment);
-        return resolveTestAbortTimout(ad, ad.getAssignmentFiles().getTestSources().getTotalTestCount());
+        return resolveTestAbortTimout(ad, ad.getAssignmentFiles().getTestSources().getTotalTestCount()).plusSeconds(5);
     }
 
     public List<Assignment> updateAssignments() throws IOException, AssignmentServiceException {

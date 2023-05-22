@@ -17,6 +17,7 @@
 package nl.moj.server.runtime;
 
 import nl.moj.common.config.properties.MojServerProperties;
+import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.compiler.model.CompileAttempt;
@@ -38,13 +39,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-/**
- * During integration testing this class is executed twice, one for sequential and one for parallel.
- * This test validates the Assignment Submit.
- * - with a long timeout ==> user gets zero points (because the solution is invalidated by timeout constraints)
- * - without timeout on first submit ==> users gets a score (while session running)
- * - user submits in last second and process takes more than second ==> user gets a score (while session not running)
- */
 @SpringBootTest
 @ActiveProfiles("test-controller")
 public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
@@ -56,10 +50,37 @@ public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
     private SubmitFacade submitFacade;
 
     @Autowired
-    private MojServerProperties mojServerProperties;
+    AssignmentService assignmentService;
 
     private static Stream<String> assignments() {
         return Stream.of("sequential", "parallel");
+    }
+
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldAbortOnNoResponseCompile(String assignment) {
+        startSelectedAssignment(assignment);
+        SourceMessage src = createSourceMessage();
+        CompileAttempt compileAttempt = doCompile(src);
+        assertAbort(compileAttempt);
+    }
+
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldAbortOnNoResponseTest(String assignment) {
+        startSelectedAssignment(assignment);
+        SourceMessage src = createSourceMessage();
+        TestAttempt testAttempt = doTest(src);
+        assertAbort(testAttempt);
+    }
+
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldAbortOnNoResponseSubmit(String assignment) {
+        startSelectedAssignment(assignment);
+        SourceMessage src = createSourceMessage();
+        SubmitAttempt submitAttempt = doSubmit(src);
+        assertAbort(submitAttempt);
     }
 
     private SourceMessage createSourceMessage() {
@@ -79,11 +100,6 @@ public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
         return src;
     }
 
-    private Duration createDurationThatIsLarge() {
-        Duration timeout = competitionRuntime.getActiveAssignment().getAssignmentDescriptor().getTestTimeout();
-        return timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
-    }
-
     private void startSelectedAssignment(String assignment) {
         try {
             CompetitionAssignment oa = getAssignment(assignment);
@@ -94,7 +110,8 @@ public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
         }
     }
 
-    private CompileAttempt doCompile(SourceMessage src, Duration timeout) {
+    private CompileAttempt doCompile(SourceMessage src) {
+        Duration timeout = assignmentService.resolveCompileAbortTimout(competitionRuntime.getActiveAssignment().getAssignment()).plusSeconds(5);
         CompileAttempt ca = submitFacade.registerCompileRequest(src, getPrincipal(getUser()));
         if( ca != null ) {
             awaitAttempt(ca.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -102,7 +119,8 @@ public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
         return ca;
     }
 
-    private TestAttempt doTest(SourceMessage src, Duration timeout) {
+    private TestAttempt doTest(SourceMessage src) {
+        Duration timeout = assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment().getAssignment(),src.getTests().size()).plusSeconds(5);
         TestAttempt ta = submitFacade.registerTestRequest(src, getPrincipal(getUser()));
         if( ta != null ) {
             awaitAttempt(ta.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -110,43 +128,12 @@ public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
         return ta;
     }
 
-    private SubmitAttempt doSubmit(SourceMessage src, Duration timeout) {
+    private SubmitAttempt doSubmit(SourceMessage src) {
+        Duration timeout = assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment().getAssignment()).plusSeconds(5);
         SubmitAttempt sa = submitFacade.registerSubmitRequest(src, getPrincipal(getUser()));
         if( sa != null ) {
             awaitAttempt(sa.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
         }
         return sa;
     }
-
-    @ParameterizedTest
-    @MethodSource("assignments")
-    public void shouldAbortOnNoResponseCompile(String assignment) {
-        startSelectedAssignment(assignment);
-        Duration timeout = createDurationThatIsLarge();
-        SourceMessage src = createSourceMessage();
-        CompileAttempt compileAttempt = doCompile(src, timeout);
-        assertAbort(compileAttempt);
-    }
-
-//    @ParameterizedTest
-//    @MethodSource("assignments")
-//    public void shouldTimeoutTest(String assignment) {
-//        startSelectedAssignment(assignment);
-//        Duration timeout = createDurationThatIsLarge();
-//        SourceMessage src = createSourceMessage();
-//        TestAttempt testAttempt = doTest(src, timeout);
-//        assertSuccess(testAttempt);
-//    }
-//
-//    @ParameterizedTest
-//    @MethodSource("assignments")
-//    public void shouldTimeoutSubmit(String assignment) {
-//        startSelectedAssignment(assignment);
-//        Duration timeout = createDurationThatIsLarge();
-//        SourceMessage src = createSourceMessage();
-//        SubmitAttempt submitAttempt = doSubmit(src, timeout);
-//        assertSuccess(submitAttempt);
-//    }
-
-
 }

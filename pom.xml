@@ -382,6 +382,20 @@
                             <to>
                                 <image>${moj.image.base}-single:${moj.image.tag}</image>
                             </to>
+                            <auth>
+                                <username>${env.REGISTRY_USERNAME}</username>
+                                <password>${env.REGISTRY_PASSWORD}</password>
+                            </auth>
+                            <platforms>
+                                <platform>
+                                    <architecture>amd64</architecture>
+                                    <os>linux</os>
+                                </platform>
+                                <platform>
+                                    <architecture>arm64/v8</architecture>
+                                    <os>linux</os>
+                                </platform>
+                            </platforms>
                             <containerizingMode>packaged</containerizingMode>
                             <container>
                                 <creationTime>${maven.build.timestamp}</creationTime>
@@ -403,6 +417,20 @@
                             <to>
                                 <image>${moj.image.base}-controller:${moj.image.tag}</image>
                             </to>
+                            <auth>
+                                <username>${env.REGISTRY_USERNAME}</username>
+                                <password>${env.REGISTRY_PASSWORD}</password>
+                            </auth>
+                            <platforms>
+                                <platform>
+                                    <architecture>amd64</architecture>
+                                    <os>linux</os>
+                                </platform>
+                                <platform>
+                                    <architecture>arm64/v8</architecture>
+                                    <os>linux</os>
+                                </platform>
+                            </platforms>
                             <containerizingMode>packaged</containerizingMode>
                             <container>
                                 <creationTime>${maven.build.timestamp}</creationTime>
@@ -424,6 +452,20 @@
                             <to>
                                 <image>${moj.image.base}-worker:${moj.image.tag}</image>
                             </to>
+                            <auth>
+                                <username>${env.REGISTRY_USERNAME}</username>
+                                <password>${env.REGISTRY_PASSWORD}</password>
+                            </auth>
+                            <platforms>
+                                <platform>
+                                    <architecture>amd64</architecture>
+                                    <os>linux</os>
+                                </platform>
+                                <platform>
+                                    <architecture>arm64/v8</architecture>
+                                    <os>linux</os>
+                                </platform>
+                            </platforms>
                             <containerizingMode>packaged</containerizingMode>
                             <container>
                                 <creationTime>${maven.build.timestamp}</creationTime>

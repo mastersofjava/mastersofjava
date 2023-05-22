@@ -28,6 +28,7 @@ import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.service.TeamService;
+import nl.moj.server.util.JMSResponseHelper;
 import nl.moj.server.util.TransactionHelper;
 import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.jms.core.JmsTemplate;
@@ -45,13 +46,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CompileService {
 
-    private static final String ABORT_WORKER = "abort-worker";
-
     private final CompileAttemptRepository compileAttemptRepository;
     private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
     private final TeamService teamService;
     private final JmsTemplate jmsTemplate;
     private final MessageService messageService;
+    private final JMSResponseHelper responseHelper;
     private final AssignmentService assignmentService;
     private final TaskScheduler taskScheduler;
     private final TransactionHelper trx;
@@ -85,6 +85,7 @@ public class CompileService {
                         .build()).collect(Collectors.toList()))
                 .build());
 
+        // schedule controller abort
         scheduleAbort(compileAttempt);
 
         log.info("Compile attempt {} for assignment {} by team {} registered.", compileAttempt.getUuid(), compileRequest.getAssignment()
@@ -111,9 +112,6 @@ public class CompileService {
     @Transactional
     public CompileAttempt registerCompileResponse(JMSCompileResponse compileResponse) {
         CompileAttempt compileAttempt = compileAttemptRepository.findByUuid(compileResponse.getAttempt());
-        if( compileAttempt.getDateTimeEnd() != null ) {
-            return compileAttempt;
-        }
         return update(compileAttempt, compileResponse);
     }
 
@@ -145,20 +143,10 @@ public class CompileService {
             trx.required(() -> {
                 CompileAttempt ca = compileAttemptRepository.findByUuid(compileAttempt.getUuid());
                 if( ca != null && ca.getDateTimeEnd() == null ) {
-                    log.info("Aborting compile attempt {}, response took too long.", compileAttempt.getUuid());
-                    receiveCompileResponse(JMSCompileResponse.builder()
-                            .attempt(ca.getUuid())
-                            .worker(ABORT_WORKER)
-                            .timeout(false)
-                            .success(false)
-                            .aborted(true)
-                            .started(ca.getDateTimeRegister())
-                            .ended(Instant.now())
-                            .output("Compiling timed out.")
-                            .reason("Compiling timed out.")
-                            .build());
+                    log.info("Aborting compile attempt {}, response took too long.", ca.getUuid());
+                    receiveCompileResponse(responseHelper.abortResponse(ca));
                 }
             });
-        }, Instant.now().plus(timeout).plusSeconds(1));
+        }, Instant.now().plus(timeout));
     }
 }

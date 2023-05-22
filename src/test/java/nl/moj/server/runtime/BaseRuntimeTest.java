@@ -406,6 +406,32 @@ public abstract class BaseRuntimeTest {
         });
     }
 
+    protected void assertAbort(TestAttempt ta) {
+        trx.required(() -> {
+            TestAttempt r = refresh(ta);
+            assertAbort(r.getCompileAttempt());
+            Assertions.assertThat(r).isNotNull();
+            Assertions.assertThat(r.getAborted()).isTrue();
+
+            r.getTestCases().forEach( tc -> {
+                Assertions.assertThat(tc.getAborted()).isTrue();
+                Assertions.assertThat(tc.getSuccess()).isFalse();
+                Assertions.assertThat(tc.getTimeout()).isFalse();
+            });
+
+        });
+    }
+
+    protected void assertAbort(SubmitAttempt sa) {
+        trx.required(() -> {
+            SubmitAttempt r = refresh(sa);
+            assertAbort(r.getTestAttempt());
+            Assertions.assertThat(r).isNotNull();
+            Assertions.assertThat(r.getSuccess()).isFalse();
+            Assertions.assertThat(r.getAborted()).isTrue();
+        });
+    }
+
     @Value
     @Builder
     public static class ExecutionWindow {

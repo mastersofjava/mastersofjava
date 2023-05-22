@@ -16,6 +16,7 @@
 */
 package nl.moj.server.runtime;
 
+import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.compiler.model.CompileAttempt;
@@ -55,10 +56,65 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     private SubmitFacade submitFacade;
 
     @Autowired
-    private MojServerProperties mojServerProperties;
+    private AssignmentService assignmentService;
 
     private static Stream<String> assignments() {
         return Stream.of("sequential", "parallel");
+    }
+
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldCompile(String assignment) {
+        startSelectedAssignment(assignment);
+        SourceMessage src = createSourceMessageWithNoTimeout();
+        CompileAttempt compileAttempt = doCompile(src);
+
+        assertSuccess(compileAttempt);
+    }
+
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldTest(String assignment) {
+        startSelectedAssignment(assignment);
+        SourceMessage src = createSourceMessageWithNoTimeout();
+        TestAttempt testAttempt = doTest(src);
+        assertSuccess(testAttempt);
+    }
+
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldUseSpecifiedAssignmentTestTimeout(String assignment) throws Exception {
+        startSelectedAssignment(assignment);
+        Duration timeout = assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment().getAssignment(),1);
+        SourceMessage src = createSourceMessageWithLongTimeout(timeout);
+        TestAttempt testAttempt = doTest(src);
+        assertTimeout(testAttempt);
+    }
+
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldGetPointsForSuccessOnFirstAttempt(String assignment) throws Exception {
+        startSelectedAssignment(assignment);
+        SourceMessage src = createSourceMessageWithNoTimeout();
+        SubmitAttempt submitAttempt = doSubmit(src);
+
+        assertSuccess(submitAttempt);
+        assertFinalScore(submitAttempt).isGreaterThan(0);
+    }
+
+    @ParameterizedTest
+    @MethodSource("assignments")
+    public void shouldGetZeroPointsForSuccessOnTooLateAttempt(String assignment) throws Exception {
+        startSelectedAssignment(assignment);
+        SourceMessage src = createSourceMessageWithNoTimeout();
+
+        Duration timeout = assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment().getAssignment()).plusSeconds(5);
+        stopSelectedAssignment();
+
+        SubmitAttempt submitAttempt = doSubmit(src,timeout);
+
+        Assertions.assertThat(submitAttempt).isNull();
+        assertFinalScore(src).isEqualTo(0);
     }
 
     private SourceMessage createSourceMessageWithLongTimeout(Duration timeout) {
@@ -84,11 +140,6 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         return createSourceMessageWithLongTimeout(null);
     }
 
-    private Duration createDurationThatIsLarge() {
-        Duration timeout = competitionRuntime.getActiveAssignment().getAssignmentDescriptor().getTestTimeout();
-        return timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
-    }
-
     private void startSelectedAssignment(String assignment) {
         try {
             CompetitionAssignment oa = getAssignment(assignment);
@@ -99,7 +150,8 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         }
     }
 
-    private CompileAttempt doCompile(SourceMessage src, Duration timeout) {
+    private CompileAttempt doCompile(SourceMessage src) {
+        Duration timeout = assignmentService.resolveCompileAbortTimout(competitionRuntime.getActiveAssignment().getAssignment()).plusSeconds(5);
         CompileAttempt ca = submitFacade.registerCompileRequest(src, getPrincipal(getUser()));
         if( ca != null ) {
             awaitAttempt(ca.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -107,7 +159,13 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         return ca;
     }
 
-    private TestAttempt doTest(SourceMessage src, Duration timeout) {
+    private TestAttempt doTest(SourceMessage src) {
+        return doTest(src,null);
+    }
+
+    private TestAttempt doTest(SourceMessage src, Duration d) {
+        Duration timeout = d != null ? d : assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment().getAssignment(), src.getTests().size())
+                .plusSeconds(5);
         TestAttempt ta = submitFacade.registerTestRequest(src, getPrincipal(getUser()));
         if( ta != null ) {
             awaitAttempt(ta.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -115,7 +173,11 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         return ta;
     }
 
-    private SubmitAttempt doSubmit(SourceMessage src, Duration timeout) {
+    private SubmitAttempt doSubmit(SourceMessage src) {
+        return doSubmit(src,null);
+    }
+    private SubmitAttempt doSubmit(SourceMessage src, Duration d) {
+        Duration timeout = d != null ? d : assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment().getAssignment()).plusSeconds(5);
         SubmitAttempt sa = submitFacade.registerSubmitRequest(src, getPrincipal(getUser()));
         if( sa != null ) {
             awaitAttempt(sa.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -130,61 +192,5 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     }
 
 
-    @ParameterizedTest
-    @MethodSource("assignments")
-    public void shouldCompile(String assignment) {
-        startSelectedAssignment(assignment);
-        Duration timeout = createDurationThatIsLarge();
-        SourceMessage src = createSourceMessageWithNoTimeout();
-        CompileAttempt compileAttempt = doCompile(src, timeout);
 
-        assertSuccess(compileAttempt);
-    }
-
-    @ParameterizedTest
-    @MethodSource("assignments")
-    public void shouldTest(String assignment) {
-        startSelectedAssignment(assignment);
-        Duration timeout = createDurationThatIsLarge();
-        SourceMessage src = createSourceMessageWithNoTimeout();
-        TestAttempt testAttempt = doTest(src, timeout);
-        assertSuccess(testAttempt);
-    }
-
-    @ParameterizedTest
-    @MethodSource("assignments")
-    public void shouldUseSpecifiedAssignmentTestTimeout(String assignment) throws Exception {
-        startSelectedAssignment(assignment);
-        Duration timeout = createDurationThatIsLarge();
-        SourceMessage src = createSourceMessageWithLongTimeout(timeout);
-        TestAttempt testAttempt = doTest(src, timeout);
-        assertTimeout(testAttempt);
-    }
-
-    @ParameterizedTest
-    @MethodSource("assignments")
-    public void shouldGetPointsForSuccessOnFirstAttempt(String assignment) throws Exception {
-        startSelectedAssignment(assignment);
-        Duration timeout = createDurationThatIsLarge();
-        SourceMessage src = createSourceMessageWithNoTimeout();
-        SubmitAttempt submitAttempt = doSubmit(src, timeout);
-
-        assertSuccess(submitAttempt);
-        assertFinalScore(submitAttempt).isGreaterThan(0);
-    }
-
-    @ParameterizedTest
-    @MethodSource("assignments")
-    public void shouldGetZeroPointsForSuccessOnTooLateAttempt(String assignment) throws Exception {
-        startSelectedAssignment(assignment);
-        Duration timeout = createDurationThatIsLarge();
-        SourceMessage src = createSourceMessageWithNoTimeout();
-
-        stopSelectedAssignment();
-
-        SubmitAttempt submitAttempt = doSubmit(src, timeout);
-
-        Assertions.assertThat(submitAttempt).isNull();
-        assertFinalScore(src).isEqualTo(0);
-    }
 }

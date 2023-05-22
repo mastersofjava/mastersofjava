@@ -106,7 +106,12 @@ public class TeamAssignmentStatus {
     }
 
     public int getRemainingSubmitAttempts() {
-        return getAssignment().getAllowedSubmits() - getSubmitAttempts().size();
+        // do not include aborted attempts.
+        return getAssignment().getAllowedSubmits() - countCompletedSubmitAttempts();
     }
 
+    public int countCompletedSubmitAttempts() {
+        return Long.valueOf(getSubmitAttempts().stream()
+                .filter( sa -> sa.getAborted() == null || sa.getAborted().equals(Boolean.FALSE)).count()).intValue();
+    }
 }
