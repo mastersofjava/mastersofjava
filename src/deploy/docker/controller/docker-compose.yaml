@@ -1,0 +1,16 @@
+version: '2.4'
+services:
+  controller:
+    image: docker.first8.nl/moj/moj-controller:17
+    cpus: 2
+    mem_reservation: 2g
+    mem_limit: 4g
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:61616:61616"
+    environment:
+      OIDC_ISSUER_URI: "<oidc-issuer-url>"
+# enable if you need persistent data
+#    volumes:
+#      - "./data/moj:/data"

@@ -17,6 +17,7 @@
 package nl.moj.server.test.service;
 
 import javax.transaction.Transactional;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.messages.*;
+import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.service.CompileRequest;
 import nl.moj.server.compiler.service.CompileService;
@@ -37,8 +39,11 @@ import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.test.repository.TestAttemptRepository;
 import nl.moj.server.test.repository.TestCaseRepository;
+import nl.moj.server.util.JMSResponseHelper;
+import nl.moj.server.util.TransactionHelper;
 import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -53,6 +58,10 @@ public class TestService {
     private final TeamService teamService;
     private final JmsTemplate jmsTemplate;
     private final MessageService messageService;
+    private final JMSResponseHelper responseHelper;
+    private final AssignmentService assignmentService;
+    private final TaskScheduler taskScheduler;
+    private final TransactionHelper trx;
 
     @Transactional
     public void receiveTestResponse(JMSTestResponse testResponse) {
@@ -88,6 +97,9 @@ public class TestService {
                         .map(tc -> JMSTestCase.builder().testCase(tc.getUuid()).name(tc.getName()).build())
                         .collect(Collectors.toList()))
                 .build());
+
+        // schedule controller abort
+        scheduleAbort(testAttempt);
 
         log.info("Test attempt {} for assignment {} by team {} registered.", testAttempt.getUuid(), testRequest.getAssignment()
                 .getUuid(), testRequest.getTeam().getUuid());
@@ -133,6 +145,12 @@ public class TestService {
     @Transactional
     public TestAttempt registerTestResponse(JMSTestResponse testResponse) {
         TestAttempt testAttempt = testAttemptRepository.findByUuid(testResponse.getAttempt());
+
+        if(  testAttempt.getDateTimeEnd() != null ) {
+            log.info("Ignoring response for test attempt {}, already have a response.", testAttempt.getUuid());
+            return testAttempt;
+        }
+
         return update(testAttempt, testResponse);
     }
 
@@ -175,5 +193,19 @@ public class TestService {
         }
         compileService.update(testAttempt.getCompileAttempt(), testResponse.getCompileResponse());
         return testAttemptRepository.save(testAttempt);
+    }
+
+    private void scheduleAbort(TestAttempt testAttempt) {
+        Duration timeout = assignmentService.resolveTestAbortTimout(testAttempt.getAssignmentStatus().getAssignment(),
+                testAttempt.getTestCases().size());
+        taskScheduler.schedule(() -> {
+            trx.required(() -> {
+                TestAttempt ta = testAttemptRepository.findByUuid(testAttempt.getUuid());
+                if (ta != null && ta.getDateTimeEnd() == null && ta.getAssignmentStatus().getDateTimeEnd() == null) {
+                    log.info("Aborting test attempt {}, response took too long.", ta.getUuid());
+                    receiveTestResponse(responseHelper.abortResponse(ta));
+                }
+            });
+        }, Instant.now().plus(timeout));
     }
 }

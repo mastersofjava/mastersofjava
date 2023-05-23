@@ -43,8 +43,11 @@ import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.test.service.TestRequest;
 import nl.moj.server.test.service.TestService;
+import nl.moj.server.util.JMSResponseHelper;
+import nl.moj.server.util.TransactionHelper;
 import org.springframework.cloud.sleuth.Tracer;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -61,6 +64,10 @@ public class SubmitService {
     private final ScoreService scoreService;
     private final AssignmentService assignmentService;
     private final JmsTemplate jmsTemplate;
+    private final JMSResponseHelper responseHelper;
+    private final TaskScheduler taskScheduler;
+    private final TransactionHelper trx;
+
     @Transactional
     public void receiveSubmitResponse(JMSSubmitResponse submitResponse) {
         log.info("Received submit attempt response {}", submitResponse.getAttempt());
@@ -73,6 +80,11 @@ public class SubmitService {
         SubmitAttempt sa = submitAttemptRepository.findByUuid(submitResponse.getAttempt());
         AssignmentDescriptor ad = assignmentService.resolveAssignmentDescriptor(sa.getAssignmentStatus()
                 .getAssignment());
+
+        if(  sa.getDateTimeEnd() != null ) {
+            log.info("Ignoring response for submit attempt {}, already have a response.", sa.getUuid());
+            return sa;
+        }
 
         // update submit attempt
         sa = update(sa, submitResponse);
@@ -183,6 +195,9 @@ public class SubmitService {
                             .collect(Collectors.toList()))
                     .build());
 
+            // schedule controller abort
+            scheduleAbort(submitAttempt);
+
             log.info("Submit attempt {} for assignment {} by team {} registered.", submitAttempt.getUuid(), submitRequest.getAssignment()
                     .getUuid(), submitRequest.getTeam().getUuid());
 
@@ -237,5 +252,18 @@ public class SubmitService {
             return Duration.between(registered, as.getDateTimeStart().plus(d)).toSeconds();
         }
         return 0;
+    }
+
+    private void scheduleAbort(SubmitAttempt submitAttempt) {
+        Duration timeout = assignmentService.resolveSubmitAbortTimout(submitAttempt.getAssignmentStatus().getAssignment());
+        taskScheduler.schedule(() -> {
+            trx.required(() -> {
+                SubmitAttempt sa = submitAttemptRepository.findByUuid(submitAttempt.getUuid());
+                if (sa != null && sa.getDateTimeEnd() == null && sa.getAssignmentStatus().getDateTimeEnd() == null) {
+                    log.info("Aborting submit attempt {}, response took too long.", sa.getUuid());
+                    receiveSubmitResponse(responseHelper.abortResponse(sa));
+                }
+            });
+        }, Instant.now().plus(timeout));
     }
 }

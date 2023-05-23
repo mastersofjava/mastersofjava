@@ -1,0 +1,55 @@
+moj:
+  server:
+    mode: controller
+    data-directory: /tmp/moj-data
+    languages:
+      java-versions:
+        - version: 17
+          name: Java 17
+          compiler: /tmp/bin/javac
+          runtime: /tmp/bin/java
+    runtime:
+      game-threads: 10
+    competition:
+      success-bonus: 400
+
+spring:
+  h2:
+    console:
+      enabled: true
+      path: /h2
+  datasource:
+    ## see https://stackoverflow.com/questions/52480973/h2-in-memory-test-db-closed-despite-db-close-on-exit-false/52481318
+    url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1
+    username: sa
+    password: sa
+    driver-class-name: org.h2.Driver
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: moj
+            authorization-grant-type: authorization_code
+            scope: openid,roles,email,profile
+            redirect-uri: http://nowhere.none/moj
+        provider:
+          keycloak:
+            authorization-uri: http://nowhere.none/auth
+            jwk-set-uri: http://nowhere.none/jwk
+            user-info-uri: http://nowhere.none/user
+            token-uri: http://nowhere.none/token
+            user-info-authentication-method: client_secret_post
+            user-name-attribute: preferred_username
+      resourceserver:
+        jwt:
+          issuer-uri: http://nowhere.none/issuer
+logging:
+  level:
+    nl.moj.server: debug
+    org.keycloak: debug
+    "org.apache.activemq.audit.base": error
+    "org.apache.activemq.audit.message": error
+    "org.hibernate.SQL": info
+    "org.hibernate.type.descriptor.sql.BasicBinder": info

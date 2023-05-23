@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnMode(mode= Mode.CONTROLLER)
 public class ArtemisConfig implements ArtemisConfigurationCustomizer {
 
-    // only when default !!
     @Override
     public void customize(org.apache.activemq.artemis.core.config.Configuration configuration) {
         try {

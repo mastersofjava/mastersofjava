@@ -1,0 +1,11 @@
+version: '2.4'
+services:
+  worker:
+    image: docker.first8.nl/moj/moj-worker:17
+    cpus: 3
+    mem_reservation: 2g
+    mem_limit: 4g
+    restart: unless-stopped
+    environment:
+      CONTROLLER_URI: "<controller-uri> http(s)://..."
+      CONTROLLER_BROKER_URI: "<controller-broker-uri> tcp://...:61616"

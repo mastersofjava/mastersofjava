@@ -1,0 +1,58 @@
+version: '2.4'
+services:
+  auth:
+    image: quay.io/keycloak/keycloak:21.1
+    cpus: 1
+    mem_reservation: 512m
+    mem_limit: 1g
+    restart: unless-stopped
+    ports:
+      - "8888:8080"
+    command:
+      - "start-dev"
+      - "--import-realm"
+      - "--hostname=host.docker.internal"
+      - "--hostname-strict-https=false"
+      - "--http-enabled=true"
+    environment:
+      KEYCLOAK_ADMIN: "keycloak"
+      KEYCLOAK_ADMIN_PASSWORD: "keycloak"
+    volumes:
+      - "./realms:/opt/keycloak/data/import"
+    networks:
+      - moj
+
+  controller:
+    image: docker.first8.nl/moj/moj-controller:17
+    cpus: 2
+    mem_reservation: 1g
+    mem_limit: 2g
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "61616:61616"
+    environment:
+      OIDC_ISSUER_URI: "http://host.docker.internal:8888/realms/moj"
+    networks:
+      - moj
+    depends_on:
+      auth:
+        condition: service_started
+
+  worker:
+    image: docker.first8.nl/moj/moj-worker:17
+    cpus: 3
+    mem_reservation: 1g
+    mem_limit: 2g
+    restart: unless-stopped
+    environment:
+      CONTROLLER_URI: "http://controller:8080"
+      CONTROLLER_BROKER_URI: "tcp://controller:61616"
+    networks:
+      - moj
+    depends_on:
+      controller:
+        condition: service_started
+
+networks:
+  moj: {}

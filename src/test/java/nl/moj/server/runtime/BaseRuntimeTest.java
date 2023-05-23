@@ -336,6 +336,18 @@ public abstract class BaseRuntimeTest {
         });
     }
 
+    protected void assertTimeout(SubmitAttempt sa) {
+        trx.required(() -> {
+            SubmitAttempt r = refresh(sa);
+            assertSuccess(r.getTestAttempt());
+            Assertions.assertThat(r).isNotNull();
+            Assertions.assertThat(r.getSuccess()).isTrue();
+            Assertions.assertThat(r.getAborted()).isFalse();
+            Assertions.assertThat(r.getAssignmentStatus()).isNotNull();
+            Assertions.assertThat(r.getAssignmentStatus().getAssignmentResult()).isNotNull();
+        });
+    }
+
     protected void assertSuccess(TestAttempt ta) {
         trx.required(() -> {
             TestAttempt r = testAttemptRepository.findByUuid(ta.getUuid());
@@ -381,6 +393,42 @@ public abstract class BaseRuntimeTest {
             Assertions.assertThat(r.getSuccess()).isFalse();
             Assertions.assertThat(r.getTimeout()).isTrue();
             Assertions.assertThat(r.getAborted()).isFalse();
+        });
+    }
+
+    protected void assertAbort(CompileAttempt ca) {
+        trx.required(() -> {
+            CompileAttempt r = refresh(ca);
+            Assertions.assertThat(r).isNotNull();
+            Assertions.assertThat(r.getSuccess()).isFalse();
+            Assertions.assertThat(r.getTimeout()).isFalse();
+            Assertions.assertThat(r.getAborted()).isTrue();
+        });
+    }
+
+    protected void assertAbort(TestAttempt ta) {
+        trx.required(() -> {
+            TestAttempt r = refresh(ta);
+            assertAbort(r.getCompileAttempt());
+            Assertions.assertThat(r).isNotNull();
+            Assertions.assertThat(r.getAborted()).isTrue();
+
+            r.getTestCases().forEach( tc -> {
+                Assertions.assertThat(tc.getAborted()).isTrue();
+                Assertions.assertThat(tc.getSuccess()).isFalse();
+                Assertions.assertThat(tc.getTimeout()).isFalse();
+            });
+
+        });
+    }
+
+    protected void assertAbort(SubmitAttempt sa) {
+        trx.required(() -> {
+            SubmitAttempt r = refresh(sa);
+            assertAbort(r.getTestAttempt());
+            Assertions.assertThat(r).isNotNull();
+            Assertions.assertThat(r.getSuccess()).isFalse();
+            Assertions.assertThat(r.getAborted()).isTrue();
         });
     }
 
