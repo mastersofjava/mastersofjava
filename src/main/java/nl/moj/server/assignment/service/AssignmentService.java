@@ -104,12 +104,13 @@ public class AssignmentService {
     }
 
     private Duration resolveTestAbortTimout(AssignmentDescriptor ad, int numberOfTests) {
-        Duration timeout = resolveCompileAbortTimout(ad);
-        return timeout.plus(ad.getTestTimeout().multipliedBy(numberOfTests));
+        Duration timeout = ad.getTestTimeout() != null ? ad.getTestTimeout()
+                : mojServerProperties.getLimits().getTestTimeout();
+        return resolveCompileAbortTimout(ad).plus(timeout.multipliedBy(numberOfTests));
     }
 
     public Duration resolveSubmitAbortTimout(Assignment assignment) {
-        AssignmentDescriptor ad =resolveAssignmentDescriptor(assignment);
+        AssignmentDescriptor ad = resolveAssignmentDescriptor(assignment);
         return resolveTestAbortTimout(ad, ad.getAssignmentFiles().getTestSources().getTotalTestCount()).plusSeconds(5);
     }
 
