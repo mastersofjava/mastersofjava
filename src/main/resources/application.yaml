@@ -44,6 +44,10 @@ spring:
   web:
     resources:
       static-locations: classpath:/bootstrap/sounds/,classpath:/static/
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
   artemis:
     embedded:
       enabled: true
