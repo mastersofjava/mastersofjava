@@ -32,17 +32,11 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class AssignmentResourceController {
 
-    private static final long MAXIMUM_UPLOAD_SIZE_IN_BYTES = 1000000L;
-
-    private final MojServerProperties mojServerProperties;
-
     private final AssignmentService assignmentService;
 
     private final StorageService storageService;
 
     private void validateAssignmentsArchive(MultipartFile file) throws IOException {
-        Assert.isTrue(file.getBytes().length > 0, "Empty assignments archive: " + file.getOriginalFilename() + ".");
-        Assert.isTrue(file.getBytes().length < MAXIMUM_UPLOAD_SIZE_IN_BYTES, "Assignments archive exceeded maximum allowed size ");
         Assert.isTrue(ZipUtils.isZip(file.getInputStream()), "Assignments archive should be a zip file.");
         Assert.isTrue(ZipUtils.containsSingleFolder(file.getInputStream()), "Assignments archive should have a single top level folder.");
     }
