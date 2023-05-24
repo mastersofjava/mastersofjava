@@ -16,6 +16,12 @@
 */
 package nl.moj.server.compiler.service;
 
+import javax.transaction.Transactional;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.messages.JMSCompileRequest;
@@ -35,12 +41,6 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -59,8 +59,14 @@ public class CompileService {
     @Transactional
     public void receiveCompileResponse(JMSCompileResponse compileResponse) {
         log.info("Received compile attempt response {}", compileResponse.getAttempt());
-        CompileAttempt compileAttempt = registerCompileResponse(compileResponse);
-        messageService.sendCompileFeedback(compileAttempt);
+        CompileAttempt compileAttempt = compileAttemptRepository.findByUuid(compileResponse.getAttempt());
+
+        if (compileAttempt.getDateTimeEnd() == null) {
+            compileAttempt = update(compileAttempt, compileResponse);
+            messageService.sendCompileFeedback(compileAttempt);
+        } else {
+            log.info("Ignoring response for compile attempt {}, already have a response.", compileAttempt.getUuid());
+        }
     }
 
     @Transactional
@@ -109,18 +115,6 @@ public class CompileService {
         return compileAttemptRepository.save(compileAttempt);
     }
 
-    @Transactional
-    public CompileAttempt registerCompileResponse(JMSCompileResponse compileResponse) {
-        CompileAttempt compileAttempt = compileAttemptRepository.findByUuid(compileResponse.getAttempt());
-
-        if(  compileAttempt.getDateTimeEnd() != null ) {
-            log.info("Ignoring response for compile attempt {}, already have a response.", compileAttempt.getUuid());
-            return compileAttempt;
-        }
-
-        return update(compileAttempt, compileResponse);
-    }
-
     @Transactional(Transactional.TxType.MANDATORY)
     public CompileAttempt update(CompileAttempt compileAttempt, JMSCompileResponse compileResponse) {
 
@@ -144,11 +138,12 @@ public class CompileService {
     }
 
     private void scheduleAbort(CompileAttempt compileAttempt) {
-        Duration timeout = assignmentService.resolveCompileAbortTimout(compileAttempt.getAssignmentStatus().getAssignment());
+        Duration timeout = assignmentService.resolveCompileAbortTimout(compileAttempt.getAssignmentStatus()
+                .getAssignment());
         taskScheduler.schedule(() -> {
             trx.required(() -> {
                 CompileAttempt ca = compileAttemptRepository.findByUuid(compileAttempt.getUuid());
-                if( ca != null && ca.getDateTimeEnd() == null && ca.getAssignmentStatus().getDateTimeEnd() == null ) {
+                if (ca != null && ca.getDateTimeEnd() == null && ca.getAssignmentStatus().getDateTimeEnd() == null) {
                     log.info("Aborting compile attempt {}, response took too long.", ca.getUuid());
                     receiveCompileResponse(responseHelper.abortResponse(ca));
                 }

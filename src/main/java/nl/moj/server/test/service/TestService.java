@@ -66,8 +66,14 @@ public class TestService {
     @Transactional
     public void receiveTestResponse(JMSTestResponse testResponse) {
         log.info("Received test attempt response {}", testResponse.getAttempt());
-        TestAttempt testAttempt = registerTestResponse(testResponse);
-        messageService.sendTestFeedback(testAttempt);
+        TestAttempt testAttempt = testAttemptRepository.findByUuid(testResponse.getAttempt());
+
+        if(  testAttempt.getDateTimeEnd() == null ) {
+            testAttempt = update(testAttempt, testResponse);
+            messageService.sendTestFeedback(testAttempt);
+        } else {
+            log.info("Ignoring response for test attempt {}, already have a response.", testAttempt.getUuid());
+        }
     }
 
     @Transactional

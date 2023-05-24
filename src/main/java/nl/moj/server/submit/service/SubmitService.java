@@ -46,6 +46,7 @@ import nl.moj.server.test.service.TestService;
 import nl.moj.server.util.JMSResponseHelper;
 import nl.moj.server.util.TransactionHelper;
 import org.springframework.cloud.sleuth.Tracer;
+import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
@@ -71,35 +72,25 @@ public class SubmitService {
     @Transactional
     public void receiveSubmitResponse(JMSSubmitResponse submitResponse) {
         log.info("Received submit attempt response {}", submitResponse.getAttempt());
-        SubmitAttempt sa = registerSubmitResponse(submitResponse);
-        messageService.sendSubmitFeedback(sa);
-    }
-
-    @Transactional
-    public SubmitAttempt registerSubmitResponse(JMSSubmitResponse submitResponse) {
         SubmitAttempt sa = submitAttemptRepository.findByUuid(submitResponse.getAttempt());
         AssignmentDescriptor ad = assignmentService.resolveAssignmentDescriptor(sa.getAssignmentStatus()
                 .getAssignment());
-
-        if(  sa.getDateTimeEnd() != null ) {
-            log.info("Ignoring response for submit attempt {}, already have a response.", sa.getUuid());
-            return sa;
-        }
-
-        // update submit attempt
-        sa = update(sa, submitResponse);
-
-        // score if needed
-        if (isSuccess(sa, submitResponse)) {
-            sa.setSuccess(true);
-            scoreService.finalizeScore(sa, ad);
-        } else {
-            sa.setSuccess(false);
-            if( sa.getAssignmentStatus().getRemainingSubmitAttempts() <= 0 ) {
+        if(  sa.getDateTimeEnd() == null ) {
+            sa = update(sa, submitResponse);
+            // score if needed
+            if (isSuccess(sa, submitResponse)) {
+                sa.setSuccess(true);
                 scoreService.finalizeScore(sa, ad);
+            } else {
+                sa.setSuccess(false);
+                if( sa.getAssignmentStatus().getRemainingSubmitAttempts() <= 0 ) {
+                    scoreService.finalizeScore(sa, ad);
+                }
             }
+            messageService.sendSubmitFeedback(sa);
+        } else {
+            log.info("Ignoring response for submit attempt {}, already have a response.", sa.getUuid());
         }
-        return sa;
     }
 
     @Transactional(Transactional.TxType.MANDATORY)
@@ -159,6 +150,7 @@ public class SubmitService {
     }
 
     @Transactional
+    @NewSpan
     public SubmitAttempt registerSubmitAttempt(SubmitRequest submitRequest) {
         log.info("Registering submit attempt for assignment {} by team {}.", submitRequest.getAssignment().getUuid(),
                 submitRequest.getTeam().getUuid());
