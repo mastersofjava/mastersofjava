@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: moj
-  namespace: moj
+  name: controller
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: moj
+      app.kubernetes.io/name: controller
   template:
     metadata:
       labels:
-        app: moj
+        app.kubernetes.io/name: controller
+        app.kubernetes.io/component: service
     spec:
       imagePullSecrets:
-        - name: registry.cloud.bliep.net
+        - name: docker.first8.nl
       containers:
         - name: moj
           imagePullPolicy: Always
-          image: registry.cloud.bliep.net/moj/moj-game-server:latest
+          image: docker.first8.nl/moj/moj-controller:17
           resources:
             limits:
               memory: "4Gi"
@@ -28,12 +28,9 @@ spec:
             requests:
               memory: "2Gi"
               cpu: "500m"
+          env:
+            - name: "OIDC_ISSUER_URI"
+              value: "http://auth/realms/moj"
           ports:
             - containerPort: 8080
-          volumeMounts:
-            - name: moj-data
-              mountPath: /data
-      volumes:
-        - name: moj-data
-          persistentVolumeClaim:
-            claimName: moj-data
+# health checks

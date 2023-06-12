@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      imagePullSecrets:
+        - name: docker.first8.nl
+      containers:
+        - name: moj
+          imagePullPolicy: Always
+          image: docker.first8.nl/moj/moj-worker:17
+          resources:
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+          env:
+            - name: "CONTROLLER_URI"
+              value: "http://controller:8080"
+            - name: "CONTROLLER_BROKER_URI"
+              value: "tcp://controller:61616"
+#          ports:
+#            - containerPort: 8080
+# health checks
