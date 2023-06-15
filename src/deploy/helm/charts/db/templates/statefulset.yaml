@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "db.fullname" . }}
+  labels:
+    {{- include "db.labels" . | nindent 4 }}
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  serviceName: {{ include "db.fullname" . }}
+  selector:
+    matchLabels:
+      {{- include "db.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "db.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "db.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: postgres
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "db.fullname" . }}-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "db.fullname" . }}-credentials
+                  key: password
+            {{- if ne 0 ( len .Values.databases ) }}
+            - name: POSTGRES_MULTIPLE_DATABASES
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "db.fullname" . }}-credentials
+                  key: databases
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- if not .Values.storage.pvc.enabled }}
+        - name: {{ include "db.fullname" . }}-data
+          emptyDir:
+            medium: ""
+            sizeLimit: {{ .Values.storage.size | default "1Gi" }}
+        {{- end }}
+        - name: shm
+          emptyDir:
+            sizeLimit: 128Mi
+            medium: Memory
+        - name: init-scripts
+          configMap:
+            name: {{ .Release.Name }}-scripts
+  updateStrategy:
+    type: RollingUpdate
+  {{- if .Values.storage.pvc.enabled -}}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: {{ include "db.fullname" . }}-data
+      spec:
+        {{- if .Values.storage.pvc.storageClass -}}
+        storageClassName: {{ .Values.storage.pvc.storageClass }}
+        {{- end -}}
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.storage.size | default "1Gi" }}
+        volumeMode: Filesystem
+  {{- end -}}
+

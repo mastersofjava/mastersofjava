@@ -1,0 +1,32 @@
+# Default values for masters-of-java.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# type of deployment ( singleton | distributed )
+global:
+  type: distributed
+
+# controller settings
+controller:
+  ingress:
+    host:
+
+iam:
+  admin:
+    username:
+    password:
+  ingress:
+    host:
+
+db:
+#  admin:
+#    username:
+#    password:
+  databases: []
+#    - name: keycloak
+#      username: keycloak
+#      password: keycloak
+#    - name: moj
+#      username: moj
+#      password: moj
+
