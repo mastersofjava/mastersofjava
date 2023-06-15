@@ -2,22 +2,27 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: worker
+  labels:
+    app.kubernetes.io/name: worker
+    app.kubernetes.io/component: worker
 spec:
   replicas: 3
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: worker
+      app.kubernetes.io/name: worker
+      app.kubernetes.io/component: worker
   template:
     metadata:
       labels:
-        app: worker
+        app.kubernetes.io/name: worker
+        app.kubernetes.io/component: worker
     spec:
       imagePullSecrets:
         - name: docker.first8.nl
       containers:
-        - name: moj
+        - name: worker
           imagePullPolicy: Always
           image: docker.first8.nl/moj/moj-worker:17
           resources:

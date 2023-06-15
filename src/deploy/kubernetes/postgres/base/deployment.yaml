@@ -2,17 +2,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: postgres
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/component: database
   template:
     metadata:
       labels:
-        app: postgres
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/component: database
     spec:
       containers:
         - name: postgres
@@ -25,15 +30,25 @@ spec:
           ports:
             - containerPort: 5432
           env:
-            - name: POSTGRES_DB
-              value: moj
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: postgres-credentials
-                  key: username
+                  name: moj-credentials
+                  key: db-admin-username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-credentials
-                  key: password
+                  name: moj-credentials
+                  key: db-admin-password
+            - name: POSTGRES_MULTIPLE_DATABASES
+              valueFrom:
+                configMapKeyRef:
+                  name: moj-environment
+                  key: databases
+          volumeMounts:
+            - mountPath: /docker-entrypoint-initdb.d
+              name: postgres-scripts
+      volumes:
+        - name: postgres-scripts
+          configMap:
+            name: postgres-scripts

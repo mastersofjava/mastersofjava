@@ -4,5 +4,7 @@ kind: Kustomization
 resources:
   - ../../auth/base
   - ../../postgres/base
-  - controller
-  - worker
+  - controller/deployment.yaml
+  - controller/ingress.yaml
+  - controller/service.yaml
+  - worker/deployment.yaml

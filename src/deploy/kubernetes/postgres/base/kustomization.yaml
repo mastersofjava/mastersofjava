@@ -4,3 +4,12 @@ kind: Kustomization
 resources:
   - deployment.yaml
   - service.yaml
+
+configMapGenerator:
+  - name: postgres-scripts
+    files:
+      - create-databases.sh
+    options:
+      labels:
+        app.kubernetes.io/name: postgres-scripts
+        app.kubernetes.io/component: database

@@ -1,0 +1,11 @@
+source:
+  kind: ConfigMap
+  name: moj-environment
+  fieldPath: data.controller-fqdn
+targets:
+  - select:
+      name: controller
+      kind: Ingress
+    fieldPaths:
+      - spec.rules.[host=localhost].host
+      - spec.tls.0.hosts.0
