@@ -1,16 +1,17 @@
+{{- if $.Values.global.postgres.enabled -}}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "db.fullname" . }}
+  name: {{ include "postgres.fullname" . }}
   labels:
-    {{- include "db.labels" . | nindent 4 }}
+    {{- include "postgres.labels" . | nindent 4 }}
 spec:
   podManagementPolicy: OrderedReady
   replicas: 1
-  serviceName: {{ include "db.fullname" . }}
+  serviceName: {{ include "postgres.fullname" . }}
   selector:
     matchLabels:
-      {{- include "db.selectorLabels" . | nindent 6 }}
+      {{- include "postgres.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,45 +19,45 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "db.selectorLabels" . | nindent 8 }}
+        {{- include "postgres.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "db.serviceAccountName" . }}
+      serviceAccountName: {{ include "postgres.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "15" }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: postgres
-              containerPort: {{ .Values.service.port }}
+              containerPort: 5432
               protocol: TCP
           env:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "db.fullname" . }}-credentials
+                  name: {{ include "postgres.fullname" . }}-credentials
                   key: username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "db.fullname" . }}-credentials
+                  name: {{ include "postgres.fullname" . }}-credentials
                   key: password
-            {{- if ne 0 ( len .Values.databases ) }}
+            {{- if $.Values }}
             - name: POSTGRES_MULTIPLE_DATABASES
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "db.fullname" . }}-credentials
+                  name: {{ include "postgres.fullname" . }}-credentials
                   key: databases
             {{- end }}
           volumeMounts:
-            - name: data
+            - name: {{ include "postgres.fullname" . }}-data
               mountPath: /var/lib/postgresql
             - name: init-scripts
               mountPath: /docker-entrypoint-initdb.d
@@ -78,7 +79,7 @@ spec:
       {{- end }}
       volumes:
         {{- if not .Values.storage.pvc.enabled }}
-        - name: {{ include "db.fullname" . }}-data
+        - name: {{ include "postgres.fullname" . }}-data
           emptyDir:
             medium: ""
             sizeLimit: {{ .Values.storage.size | default "1Gi" }}
@@ -89,7 +90,7 @@ spec:
             medium: Memory
         - name: init-scripts
           configMap:
-            name: {{ .Release.Name }}-scripts
+            name: {{ include "postgres.fullname" . }}-scripts
   updateStrategy:
     type: RollingUpdate
   {{- if .Values.storage.pvc.enabled -}}
@@ -97,7 +98,7 @@ spec:
     - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
-        name: {{ include "db.fullname" . }}-data
+        name: {{ include "postgres.fullname" . }}-data
       spec:
         {{- if .Values.storage.pvc.storageClass -}}
         storageClassName: {{ .Values.storage.pvc.storageClass }}
@@ -109,4 +110,4 @@ spec:
             storage: {{ .Values.storage.size | default "1Gi" }}
         volumeMode: Filesystem
   {{- end -}}
-
+{{- end -}}

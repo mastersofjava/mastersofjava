@@ -1,12 +1,12 @@
 {{- if .Values.ingress.enabled -}}
-{{- $svcName := include "iam.fullname" . }}
+{{- $svcName := include "controller.fullname" . }}
 {{- $svcPort := .Values.service.port -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "iam.fullname" . }}
+  name: {{ include "controller.fullname" . }}
   labels:
-    {{- include "iam.labels" . | nindent 4 }}
+    {{- include "controller.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -16,11 +16,11 @@ spec:
   {{- if .Values.ingress.tls.enabled }}
   tls:
     - hosts:
-        - {{ .Values.global.oidc.host default .Values.ingress.host }}
-      secretName: {{ include "iam.fullname" . }}-tls
+        - {{ .Values.ingress.host }}
+      secretName: {{ include "controller.fullname" . }}-tls
   {{- end }}
   rules:
-    - host: {{ .Values.global.oidc.host default .Values.ingress.host }}
+    - host: {{ .Values.ingress.host }}
       http:
         paths:
           - path: /

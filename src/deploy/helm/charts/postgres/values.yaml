@@ -1,6 +1,9 @@
 # Default values for db.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+global:
+  postgres:
+    enabled: true
 
 image:
   repository: docker.io/postgres
@@ -9,8 +12,6 @@ image:
   tag: "15"
 
 imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
 
 serviceAccount:
   # Specifies whether a service account should be created

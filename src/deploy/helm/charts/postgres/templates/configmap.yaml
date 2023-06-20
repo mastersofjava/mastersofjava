@@ -1,0 +1,10 @@
+{{- if .Values.global.postgres.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgres.fullname" . }}-scripts
+  labels:
+      {{- include "postgres.labels" . | nindent 4 }}
+data:
+{{ (.Files.Glob "scripts/*").AsConfig | indent 2 }}
+{{ end }}

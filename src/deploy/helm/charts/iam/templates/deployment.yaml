@@ -5,9 +5,7 @@ metadata:
   labels:
     {{- include "iam.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "iam.selectorLabels" . | nindent 6 }}
@@ -37,16 +35,54 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
+          env:
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "iam.fullname" . }}-credentials
+                  key: admin_username
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "iam.fullname" . }}-credentials
+                  key: admin_password
+            - name: KC_HOSTNAME
+              value: {{ .Values.ingress.host }}
+            {{- if .Values.global.postgres.enabled }}
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: db_username
+                  name: {{ include "iam.fullname" . }}-credentials
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: db_password
+                  name: {{ include "iam.fullname" . }}-credentials
+            - name: KC_DB_URL
+              value: {{ printf "jdbc:postgresql://%s:%s/iam" (include "postgres.service.name" . ) (include "postgres.service.port" . ) | quote }}
+            {{- end }}
+
+          volumeMounts:
+            - mountPath: /opt/keycloak/data/import
+              name: realm-data
+          args:
+            - "start"
+            - "--import-realm"
+            - "--hostname-strict-https=false"
+            - "--http-enabled=true"
+            - "--proxy=edge"
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - configMap:
+            items:
+              - key: realm-mastersofjava.json
+                path: realm-mastersofjava.json
+            name: {{ include "iam.fullname" . }}-config
+          name: realm-data
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

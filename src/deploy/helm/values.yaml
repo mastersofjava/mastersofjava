@@ -2,31 +2,47 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# type of deployment ( singleton | distributed )
 global:
-  type: distributed
+  oidc:
+    host: auth-moj.local
+    tls:
+      enabled: true
+
+  postgres:
+    # should postgres be used as a database ( true | false )
+    enabled: false
+    databases:
+      controller:
+        username: controller
+        password: controller
+      iam:
+        username: iam
+        password: iam
+
+# identity and access settings
+iam:
+  admin:
+    username: keycloak
+    password: keycloak
+  ingress:
+    host: auth-moj.local
+    tls:
+      enabled: true
 
 # controller settings
 controller:
   ingress:
-    host:
+    host: moj.local
+    tls:
+      enabled: false
+  oidc:
+    issuer:
 
-iam:
+# postgres settings
+postgres:
   admin:
+    # defaults to 'postgres'
     username:
+    # defaults to 'postgres'
     password:
-  ingress:
-    host:
-
-db:
-#  admin:
-#    username:
-#    password:
-  databases: []
-#    - name: keycloak
-#      username: keycloak
-#      password: keycloak
-#    - name: moj
-#      username: moj
-#      password: moj
 

@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "iam.name" -}}
+{{- define "worker.name" -}}
 {{- .Chart.Name }}
 {{- end }}
 
@@ -10,23 +10,23 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "iam.fullname" -}}
+{{- define "worker.fullname" -}}
 {{- printf "%s-%s" .Release.Name .Chart.Name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "iam.chart" -}}
+{{- define "worker.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "iam.labels" -}}
-helm.sh/chart: {{ include "iam.chart" . }}
-{{ include "iam.selectorLabels" . }}
+{{- define "worker.labels" -}}
+helm.sh/chart: {{ include "worker.chart" . }}
+{{ include "worker.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -37,8 +37,8 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "iam.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "iam.name" . }}
+{{- define "worker.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "worker.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: service
 {{- end }}
@@ -46,18 +46,10 @@ app.kubernetes.io/component: service
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "iam.serviceAccountName" -}}
+{{- define "worker.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "iam.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "worker.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
-
-{{- define "iam.redirectUri" -}}
-{{- if .Values.ingress.enabled }}
-{{- printf "%s://%s/*" (ternary "https" "http" .Values.ingress.tls.enabled ) .Values.ingress.host }}
-{{- else }}
-{{- printf "http://localhost:%s/*" .Values.service.port }}
 {{- end }}
 {{- end }}
