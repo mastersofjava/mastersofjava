@@ -3,40 +3,37 @@
 # Declare variables to be passed into your templates.
 
 global:
-  oidc:
-    host: auth-moj.local
-    tls:
-      enabled: true
-
+  iam:
+    database:
+      # name of the database, defaults to 'iam'. Must match [a-z_][a-z_0-9]*
+      name:
+      username:
+      password:
+    ingress:
+      host: auth-moj.local
+      tls:
+        enabled: true
+  controller:
+    database:
+      # name of the database, defaults to 'controller'. Must match [a-z_][a-z_0-9]*
+      name:
+      username:
+      password:
+    ingress:
+      host: moj.local
+      tls:
+        enabled: true
   postgres:
-    # should postgres be used as a database ( true | false )
-    enabled: false
-    databases:
-      controller:
-        username: controller
-        password: controller
-      iam:
-        username: iam
-        password: iam
+    enabled: true
 
 # identity and access settings
 iam:
   admin:
     username: keycloak
     password: keycloak
-  ingress:
-    host: auth-moj.local
-    tls:
-      enabled: true
 
 # controller settings
-controller:
-  ingress:
-    host: moj.local
-    tls:
-      enabled: false
-  oidc:
-    issuer:
+controller: {}
 
 # postgres settings
 postgres:
@@ -45,4 +42,3 @@ postgres:
     username:
     # defaults to 'postgres'
     password:
-

@@ -49,7 +49,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "postgres.fullname" . }}-credentials
                   key: password
-            {{- if $.Values }}
+            {{- if eq "true" (include "postgres.haveDatabases" .) }}
             - name: POSTGRES_MULTIPLE_DATABASES
               valueFrom:
                 secretKeyRef:

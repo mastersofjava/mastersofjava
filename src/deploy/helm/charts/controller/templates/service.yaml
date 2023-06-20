@@ -5,13 +5,13 @@ metadata:
   labels:
     {{- include "controller.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: ClusterIP
   ports:
-    - port: {{ include "controller.service.port" . }}
+    - port: 80
       targetPort: 8080
       protocol: TCP
       name: http
-    - port: {{ include "controller.service.queuePort" . }}
+    - port: 61616
       targetPort: 61616
       protocol: TCP
       name: queue

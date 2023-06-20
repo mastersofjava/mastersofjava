@@ -9,10 +9,6 @@ Define the full name
 {{- printf "%s-%s" .Release.Name "postgres" }}
 {{- end }}
 
-{{- define "postgres.service.port" }}
-{{- .Values.service.port }}
-{{- end }}
-
 {{/*
 Create chart name and version as used by the chart label.
 */}}
@@ -29,6 +25,7 @@ helm.sh/chart: {{ include "postgres.chart" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
+app.kubernetes.io/component: database
 app.kubernetes.io/part-of: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
@@ -39,7 +36,6 @@ Selector labels
 {{- define "postgres.selectorLabels" -}}
 app.kubernetes.io/name: {{ .Chart.Name }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/component: database
 {{- end }}
 
 {{/*
@@ -53,10 +49,36 @@ Create the name of the service account to use
 {{- end }}
 {{- end }}
 
-{{- define "postgres.datatbases" -}}
-{{- printf "iam:%s:%s,controller:%s:%s"
-    (default "iam" .Values.global.postgres.databases.iam.username)
-    (default "iam" .Values.global.postgres.databases.iam.password)
-    (default "controller" .Values.global.postgres.databases.controller.username)
-    (default "controller" .Values.global.postgres.databases.controller.password) -}}
-{{- end }}
+{{- define "postgres.haveDatabases" -}}
+{{- if .Values.global.postgres.enabled -}}
+    {{- if and .Values.global.iam .Values.global.controller -}}
+    true
+    {{- else if gt ( len .Values.databases) 0 -}}
+    true
+    {{- else -}}
+    false
+    {{- end -}}
+{{- else }}
+false
+{{- end -}}
+{{- end -}}
+
+{{- define "postgres.databases" -}}
+{{- if .Values.global.postgres.enabled -}}
+    {{- if and .Values.global.iam .Values.global.controller -}}
+    {{- printf "%s:%s:%s,%s:%s:%s"
+        (default "iam" .Values.global.iam.database.name)
+        (default "iam" .Values.global.iam.database.username)
+        (default "iam" .Values.global.iam.database.password)
+        (default "controller" .Values.global.controller.database.name)
+        (default "controller" .Values.global.controller.database.username)
+        (default "controller" .Values.global.controller.database.password) -}}
+    {{- else if gt ( len .Values.databases) 0 -}}
+        {{- $list := list -}}
+        {{- range $v := .Values.databases -}}
+        {{- $list = append $list ( printf "%s:%s:%s" $v.name $v.username $v.password) -}}
+        {{- end -}}
+        {{- join "," $list -}}
+    {{- end -}}
+{{- end -}}
+{{- end -}}

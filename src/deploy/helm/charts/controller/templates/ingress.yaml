@@ -1,6 +1,5 @@
-{{- if .Values.ingress.enabled -}}
+{{- if .Values.global.controller.ingress.enabled -}}
 {{- $svcName := include "controller.fullname" . }}
-{{- $svcPort := .Values.service.port -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -13,14 +12,14 @@ metadata:
   {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
-  {{- if .Values.ingress.tls.enabled }}
+  {{- if .Values.global.controller.ingress.tls.enabled }}
   tls:
     - hosts:
-        - {{ .Values.ingress.host }}
+        - {{ .Values.global.controller.ingress.host }}
       secretName: {{ include "controller.fullname" . }}-tls
   {{- end }}
   rules:
-    - host: {{ .Values.ingress.host }}
+    - host: {{ .Values.global.controller.ingress.host }}
       http:
         paths:
           - path: /
@@ -29,5 +28,5 @@ spec:
               service:
                 name: {{ $svcName }}
                 port:
-                  number: {{ $svcPort }}
+                  number: 80
 {{- end }}

@@ -2,6 +2,18 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+global:
+  controller:
+    database:
+      name:
+      username:
+      password:
+    ingress:
+      enabled: true
+      host: controller.local
+      tls:
+        enabled: false
+
 replicaCount: 1
 
 image:
@@ -35,28 +47,6 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-service:
-  type: ClusterIP
-  port: 8080
-  queuePort: 61616
-
-oidc:
-  host: auth.local
-  tls:
-    enabled: false
-
-ingress:
-  enabled: true
-  className: nginx
-  annotations:
-    kubernetes.io/tls-acme: "true"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-  host: controller.local
-  tls:
-    enabled: false
-
 resources:
   limits:
     memory: 2Gi
@@ -64,6 +54,14 @@ resources:
   requests:
     memory: 1Gi
     cpu: 500m
+
+ingress:
+  className: nginx
+  annotations:
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 
 nodeSelector: {}
 

@@ -30,6 +30,7 @@ helm.sh/chart: {{ include "worker.chart" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
+app.kubernetes.io/component: service
 app.kubernetes.io/part-of: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
@@ -40,7 +41,6 @@ Selector labels
 {{- define "worker.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "worker.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/component: service
 {{- end }}
 
 {{/*
@@ -52,4 +52,14 @@ Create the name of the service account to use
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
+{{- end }}
+
+{{- define "worker.controller.http.uri" }}
+{{- printf "http://%s:8080"
+    ( include "controller.service.name" . ) | quote }}
+{{- end }}
+
+{{- define "worker.controller.broker.uri" }}
+{{- printf "tcp://%s:61616"
+    ( include "controller.service.name" . ) | quote }}
 {{- end }}

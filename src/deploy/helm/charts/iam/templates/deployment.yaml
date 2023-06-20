@@ -33,7 +33,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: 8080
               protocol: TCP
           env:
             - name: KEYCLOAK_ADMIN
@@ -46,8 +46,10 @@ spec:
                 secretKeyRef:
                   name: {{ include "iam.fullname" . }}-credentials
                   key: admin_password
+            {{- if .Values.global.iam.ingress.enabled }}
             - name: KC_HOSTNAME
-              value: {{ .Values.ingress.host }}
+              value: {{ .Values.global.iam.ingress.host }}
+            {{- end }}
             {{- if .Values.global.postgres.enabled }}
             - name: KC_DB
               value: postgres
@@ -62,9 +64,8 @@ spec:
                   key: db_password
                   name: {{ include "iam.fullname" . }}-credentials
             - name: KC_DB_URL
-              value: {{ printf "jdbc:postgresql://%s:%s/iam" (include "postgres.service.name" . ) (include "postgres.service.port" . ) | quote }}
+              value: {{ include "iam.jdbc.url" . }}
             {{- end }}
-
           volumeMounts:
             - mountPath: /opt/keycloak/data/import
               name: realm-data

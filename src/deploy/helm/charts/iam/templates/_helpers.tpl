@@ -30,6 +30,7 @@ helm.sh/chart: {{ include "iam.chart" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
+app.kubernetes.io/component: service
 app.kubernetes.io/part-of: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
@@ -40,7 +41,6 @@ Selector labels
 {{- define "iam.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "iam.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/component: service
 {{- end }}
 
 {{/*
@@ -55,9 +55,17 @@ Create the name of the service account to use
 {{- end }}
 
 {{- define "iam.redirectUri" -}}
-{{- if .Values.ingress.enabled }}
-{{- printf "%s://%s/*" (ternary "https" "http" .Values.ingress.tls.enabled ) .Values.ingress.host }}
+{{- if .Values.global.controller.ingress.enabled }}
+{{- printf "%s://%s/*"
+    (ternary "https" "http" .Values.global.controller.ingress.tls.enabled )
+    .Values.global.controller.ingress.host }}
 {{- else }}
-{{- printf "http://localhost:%s/*" .Values.service.port }}
+"http://localhost/*"
 {{- end }}
+{{- end }}
+
+{{- define "iam.jdbc.url" }}
+{{- printf "jdbc:postgresql://%s:5432/%s"
+    ( include "postgres.service.name" . )
+    ( .Values.global.iam.database.name | default "iam" ) | quote }}
 {{- end }}

@@ -30,6 +30,7 @@ helm.sh/chart: {{ include "controller.chart" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
+app.kubernetes.io/component: service
 app.kubernetes.io/part-of: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
@@ -40,7 +41,6 @@ Selector labels
 {{- define "controller.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "controller.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/component: service
 {{- end }}
 
 {{/*
@@ -58,14 +58,14 @@ Create the name of the service account to use
 {{- printf "%s-%s" .Release.Name .Chart.Name }}
 {{- end }}
 
-{{- define "controller.service.port" }}
-{{- .Values.service.port }}
-{{- end }}
-
-{{- define "controller.service.queuePort" -}}
-{{- .Values.service.queuePort }}
-{{- end }}
-
 {{- define "controller.oidc.issuer.uri" -}}
-{{- printf "%s://%s/realms/moj" (ternary "https" "http" .Values.oidc.tls.enabled ) .Values.oidc.host }}
+{{- printf "%s://%s/realms/moj"
+    (ternary "https" "http" .Values.global.iam.ingress.tls.enabled )
+    .Values.global.iam.ingress.host }}
+{{- end }}
+
+{{- define "controller.jdbc.url" -}}
+{{ printf "jdbc:postgresql://%s:5432/%s"
+    (include "postgres.service.name" . )
+    .Values.global.controller.database.name | quote }}
 {{- end }}
