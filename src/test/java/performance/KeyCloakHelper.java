@@ -1,29 +1,44 @@
 package performance;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONObject;
+import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.authorization.client.AuthzClient;
-import org.keycloak.authorization.client.Configuration;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 
-import java.util.Map;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 public class KeyCloakHelper {
 
-    public static String createUserAndReturnToken(String keycloakUrl, String userName) {
+    @Test
+    public void test() {
+        String userName = "TestUser10:35:54:324";
+        System.out.println("   TOKEN: " + createUserAndReturnToken(userName));
+    }
+
+    public static String createUserAndReturnToken(String userName) {
         System.out.println("++++++++++++ Creating user " + userName);
-        createUser(userName, keycloakUrl);
-        System.out.println("------------ User created");
-        String token = getToken(keycloakUrl, userName);
-        System.out.println("_____________ User creation successful. Token: " + token);
+        createUser(userName);
+//        System.out.println("------------ User created");
+        String token = getToken(userName);
+//        System.out.println("_____________ User creation successful. Token: " + token);
         return token;
     }
 
-    private static void createUser(String userName, String keycloakUrl) {
+    private static void createUser(String userName) {
         try (Keycloak keycloak = KeycloakBuilder.builder()
-                .serverUrl(keycloakUrl)
+                .serverUrl(Conf.keyCloakUrl)
                 .realm("master")
                 .clientId("admin-cli")
                 .username(Conf.keyCloakAdminUsername)
@@ -49,15 +64,28 @@ public class KeyCloakHelper {
         }
     }
 
-    private static String getToken(String keycloakUrl, String userName) {
-        Configuration configuration = new Configuration();
-        configuration.setRealm("moj");
-        configuration.setAuthServerUrl(keycloakUrl);
-        configuration.setResource("gatling");
-        configuration.setCredentials(Map.of("secret", Conf.keyCloakClientSecret));
-        AuthzClient authzClient = AuthzClient.create(configuration);
 
-        return authzClient.obtainAccessToken(userName + "@mail.com", userName).getToken();
+    private static String getToken(String userName) {
+        try(var httpclient = HttpClients.createDefault()) {
+            HttpPost httppost = new HttpPost(Conf.keyCloakUrl + "/realms/moj/protocol/openid-connect/token");
+
+            List<NameValuePair> params = new ArrayList<NameValuePair>(2);
+            params.add(new BasicNameValuePair("client_id", "moj"));
+            params.add(new BasicNameValuePair("username", userName + "@mail.com"));
+            params.add(new BasicNameValuePair("password", userName));
+            params.add(new BasicNameValuePair("grant_type", "password"));
+            httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
+
+            HttpResponse response = httpclient.execute(httppost);
+            InputStream responseJson = response.getEntity().getContent();
+
+            Scanner scanner = new Scanner(responseJson).useDelimiter("\\A");
+            String responseBody = scanner.hasNext() ? scanner.next() : "";
+            JSONObject jsonObject = new JSONObject(responseBody);
+            return jsonObject.getString("access_token");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
