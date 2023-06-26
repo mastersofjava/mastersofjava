@@ -32,7 +32,6 @@ spring:
       path: /h2
   datasource:
     url: jdbc:h2:file:${moj.server.data-directory}/db/mastersofjava;db_close_on_exit=false
-#    url: jdbc:h2:mem:moj;db_close_on_exit=false
     username: sa
     password: sa
     driver-class-name: org.h2.Driver

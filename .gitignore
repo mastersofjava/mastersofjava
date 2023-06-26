@@ -26,3 +26,4 @@ application-single-local.yaml
 .factorypath
 create.sql
 curl.sh
+tmp/
