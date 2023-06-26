@@ -41,6 +41,22 @@ spec:
           env:
             - name: "OIDC_ISSUER_URI"
               value: {{ include "controller.oidc.issuer.uri" . }}
+          {{- if .Values.global.postgres.enabled }}
+            - name: "SPRING_DATASOURCE_URL"
+              value: {{ include "controller.jdbc.url" . }}
+            - name: "SPRING_DATASOURCE_USERNAME"
+              valueFrom:
+                secretKeyRef:
+                  key: db_username
+                  name: {{ include "controller.fullname" .}}-credentials
+            - name: "SPRING_DATASOURCE_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  key: db_username
+                  name: {{ include "controller.fullname" .}}-credentials
+            - name: "SPRING_DATASOURCE_DRIVER_CLASS_NAME"
+              value: org.postgresql.Driver
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

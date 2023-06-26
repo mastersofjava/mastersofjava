@@ -66,6 +66,6 @@ Create the name of the service account to use
 
 {{- define "controller.jdbc.url" -}}
 {{ printf "jdbc:postgresql://%s:5432/%s"
-    (include "postgres.service.name" . )
-    .Values.global.controller.database.name | quote }}
+    ( include "postgres.service.name" . )
+    ( .Values.global.controller.database.name | default "controller" ) | quote }}
 {{- end }}
