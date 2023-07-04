@@ -16,28 +16,28 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.competition.model.CompetitionAssignment;
-import nl.moj.server.competition.service.CompetitionServiceException;
-import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.common.config.properties.MojServerProperties;
-import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.submit.SubmitFacade;
-import nl.moj.server.submit.model.SourceMessage;
-import nl.moj.server.submit.model.SubmitAttempt;
-import nl.moj.server.test.model.TestAttempt;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.service.CompetitionServiceException;
+import nl.moj.server.compiler.model.CompileAttempt;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.submit.SubmitFacade;
+import nl.moj.server.submit.model.SourceMessage;
+import nl.moj.server.submit.model.SubmitAttempt;
+import nl.moj.server.test.model.TestAttempt;
 
 /**
  * During integration testing this class is executed twice, one for sequential and one for parallel.
