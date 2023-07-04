@@ -90,11 +90,25 @@
             </ul>
             
             
-    	// todo: JFALLMODE show if session is singleplayer or group mode
             
 
             <div class="tab-content">
                 <div class="tab-pane active" id="active" role="tabpanel" aria-labelledby="tab-active">
+		    		<table class="table">
+		    			<tr>
+		    				<td>Session uuid:</td>
+					    	<td th:text="${cs.getUuid()}"></td>
+		    			</tr>
+		    			<tr>
+		    				<td>Name:</td>
+					    	<td th:text="${cs.getName()}"></td>
+		    			</tr>
+		    			<tr>
+		    				<td>Type:</td>
+					    	<td th:text="${cs.getType()}"></td>
+		    			</tr>
+		    		</table>
+    				
                     <table class="table table-borderless table-sm table-responsive mt-5">
                         <thead>
                         <tr>
@@ -162,11 +176,11 @@
                                 <td th:text="${comp.getAssignments().size()}"></td>
                                 <td>
                                     <button type="button" th:data-xhr-id="${comp.getUuid()}" th:data-xhr-name="${comp.getName()}" class="btn btn-sm btn-primary"
-                                            data-xhr="startSession">Start
+                                            data-xhr="startGroupSession">Start Group Mode
                                     </button>
-                                    
-                                    
-    	// todo: JFALLMODE show start as singleplayer mode 
+                                    <button type="button" th:data-xhr-id="${comp.getUuid()}" th:data-xhr-name="${comp.getName()}" class="btn btn-sm btn-primary"
+                                            data-xhr="startSingleSession">Start Single Mode
+                                    </button>
                                     
                                 </td>
                             </tr>

@@ -111,14 +111,24 @@ function createCompetition(args, form) {
 }
 
 // used from html
-function startSession(args) {
-    post(`/api/competition/${args.id}/session`)
+function startGroupSession(args) {
+    post(`/api/competition/${args.id}/groupSession`)
         .then(r => {
-                showSuccess(`Started competition session for competition ${name}, reloading.`)
+                showSuccess(`Started group session for competition ${name}, reloading.`)
                 reloadPage();
             },
             () => {
-                showAlert(`Unable to start competition session for competition ${name}.`)
+                showAlert(`Unable to start group session for competition ${name}.`)
+            })
+}
+function startSingleSession(args) {
+    post(`/api/competition/${args.id}/singleSession`)
+        .then(r => {
+                showSuccess(`Started single session for competition ${name}, reloading.`)
+                reloadPage();
+            },
+            () => {
+                showAlert(`Unable to start single session for competition ${name}.`)
             })
 }
 

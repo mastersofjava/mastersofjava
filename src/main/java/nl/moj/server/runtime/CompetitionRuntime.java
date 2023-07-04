@@ -74,18 +74,18 @@ public class CompetitionRuntime {
     private UUID sessionId;
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public CompetitionSession startSession(UUID id) throws CompetitionServiceException {
+    public CompetitionSession startSession(UUID id, CompetitionSession.SessionType sessionType) throws CompetitionServiceException {
         Competition competition = competitionRepository.findByUuid(id);
         if (competition == null) {
             throw new CompetitionServiceException("No competition for id " + id);
         }
-        return startSession(competition);
+        return startSession(competition, sessionType);
     }
 
     @Transactional(Transactional.TxType.MANDATORY)
-    public CompetitionSession startSession(Competition competition) {
+    public CompetitionSession startSession(Competition competition, CompetitionSession.SessionType sessionType) {
         log.info("Starting new session for session {}", competition.getName());
-        CompetitionSession session = competitionSessionRepository.save(createNewCompetitionSession(competition));
+        CompetitionSession session = competitionSessionRepository.save(createNewCompetitionSession(competition, sessionType));
 
         this.competition = competition;
         this.sessionId = session.getUuid();
@@ -196,10 +196,11 @@ public class CompetitionRuntime {
         return sid != null && sid.equals(getSessionId()) && id != null && id.equals(getCurrentAssignment());
     }
 
-    private CompetitionSession createNewCompetitionSession(Competition competition) {
+    private CompetitionSession createNewCompetitionSession(Competition competition, CompetitionSession.SessionType sessionType) {
         var newCompetitionSession = new CompetitionSession();
         newCompetitionSession.setUuid(UUID.randomUUID());
         newCompetitionSession.setCompetition(competition);
+        newCompetitionSession.setSessionType(sessionType);
         return newCompetitionSession;
     }
 
