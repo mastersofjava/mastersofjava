@@ -16,10 +16,37 @@
 */
 package nl.moj.server.message.service;
 
+import java.time.Duration;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.sleuth.Span;
+import org.springframework.cloud.sleuth.Tracer;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Controller;
+
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.server.message.model.*;
+import nl.moj.server.message.model.CompilingEnded;
+import nl.moj.server.message.model.CompilingStarted;
+import nl.moj.server.message.model.StartAssignmentFailedMessage;
+import nl.moj.server.message.model.StartAssignmentMessage;
+import nl.moj.server.message.model.StopAssignmentMessage;
+import nl.moj.server.message.model.SubmitEnded;
+import nl.moj.server.message.model.SubmitStarted;
+import nl.moj.server.message.model.TeamCompileFeedbackMessage;
+import nl.moj.server.message.model.TeamStartedTestingMessage;
+import nl.moj.server.message.model.TeamSubmitFeedbackMessage;
+import nl.moj.server.message.model.TeamTestFeedbackMessage;
+import nl.moj.server.message.model.TestingEnded;
+import nl.moj.server.message.model.TestingStarted;
+import nl.moj.server.message.model.TimerSyncMessage;
 import nl.moj.server.runtime.model.AssignmentResult;
 import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.submit.model.SubmitAttempt;
@@ -28,18 +55,6 @@ import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.sleuth.Span;
-import org.springframework.cloud.sleuth.Tracer;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Controller;
-
-import javax.transaction.Transactional;
-import java.time.Duration;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Controller
 @Slf4j
@@ -52,7 +67,6 @@ public class MessageService {
     private static final String DEST_STOP = "/queue/stop";
     private static final String DEST_RANKINGS = "/queue/rankings";
 
-    private final CompetitionSessionRepository competitionSessionRepository;
     private final UserService userService;
     private final SimpMessagingTemplate template;
     private final Tracer tracer;
@@ -61,7 +75,6 @@ public class MessageService {
     public MessageService(SimpMessagingTemplate template, CompetitionSessionRepository competitionSessionRepository, UserService userService, Tracer tracer) {
         super();
         this.template = template;
-        this.competitionSessionRepository = competitionSessionRepository;
         this.userService = userService;
         this.tracer = tracer;
     }
@@ -166,6 +179,16 @@ public class MessageService {
         log.info("Sending start: t={}, s={}", taskname, sessionId);
         template.convertAndSend(DEST_START, taskname);
         template.convertAndSend(DEST_COMPETITION, StartAssignmentMessage.builder()
+                .sessionId(sessionId)
+                .assignment(taskname)
+                .build());
+    }
+
+    public void sendStartToTeam(Team team, String taskname, String sessionId) {
+        log.info("Sending start to team: team={}, t={}, s={}", team.getName(), taskname, sessionId);
+        
+        template.convertAndSend(DEST_START, taskname);
+        sendToActiveUsers(team, StartAssignmentMessage.builder()
                 .sessionId(sessionId)
                 .assignment(taskname)
                 .build());

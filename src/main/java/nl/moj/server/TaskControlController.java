@@ -114,7 +114,6 @@ public class TaskControlController {
 		}
 	}
 
-	// todo: JFALLMODE add singleplayer or groupsession mode toggle here
 	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
 	@PostMapping(value = "/api/competition/{cid}/groupSession", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<Map<String, String>> startGroupSession(@PathVariable("cid") UUID id) {
@@ -151,7 +150,6 @@ public class TaskControlController {
 			log.error("Unable to start assignment {} for session {}.", aid, sid, cse);
 			return ResponseEntity.badRequest().build();
 		}
-
 	}
 
 	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })

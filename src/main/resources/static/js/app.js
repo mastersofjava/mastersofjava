@@ -34,7 +34,7 @@ function connectCompetition() {
 
     stomp.onConnect = function (frame) {
         $('#status').html('<span>Connected</span>');
-        // Do something, all subscribes must be done is this callback
+        // Do something, all subscribes must be done in this callback
         // This is needed because this will be executed after a (re)connect
         stomp.subscribe('/user/queue/session',
             function (data) {
@@ -133,6 +133,10 @@ function connectCompetition() {
 }
 
 function connectButtons() {
+    $('#startAssignment').click(function (e) {
+        doUserActionStartAssignment();
+        e.preventDefault();
+    });
     $('#compile').click(function (e) {
         doUserActionCompile();
         e.preventDefault();
@@ -325,6 +329,18 @@ function escape(txt) {
         return htmlEscapes[match];
     });
 }
+
+function doUserActionStartAssignment() {
+//    disable();
+//    resetOutput();
+//    appendOutput("Compiling ....");
+//    showOutput();
+//    activeAction = "COMPILE";
+    publish("/app/submit/startAssignment", JSON.stringify({
+    }));
+    
+}
+
 
 function doUserActionCompile() {
     disable();

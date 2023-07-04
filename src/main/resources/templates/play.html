@@ -36,7 +36,17 @@
         	// todo: JFALLMODE if assignment active but no clock for this team, then press 'play' to continue
             </div>
 
-            <div id="content" th:if="${assignmentActive}"
+            <div class="text-center mt-5" th:if="${assignmentActive && !teamStarted}">
+            	There is an assignment waiting for you! Press START to, well..., start!
+            	
+                <div class="mt-5 p-2 text-center">
+                    <button id="startAssignment" class="btn w-50 btn-success">
+                    	START
+                    </button>
+                </div>
+            </div>
+
+            <div id="content" th:if="${assignmentActive && teamStarted}"
                  th:attr="finished=${assignment.isCompleted()},submittime=${assignment.getSubmitTime()}">
                 <div class="p-2">
                     <h3>Assignment: [[${assignment.assignmentName}]]</h3>
@@ -120,7 +130,7 @@
             <div class="p-2 align-self-center">
                 <h2 th:if="${team!=null}">Team: [[${team}]]</h2>
             </div>
-            <div th:if="${assignmentActive}" class="p-2 align-self-center">
+            <div th:if="${assignmentActive && teamStarted}" class="p-2 align-self-center">
                 <div class="text-center">
                     <h3>Time Left</h3>
                 </div>
@@ -139,7 +149,7 @@
                     </svg>
                 </div>
             </div>
-            <div th:if="${assignmentActive}">
+            <div th:if="${assignmentActive && teamStarted}">
                 <div class="p-2 text-center">
                     <a class="btn w-50 btn-warning text-white"
                        th:href="@{/javadoc/api/index.html}"

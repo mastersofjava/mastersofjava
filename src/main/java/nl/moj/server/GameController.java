@@ -78,9 +78,6 @@ public class GameController {
         model.addAttribute("team", team.getName());
         model.addAttribute("sessionId", competition.getSessionId());
         
-        
-        // todo: JFALLMODE for jfall mode: active assignment is "active" but has no clock
-        
         model.addAttribute("assignmentActive", competition.getActiveAssignment().isRunning());
 
         if (competition.getActiveAssignment().isRunning()) {
@@ -91,6 +88,7 @@ public class GameController {
                 as = competition.handleLateSignup(team);
             }
             model.addAttribute("assignmentId", state.getAssignment().getUuid());
+            model.addAttribute("teamStarted", as.isStarted());
             addTeamAssignmentStateToModel(model, state, as);
         }
         return "play";

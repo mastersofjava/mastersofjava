@@ -18,12 +18,13 @@ package nl.moj.server.submit;
 
 import java.security.Principal;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.submit.model.SourceMessage;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
+
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.submit.model.SourceMessage;
 
 @Controller
 @MessageMapping("/submit")
@@ -32,6 +33,16 @@ import org.springframework.stereotype.Controller;
 public class SubmitController {
 
     private SubmitFacade submitFacade;
+
+    @MessageMapping("/startAssignment")
+    public void startAssignment(SourceMessage message, Principal principal, MessageHeaders headers)
+            throws Exception {
+        try {
+            submitFacade.startAssignment(principal);
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
+        }
+    }
 
     @MessageMapping("/compile")
     public void compile(SourceMessage message, Principal principal, MessageHeaders headers)

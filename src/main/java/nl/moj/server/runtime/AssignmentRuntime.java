@@ -21,22 +21,31 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.stereotype.Component;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.model.CompetitionSession.SessionType;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
-import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
@@ -49,9 +58,6 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.PathUtil;
 import nl.moj.server.util.TransactionHelper;
-import org.apache.commons.lang3.time.StopWatch;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -123,12 +129,12 @@ public class AssignmentRuntime {
             // update assignment status
             AssignmentStatus assignmentStatus = initAssignmentStatus(competitionSession, assignment, assignmentDescriptor);
 
-            
-         // todo: JFALLMODE do not init teams here, so that they are all 'late joiners'
-            initTeamsForAssignment();
-
-            // update assignment status start times
-            updateTeamAssignmentStatuses();
+            // for group mode, we can start all teams
+            if (competitionSession.getSessionType()==SessionType.GROUP) {
+            	initTeamsForAssignment();
+            	// update assignment status start times
+            	updateTeamAssignmentStatuses();
+            }
 
             return assignmentStatus;
         });
@@ -136,18 +142,34 @@ public class AssignmentRuntime {
         // start the timers
         
 
-        done = startTimers(as.getTimeRemaining());
-
         // mark assignment as running
         running = true;
-
-        // send start to clients.
+        
+        if (competitionSession.getSessionType()==SessionType.GROUP) {
+	        done = startTimers(as.getTimeRemaining());
+        }
+        // send start to clients (for group mode, that will render the assignment, for single mode it will trigger the 2nd waiting screen).
         messageService.sendStartToTeams(assignment.getName(), competitionSession.getUuid().toString());
 
         log.info("Started assignment {}", assignment.getName());
 
         return done;
     }
+    
+//    /**
+//     * Starts the assignment for a specific team. 
+//     * startCompletable() is already done, there is an active assignment etc. Now we start the assignment for the team that pressed 'play' in single mode.
+//     * @param sessionId    the session to start the assignment for
+//     * @param assignmentId the assignment to start
+//     * @return the {@link Future}
+//     */
+//    public CompletableFuture<Void> startSingleTeam(UUID sessionId, UUID assignmentId) throws AssignmentStartException {
+//        done = startTimers(as.getTimeRemaining());
+//        // send start to clients.
+//        messageService.sendStartToTeam(assignment.getName(), competitionSession.getUuid().toString());
+//    	
+//    }
+
 
     public AssignmentStatus start(UUID sessionId, UUID assignmentId) throws AssignmentStartException {
         startCompletable(sessionId, assignmentId);
@@ -239,7 +261,13 @@ public class AssignmentRuntime {
 
     public TeamAssignmentStatus initAssignmentForLateTeam(Team t) {
         TeamAssignmentStatus tas = initAssignmentForTeam(t);
-        tas.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
+        if (competitionSession.getSessionType()==SessionType.GROUP) {
+        	// in group mode, a late joiner still will have the same start time as the rest of the group (otherwise they would finish later)
+        	tas.setDateTimeStart(Instant.ofEpochMilli(timer.getStartTime()));
+        } else {
+        	// explicitly set to null since the team has to start themselves when operating in single mode
+        	tas.setDateTimeStart(null);
+        }
         return teamAssignmentStatusRepository.save(tas);
     }
 
@@ -248,6 +276,22 @@ public class AssignmentRuntime {
         initTeamAssignmentData(t);
         return tas;
     }
+    
+    /** 
+     * Start the current active assignment for the given team.
+     * @param team
+     * @return
+     */
+	public TeamAssignmentStatus startAssignmentForTeam(Team t) {
+        TeamAssignmentStatus tas = initAssignmentForLateTeam(t);
+        tas.setDateTimeStart(Instant.now());
+        
+        // todo: JFALLMODE  make this specific for the team
+        done = startTimers(tas.getAssignment().getAssignmentDuration());
+        // retrigger start assignment in frontend
+        messageService.sendStartToTeams(assignment.getName(), competitionSession.getUuid().toString());
+		return tas;
+	}
 
     private void updateTeamAssignmentStatuses() {
         Instant now = Instant.now();
@@ -271,8 +315,6 @@ public class AssignmentRuntime {
     }
 
     private TeamAssignmentStatus getOrCreateTeamAssignmentStatus(Team team) {
-    	
-    	
     	// todo: JFALLMODE for jfall mode do not set dateTimeStart
         return teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment, competitionSession, team)
                 .orElseGet(() -> {
@@ -367,4 +409,5 @@ public class AssignmentRuntime {
     private Instant secondsFromNow(long sec) {
         return Instant.now().plusSeconds(sec);
     }
+
 }

@@ -7,6 +7,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.transaction.Transactional;
+
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.model.Assignment;
@@ -20,15 +24,12 @@ import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.submit.service.SubmitRequest;
 import nl.moj.server.submit.service.SubmitService;
-import nl.moj.server.teams.service.TeamService;
+import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.service.TestRequest;
 import nl.moj.server.test.service.TestService;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
-import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
 
 @Service
 @Slf4j
@@ -45,6 +46,18 @@ public class SubmitFacade {
     private final SubmitService submitService;
 
     private final AssignmentRepository assignmentRepository;
+    
+    @Transactional
+    public void startAssignment(Principal principal) {
+        try {
+            User user = userService.findUser(principal);
+            Team team = user.getTeam();
+            log.debug("Starting assignment for team {}", team.getId() );
+            competitionRuntime.startAssignmentForTeam(team);
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
+        }
+    }
 
     @Transactional
     public CompileAttempt registerCompileRequest(SourceMessage message, Principal principal) {
@@ -126,7 +139,7 @@ public class SubmitFacade {
                 .sources(convertSources(message.getSources(), activeAssignment))
                 .build();
     }
-
+    
     // TODO fix this!
     // incoming editable files have the uuid from the AssignmentFile, we need to translate that
     // to a relative path inside the assignment.

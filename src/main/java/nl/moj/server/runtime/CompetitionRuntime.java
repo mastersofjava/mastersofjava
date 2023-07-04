@@ -17,6 +17,8 @@
 package nl.moj.server.runtime;
 
 import javax.transaction.Transactional;
+
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,8 +55,6 @@ public class CompetitionRuntime {
 
     private final TeamService teamService;
 
-    private final TeamRepository teamRepository;
-
     private final CompetitionSessionRepository competitionSessionRepository;
 
     private final AssignmentStatusRepository assignmentStatusRepository;
@@ -72,6 +72,7 @@ public class CompetitionRuntime {
     //TODO this is state we should not have
     @Getter
     private UUID sessionId;
+
 
     @Transactional(Transactional.TxType.REQUIRED)
     public CompetitionSession startSession(UUID id, CompetitionSession.SessionType sessionType) throws CompetitionServiceException {
@@ -232,4 +233,8 @@ public class CompetitionRuntime {
     public void loadMostRecentSession() {
         competitionSessionRepository.findMostRecent().ifPresent(this::continueSession);
     }
+
+	public TeamAssignmentStatus startAssignmentForTeam(Team team) {
+		return assignmentRuntime.startAssignmentForTeam(team);
+	}
 }
