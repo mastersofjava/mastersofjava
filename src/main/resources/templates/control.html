@@ -88,6 +88,10 @@
                     </button>
                 </li>
             </ul>
+            
+            
+    	// todo: JFALLMODE show if session is singleplayer or group mode
+            
 
             <div class="tab-content">
                 <div class="tab-pane active" id="active" role="tabpanel" aria-labelledby="tab-active">
@@ -160,6 +164,10 @@
                                     <button type="button" th:data-xhr-id="${comp.getUuid()}" th:data-xhr-name="${comp.getName()}" class="btn btn-sm btn-primary"
                                             data-xhr="startSession">Start
                                     </button>
+                                    
+                                    
+    	// todo: JFALLMODE show start as singleplayer mode 
+                                    
                                 </td>
                             </tr>
                             <tr class="collapse accordion-collapse" th:id="${'r'+status.index}" data-bs-parent=".table">

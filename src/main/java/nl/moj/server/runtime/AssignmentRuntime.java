@@ -123,6 +123,8 @@ public class AssignmentRuntime {
             // update assignment status
             AssignmentStatus assignmentStatus = initAssignmentStatus(competitionSession, assignment, assignmentDescriptor);
 
+            
+         // todo: JFALLMODE do not init teams here, so that they are all 'late joiners'
             initTeamsForAssignment();
 
             // update assignment status start times
@@ -132,6 +134,8 @@ public class AssignmentRuntime {
         });
 
         // start the timers
+        
+
         done = startTimers(as.getTimeRemaining());
 
         // mark assignment as running
@@ -188,6 +192,11 @@ public class AssignmentRuntime {
     }
 
     public ActiveAssignment getState() {
+    	
+    	// todo: JFALLMODE split for jfall mode
+    	// time remaining / time elapsed moeten per client ipv central in die mode
+    	// 
+    	
         return ActiveAssignment.builder()
                 .competitionSession(competitionSession)
                 .assignment(assignment)
@@ -262,6 +271,9 @@ public class AssignmentRuntime {
     }
 
     private TeamAssignmentStatus getOrCreateTeamAssignmentStatus(Team team) {
+    	
+    	
+    	// todo: JFALLMODE for jfall mode do not set dateTimeStart
         return teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment, competitionSession, team)
                 .orElseGet(() -> {
                     TeamAssignmentStatus as = TeamAssignmentStatus.builder()
@@ -293,6 +305,9 @@ public class AssignmentRuntime {
     }
 
     private CompletableFuture<Void> startTimers(Duration timeRemaining) {
+    	
+    	// todo: JFALLMODE do not create timers for singleplayer mode
+
         timer = StopWatch.createStarted();
         initialRemaining = timeRemaining;
 
@@ -302,6 +317,7 @@ public class AssignmentRuntime {
     }
 
     private Duration getTimeRemaining() {
+    	// todo: JFALLMODE split into client or central clock
         long remaining = 0;
         if (initialRemaining != null && timer != null) {
             remaining = initialRemaining.getSeconds() - timer.getTime(TimeUnit.SECONDS);
@@ -313,6 +329,7 @@ public class AssignmentRuntime {
     }
 
     private Duration getTimeElapsed() {
+    	// todo: JFALLMODE split into client or central clock
         Duration elapsed = null;
         if (assignmentDescriptor != null && timer != null) {
             elapsed = Duration.ofSeconds(timer.getTime(TimeUnit.SECONDS));

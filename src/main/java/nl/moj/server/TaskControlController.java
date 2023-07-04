@@ -112,6 +112,8 @@ public class TaskControlController {
         }
     }
 
+
+    // todo: JFALLMODE add singleplayer or groupsession mode toggle here
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
     @PostMapping(value = "/api/competition/{cid}/session", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> startSession(@PathVariable("cid") UUID id) {

@@ -35,6 +35,8 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 @SequenceGenerator(name = "competition_sessions_seq", sequenceName = "competition_sessions_seq")
 @EqualsAndHashCode(of = {"uuid"})
 @ToString(exclude = {"session", "assignmentStatuses"})
+
+// todo: JFALLMODE add group or single player mode enum
 public class CompetitionSession {
 
     @Id

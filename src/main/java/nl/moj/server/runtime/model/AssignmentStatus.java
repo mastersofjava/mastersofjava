@@ -42,6 +42,10 @@ public class AssignmentStatus {
     @Column(name = "id", nullable = false)
     private Long id;
 
+    
+    
+	// todo: JFALLMODE make optional for singleplayer mode
+
     @Column(name = "time_remaining", nullable = false)
     private Duration timeRemaining;
 

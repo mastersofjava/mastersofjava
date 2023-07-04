@@ -59,6 +59,10 @@ public class TeamAssignmentStatus {
     @JoinColumn(name = "team_id", nullable = false)
     private Team team;
 
+    
+	// todo: JFALLMODE add time remaining
+	// todo: JFALLMODE add isStarted() based on if daterTimeStarted==null
+
     @ManyToOne
     @JoinColumn(name = "assignment_id", nullable = false)
     private Assignment assignment;

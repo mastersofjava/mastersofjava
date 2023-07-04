@@ -58,6 +58,7 @@ public class GameController {
         return "index";
     }
 
+    
     @GetMapping("/play")
     @Transactional
     public String play(Model model, Principal principal) {
@@ -76,6 +77,10 @@ public class GameController {
 
         model.addAttribute("team", team.getName());
         model.addAttribute("sessionId", competition.getSessionId());
+        
+        
+        // todo: JFALLMODE for jfall mode: active assignment is "active" but has no clock
+        
         model.addAttribute("assignmentActive", competition.getActiveAssignment().isRunning());
 
         if (competition.getActiveAssignment().isRunning()) {
