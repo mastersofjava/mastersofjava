@@ -162,6 +162,8 @@ public class SubmitService {
                         .getUuid() + " that was never started."));
 
         Instant registered = Instant.now();
+        
+        // todo: JFALLMODE check in singleplayer mode for the correct clock for getSecondsRemaining() and isRegisteredBeforeEnding()
         long secondsRemaining = getSecondsRemaining(registered, as);
         int remainingAttempts = tas.getRemainingSubmitAttempts();
         if ( remainingAttempts > 0 && isRegisteredBeforeEnding(registered, as)) {
