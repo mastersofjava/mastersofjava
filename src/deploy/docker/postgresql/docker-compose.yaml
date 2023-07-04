@@ -1,0 +1,17 @@
+
+version: '2.4'
+services:
+  postgresql:
+    image: postgres:15
+    cpus: 1
+    mem_reservation: 128m
+    mem_limit: 512m
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_MULTIPLE_DATABASES: "moj:moj:moj"
+    volumes:
+      - "./scripts:/docker-entrypoint-initdb.d"

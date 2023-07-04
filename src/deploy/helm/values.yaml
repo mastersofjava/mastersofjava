@@ -23,6 +23,9 @@ global:
       host: moj.local
       tls:
         enabled: true
+  storage:
+    pvc:
+      enabled: true
   postgres:
     enabled: true
 

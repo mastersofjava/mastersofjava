@@ -25,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,14 +32,16 @@ import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.common.storage.StorageService;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
+import nl.moj.server.runtime.repository.AssignmentStatusRepository;
+import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
-import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
@@ -50,15 +51,14 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class TeamService {
 
-    private final MojServerProperties mojServerProperties;
     private final TeamRepository teamRepository;
     private final AssignmentService assignmentService;
     private final AssignmentRepository assignmentRepository;
+    private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
     private final StorageService storageService;
-    private final UserService userService;
 
     public Path getTeamAssignmentDirectory(UUID teamId, UUID sessionId, String assignmentName) {
-        return storageService.getSessionTeamFolder(sessionId,teamId).resolve(assignmentName);
+        return storageService.getSessionTeamFolder(sessionId, teamId).resolve(assignmentName);
     }
 
     public List<Team> getTeams() {
@@ -129,5 +129,17 @@ public class TeamService {
         } catch (IOException e) {
             throw new RuntimeException(String.format("Unable to read file '%s'.", p), e);
         }
+    }
+
+    @Transactional
+    public boolean deleteTeam(String name) {
+        Team team = teamRepository.findByName(name);
+        if( team == null ) {
+            return false;
+        }
+
+        teamAssignmentStatusRepository.deleteAll(teamAssignmentStatusRepository.findByTeam(team));
+        teamRepository.delete(team);
+        return true;
     }
 }

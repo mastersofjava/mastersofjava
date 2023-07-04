@@ -55,7 +55,7 @@ Create the name of the service account to use
 {{- end }}
 
 {{- define "worker.controller.http.uri" }}
-{{- printf "http://%s:8080"
+{{- printf "http://%s"
     ( include "controller.service.name" . ) | quote }}
 {{- end }}
 

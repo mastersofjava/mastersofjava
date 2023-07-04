@@ -78,7 +78,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
-        {{- if not .Values.storage.pvc.enabled }}
+        {{- if not .Values.global.storage.pvc.enabled }}
         - name: {{ include "postgres.fullname" . }}-data
           emptyDir:
             medium: ""
@@ -93,16 +93,16 @@ spec:
             name: {{ include "postgres.fullname" . }}-scripts
   updateStrategy:
     type: RollingUpdate
-  {{- if .Values.storage.pvc.enabled -}}
+  {{- if .Values.global.storage.pvc.enabled }}
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
         name: {{ include "postgres.fullname" . }}-data
       spec:
-        {{- if .Values.storage.pvc.storageClass -}}
+        {{- if .Values.storage.pvc.storageClass }}
         storageClassName: {{ .Values.storage.pvc.storageClass }}
-        {{- end -}}
+        {{- end }}
         accessModes:
           - ReadWriteOnce
         resources:

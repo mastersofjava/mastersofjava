@@ -13,6 +13,9 @@ global:
       host: controller.local
       tls:
         enabled: false
+  storage:
+    pvc:
+      enabled: false
 
 replicaCount: 1
 
@@ -24,6 +27,12 @@ image:
 
 imagePullSecrets:
   - name: docker.first8.nl
+
+storage:
+  # defaults to 1Gi
+  size: ""
+  pvc:
+    storageClass: ""
 
 serviceAccount:
   # Specifies whether a service account should be created

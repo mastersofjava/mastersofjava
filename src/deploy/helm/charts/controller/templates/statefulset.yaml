@@ -1,11 +1,13 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "controller.fullname" . }}
   labels:
     {{- include "controller.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  serviceName: {{ include "controller.fullname" . }}
   selector:
     matchLabels:
       {{- include "controller.selectorLabels" . | nindent 6 }}
@@ -57,8 +59,18 @@ spec:
             - name: "SPRING_DATASOURCE_DRIVER_CLASS_NAME"
               value: org.postgresql.Driver
           {{- end }}
+          volumeMounts:
+            - name: {{ include "controller.fullname" . }}-data
+              mountPath: /data
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      {{- if not .Values.global.storage.pvc.enabled }}
+      volumes:
+        - name: {{ include "controller.fullname" . }}-data
+          emptyDir:
+            medium: ""
+            sizeLimit: {{ .Values.storage.size | default "1Gi" }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -71,3 +83,22 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+  updateStrategy:
+    type: RollingUpdate
+  {{- if .Values.global.storage.pvc.enabled }}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: {{ include "controller.fullname" . }}-data
+      spec:
+        {{- if .Values.storage.pvc.storageClass }}
+        storageClassName: {{ .Values.storage.pvc.storageClass }}
+        {{- end }}
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.storage.size | default "1Gi" }}
+        volumeMode: Filesystem
+  {{- end -}}

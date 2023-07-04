@@ -1,4 +1,4 @@
-package nl.moj.server.teams.controller;
+package nl.moj.server.user.controller;
 
 import javax.annotation.security.RolesAllowed;
 import java.security.Principal;
@@ -6,6 +6,7 @@ import java.security.Principal;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.authorization.Role;
+import nl.moj.server.teams.controller.TeamForm;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.user.model.User;
@@ -20,31 +21,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 @Slf4j
 @Controller
 @AllArgsConstructor
-public class TeamController {
+public class UserController {
 
-    private final TeamService teamService;
     private final UserService userService;
 
-    @PostMapping("/team")
-    public String createTeam(Principal principal, @ModelAttribute("teamForm") TeamForm form) {
-        User user = userService.createOrUpdate(principal);
-        Team team = teamService.createOrUpdate(form.getName(), form.getCompany(), form.getCountry());
-        if (user.getTeam() == null) {
-            user = userService.addUserToTeam(user, team);
-            log.info("Registered team {} with uuid {} for user {}", team.getName(), team.getUuid(), user.getName());
-        }
-        return "redirect:/play";
-    }
-
-    @DeleteMapping("/team/{name}")
+    @DeleteMapping("/users/{name}")
     @RolesAllowed(Role.ADMIN)
     public ResponseEntity<Void> deleteByName(@PathVariable("name") String name) {
         try {
-            if (teamService.deleteTeam(name)) {
+            if (userService.deleteUser(name)) {
                 ResponseEntity.noContent();
             }
         } catch (Exception e) {
-            log.error("Delete of team {} failed.", name, e);
+            log.error("Delete of user {} failed.", name, e);
         }
         return ResponseEntity.badRequest().build();
     }

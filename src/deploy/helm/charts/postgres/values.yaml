@@ -4,6 +4,9 @@
 global:
   postgres:
     enabled: true
+  storage:
+    pvc:
+      enabled: false
 
 image:
   repository: docker.io/postgres
@@ -26,8 +29,6 @@ storage:
   # defaults to 1Gi
   size: ""
   pvc:
-    # set to true to enable PVC storage else emptyDir is used.
-    enabled: false
     storageClass: ""
 
 admin:

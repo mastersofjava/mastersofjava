@@ -52,4 +52,6 @@ public interface TeamAssignmentStatusRepository extends JpaRepository<TeamAssign
 
 	TeamAssignmentStatus findByAssignment_IdAndCompetitionSession_IdAndTeam_Id(Long assignmentId, Long competitionSessionId,
                                                                                Long teamId);
+    List<TeamAssignmentStatus> findByTeam(Team team);
+
 }

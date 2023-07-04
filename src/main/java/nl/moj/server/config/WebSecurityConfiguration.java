@@ -1,9 +1,6 @@
 package nl.moj.server.config;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.nimbusds.jose.shaded.json.JSONObject;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +22,8 @@ import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInit
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
@@ -104,5 +103,16 @@ public class WebSecurityConfiguration {
             });
             return sam.mapAuthorities(mappedAuthorities);
         };
+    }
+
+    @Bean
+    public JwtAuthenticationConverter customJwtAuthenticationConverter() {
+
+        JwtGrantedAuthoritiesConverter conv = new JwtGrantedAuthoritiesConverter();
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter( jwt -> conv.convert(jwt));
+        converter.setPrincipalClaimName("preferred_username");
+
+        return converter;
     }
 }

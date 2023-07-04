@@ -1,5 +1,13 @@
 package nl.moj.server.user.service;
 
+import javax.transaction.Transactional;
+import java.security.Principal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.teams.model.Team;
@@ -17,14 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-import javax.transaction.Transactional;
-import java.security.Principal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -41,15 +41,15 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
 
     @Transactional
     public User createOrUpdate(Principal principal) {
-        if( principal instanceof Authentication a) {
-            Map<String,Object> attributes = new HashMap<>();
-            if( a.getPrincipal() instanceof ClaimAccessor ca ) {
+        if (principal instanceof Authentication a) {
+            Map<String, Object> attributes = new HashMap<>();
+            if (a.getPrincipal() instanceof ClaimAccessor ca) {
                 attributes = ca.getClaims();
-            } else if( a.getPrincipal() instanceof OAuth2AuthenticatedPrincipal ap ) {
+            } else if (a.getPrincipal() instanceof OAuth2AuthenticatedPrincipal ap) {
                 attributes = ap.getAttributes();
             }
 
-            if( !attributes.isEmpty()) {
+            if (!attributes.isEmpty()) {
                 String name = principal.getName();
                 User user = userRepository.findByName(name);
                 if (user == null) {
@@ -59,9 +59,9 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
                     LOG.info("Created new user {}", name);
                 }
 
-                user.setGivenName((String)attributes.get("given_name"));
-                user.setFamilyName((String)attributes.get("family_name"));
-                user.setEmail((String)attributes.get("email"));
+                user.setGivenName((String) attributes.get("given_name"));
+                user.setFamilyName((String) attributes.get("family_name"));
+                user.setEmail((String) attributes.get("email"));
                 return userRepository.save(user);
             }
         }
@@ -122,5 +122,16 @@ public class UserService implements ApplicationListener<ApplicationEvent> {
             log.info("User {} disconnected.", user.getName());
             ACTIVE_USERS.remove(user);
         }
+    }
+
+    @Transactional
+    public boolean deleteUser(String name) {
+        User user = userRepository.findByName(name);
+        if (user == null) {
+            return false;
+        }
+
+        userRepository.deleteByName(name);
+        return true;
     }
 }
