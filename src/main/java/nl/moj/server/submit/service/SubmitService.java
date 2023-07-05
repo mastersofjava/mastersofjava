@@ -175,11 +175,12 @@ public class SubmitService {
 				: timersRuntime.getTeamSecondsRemaining(submitRequest.getTeam(), registered);
 
 		boolean registeredOnTime = tas.getCompetitionSession().getSessionType() == SessionType.GROUP
-				? timersRuntime.isGroupRegisteredBeforeEnding(registered)
+				? timersRuntime.isGroupRegisteredBeforeEnding(as, registered)
 				: timersRuntime.isTeamRegisteredBeforeEnding(submitRequest.getTeam(), registered);
 
 		int remainingAttempts = tas.getRemainingSubmitAttempts();
 		if (remainingAttempts > 0 && registeredOnTime) {
+			log.debug("Has remaining attempts {} and is registered on time ({}s remaining)", remainingAttempts, secondsRemaining);
 			messageService.sendSubmitStarted(submitRequest.getTeam());
 
 			// save the team progress
@@ -208,14 +209,15 @@ public class SubmitService {
 					submitRequest.getAssignment().getUuid(), submitRequest.getTeam().getUuid());
 
 			return submitAttempt;
+		} else {
+			log.warn("Submit is not allowed for team '{}' named '{}'", submitRequest.getTeam().getUuid(),
+					submitRequest.getTeam().getName());
+	
+			// send submit rejected
+			messageService.sendSubmitRejected(submitRequest.getTeam(),
+					remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
+			return null;
 		}
-		log.warn("Submit is not allowed for team '{}' named '{}'", submitRequest.getTeam().getUuid(),
-				submitRequest.getTeam().getName());
-
-		// send submit rejected
-		messageService.sendSubmitRejected(submitRequest.getTeam(),
-				remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
-		return null;
 	}
 
 	private SubmitAttempt prepareSubmitAttempt(SubmitRequest submitRequest, Instant registered,

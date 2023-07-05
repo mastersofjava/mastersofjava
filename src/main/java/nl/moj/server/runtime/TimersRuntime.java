@@ -89,14 +89,15 @@ public class TimersRuntime {
 		return taskScheduler.schedule(() -> stopFunction.apply(team), secondsFromNow(timeRemaining.getSeconds()));
 	}
 
-	public boolean isGroupRegisteredBeforeEnding(Instant registered) {
-		return isRegisteredBeforeEnding(GROUP_UUID, registered);
+	public boolean isGroupRegisteredBeforeEnding(AssignmentStatus as, Instant registered) {
+		// for groups we use the assignmentstate assigned end time
+		log.debug("checking before ending, as.getDateTimeEnd={} and expected endtime={}. Falling back to old behaviour using as.getDateTimeEnd", as.getDateTimeEnd(), endTimes.get(GROUP_UUID));
+		return /*isRegisteredBeforeEnding(GROUP_UUID, registered) || */(as.getDateTimeEnd()!=null && registered.isBefore(as.getDateTimeEnd()));
 	}
 	public boolean isTeamRegisteredBeforeEnding(Team team, Instant registered) {
 		return isRegisteredBeforeEnding(team.getUuid(), registered);
 	}
 
-	// todo: JFALLMODE remove endtimes and base it on stopwatch
 	private boolean isRegisteredBeforeEnding(UUID id, Instant registered) {
 		return endTimes.get(id).isAfter(registered);
 	}
@@ -110,8 +111,6 @@ public class TimersRuntime {
 		
 	}
 	
-	
-	// todo: JFALLMODE remove endtimes and base it on stopwatch
 	private long getSecondsRemaining(UUID id, Instant registered) {
 		if (isRegisteredBeforeEnding(id, registered)) {
 			return Duration.between(registered, endTimes.get(id)).toSeconds();
@@ -135,7 +134,6 @@ public class TimersRuntime {
 			if (remaining < 0) {
 				remaining = 0;
 			}
-			log.debug("time remaining: initial remaining ({}) - seconds on timer ({}) = {}", initialRemaining.get(id).getSeconds(), timer.get(id).getTime(TimeUnit.SECONDS), remaining );
 		}
 		return Duration.ofSeconds(remaining);
 	}
