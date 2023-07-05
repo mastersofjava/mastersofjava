@@ -170,8 +170,6 @@ public class SubmitService {
 
 		Instant registered = Instant.now();
 
-		// todo: JFALLMODE check in singleplayer mode for the correct clock for
-		// getSecondsRemaining() and isRegisteredBeforeEnding()
 		long secondsRemaining = tas.getCompetitionSession().getSessionType() == SessionType.GROUP
 				? timersRuntime.getGroupSecondsRemaining(registered)
 				: timersRuntime.getTeamSecondsRemaining(submitRequest.getTeam(), registered);

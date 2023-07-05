@@ -45,6 +45,7 @@ public class TimersRuntime {
 
 	private Map<UUID, StopWatch> timer = new HashMap<>();
 	private Map<UUID, Duration> initialRemaining = new HashMap<>();
+	// todo: JFALLMODE remove endtimes and base it on stopwatch
 	private Map<UUID, Instant> endTimes = new HashMap<>();
 
 	private List<Future<?>> handlers;
@@ -56,15 +57,15 @@ public class TimersRuntime {
 		return timer.get(GROUP_UUID).getStartTime();
 	}
 
-	public CompletableFuture<Void> startTimersForGroup(Runnable stopFunction, Duration assignmentDuration,
+	public CompletableFuture<Void> startTimersForGroup(Runnable stopFunction, Duration timeRemaining,
 			Assignment assignment, CompetitionSession competitionSession) {
 
 		timer.put(GROUP_UUID, StopWatch.createStarted());
-		initialRemaining.put(GROUP_UUID, assignmentDuration);
-		endTimes.put(GROUP_UUID, Instant.now().plus(assignmentDuration));
+		initialRemaining.put(GROUP_UUID, timeRemaining);
+		endTimes.put(GROUP_UUID, Instant.now().plus(timeRemaining));
 
-		handlers.add(scheduleGroupStop(stopFunction, assignmentDuration));
-		handlers.add(scheduleGroupTimeSync(assignmentDuration, assignment.getUuid(), competitionSession));
+		handlers.add(scheduleGroupStop(stopFunction, timeRemaining));
+		handlers.add(scheduleGroupTimeSync(assignment.getAssignmentDuration(), assignment.getUuid(), competitionSession));
 		return new CompletableFuture<>();
 	}
 
@@ -94,6 +95,8 @@ public class TimersRuntime {
 	public boolean isTeamRegisteredBeforeEnding(Team team, Instant registered) {
 		return isRegisteredBeforeEnding(team.getUuid(), registered);
 	}
+
+	// todo: JFALLMODE remove endtimes and base it on stopwatch
 	private boolean isRegisteredBeforeEnding(UUID id, Instant registered) {
 		return endTimes.get(id).isAfter(registered);
 	}
@@ -106,6 +109,9 @@ public class TimersRuntime {
 		return getSecondsRemaining(team.getUuid(), registered);
 		
 	}
+	
+	
+	// todo: JFALLMODE remove endtimes and base it on stopwatch
 	private long getSecondsRemaining(UUID id, Instant registered) {
 		if (isRegisteredBeforeEnding(id, registered)) {
 			return Duration.between(registered, endTimes.get(id)).toSeconds();
@@ -129,6 +135,7 @@ public class TimersRuntime {
 			if (remaining < 0) {
 				remaining = 0;
 			}
+			log.debug("time remaining: initial remaining ({}) - seconds on timer ({}) = {}", initialRemaining.get(id).getSeconds(), timer.get(id).getTime(TimeUnit.SECONDS), remaining );
 		}
 		return Duration.ofSeconds(remaining);
 	}

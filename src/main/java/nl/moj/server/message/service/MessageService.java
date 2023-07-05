@@ -152,8 +152,6 @@ public class MessageService {
 		}
 	}
 
-	// todo: JFALLMODE broadcast for group mode, make it sendToActiveUsers for
-	// singleplayer mode
 	public void sendGroupStart(String taskname, String sessionId) {
 		log.info("Sending start: t={}, s={}", taskname, sessionId);
 		template.convertAndSend(DEST_START, taskname);
@@ -168,8 +166,6 @@ public class MessageService {
 		sendToActiveUsers(team, StartAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
 	}
 
-	// todo: JFALLMODE broadcast for group mode, make it sendToActiveUsers for
-	// singleplayer mode
 	public void sendGroupStop(String taskname, String sessionId) {
 		log.info("Sending stop: t={}, s={}", taskname, sessionId);
 		template.convertAndSend(DEST_STOP, Map.of("taskName", taskname));
@@ -177,15 +173,11 @@ public class MessageService {
 				StopAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
 	}
 
-	// todo: JFALLMODE broadcast for group mode, make it sendToActiveUsers for
-	// singleplayer mode
 	public void sendTeamStop(Team team, String taskname, String sessionId) {
 		log.info("Sending stop: t={}, s={}", taskname, sessionId);
 		sendToActiveUsers(team, StopAssignmentMessage.builder().sessionId(sessionId).assignment(taskname).build());
 	}
 
-	// todo: JFALLMODE broadcast for group mode, make it sendToActiveUsers for
-	// singleplayer mode
 	public void sendGroupRemainingTime(Duration remainingTime, Duration totalTime, UUID session) {
 		try {
 			log.info("Sending time: r={}, t={}, s={}", remainingTime, totalTime, session.toString());
@@ -210,8 +202,6 @@ public class MessageService {
 		}
 	}
 
-	// todo: JFALLMODE broadcast for group mode, make it sendToActiveUsers for
-	// singleplayer mode
 	public void sendStartFail(String name, String cause) {
 		log.info("Sending start assignment '{}' failed with cause '{}'", name, cause);
 		template.convertAndSend(DEST_CONTROL_FEEDBACK,

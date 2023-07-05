@@ -167,19 +167,7 @@ public class AssignmentRuntime {
 			return trx.requiresNew(() -> {
 				messageService.sendGroupStop(assignment.getName(), competitionSession.getUuid().toString());
 				teamService.getTeams().forEach(t -> {
-					TeamAssignmentStatus as = teamAssignmentStatusRepository
-							.findByAssignmentAndCompetitionSessionAndTeam(assignment, competitionSession, t)
-							.orElse(null);
-					if (as != null) {
-						if (as.getDateTimeCompleted() == null) {
-							as = scoreService.finalizeScore(as, assignmentDescriptor);
-							messageService.sendSubmitFeedback(as);
-						}
-						as.setDateTimeEnd(Instant.now());
-					} else {
-						log.warn("Could not finalize score for team {}@{}, no assignment status found.", t.getName(),
-								t.getUuid());
-					}
+					stopTeamAssignmentStatus(t);
 				});
 				AssignmentStatus assignmentStatus = assignmentStatusRepository
 						.findByCompetitionSessionAndAssignment(competitionSession, assignment)
@@ -198,41 +186,31 @@ public class AssignmentRuntime {
 		return Optional.empty();
 	}
 
+	private void stopTeamAssignmentStatus(Team t) {
+		TeamAssignmentStatus tas = teamAssignmentStatusRepository
+				.findByAssignmentAndCompetitionSessionAndTeam(assignment, competitionSession, t)
+				.orElse(null);
+		if (tas != null) {
+			if (tas.getDateTimeCompleted() == null) {
+				tas = scoreService.finalizeScore(tas, assignmentDescriptor);
+				messageService.sendSubmitFeedback(tas);
+			}
+			tas.setDateTimeEnd(Instant.now());
+		} else {
+			log.warn("Could not finalize score for team {}@{}, no assignment status found.", t.getName(),
+					t.getUuid());
+		}
+	}
+
 	/**
 	 * Stop the current assignment for the given team
 	 */
 	public Void teamStop(Team team) {
-		// todo: JFALLMODE make this for one team only
 		if (running) {
 			 trx.requiresNew(() -> {
 				messageService.sendTeamStop(team,assignment.getName(), competitionSession.getUuid().toString());
-				teamService.getTeams().forEach(t -> {
-					TeamAssignmentStatus as = teamAssignmentStatusRepository
-							.findByAssignmentAndCompetitionSessionAndTeam(assignment, competitionSession, t)
-							.orElse(null);
-					if (as != null) {
-						if (as.getDateTimeCompleted() == null) {
-							as = scoreService.finalizeScore(as, assignmentDescriptor);
-							messageService.sendSubmitFeedback(as);
-						}
-						as.setDateTimeEnd(Instant.now());
-					} else {
-						log.warn("Could not finalize score for team {}@{}, no assignment status found.", t.getName(),
-								t.getUuid());
-					}
-				});
-				AssignmentStatus assignmentStatus = assignmentStatusRepository
-						.findByCompetitionSessionAndAssignment(competitionSession, assignment)
-						.orElseThrow(() -> new IllegalStateException(
-								"Missing assignment status for assignment " + assignment.getUuid()));
-				assignmentStatus.setDateTimeEnd(Instant.now());
-				timersRuntime.clearHandlers();
-				running = false;
-				// competitionAssignment = null;
-				log.info("Stopped assignment {}", assignment.getName());
-				assignment = null;
-				done.complete(null);
-				Optional.of(assignmentStatus);
+				stopTeamAssignmentStatus(team);
+				// only stop team assignment, never stop the actual assignment
 			});
 		}
 		return null;
