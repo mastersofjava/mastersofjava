@@ -47,8 +47,6 @@ public class ActiveAssignment {
     private List<AssignmentFile> assignmentFiles; // this is a reference to AssignmentExecutionModel.originalAssignmentFiles, which is a reference to assignmentService.getAssignmentFiles(model.assignment)
     private boolean running;
 
-    
-
     @Override
     public String toString() {
         return "[" +assignment.getName() + ", " + competitionSession.getId()+"]";

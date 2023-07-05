@@ -57,7 +57,7 @@ public class CustomSecurityPolicyTest extends BaseRuntimeTest {
     }
 
     private SubmitAttempt doSubmitValidInput() throws Exception {
-        ActiveAssignment state = competitionRuntime.getActiveAssignment();
+        ActiveAssignment state = competitionRuntime.getActiveAssignment(null);
         Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
         timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
 

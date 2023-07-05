@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import nl.moj.common.storage.StorageService;
+import nl.moj.server.TaskControlController.ActiveAssignmentVO.ActiveAssignmentVOBuilder;
 import nl.moj.server.TaskControlController.CompetitionSessionVO.CompetitionSessionVOBuilder;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
@@ -232,8 +233,7 @@ public class TaskControlController {
 	private CompetitionSessionVO toCompetitionSessionVO(CompetitionRuntime runtime) {
 
 		if (runtime.getSessionId() == null) {
-			return CompetitionSessionVO.builder().active(false)
-					.build();
+			return CompetitionSessionVO.builder().active(false).build();
 		}
 
 		return trx.required(() -> {
@@ -241,7 +241,8 @@ public class TaskControlController {
 			Objects.requireNonNull(session);
 
 			Competition competition = session.getCompetition();
-			ActiveAssignment activeAssignment = runtime.getActiveAssignment();
+			// this is a global view, so no team specific fields
+			ActiveAssignment activeAssignment = runtime.getActiveAssignment(null);
 
 			List<AssignmentStatus> assignmentStatuses = session.getAssignmentStatuses();
 			List<AssignmentVO> assignments = new ArrayList<>();
@@ -258,17 +259,21 @@ public class TaskControlController {
 				if (oca.isPresent()) {
 					Optional<AssignmentStatus> as = assignmentStatuses.stream()
 							.filter(a -> a.getAssignment().equals(activeAssignment.getAssignment())).findFirst();
-					active = ActiveAssignmentVO.builder().assignment(toAssignmentVO(oca.get(), as))
-							.seconds(oca.get().getAssignment().getAssignmentDuration().toSeconds())
-							.secondsLeft(activeAssignment.getTimeRemaining().toSeconds()).build();
+					ActiveAssignmentVOBuilder builder = ActiveAssignmentVO.builder()
+							.assignment(toAssignmentVO(oca.get(), as))
+							.seconds(oca.get().getAssignment().getAssignmentDuration().toSeconds());
+					if (activeAssignment.getTimeRemaining() != null) {
+						builder.secondsLeft(activeAssignment.getTimeRemaining().toSeconds());
+					}
+					active = builder.build();
 				}
 			}
 
-			CompetitionSessionVOBuilder cs = CompetitionSessionVO.builder().assignments(assignments).activeAssignment(active)
-					.uuid(session.getUuid()).name(competition.getName()).active(true);
-			
-			if (runtime.getActiveAssignment().getCompetitionSession()!=null) {
-				cs.type(runtime.getActiveAssignment().getCompetitionSession().getSessionType());
+			CompetitionSessionVOBuilder cs = CompetitionSessionVO.builder().assignments(assignments)
+					.activeAssignment(active).uuid(session.getUuid()).name(competition.getName()).active(true);
+
+			if (activeAssignment.getCompetitionSession() != null) {
+				cs.type(activeAssignment.getCompetitionSession().getSessionType());
 			}
 			return cs.build();
 		});

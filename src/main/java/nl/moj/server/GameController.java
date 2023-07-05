@@ -46,7 +46,6 @@ import java.util.List;
 public class GameController {
 
     private CompetitionRuntime competition;
-    private TeamRepository teamRepository;
     private TeamService teamService;
     private UserService userService;
     private TeamAssignmentStatusRepository teamAssignmentStatusRepository;
@@ -75,21 +74,20 @@ public class GameController {
             return "createteam";
         }
 
+        ActiveAssignment activeAssignment = competition.getActiveAssignment(team);
         model.addAttribute("team", team.getName());
         model.addAttribute("sessionId", competition.getSessionId());
-        
-        model.addAttribute("assignmentActive", competition.getActiveAssignment().isRunning());
+		model.addAttribute("assignmentActive", activeAssignment.isRunning());
 
-        if (competition.getActiveAssignment().isRunning()) {
-            ActiveAssignment state = competition.getActiveAssignment();
-            TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(state.getAssignment(), state
+        if (activeAssignment.isRunning()) {
+            TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(), activeAssignment
                     .getCompetitionSession(), team).orElse(null);
             if (as == null) {
                 as = competition.handleLateSignup(team);
             }
-            model.addAttribute("assignmentId", state.getAssignment().getUuid());
+            model.addAttribute("assignmentId", activeAssignment.getAssignment().getUuid());
             model.addAttribute("teamStarted", as.isStarted());
-            addTeamAssignmentStateToModel(model, state, as);
+            addTeamAssignmentStateToModel(model, activeAssignment, as);
         }
         return "play";
     }

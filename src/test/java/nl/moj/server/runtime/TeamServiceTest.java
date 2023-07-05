@@ -60,7 +60,7 @@ public class TeamServiceTest extends BaseRuntimeTest {
         startSelectedAssignment(assignment);
         List<AssignmentFile> files = teamService.getTeamAssignmentFiles(getTeam().getUuid(),
                 competitionRuntime.getSessionId(),
-                competitionRuntime.getActiveAssignment().getAssignment().getUuid());
+                competitionRuntime.getActiveAssignment(null).getAssignment().getUuid());
 
         Assertions.assertThat(files).hasSize(6);
         Assertions.assertThat(files.stream().filter(f -> f.getFileType() == AssignmentFileType.INVISIBLE_TEST)

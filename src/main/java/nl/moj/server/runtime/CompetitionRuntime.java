@@ -113,8 +113,11 @@ public class CompetitionRuntime {
         }
     }
 
-    public ActiveAssignment getActiveAssignment() {
-        return assignmentRuntime.getState();
+    public ActiveAssignment getActiveAssignment(Team team) {
+        return assignmentRuntime.getState(team);
+    }
+    public ActiveAssignment getActiveAssignmentGlobal() {
+        return assignmentRuntime.getState(null);
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -156,7 +159,7 @@ public class CompetitionRuntime {
     public Optional<AssignmentStatus> stopAssignment(UUID sid, UUID id) throws CompetitionServiceException {
         if (isAssignmentRunning(sid, id)) {
             log.info("Stopping assignment {} in session {}.", id, sid);
-            return assignmentRuntime.stop();
+            return assignmentRuntime.groupStop();
         }
         return Optional.empty();
     }

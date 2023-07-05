@@ -85,7 +85,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     @MethodSource("assignments")
     public void shouldUseSpecifiedAssignmentTestTimeout(String assignment) throws Exception {
         startSelectedAssignment(assignment);
-        Duration timeout = assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment().getAssignment(),1);
+        Duration timeout = assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment(),1);
         SourceMessage src = createSourceMessageWithLongTimeout(timeout);
         TestAttempt testAttempt = doTest(src);
         assertTimeout(testAttempt);
@@ -108,7 +108,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         startSelectedAssignment(assignment);
         SourceMessage src = createSourceMessageWithNoTimeout();
 
-        Duration timeout = assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment().getAssignment()).plusSeconds(5);
+        Duration timeout = assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
         stopSelectedAssignment();
 
         SubmitAttempt submitAttempt = doSubmit(src,timeout);
@@ -118,7 +118,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     }
 
     private SourceMessage createSourceMessageWithLongTimeout(Duration timeout) {
-        ActiveAssignment state = competitionRuntime.getActiveAssignment();
+        ActiveAssignment state = competitionRuntime.getActiveAssignment(null);
 
         Map<String, String> variables = new HashMap<>();
         if (timeout != null) {
@@ -151,7 +151,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     }
 
     private CompileAttempt doCompile(SourceMessage src) {
-        Duration timeout = assignmentService.resolveCompileAbortTimout(competitionRuntime.getActiveAssignment().getAssignment()).plusSeconds(5);
+        Duration timeout = assignmentService.resolveCompileAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
         CompileAttempt ca = submitFacade.registerCompileRequest(src, getPrincipal(getUser()));
         if( ca != null ) {
             awaitAttempt(ca.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -164,7 +164,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     }
 
     private TestAttempt doTest(SourceMessage src, Duration d) {
-        Duration timeout = d != null ? d : assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment().getAssignment(), src.getTests().size())
+        Duration timeout = d != null ? d : assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment(), src.getTests().size())
                 .plusSeconds(5);
         TestAttempt ta = submitFacade.registerTestRequest(src, getPrincipal(getUser()));
         if( ta != null ) {
@@ -177,7 +177,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         return doSubmit(src,null);
     }
     private SubmitAttempt doSubmit(SourceMessage src, Duration d) {
-        Duration timeout = d != null ? d : assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment().getAssignment()).plusSeconds(5);
+        Duration timeout = d != null ? d : assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
         SubmitAttempt sa = submitFacade.registerSubmitRequest(src, getPrincipal(getUser()));
         if( sa != null ) {
             awaitAttempt(sa.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
