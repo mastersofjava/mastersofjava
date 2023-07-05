@@ -180,7 +180,8 @@ public class SubmitService {
 
 		int remainingAttempts = tas.getRemainingSubmitAttempts();
 		if (remainingAttempts > 0 && registeredOnTime) {
-			log.debug("Has remaining attempts {} and is registered on time ({}s remaining)", remainingAttempts, secondsRemaining);
+			log.debug("Has remaining attempts {} and is registered on time ({}s remaining)", remainingAttempts,
+					secondsRemaining);
 			messageService.sendSubmitStarted(submitRequest.getTeam());
 
 			// save the team progress
@@ -210,12 +211,15 @@ public class SubmitService {
 
 			return submitAttempt;
 		} else {
-			log.warn("Submit is not allowed for team '{}' named '{}'", submitRequest.getTeam().getUuid(),
-					submitRequest.getTeam().getName());
-	
+			log.warn(
+					"Submit is not allowed for team '{}' named '{}', team has remaining attempts {} and on time={} ({}s remaining)",
+					submitRequest.getTeam().getUuid(), submitRequest.getTeam().getName(), remainingAttempts,
+					registeredOnTime, secondsRemaining);
+
 			// send submit rejected
 			messageService.sendSubmitRejected(submitRequest.getTeam(),
-					remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
+					remainingAttempts > 0 ? "Submit received after assignment ended."
+							: "No more submit attempts left.");
 			return null;
 		}
 	}

@@ -92,7 +92,7 @@ public class TimersRuntime {
 	public boolean isGroupRegisteredBeforeEnding(AssignmentStatus as, Instant registered) {
 		// for groups we use the assignmentstate assigned end time
 		log.debug("checking before ending, as.getDateTimeEnd={} and expected endtime={}. Falling back to old behaviour using as.getDateTimeEnd", as.getDateTimeEnd(), endTimes.get(GROUP_UUID));
-		return /*isRegisteredBeforeEnding(GROUP_UUID, registered) || */(as.getDateTimeEnd()!=null && registered.isBefore(as.getDateTimeEnd()));
+		return /*isRegisteredBeforeEnding(GROUP_UUID, registered) || */as.getDateTimeEnd()==null || (as.getDateTimeEnd()!=null && registered.isBefore(as.getDateTimeEnd()));
 	}
 	public boolean isTeamRegisteredBeforeEnding(Team team, Instant registered) {
 		return isRegisteredBeforeEnding(team.getUuid(), registered);
