@@ -41,7 +41,7 @@ public class TeamController {
     public ResponseEntity<Void> deleteByName(@PathVariable("name") String name) {
         try {
             if (teamService.deleteTeam(name)) {
-                ResponseEntity.noContent();
+                return ResponseEntity.noContent().build();
             }
         } catch (Exception e) {
             log.error("Delete of team {} failed.", name, e);

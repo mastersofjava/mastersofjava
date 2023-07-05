@@ -37,6 +37,7 @@ import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.user.repository.UserRepository;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 
@@ -49,6 +50,7 @@ public class TeamService {
     private final AssignmentService assignmentService;
     private final AssignmentRepository assignmentRepository;
     private final TeamAssignmentStatusRepository teamAssignmentStatusRepository;
+    private final UserRepository userRepository;
     private final StorageService storageService;
 
     public Path getTeamAssignmentDirectory(UUID teamId, UUID sessionId, String assignmentName) {
@@ -143,8 +145,15 @@ public class TeamService {
             return false;
         }
 
+        // remove linked users
+        userRepository.deleteAll(team.getUsers());
+        // cleanup all assignment info
         teamAssignmentStatusRepository.deleteAll(teamAssignmentStatusRepository.findByTeam(team));
+        // remove the team
         teamRepository.delete(team);
+
+        log.info("Removed team {}", team.getName());
+
         return true;
     }
 }

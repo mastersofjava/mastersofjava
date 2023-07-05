@@ -6,7 +6,7 @@ $(document).ready(function () {
         connect()
         initializeAssignmentClock()
         initXHR()
-        //toggleTicks()
+        initStats()
     }, 1000)
 })
 
@@ -25,7 +25,6 @@ function connect() {
         stompClient.subscribe("/queue/session",
             function (data) {
                 const msg = JSON.parse(data.body);
-                console.log('received:',msg)
                 if (competitionHandlers.hasOwnProperty(msg.messageType)) {
                     competitionHandlers[msg.messageType](msg);
                 }
@@ -81,7 +80,7 @@ function scanAssignments() {
 }
 
 function uploadAssignments(args, form) {
-    console.log(args,form, new FormData(form))
+    console.log(args, form, new FormData(form))
     postFormData('/api/assignment/import', new FormData(form))
         .then(r => {
                 form.reset()
@@ -207,6 +206,62 @@ function initXHR() {
     })
 }
 
+function initStats() {
+    const fetchStats = () => {
+        get("/metrics/queues")
+            .then(r => {
+                updateQueueStats(r)
+            })
+    }
+    window.setInterval(() => {
+        fetchStats();
+    }, 1000);
+    fetchStats();
+}
+
+function updateQueueStats(data) {
+    const $stats = $('#stats')
+    if ($stats) {
+        $stats.empty()
+        const rowTemplate = (n, w, t, e, k) => {
+            return `<tr>
+                <td>${n}</td>
+                <td>${w}</td>
+                <td>${t}</td>
+                <td>${e}</td>
+                <td>${k}</td>
+            </tr>`
+        }
+        const rows = data
+            .sort( (a, b) => {
+                if (a.name < b.name) {
+                    return -1;
+                }
+                if (a.name > b.name) {
+                    return 1;
+                }
+                return 0;
+            } )
+            .map(v => rowTemplate(v.name, v.count, v.added, v.expired, v.killed)).join("\n")
+        let statsTable = $.parseHTML(
+            `<table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">Queue</th>
+                  <th scope="col">Waiting</th>
+                  <th scope="col">Total</th>
+                  <th scope="col">Expired</th>
+                  <th scope="col">Killed</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}                
+              </tbody>
+            </table>`)
+        $stats.append(statsTable)
+    }
+}
+
 function invoke(el) {
     const $el = $(el)
     const ref = $el.attr('data-xhr')
@@ -229,6 +284,14 @@ function post(uri, data = {}) {
         url: uri,
         data: JSON.stringify(data),
         contentType: 'application/json; charset=utf-8',
+        dataType: 'json'
+    })
+}
+
+function get(uri) {
+    return $.ajax({
+        type: 'GET',
+        url: uri,
         dataType: 'json'
     })
 }

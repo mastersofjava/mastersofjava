@@ -158,7 +158,6 @@ public class PerformanceTest extends Simulation {
         for (User user : users) {
             try {
                 RestClient.deleteTeam(mojAdmin, user.team());
-                RestClient.deleteUser(mojAdmin, user);
                 RestClient.deleteKeycloakUser(user);
             } catch (Exception e) {
                 log.error("Cleanup of user {} failed", user.username(), e);

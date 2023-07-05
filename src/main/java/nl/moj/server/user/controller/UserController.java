@@ -30,7 +30,7 @@ public class UserController {
     public ResponseEntity<Void> deleteByName(@PathVariable("name") String name) {
         try {
             if (userService.deleteUser(name)) {
-                ResponseEntity.noContent();
+                return ResponseEntity.noContent().build();
             }
         } catch (Exception e) {
             log.error("Delete of user {} failed.", name, e);

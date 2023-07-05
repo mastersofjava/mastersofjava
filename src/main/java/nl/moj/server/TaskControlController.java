@@ -35,7 +35,8 @@ import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.CompetitionService;
 import nl.moj.server.competition.service.CompetitionServiceException;
-import nl.moj.common.config.properties.MojServerProperties;
+import nl.moj.server.metrics.MetricsService;
+import nl.moj.server.metrics.QueueMetrics;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentStatus;
@@ -59,292 +60,311 @@ import javax.annotation.security.RolesAllowed;
 import javax.transaction.Transactional;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
 public class TaskControlController {
 
-	private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
+    private static final Logger log = LoggerFactory.getLogger(TaskControlController.class);
 
-	private final CompetitionRuntime competition;
+    private final CompetitionRuntime competition;
 
-	private final AssignmentService assignmentService;
+    private final AssignmentService assignmentService;
 
-	private final AssignmentRepository assignmentRepository;
+    private final AssignmentRepository assignmentRepository;
 
-	private final CompetitionRepository competitionRepository;
+    private final CompetitionRepository competitionRepository;
 
-	private final CompetitionSessionRepository competitionSessionRepository;
+    private final CompetitionSessionRepository competitionSessionRepository;
 
-	private final CompetitionService competitionService;
+    private final CompetitionService competitionService;
 
-	private final UserService userService;
+    private final UserService userService;
 
-	private final StorageService storageService;
+    private final StorageService storageService;
 
-	private final TransactionHelper trx;
+    private final TransactionHelper trx;
 
-	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
-	@PostMapping(value = "/api/assignment/discover", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Map<String, String>> discoverAssignments() {
-		try {
-			List<Assignment> assignments = assignmentService.updateAssignments();
-			if (assignments.isEmpty()) {
-				return ResponseEntity.ok().body(Map.of("m", "No assignments discovered.", "reload", "false"));
-			}
-			log.info("Found {} assignments in folder {}.", assignments.size(), storageService.getAssignmentsFolder());
-			return ResponseEntity.ok().body(Map.of("m",
-					String.format("Discovered %d assignments, reloading", assignments.size()), "reload", "true"));
-		} catch (Exception e) {
-			log.error("Assignment discovery failed.", e);
-			return ResponseEntity.ok().body(
-					Map.of("m", String.format("Assignment discovery failed: %s", e.getMessage()), "reload", "false"));
-		}
-	}
+    private final MetricsService metricsService;
 
-	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
-	@PostMapping(value = "/api/competition", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Void> addCompetition(@RequestBody AddCompetition addCompetition) {
-		try {
-			competitionService.createCompetition(addCompetition.getName(), addCompetition.getAssignments());
-			return ResponseEntity.noContent().build();
-		} catch (CompetitionServiceException cse) {
-			log.error("Unable to  create competition.", cse);
-			return ResponseEntity.badRequest().build();
-		}
-	}
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/assignment/discover", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> discoverAssignments() {
+        try {
+            List<Assignment> assignments = assignmentService.updateAssignments();
+            if (assignments.isEmpty()) {
+                return ResponseEntity.ok().body(Map.of("m", "No assignments discovered.", "reload", "false"));
+            }
+            log.info("Found {} assignments in folder {}.", assignments.size(), storageService.getAssignmentsFolder());
+            return ResponseEntity.ok()
+                    .body(Map.of("m", String.format("Discovered %d assignments, reloading", assignments.size()), "reload", "true"));
+        } catch (Exception e) {
+            log.error("Assignment discovery failed.", e);
+            return ResponseEntity.ok()
+                    .body(Map.of("m", String.format("Assignment discovery failed: %s", e.getMessage()), "reload", "false"));
+        }
+    }
 
-	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
-	@PostMapping(value = "/api/competition/{cid}/groupSession", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Map<String, String>> startGroupSession(@PathVariable("cid") UUID id) {
-		try {
-			CompetitionSession session = competition.startSession(id, CompetitionSession.SessionType.GROUP);
-			return ResponseEntity
-					.ok(Map.of("name", session.getCompetition().getName(), "id", session.getUuid().toString()));
-		} catch (CompetitionServiceException cse) {
-			log.error("Unable to  start competition session for competition {}", id, cse);
-			return ResponseEntity.badRequest().build();
-		}
-	}
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/competition", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> addCompetition(@RequestBody AddCompetition addCompetition) {
+        try {
+            competitionService.createCompetition(addCompetition.getName(), addCompetition.getAssignments());
+            return ResponseEntity.noContent().build();
+        } catch (CompetitionServiceException cse) {
+            log.error("Unable to  create competition.", cse);
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
-	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
-	@PostMapping(value = "/api/competition/{cid}/singleSession", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Map<String, String>> startSingleSession(@PathVariable("cid") UUID id) {
-		try {
-			CompetitionSession session = competition.startSession(id, CompetitionSession.SessionType.SINGLE);
-			return ResponseEntity
-					.ok(Map.of("name", session.getCompetition().getName(), "id", session.getUuid().toString()));
-		} catch (CompetitionServiceException cse) {
-			log.error("Unable to  start competition session for competition {}", id, cse);
-			return ResponseEntity.badRequest().build();
-		}
-	}
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/competition/{cid}/groupSession", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> startGroupSession(@PathVariable("cid") UUID id) {
+        try {
+            CompetitionSession session = competition.startSession(id, CompetitionSession.SessionType.GROUP);
+            return ResponseEntity
+                    .ok(Map.of("name", session.getCompetition().getName(), "id", session.getUuid().toString()));
+        } catch (CompetitionServiceException cse) {
+            log.error("Unable to  start competition session for competition {}", id, cse);
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
-	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
-	@PostMapping(value = "/api/session/{sid}/assignment/{aid}/start", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<AssignmentVO> startAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
-		try {
-			AssignmentStatus as = competition.startAssignment(sid, aid);
-			return ResponseEntity.ok(toAssignmentVO(as));
-		} catch (CompetitionServiceException cse) {
-			log.error("Unable to start assignment {} for session {}.", aid, sid, cse);
-			return ResponseEntity.badRequest().build();
-		}
-	}
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/competition/{cid}/singleSession", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> startSingleSession(@PathVariable("cid") UUID id) {
+        try {
+            CompetitionSession session = competition.startSession(id, CompetitionSession.SessionType.SINGLE);
+            return ResponseEntity
+                    .ok(Map.of("name", session.getCompetition().getName(), "id", session.getUuid().toString()));
+        } catch (CompetitionServiceException cse) {
+            log.error("Unable to  start competition session for competition {}", id, cse);
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
-	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
-	@PostMapping(value = "/api/session/{sid}/assignment/{aid}/stop", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<AssignmentVO> stopAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
-		try {
-			Optional<AssignmentStatus> as = competition.stopAssignment(sid, aid);
-			return as.map(assignmentStatus -> ResponseEntity.ok(toAssignmentVO(assignmentStatus)))
-					.orElseGet(() -> ResponseEntity.notFound().build());
-		} catch (CompetitionServiceException cse) {
-			log.error("Unable to stop assignment {} for session {}.", aid, sid, cse);
-			return ResponseEntity.badRequest().build();
-		}
-	}
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/session/{sid}/assignment/{aid}/start", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AssignmentVO> startAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
+        try {
+            AssignmentStatus as = competition.startAssignment(sid, aid);
+            return ResponseEntity.ok(toAssignmentVO(as));
+        } catch (CompetitionServiceException cse) {
+            log.error("Unable to start assignment {} for session {}.", aid, sid, cse);
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
-	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
-	@PostMapping(value = "/api/session/{sid}/assignment/{aid}/pause", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Map<String, String>> pauseAssignment(@PathVariable("sid") UUID sid,
-			@PathVariable("aid") UUID aid) {
-		return ResponseEntity.badRequest().build();
-	}
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/session/{sid}/assignment/{aid}/stop", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AssignmentVO> stopAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
+        try {
+            Optional<AssignmentStatus> as = competition.stopAssignment(sid, aid);
+            return as.map(assignmentStatus -> ResponseEntity.ok(toAssignmentVO(assignmentStatus)))
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (CompetitionServiceException cse) {
+            log.error("Unable to stop assignment {} for session {}.", aid, sid, cse);
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
-	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
-	@PostMapping(value = "/api/session/{sid}/assignment/{aid}/resume", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Map<String, String>> resumeAssignment(@PathVariable("sid") UUID sid,
-			@PathVariable("aid") UUID aid) {
-		return ResponseEntity.badRequest().build();
-	}
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/session/{sid}/assignment/{aid}/pause", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> pauseAssignment(@PathVariable("sid") UUID sid,
+                                                               @PathVariable("aid") UUID aid) {
+        return ResponseEntity.badRequest().build();
+    }
 
-	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
-	@PostMapping(value = "/api/session/{sid}/assignment/{aid}/reset", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Void> resetAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
-		try {
-			competition.resetAssignment(sid, aid);
-			return ResponseEntity.noContent().build();
-		} catch (CompetitionServiceException cse) {
-			log.error("Unable to stop assignment {} for session {}.", aid, sid, cse);
-			return ResponseEntity.badRequest().build();
-		}
-	}
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/session/{sid}/assignment/{aid}/resume", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, String>> resumeAssignment(@PathVariable("sid") UUID sid,
+                                                                @PathVariable("aid") UUID aid) {
+        return ResponseEntity.badRequest().build();
+    }
 
-	@RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
-	@GetMapping("/control")
-	@Transactional
-	public String taskControl(Model model, Authentication principal) {
-		// TODO maybe move this creat or update stuff to a filter.
-		User user = userService.createOrUpdate(principal);
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @PostMapping(value = "/api/session/{sid}/assignment/{aid}/reset", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> resetAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
+        try {
+            competition.resetAssignment(sid, aid);
+            return ResponseEntity.noContent().build();
+        } catch (CompetitionServiceException cse) {
+            log.error("Unable to stop assignment {} for session {}.", aid, sid, cse);
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
-		model.addAttribute("assignments", allAssignments());
-		model.addAttribute("competitions", allCompetitions());
-		model.addAttribute("cs", toCompetitionSessionVO(competition));
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @GetMapping("/control")
+    @Transactional
+    public String taskControl(Model model, Authentication principal) {
+        // TODO maybe move this creat or update stuff to a filter.
+        User user = userService.createOrUpdate(principal);
 
-		model.addAttribute("clockStyle", "active");
-		return "control";
-	}
+        model.addAttribute("assignments", allAssignments());
+        model.addAttribute("competitions", allCompetitions());
+        model.addAttribute("cs", toCompetitionSessionVO(competition));
 
-	@Value
-	@Builder
-	@Jacksonized
-	public static class AddCompetition {
-		String name;
-		List<UUID> assignments;
+        model.addAttribute("clockStyle", "active");
+        return "control";
+    }
 
-	}
+    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @GetMapping(value = "/metrics/queues", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Set<QueueMetrics>> getQueueMetrics() {
+        try {
+            return ResponseEntity.ok(metricsService.getQueueMetrics());
+        } catch (Exception e) {
+            log.error("Unable to get metrics.", e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
-	private List<AssignmentVO> allAssignments() {
-		return assignmentRepository.findAll(Sort.by("collection", "name")).stream().map(this::toAssignmentVO).toList();
-	}
+    @Value
+    @Builder
+    @Jacksonized
+    public static class AddCompetition {
+        String name;
+        List<UUID> assignments;
 
-	private List<CompetitionVO> allCompetitions() {
-		return competitionRepository.findAll(Sort.by("name")).stream().map(this::toCompetitionVO).toList();
-	}
+    }
 
-	private CompetitionVO toCompetitionVO(Competition co) {
-		return CompetitionVO.builder().uuid(co.getUuid()).name(co.getName())
-				.assignments(co.getAssignments().stream().map(ca -> toAssignmentVO(ca.getAssignment())).toList())
-				.build();
-	}
+    private List<AssignmentVO> allAssignments() {
+        return assignmentRepository.findAll(Sort.by("collection", "name")).stream().map(this::toAssignmentVO).toList();
+    }
 
-	private CompetitionSessionVO toCompetitionSessionVO(CompetitionRuntime runtime) {
+    private List<CompetitionVO> allCompetitions() {
+        return competitionRepository.findAll(Sort.by("name")).stream().map(this::toCompetitionVO).toList();
+    }
 
-		if (runtime.getSessionId() == null) {
-			return CompetitionSessionVO.builder().active(false).build();
-		}
+    private CompetitionVO toCompetitionVO(Competition co) {
+        return CompetitionVO.builder().uuid(co.getUuid()).name(co.getName())
+                .assignments(co.getAssignments().stream().map(ca -> toAssignmentVO(ca.getAssignment())).toList())
+                .build();
+    }
 
-		return trx.required(() -> {
-			CompetitionSession session = competitionSessionRepository.findByUuid(runtime.getSessionId());
-			Objects.requireNonNull(session);
+    private CompetitionSessionVO toCompetitionSessionVO(CompetitionRuntime runtime) {
 
-			Competition competition = session.getCompetition();
-			// this is a global view, so no team specific fields
-			ActiveAssignment activeAssignment = runtime.getActiveAssignment(null);
+        if (runtime.getSessionId() == null) {
+            return CompetitionSessionVO.builder().active(false).build();
+        }
 
-			List<AssignmentStatus> assignmentStatuses = session.getAssignmentStatuses();
-			List<AssignmentVO> assignments = new ArrayList<>();
-			competition.getAssignmentsInOrder().forEach(ca -> {
-				Optional<AssignmentStatus> as = assignmentStatuses.stream()
-						.filter(a -> a.getAssignment().equals(ca.getAssignment())).findFirst();
-				assignments.add(toAssignmentVO(ca, as));
-			});
+        return trx.required(() -> {
+            CompetitionSession session = competitionSessionRepository.findByUuid(runtime.getSessionId());
+            Objects.requireNonNull(session);
 
-			ActiveAssignmentVO active = null;
-			if (activeAssignment.isRunning()) {
-				Optional<CompetitionAssignment> oca = competition.getAssignments().stream()
-						.filter(a -> a.getAssignment().equals(activeAssignment.getAssignment())).findFirst();
-				if (oca.isPresent()) {
-					Optional<AssignmentStatus> as = assignmentStatuses.stream()
-							.filter(a -> a.getAssignment().equals(activeAssignment.getAssignment())).findFirst();
-					ActiveAssignmentVOBuilder builder = ActiveAssignmentVO.builder()
-							.assignment(toAssignmentVO(oca.get(), as))
-							.seconds(oca.get().getAssignment().getAssignmentDuration().toSeconds());
-					if (activeAssignment.getTimeRemaining() != null) {
-						builder.secondsLeft(activeAssignment.getTimeRemaining().toSeconds());
-					}
-					active = builder.build();
-				}
-			}
+            Competition competition = session.getCompetition();
+            // this is a global view, so no team specific fields
+            ActiveAssignment activeAssignment = runtime.getActiveAssignment(null);
 
-			CompetitionSessionVOBuilder cs = CompetitionSessionVO.builder().assignments(assignments)
-					.activeAssignment(active).uuid(session.getUuid()).name(competition.getName()).active(true);
+            List<AssignmentStatus> assignmentStatuses = session.getAssignmentStatuses();
+            List<AssignmentVO> assignments = new ArrayList<>();
+            competition.getAssignmentsInOrder().forEach(ca -> {
+                Optional<AssignmentStatus> as = assignmentStatuses.stream()
+                        .filter(a -> a.getAssignment().equals(ca.getAssignment())).findFirst();
+                assignments.add(toAssignmentVO(ca, as));
+            });
 
-			if (activeAssignment.getCompetitionSession() != null) {
-				cs.type(activeAssignment.getCompetitionSession().getSessionType());
-			}
-			return cs.build();
-		});
-	}
+            ActiveAssignmentVO active = null;
+            if (activeAssignment.isRunning()) {
+                Optional<CompetitionAssignment> oca = competition.getAssignments().stream()
+                        .filter(a -> a.getAssignment().equals(activeAssignment.getAssignment())).findFirst();
+                if (oca.isPresent()) {
+                    Optional<AssignmentStatus> as = assignmentStatuses.stream()
+                            .filter(a -> a.getAssignment().equals(activeAssignment.getAssignment())).findFirst();
+                    ActiveAssignmentVOBuilder builder = ActiveAssignmentVO.builder()
+                            .assignment(toAssignmentVO(oca.get(), as))
+                            .seconds(oca.get().getAssignment().getAssignmentDuration().toSeconds());
+                    if (activeAssignment.getTimeRemaining() != null) {
+                        builder.secondsLeft(activeAssignment.getTimeRemaining().toSeconds());
+                    }
+                    active = builder.build();
+                }
+            }
 
-	private AssignmentVO toAssignmentVO(CompetitionAssignment ca, Optional<AssignmentStatus> as) {
-		return AssignmentVO.builder().idx(ca.getOrder()).uuid(ca.getAssignment().getUuid())
-				.name(ca.getAssignment().getName()).collection(ca.getAssignment().getCollection())
-				.started(as.map(AssignmentStatus::getDateTimeStart).orElse(null))
-				.ended(as.map(AssignmentStatus::getDateTimeEnd).orElse(null))
-				.duration(ca.getAssignment().getAssignmentDuration())
-				.remaining(as.map(AssignmentStatus::getTimeRemaining).orElse(null))
-				.submits(ca.getAssignment().getAllowedSubmits()).build();
-	}
+            CompetitionSessionVOBuilder cs = CompetitionSessionVO.builder().assignments(assignments)
+                    .activeAssignment(active).uuid(session.getUuid()).name(competition.getName()).active(true);
 
-	private AssignmentVO toAssignmentVO(Assignment assignment) {
-		return AssignmentVO.builder().idx(-1).uuid(assignment.getUuid()).name(assignment.getName())
-				.collection(assignment.getCollection()).duration(assignment.getAssignmentDuration())
-				.submits(assignment.getAllowedSubmits()).build();
-	}
+            if (activeAssignment.getCompetitionSession() != null) {
+                cs.type(activeAssignment.getCompetitionSession().getSessionType());
+            }
+            return cs.build();
+        });
+    }
 
-	private AssignmentVO toAssignmentVO(AssignmentStatus as) {
-		return AssignmentVO.builder().idx(-1).uuid(as.getAssignment().getUuid()).name(as.getAssignment().getName())
-				.collection(as.getAssignment().getCollection()).duration(as.getAssignment().getAssignmentDuration())
-				.remaining(as.getTimeRemaining()).submits(as.getAssignment().getAllowedSubmits())
-				.started(as.getDateTimeStart()).ended(as.getDateTimeEnd()).build();
-	}
+    private AssignmentVO toAssignmentVO(CompetitionAssignment ca, Optional<AssignmentStatus> as) {
+        return AssignmentVO.builder().idx(ca.getOrder()).uuid(ca.getAssignment().getUuid())
+                .name(ca.getAssignment().getName()).collection(ca.getAssignment().getCollection())
+                .started(as.map(AssignmentStatus::getDateTimeStart).orElse(null))
+                .ended(as.map(AssignmentStatus::getDateTimeEnd).orElse(null))
+                .duration(ca.getAssignment().getAssignmentDuration())
+                .remaining(as.map(AssignmentStatus::getTimeRemaining).orElse(null))
+                .submits(ca.getAssignment().getAllowedSubmits()).build();
+    }
 
-	@Value
-	@Builder
-	public static class CompetitionVO {
-		UUID uuid;
-		String name;
-		List<AssignmentVO> assignments;
-	}
+    private AssignmentVO toAssignmentVO(Assignment assignment) {
+        return AssignmentVO.builder().idx(-1).uuid(assignment.getUuid()).name(assignment.getName())
+                .collection(assignment.getCollection()).duration(assignment.getAssignmentDuration())
+                .submits(assignment.getAllowedSubmits()).build();
+    }
 
-	@Value
-	@Builder
-	public static class CompetitionSessionVO {
-		UUID uuid;
-		String name;
-		boolean active;
-		SessionType type;
-		@Builder.Default
-		List<AssignmentVO> assignments = new ArrayList<>();
-		ActiveAssignmentVO activeAssignment;
+    private AssignmentVO toAssignmentVO(AssignmentStatus as) {
+        return AssignmentVO.builder().idx(-1).uuid(as.getAssignment().getUuid()).name(as.getAssignment().getName())
+                .collection(as.getAssignment().getCollection()).duration(as.getAssignment().getAssignmentDuration())
+                .remaining(as.getTimeRemaining()).submits(as.getAssignment().getAllowedSubmits())
+                .started(as.getDateTimeStart()).ended(as.getDateTimeEnd()).build();
+    }
 
-		public boolean isAssignmentActive() {
-			return activeAssignment != null;
-		}
-	}
+    @Value
+    @Builder
+    public static class CompetitionVO {
+        UUID uuid;
+        String name;
+        List<AssignmentVO> assignments;
+    }
 
-	@Value
-	@Builder
-	public static class AssignmentVO {
-		UUID uuid;
-		String name;
-		String collection;
-		int idx;
-		Instant started;
-		Instant ended;
-		Duration duration;
-		Duration remaining;
-		int submits;
-	}
+    @Value
+    @Builder
+    public static class CompetitionSessionVO {
+        UUID uuid;
+        String name;
+        boolean active;
+        SessionType type;
+        @Builder.Default
+        List<AssignmentVO> assignments = new ArrayList<>();
+        ActiveAssignmentVO activeAssignment;
 
-	@Value
-	@Builder
-	public static class ActiveAssignmentVO {
-		AssignmentVO assignment;
-		long secondsLeft;
-		long seconds;
-	}
+        public boolean isAssignmentActive() {
+            return activeAssignment != null;
+        }
+    }
+
+    @Value
+    @Builder
+    public static class AssignmentVO {
+        UUID uuid;
+        String name;
+        String collection;
+        int idx;
+        Instant started;
+        Instant ended;
+        Duration duration;
+        Duration remaining;
+        int submits;
+    }
+
+    @Value
+    @Builder
+    public static class ActiveAssignmentVO {
+        AssignmentVO assignment;
+        long secondsLeft;
+        long seconds;
+    }
 }
