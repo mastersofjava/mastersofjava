@@ -25,24 +25,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Stream;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.common.storage.StorageService;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.TeamAssignmentStatus;
-import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
-import nl.moj.server.user.service.UserService;
 import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 
@@ -65,20 +59,31 @@ public class TeamService {
         return teamRepository.findAll();
     }
 
-    public void updateAssignment(UUID teamId, UUID sessionId, UUID assignmentId, Map<Path, String> content) {
+    public void updateAssignment(UUID teamId, UUID sessionId, UUID assignmentId, Map<Path, String> content) throws IOException {
         // TODO assignment directory is based on name, files are stored based on UUID need to resolve this
         Path teamAssignmentBase = getTeamAssignmentDirectory(teamId, sessionId, assignmentRepository.findByUuid(assignmentId)
                 .getName()).resolve("sources");
 
-        content.forEach((k, v) -> {
-            try {
-                Path taf = teamAssignmentBase.resolve(k);
-                Files.createDirectories(taf.getParent());
-                Files.copy(new ByteArrayInputStream(v.getBytes(StandardCharsets.UTF_8)), taf, StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException ioe) {
-                throw new UncheckedIOException(ioe);
-            }
-        });
+        for (Map.Entry<Path, String> entry : content.entrySet()) {
+            Path taf = teamAssignmentBase.resolve(entry.getKey());
+            Files.createDirectories(taf.getParent());
+            Files.copy(new ByteArrayInputStream(entry.getValue()
+                    .getBytes(StandardCharsets.UTF_8)), taf, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    public void cleanAssignment(UUID teamId, UUID sessionId, UUID assignmentId) throws IOException {
+        Path teamAssignmentBase = getTeamAssignmentDirectory(teamId, sessionId, assignmentRepository.findByUuid(assignmentId)
+                .getName()).resolve("sources");
+        try (Stream<Path> walk = Files.walk(teamAssignmentBase)) {
+            walk.sorted(Comparator.reverseOrder()).forEach(f -> {
+                try {
+                    Files.delete(f);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        }
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -134,7 +139,7 @@ public class TeamService {
     @Transactional
     public boolean deleteTeam(String name) {
         Team team = teamRepository.findByName(name);
-        if( team == null ) {
+        if (team == null) {
             return false;
         }
 

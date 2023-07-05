@@ -16,14 +16,6 @@
 */
 package nl.moj.server.runtime;
 
-import javax.transaction.Transactional;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,13 +28,23 @@ import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.CompetitionServiceException;
-import nl.moj.server.runtime.model.*;
+import nl.moj.server.runtime.model.ActiveAssignment;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentFileType;
+import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -72,7 +74,6 @@ public class CompetitionRuntime {
     //TODO this is state we should not have
     @Getter
     private UUID sessionId;
-
 
     @Transactional(Transactional.TxType.REQUIRED)
     public CompetitionSession startSession(UUID id, CompetitionSession.SessionType sessionType) throws CompetitionServiceException {
@@ -116,6 +117,7 @@ public class CompetitionRuntime {
     public ActiveAssignment getActiveAssignment(Team team) {
         return assignmentRuntime.getState(team);
     }
+
     public ActiveAssignment getActiveAssignmentGlobal() {
         return assignmentRuntime.getState(null);
     }
@@ -185,8 +187,17 @@ public class CompetitionRuntime {
                 .filter(as -> as.getAssignment().getUuid().equals(id))
                 .forEach(assignmentStatusRepository::delete);
 
-        // clean up all team assignment statuses
-        teamAssignmentStatusRepository.deleteAll(teamAssignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, cs));
+        // clean up all team assignment data
+        List<TeamAssignmentStatus> tas = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, cs);
+        tas.forEach(teamAssignmentStatus -> {
+            try {
+                teamService.cleanAssignment(teamAssignmentStatus.getTeam().getUuid(), sid, id);
+            } catch (IOException e) {
+                log.warn("Failed to clean team {} assignment {} content folder, ignoring", teamAssignmentStatus.getTeam().getUuid(), id, e);
+            }
+        });
+
+        teamAssignmentStatusRepository.deleteAll(tas);
     }
 
     public UUID getCurrentAssignment() {
@@ -237,7 +248,7 @@ public class CompetitionRuntime {
         competitionSessionRepository.findMostRecent().ifPresent(this::continueSession);
     }
 
-	public TeamAssignmentStatus startAssignmentForTeam(Team team) {
-		return assignmentRuntime.startAssignmentForTeam(team);
-	}
+    public TeamAssignmentStatus startAssignmentForTeam(Team team) {
+        return assignmentRuntime.startAssignmentForTeam(team);
+    }
 }

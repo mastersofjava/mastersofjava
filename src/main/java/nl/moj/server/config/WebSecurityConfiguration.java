@@ -2,12 +2,14 @@ package nl.moj.server.config;
 
 import java.util.*;
 
+import com.nimbusds.jose.shaded.json.JSONArray;
 import com.nimbusds.jose.shaded.json.JSONObject;
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.authorization.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -22,6 +24,7 @@ import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInit
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -53,7 +56,8 @@ public class WebSecurityConfiguration {
         http.authorizeRequests( a -> a
                         .requestMatchers(new RequestHeaderRequestMatcher("Authorization"))
                         .authenticated())
-                .oauth2ResourceServer().jwt();
+                .oauth2ResourceServer().jwt()
+                .jwtAuthenticationConverter(customJwtAuthenticationConverter());
 
         http.authorizeRequests(a -> a
                         .antMatchers("/", "/error", "/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico", "/api/assignment/*/content")
@@ -73,6 +77,7 @@ public class WebSecurityConfiguration {
     }
 
     @Bean
+    @SuppressWarnings("unchecked")
     public GrantedAuthoritiesMapper keycloakOidcAuthoritiesMapper() {
         SimpleAuthorityMapper sam = new SimpleAuthorityMapper();
         sam.setPrefix("ROLE_");
@@ -106,11 +111,32 @@ public class WebSecurityConfiguration {
     }
 
     @Bean
+    @SuppressWarnings("unchecked")
     public JwtAuthenticationConverter customJwtAuthenticationConverter() {
 
-        JwtGrantedAuthoritiesConverter conv = new JwtGrantedAuthoritiesConverter();
+        Converter<Jwt,Collection<GrantedAuthority>> conv = jwt -> {
+            Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
+            jwt.getClaimAsMap("realm_access");
+
+            Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+            if (realmAccess != null) {
+                Collection<String> roles = (Collection<String>)realmAccess.get("roles");
+                mappedAuthorities.addAll(roles.stream()
+                        .map(SimpleGrantedAuthority::new).toList());
+            }
+            String clientId = jwt.getClaimAsString("azp");
+            Map<String, Object> resourceAccess = jwt.getClaimAsMap("resource_access");
+            if (resourceAccess != null) {
+                JSONObject client = (JSONObject) resourceAccess.get(clientId);
+                Collection<String> roles = (Collection<String>) client.get("roles");
+                mappedAuthorities.addAll(roles.stream().map(SimpleGrantedAuthority::new).toList());
+            }
+
+            return mappedAuthorities;
+        };
+
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter( jwt -> conv.convert(jwt));
+        converter.setJwtGrantedAuthoritiesConverter(conv);
         converter.setPrincipalClaimName("preferred_username");
 
         return converter;

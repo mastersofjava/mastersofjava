@@ -184,8 +184,22 @@ public class JavaService {
                                         .dateTimeEnd(Instant.now())
                                         .build());
                     } else {
+                        List<TestCaseOutput> tcs = testCases.stream().map( tc -> TestCaseOutput
+                                .builder()
+                                .aborted(true)
+                                .testCase(tc.getTestCase())
+                                .reason("Compile failed, test aborted.")
+                                .errorOutput("Compile failed, test aborted.")
+                                .success(false)
+                                .dateTimeStart(Instant.now())
+                                .dateTimeEnd(Instant.now())
+                                .timedOut(false)
+                                .build()
+                        ).toList();
+
                         return CompletableFuture.completedFuture(TestOutput.builder()
                                 .compileOutput(co)
+                                .testCases(tcs)
                                 .dateTimeStart(co.getDateTimeStart())
                                 .dateTimeEnd(Instant.now())
                                 .build());

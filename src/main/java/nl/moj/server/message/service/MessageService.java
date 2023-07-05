@@ -89,10 +89,21 @@ public class MessageService {
         }
     }
 
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void sendTestUnprocessable(Team team) {
+        sendCompileUnprocessable(team);
+    }
+
     private void sendTestFeedback(Team team, TestCase tc) {
-        TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder().success(tc.getSuccess()).uuid(team.getUuid())
-                .testId(tc.getUuid()).test(tc.getName()).message(tc.getTestOutput()).rejected(false)
-                .traceId(getTraceId()).build();
+        TeamTestFeedbackMessage msg = TeamTestFeedbackMessage.builder()
+                .success(tc.getSuccess())
+                .uuid(team.getUuid())
+                .testId(tc.getUuid())
+                .test(tc.getName())
+                .message(tc.getTestOutput())
+                .rejected(false)
+                .traceId(getTraceId())
+                .build();
         log.info("Sending test feedback: {}", msg);
         sendToActiveUsers(team, msg);
         template.convertAndSend(DEST_TESTRESULTS, msg);
@@ -112,21 +123,39 @@ public class MessageService {
 
     @Transactional(Transactional.TxType.MANDATORY)
     public void sendSubmitRejected(Team team, String reason) {
-        TeamSubmitFeedbackMessage msg = TeamSubmitFeedbackMessage.builder().score(0L).remainingSubmits(0)
-                .uuid(team.getUuid()).team(team.getName()).success(false).completed(false).rejected(true)
-                .traceId(getTraceId()).message(reason).build();
+        TeamSubmitFeedbackMessage msg = TeamSubmitFeedbackMessage.builder()
+                .score(0L)
+                .remainingSubmits(0)
+                .uuid(team.getUuid())
+                .team(team.getName())
+                .success(false)
+                .completed(false)
+                .rejected(true)
+                .traceId(getTraceId())
+                .message(reason)
+                .build();
         sendToActiveUsers(team, msg);
+    }
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void sendSubmitUnprocessable(Team team) {
+        sendSubmitRejected(team, "Unable to process request, please retry.");
     }
 
     private void sendSubmitFeedback(SubmitAttempt sa, TeamAssignmentStatus as) {
         AssignmentResult ar = as.getAssignmentResult();
         Team team = as.getTeam();
-        TeamSubmitFeedbackMessage msg = TeamSubmitFeedbackMessage.builder().score(ar != null ? ar.getFinalScore() : 0L)
+        TeamSubmitFeedbackMessage msg = TeamSubmitFeedbackMessage.builder()
+                .score(ar != null ? ar.getFinalScore() : 0L)
                 .scoreExplanation(ar != null ? ar.getScoreExplanation() : "")
                 .remainingSubmits(as.getAssignment().getAllowedSubmits() - as.getSubmitAttempts().size())
-                .uuid(team.getUuid()).team(team.getName())
+                .uuid(team.getUuid())
+                .team(team.getName())
                 .success(sa != null && sa.getSuccess() != null && sa.getSuccess())
-                .completed(as.getDateTimeCompleted() != null).rejected(false).traceId(getTraceId()).message("TODO")
+                .completed(as.getDateTimeCompleted() != null)
+                .rejected(false)
+                .traceId(getTraceId())
+                .message("TODO")
                 .build();
 
         log.info("Sending submit feedback: {}", msg);
@@ -139,15 +168,32 @@ public class MessageService {
     }
 
     @Transactional(Transactional.TxType.MANDATORY)
-    public void sendCompileFeedback(CompileAttempt ca) {// Team team, JMSCompileResponse compileResponse) {
+    public void sendCompileFeedback(CompileAttempt ca) {//Team team, JMSCompileResponse compileResponse) {
         if (ca != null) {
             Team team = ca.getAssignmentStatus().getTeam();
-            TeamCompileFeedbackMessage msg = TeamCompileFeedbackMessage.builder().success(ca.getSuccess())
-                    .team(team.getName()).message(ca.getCompilerOutput() == null ? "" : ca.getCompilerOutput())
-                    .rejected(false).traceId(getTraceId()).build();
+            TeamCompileFeedbackMessage msg = TeamCompileFeedbackMessage.builder()
+                    .success(ca.getSuccess())
+                    .team(team.getName())
+                    .message(ca.getCompilerOutput() == null ? "" : ca.getCompilerOutput())
+                    .rejected(false)
+                    .traceId(getTraceId())
+                    .build();
             log.info("Sending compile feedback: {}", msg);
             sendToActiveUsers(team, msg);
         }
+    }
+
+    @Transactional(Transactional.TxType.MANDATORY)
+    public void sendCompileUnprocessable(Team team) {
+        TeamCompileFeedbackMessage msg = TeamCompileFeedbackMessage.builder()
+                .success(false)
+                .team(team.getName())
+                .message("Unable to process request, please retry.")
+                .rejected(true)
+                .traceId(getTraceId())
+                .build();
+        log.info("Sending compile feedback: {}", msg);
+        sendToActiveUsers(team, msg);
     }
 
     public void sendGroupStart(String taskname, String sessionId) {

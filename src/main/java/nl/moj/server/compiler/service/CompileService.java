@@ -17,6 +17,7 @@
 package nl.moj.server.compiler.service;
 
 import javax.transaction.Transactional;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -71,32 +72,40 @@ public class CompileService {
 
     @Transactional
     @NewSpan
-    public CompileAttempt registerCompileAttempt(CompileRequest compileRequest) {
+    public CompileAttempt registerCompileAttempt(CompileRequest compileRequest) throws CompileAttemptRegisterException {
         log.info("Registering compile attempt for assignment {} by team {}.", compileRequest.getAssignment().getUuid(),
                 compileRequest.getTeam().getUuid());
 
-        // save the team progress
-        teamService.updateAssignment(compileRequest.getTeam().getUuid(), compileRequest.getSession().getUuid(),
-                compileRequest.getAssignment().getUuid(), compileRequest.getSources());
+        try {
+            // save the team progress
+            teamService.updateAssignment(compileRequest.getTeam().getUuid(), compileRequest.getSession().getUuid(),
+                    compileRequest.getAssignment().getUuid(), compileRequest.getSources());
 
-        CompileAttempt compileAttempt = prepareCompileAttempt(compileRequest);
-        // send JMS compile request
-        jmsTemplate.convertAndSend("compile_request", JMSCompileRequest.builder()
-                .attempt(compileAttempt.getUuid())
-                .assignment(compileRequest.getAssignment().getUuid())
-                .sources(compileRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()
-                        .type(JMSFile.Type.SOURCE)
-                        .path(e.getKey().toString())
-                        .content(e.getValue())
-                        .build()).collect(Collectors.toList()))
-                .build());
+            CompileAttempt compileAttempt = prepareCompileAttempt(compileRequest);
+            // send JMS compile request
+            jmsTemplate.convertAndSend("compile_request", JMSCompileRequest.builder()
+                    .attempt(compileAttempt.getUuid())
+                    .assignment(compileRequest.getAssignment().getUuid())
+                    .sources(compileRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()
+                            .type(JMSFile.Type.SOURCE)
+                            .path(e.getKey().toString())
+                            .content(e.getValue())
+                            .build()).collect(Collectors.toList()))
+                    .build());
 
-        // schedule controller abort
-        scheduleAbort(compileAttempt);
+            // schedule controller abort
+            scheduleAbort(compileAttempt);
 
-        log.info("Compile attempt {} for assignment {} by team {} registered.", compileAttempt.getUuid(), compileRequest.getAssignment()
-                .getUuid(), compileRequest.getTeam().getUuid());
-        return compileAttempt;
+            messageService.sendCompilingStarted(compileRequest.getTeam());
+
+            log.info("Compile attempt {} for assignment {} by team {} registered.", compileAttempt.getUuid(), compileRequest.getAssignment()
+                    .getUuid(), compileRequest.getTeam().getUuid());
+            return compileAttempt;
+        } catch (IOException e) {
+            messageService.sendCompileUnprocessable(compileRequest.getTeam());
+            throw new CompileAttemptRegisterException(String.format("Failed to register compile attempt for assignment %s by team %s.", compileRequest.getAssignment()
+                    .getUuid(), compileRequest.getTeam().getUuid()), e);
+        }
     }
 
     @Transactional

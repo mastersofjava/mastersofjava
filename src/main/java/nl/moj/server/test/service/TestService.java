@@ -17,6 +17,7 @@
 package nl.moj.server.test.service;
 
 import javax.transaction.Transactional;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -68,7 +69,7 @@ public class TestService {
         log.info("Received test attempt response {}", testResponse.getAttempt());
         TestAttempt testAttempt = testAttemptRepository.findByUuid(testResponse.getAttempt());
 
-        if(  testAttempt.getDateTimeEnd() == null ) {
+        if (testAttempt.getDateTimeEnd() == null) {
             testAttempt = update(testAttempt, testResponse);
             messageService.sendTestFeedback(testAttempt);
         } else {
@@ -78,38 +79,46 @@ public class TestService {
 
     @Transactional
     @NewSpan
-    public TestAttempt registerTestAttempt(TestRequest testRequest) {
+    public TestAttempt registerTestAttempt(TestRequest testRequest) throws TestAttemptRegisterException {
 
         log.info("Registering test attempt for assignment {} by team {}.", testRequest.getAssignment()
                 .getUuid(), testRequest.getTeam().getUuid());
-        messageService.sendTestingStarted(testRequest.getTeam());
 
-        // save the team progress
-        teamService.updateAssignment(testRequest.getTeam().getUuid(), testRequest.getSession().getUuid(),
-                testRequest.getAssignment().getUuid(), testRequest.getSources());
+        try {
+            // save the team progress
+            teamService.updateAssignment(testRequest.getTeam().getUuid(), testRequest.getSession().getUuid(),
+                    testRequest.getAssignment().getUuid(), testRequest.getSources());
 
-        TestAttempt testAttempt = prepareTestAttempt(testRequest);
-        // send JMS test request
-        jmsTemplate.convertAndSend("test_request", JMSTestRequest.builder()
-                .attempt(testAttempt.getUuid())
-                .assignment(testRequest.getAssignment().getUuid())
-                .sources(testRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()
-                        .type(JMSFile.Type.SOURCE)
-                        .path(e.getKey().toString())
-                        .content(e.getValue())
-                        .build()).collect(Collectors.toList()))
-                .tests(testAttempt.getTestCases()
-                        .stream()
-                        .map(tc -> JMSTestCase.builder().testCase(tc.getUuid()).name(tc.getName()).build())
-                        .collect(Collectors.toList()))
-                .build());
+            TestAttempt testAttempt = prepareTestAttempt(testRequest);
+            // send JMS test request
+            jmsTemplate.convertAndSend("test_request", JMSTestRequest.builder()
+                    .attempt(testAttempt.getUuid())
+                    .assignment(testRequest.getAssignment().getUuid())
+                    .sources(testRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()
+                            .type(JMSFile.Type.SOURCE)
+                            .path(e.getKey().toString())
+                            .content(e.getValue())
+                            .build()).collect(Collectors.toList()))
+                    .tests(testAttempt.getTestCases()
+                            .stream()
+                            .map(tc -> JMSTestCase.builder().testCase(tc.getUuid()).name(tc.getName()).build())
+                            .collect(Collectors.toList()))
+                    .build());
 
-        // schedule controller abort
-        scheduleAbort(testAttempt);
+            // schedule controller abort
+            scheduleAbort(testAttempt);
 
-        log.info("Test attempt {} for assignment {} by team {} registered.", testAttempt.getUuid(), testRequest.getAssignment()
-                .getUuid(), testRequest.getTeam().getUuid());
-        return testAttempt;
+            messageService.sendTestingStarted(testRequest.getTeam());
+
+            log.info("Test attempt {} for assignment {} by team {} registered.", testAttempt.getUuid(), testRequest.getAssignment()
+                    .getUuid(), testRequest.getTeam().getUuid());
+            return testAttempt;
+
+        } catch (IOException e) {
+            messageService.sendTestUnprocessable(testRequest.getTeam());
+            throw new TestAttemptRegisterException(String.format("Unable to register test attempt for assignment %s by team %s.", testRequest.getAssignment()
+                    .getUuid(), testRequest.getTeam().getUuid()), e);
+        }
     }
 
     @Transactional
@@ -152,7 +161,7 @@ public class TestService {
     public TestAttempt registerTestResponse(JMSTestResponse testResponse) {
         TestAttempt testAttempt = testAttemptRepository.findByUuid(testResponse.getAttempt());
 
-        if(  testAttempt.getDateTimeEnd() != null ) {
+        if (testAttempt.getDateTimeEnd() != null) {
             log.info("Ignoring response for test attempt {}, already have a response.", testAttempt.getUuid());
             return testAttempt;
         }
