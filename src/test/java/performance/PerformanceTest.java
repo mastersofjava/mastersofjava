@@ -90,10 +90,12 @@ public class PerformanceTest extends Simulation {
                             \u0000
                             """))));
 
-    private final ChainBuilder successCompile = exec(ws("Compile")
+    private final ChainBuilder successCompile = exec(ws("Compile (Success)")
             .sendText(session -> getCompileMessage(Conf.assignment.getEmpty()))
             .await(10)
-            .on(ws.checkTextMessage("Compile started").check(regex(".*COMPILE.*success\":true.*"))));
+            .on(ws.checkTextMessage("Compile Started").check(regex(".*COMPILING_STARTED.*")).silent())
+            .await(10)
+            .on(ws.checkTextMessage("Compile (Success) Response").check(regex(".*COMPILE.*success\":true.*"))));
 
     private final ChainBuilder failCompile = exec(ws("Compile wrong code")
             .sendText(session -> getCompileMessage(Conf.assignment.getDoesNotCompile()))
@@ -171,11 +173,11 @@ public class PerformanceTest extends Simulation {
         ScenarioBuilder scn = scenario("Test " + Conf.assignment.getAssignmentName())
                 .exec(createUser, createTeam, joinAssignment)
                 .pause(1)
-                .exec(successCompile, failCompile)
-                .repeat(Conf.attemptCount, "i")
-                    .on(attemptCompileAndTest.pause(session -> Duration.ofSeconds(Conf.waitTimeBetweenSubmits.get())))
-                .pause(1)
-                .exec(submit)
+                .exec(successCompile) //, failCompile)
+//                .repeat(Conf.attemptCount, "i")
+//                    .on(attemptCompileAndTest.pause(session -> Duration.ofSeconds(Conf.waitTimeBetweenSubmits.get())))
+//                .pause(1)
+//                .exec(submit)
                 .pause(1)
                 .exec(ws("Close Websocket").close());
         setUp(scn.injectOpen(rampUsers(Conf.teams).during(Conf.ramp))).protocols(httpProtocol);

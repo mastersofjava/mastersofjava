@@ -11,7 +11,7 @@ public class RequirementHell implements TestAssignment {
              */
             public class SuperAwesomeNameService {
                         
-                public List<String> doTheThings(List<String> names) {
+                public static List<String> doTheThings(List<String> names) {
                    \s
                     return names.stream().sorted().toList();
                 }
@@ -27,7 +27,7 @@ public class RequirementHell implements TestAssignment {
              */
             public class SuperAwesomeNameService {
                         
-                public List<String> doTheThings(List<String> names) {
+                public static List<String> doTheThings(List<String> names) {
                    \s
                     return names.stream().sorted((a,b)->a.toLowerCase().compareTo(b.toLowerCase())).toList();
                 }
@@ -42,7 +42,7 @@ public class RequirementHell implements TestAssignment {
              */
             public class SuperAwesomeNameService {
                         
-                public List<String> doTheThings(List<String> names) {
+                public static List<String> doTheThings(List<String> names) {
                    \s
                     return names.stream()
                       .sorted((a,b)->a.toLowerCase().compareTo(b.toLowerCase()))
@@ -60,7 +60,7 @@ public class RequirementHell implements TestAssignment {
              */
             public class SuperAwesomeNameService {
                         
-                public List<String> doTheThings(List<String> names) {
+                public static List<String> doTheThings(List<String> names) {
                    \s
                     return names.stream()
                       .sorted((a,b)-> {
@@ -118,7 +118,7 @@ public class RequirementHell implements TestAssignment {
             public class SuperAwesomeNameService {
                       String previous = "";
                         
-                public List<String> doTheThings(List<String> names) {
+                public static List<String> doTheThings(List<String> names) {
                         
                     return names.stream()
                       .sorted((a,b)-> {
@@ -133,7 +133,7 @@ public class RequirementHell implements TestAssignment {
                       .toList();
                 }
              \s
-              public String reverse(String input){
+              public static String reverse(String input){
                 System.out.println("+++++++" + input);
               if (input.length() == 1) {
                 return input;
@@ -165,7 +165,7 @@ public class RequirementHell implements TestAssignment {
                  */
                 public class SuperAwesomeNameService {
                             
-                    public List<String> doTheThings(List<String> names) {
+                    public static List<String> doTheThings(List<String> names) {
                         // TODO: implement here
                     }
                             
@@ -183,7 +183,7 @@ public class RequirementHell implements TestAssignment {
                  */
                 public class SuperAwesomeNameService {
                             
-                    public List<String> doTheThings(List<String> names) {
+                    public static List<String> doTheThings(List<String> names) {
                         // TODO: implement here
                         return names;
                     }
@@ -204,7 +204,7 @@ public class RequirementHell implements TestAssignment {
                 public class SuperAwesomeNameService {
                           String previous = "";
 
-                    public List<String> doTheThings(List<String> names) {
+                    public static List<String> doTheThings(List<String> names) {
 
                         return names.stream()
                           .sorted((a,b)-> {
@@ -219,7 +219,7 @@ public class RequirementHell implements TestAssignment {
                           .toList();
                     }
                  \s
-                  public String reverse(String input){
+                  public static String reverse(String input){
                   if (input.length() == 1) {
                     return input;
                   }
@@ -227,7 +227,7 @@ public class RequirementHell implements TestAssignment {
                     return reverse(input.substring(1,input.length())) + input.charAt(0);
                   }
                  \s
-                  public String fixCapitals(String input) {
+                  public static String fixCapitals(String input) {
                   	input = input.toLowerCase()
                     ;
                     return input.substring(0,1).toUpperCase() + input.substring(1, input.length());
