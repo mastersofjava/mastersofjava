@@ -48,7 +48,7 @@ public class RankingsController {
     @GetMapping("/rankings")
     @Transactional(Transactional.TxType.REQUIRED)
     public ModelAndView getRankings() {
-        ActiveAssignment state = competitionRuntime.getActiveAssignment();
+        ActiveAssignment state = competitionRuntime.getActiveAssignment(null);
 
         log.info("session " + HttpUtil.getParam("session") + " - " + competitionRuntime);
 

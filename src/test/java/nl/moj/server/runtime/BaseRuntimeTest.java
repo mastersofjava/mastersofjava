@@ -29,6 +29,7 @@ import nl.moj.common.bootstrap.BootstrapService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.competition.model.CompetitionSession.SessionType;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
@@ -140,7 +141,7 @@ public abstract class BaseRuntimeTest {
             bootstrapService.bootstrap();
             dbUtil.cleanup();
             competition = createCompetition();
-            sessionId = competitionRuntime.startSession(competition.getUuid()).getUuid();
+            sessionId = competitionRuntime.startSession(competition.getUuid(), SessionType.GROUP).getUuid();
             mockJmsService.reset();
         } catch (NullPointerException npe) {
             log.error("Nullpointer: {}", npe.getMessage(), npe);

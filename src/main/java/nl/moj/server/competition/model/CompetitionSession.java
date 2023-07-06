@@ -34,8 +34,13 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competition_sessions_seq", sequenceName = "competition_sessions_seq")
 @EqualsAndHashCode(of = {"uuid"})
-@ToString(exclude = {"session", "assignmentStatuses"})
+@ToString(exclude = {"assignmentStatuses"})
+
 public class CompetitionSession {
+	
+	public static enum SessionType {
+		SINGLE, GROUP
+	}
 
     @Id
     @GeneratedValue(generator = "competition_sessions_seq", strategy = GenerationType.SEQUENCE)
@@ -52,4 +57,8 @@ public class CompetitionSession {
     @JoinColumn(name = "competition_id", nullable = false)
     private Competition competition;
 
+    @Column(name = "session_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private SessionType sessionType;
+    
 }

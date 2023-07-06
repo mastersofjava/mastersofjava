@@ -84,7 +84,7 @@ public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
     }
 
     private SourceMessage createSourceMessage() {
-        ActiveAssignment state = competitionRuntime.getActiveAssignment();
+        ActiveAssignment state = competitionRuntime.getActiveAssignment(null);
 
         Map<String, String> variables = new HashMap<>();
         variables.put("wait", "100");
@@ -111,7 +111,7 @@ public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
     }
 
     private CompileAttempt doCompile(SourceMessage src) {
-        Duration timeout = assignmentService.resolveCompileAbortTimout(competitionRuntime.getActiveAssignment().getAssignment()).plusSeconds(5);
+        Duration timeout = assignmentService.resolveCompileAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
         CompileAttempt ca = submitFacade.registerCompileRequest(src, getPrincipal(getUser()));
         if( ca != null ) {
             awaitAttempt(ca.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -120,7 +120,7 @@ public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
     }
 
     private TestAttempt doTest(SourceMessage src) {
-        Duration timeout = assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment().getAssignment(),src.getTests().size()).plusSeconds(5);
+        Duration timeout = assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment(),src.getTests().size()).plusSeconds(5);
         TestAttempt ta = submitFacade.registerTestRequest(src, getPrincipal(getUser()));
         if( ta != null ) {
             awaitAttempt(ta.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -129,7 +129,7 @@ public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
     }
 
     private SubmitAttempt doSubmit(SourceMessage src) {
-        Duration timeout = assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment().getAssignment()).plusSeconds(5);
+        Duration timeout = assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
         SubmitAttempt sa = submitFacade.registerSubmitRequest(src, getPrincipal(getUser()));
         if( sa != null ) {
             awaitAttempt(sa.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);

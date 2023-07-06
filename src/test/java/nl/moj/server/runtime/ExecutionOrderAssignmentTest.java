@@ -82,7 +82,7 @@ public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
             CompetitionAssignment oa = getAssignment("sequential");
             competitionRuntime.startAssignment(competitionRuntime.getSessionId(), oa.getAssignment()
                     .getUuid());
-            ActiveAssignment state = competitionRuntime.getActiveAssignment();
+            ActiveAssignment state = competitionRuntime.getActiveAssignment(null);
             Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
             timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
 
@@ -128,7 +128,7 @@ public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
             competitionRuntime.startAssignment(competitionRuntime.getSessionId(), oa.getAssignment()
                     .getUuid());
 
-            ActiveAssignment state = competitionRuntime.getActiveAssignment();
+            ActiveAssignment state = competitionRuntime.getActiveAssignment(null);
             Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
             timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
 

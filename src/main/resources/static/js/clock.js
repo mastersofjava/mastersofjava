@@ -28,7 +28,6 @@ function Clock(initialOffset) {
 
                 $('h2', $assignmentClock).text(minutes + ":" + seconds);
                 const dashoff = clock.offset - (clock.current * (clock.offset / clock.time))
-                console.log('stroke-dashoffset', dashoff > 0 ? dashoff : 0 )
                 $circle.css('stroke-dashoffset', dashoff > 0 ? dashoff : 0 )
 
                 var fraction = clock.current / clock.time;

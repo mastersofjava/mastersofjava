@@ -17,6 +17,8 @@
 package nl.moj.server.runtime;
 
 import javax.transaction.Transactional;
+
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,8 +55,6 @@ public class CompetitionRuntime {
 
     private final TeamService teamService;
 
-    private final TeamRepository teamRepository;
-
     private final CompetitionSessionRepository competitionSessionRepository;
 
     private final AssignmentStatusRepository assignmentStatusRepository;
@@ -73,19 +73,20 @@ public class CompetitionRuntime {
     @Getter
     private UUID sessionId;
 
+
     @Transactional(Transactional.TxType.REQUIRED)
-    public CompetitionSession startSession(UUID id) throws CompetitionServiceException {
+    public CompetitionSession startSession(UUID id, CompetitionSession.SessionType sessionType) throws CompetitionServiceException {
         Competition competition = competitionRepository.findByUuid(id);
         if (competition == null) {
             throw new CompetitionServiceException("No competition for id " + id);
         }
-        return startSession(competition);
+        return startSession(competition, sessionType);
     }
 
     @Transactional(Transactional.TxType.MANDATORY)
-    public CompetitionSession startSession(Competition competition) {
+    public CompetitionSession startSession(Competition competition, CompetitionSession.SessionType sessionType) {
         log.info("Starting new session for session {}", competition.getName());
-        CompetitionSession session = competitionSessionRepository.save(createNewCompetitionSession(competition));
+        CompetitionSession session = competitionSessionRepository.save(createNewCompetitionSession(competition, sessionType));
 
         this.competition = competition;
         this.sessionId = session.getUuid();
@@ -112,8 +113,11 @@ public class CompetitionRuntime {
         }
     }
 
-    public ActiveAssignment getActiveAssignment() {
-        return assignmentRuntime.getState();
+    public ActiveAssignment getActiveAssignment(Team team) {
+        return assignmentRuntime.getState(team);
+    }
+    public ActiveAssignment getActiveAssignmentGlobal() {
+        return assignmentRuntime.getState(null);
     }
 
     @Transactional(Transactional.TxType.REQUIRED)
@@ -155,7 +159,7 @@ public class CompetitionRuntime {
     public Optional<AssignmentStatus> stopAssignment(UUID sid, UUID id) throws CompetitionServiceException {
         if (isAssignmentRunning(sid, id)) {
             log.info("Stopping assignment {} in session {}.", id, sid);
-            return assignmentRuntime.stop();
+            return assignmentRuntime.groupStop();
         }
         return Optional.empty();
     }
@@ -196,10 +200,11 @@ public class CompetitionRuntime {
         return sid != null && sid.equals(getSessionId()) && id != null && id.equals(getCurrentAssignment());
     }
 
-    private CompetitionSession createNewCompetitionSession(Competition competition) {
+    private CompetitionSession createNewCompetitionSession(Competition competition, CompetitionSession.SessionType sessionType) {
         var newCompetitionSession = new CompetitionSession();
         newCompetitionSession.setUuid(UUID.randomUUID());
         newCompetitionSession.setCompetition(competition);
+        newCompetitionSession.setSessionType(sessionType);
         return newCompetitionSession;
     }
 
@@ -231,4 +236,8 @@ public class CompetitionRuntime {
     public void loadMostRecentSession() {
         competitionSessionRepository.findMostRecent().ifPresent(this::continueSession);
     }
+
+	public TeamAssignmentStatus startAssignmentForTeam(Team team) {
+		return assignmentRuntime.startAssignmentForTeam(team);
+	}
 }

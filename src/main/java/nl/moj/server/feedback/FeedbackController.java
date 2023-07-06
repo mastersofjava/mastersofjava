@@ -54,7 +54,7 @@ public class FeedbackController {
     @Transactional(Transactional.TxType.REQUIRED)
     public ModelAndView feedback(HttpServletRequest request) {
         ModelAndView model = new ModelAndView("testfeedback");
-        ActiveAssignment state = competitionRuntime.getActiveAssignment();
+        ActiveAssignment state = competitionRuntime.getActiveAssignment(null);
         Assignment assignment = state.getAssignment();
         UUID sessionId = competitionRuntime.getSessionId();
 

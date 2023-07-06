@@ -59,11 +59,15 @@ public class TeamAssignmentStatus {
     @JoinColumn(name = "team_id", nullable = false)
     private Team team;
 
+    
+	// todo: JFALLMODE add time remaining
+	// todo: JFALLMODE add isStarted() based on if daterTimeStarted==null
+
     @ManyToOne
     @JoinColumn(name = "assignment_id", nullable = false)
     private Assignment assignment;
 
-    @Column(name = "date_time_start", nullable = false)
+    @Column(name = "date_time_start")
     private Instant dateTimeStart;
 
     @Column(name = "date_time_completed")
@@ -86,6 +90,14 @@ public class TeamAssignmentStatus {
 
     @OneToOne(mappedBy="assignmentStatus", cascade = CascadeType.REMOVE)
     private AssignmentResult assignmentResult;
+    
+    /**
+     * Indicates if the active assignment is started for this team (in single mode).
+     * @return true if started (dateTimeStart set), false otherwise
+     */
+    public boolean isStarted() {
+    	return dateTimeStart!=null;
+    }
 
     public TestAttempt getMostRecentTestAttempt() {
         List<TestAttempt> attempts = getTestAttempts().stream().filter( ta -> ta.getDateTimeEnd() != null ).collect(Collectors.toList());
