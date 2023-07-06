@@ -12,12 +12,10 @@ public class RequirementHell implements TestAssignment {
             public class SuperAwesomeNameService {
                         
                 public static List<String> doTheThings(List<String> names) {
-                   \s
                     return names.stream().sorted().toList();
                 }
                         
             }
-                        
             """,
             """
             import java.util.List;
@@ -28,7 +26,6 @@ public class RequirementHell implements TestAssignment {
             public class SuperAwesomeNameService {
                         
                 public static List<String> doTheThings(List<String> names) {
-                   \s
                     return names.stream().sorted((a,b)->a.toLowerCase().compareTo(b.toLowerCase())).toList();
                 }
                         
@@ -43,7 +40,6 @@ public class RequirementHell implements TestAssignment {
             public class SuperAwesomeNameService {
                         
                 public static List<String> doTheThings(List<String> names) {
-                   \s
                     return names.stream()
                       .sorted((a,b)->a.toLowerCase().compareTo(b.toLowerCase()))
                       .filter(a -> !a.contains("e"))
@@ -61,7 +57,6 @@ public class RequirementHell implements TestAssignment {
             public class SuperAwesomeNameService {
                         
                 public static List<String> doTheThings(List<String> names) {
-                   \s
                     return names.stream()
                       .sorted((a,b)-> {
                         if (hasVowel(a) && !hasVowel(b)) {
@@ -74,38 +69,33 @@ public class RequirementHell implements TestAssignment {
                       .filter(a -> !a.contains("e"))
                       .toList();
                 }
-                           \s
-                            private boolean hasVowel(String input) {
-                            return input.contains("aa")
-                              || input.contains("ae")
-                              || input.contains("ai")
-                              || input.contains("ao")
-                              || input.contains("au")
-                             \s
-                              || input.contains("ea")
-                              || input.contains("ee")
-                              || input.contains("ei")
-                              || input.contains("eo")
-                              || input.contains("eu")
-                             \s
-                              || input.contains("ia")
-                              || input.contains("ie")
-                              || input.contains("ii")
-                              || input.contains("io")
-                              || input.contains("iu")
-                             \s
-                              || input.contains("oa")
-                              || input.contains("oe")
-                              || input.contains("oi")
-                              || input.contains("oo")
-                              || input.contains("ou")
-                             \s
-                              || input.contains("ua")
-                              || input.contains("ue")
-                              || input.contains("ui")
-                              || input.contains("uo")
-                              || input.contains("uu");
-                            }
+                private static boolean hasVowel(String input) {
+                    return input.contains("aa")
+                      || input.contains("ae")
+                      || input.contains("ai")
+                      || input.contains("ao")
+                      || input.contains("au")
+                      || input.contains("ea")
+                      || input.contains("ee")
+                      || input.contains("ei")
+                      || input.contains("eo")
+                      || input.contains("eu")
+                      || input.contains("ia")
+                      || input.contains("ie")
+                      || input.contains("ii")
+                      || input.contains("io")
+                      || input.contains("iu")
+                      || input.contains("oa")
+                      || input.contains("oe")
+                      || input.contains("oi")
+                      || input.contains("oo")
+                      || input.contains("ou")
+                      || input.contains("ua")
+                      || input.contains("ue")
+                      || input.contains("ui")
+                      || input.contains("uo")
+                      || input.contains("uu");
+                }
                         
             }
             """,
@@ -116,7 +106,7 @@ public class RequirementHell implements TestAssignment {
              * This class makes the super awesome list of names
              */
             public class SuperAwesomeNameService {
-                      String previous = "";
+                static String previous = "";
                         
                 public static List<String> doTheThings(List<String> names) {
                         
@@ -132,7 +122,7 @@ public class RequirementHell implements TestAssignment {
                       .peek(a -> previous = a)
                       .toList();
                 }
-             \s
+                
               public static String reverse(String input){
                 System.out.println("+++++++" + input);
               if (input.length() == 1) {
@@ -196,43 +186,29 @@ public class RequirementHell implements TestAssignment {
     @Override
     public String getSolution() {
         return """
-                import java.util.List;
-
-                /**
-                 * This class makes the super awesome list of names
-                 */
-                public class SuperAwesomeNameService {
-                          String previous = "";
-
-                    public static List<String> doTheThings(List<String> names) {
-
-                        return names.stream()
-                          .sorted((a,b)-> {
-                            return a.toLowerCase().compareTo(b.toLowerCase()) ;
-                                                                     })
-                          .map(a -> {
-                          	if (previous.contains("a")) {
-                            return fixCapitals(reverse(a));
-                            } return a;
-                          })
-                          .peek(a -> previous = a)
-                          .toList();
-                    }
-                 \s
-                  public static String reverse(String input){
-                  if (input.length() == 1) {
-                    return input;
-                  }
-                   \s
-                    return reverse(input.substring(1,input.length())) + input.charAt(0);
-                  }
-                 \s
-                  public static String fixCapitals(String input) {
-                  	input = input.toLowerCase()
-                    ;
-                    return input.substring(0,1).toUpperCase() + input.substring(1, input.length());
-                  }
-
+                import java.util.Comparator;
+                 import java.util.List;
+                 
+                 import static java.util.Comparator.comparing;
+                 
+                 /**
+                  * This class makes the super awesome list of names
+                  */
+                 public class SuperAwesomeNameService {
+                     public static List<String> doTheThings(List<String> names) {
+                         names.sort(comparing(String::toLowerCase));
+                         for (int i = 1; i < names.size(); i++) {
+                             if (names.get(i - 1).contains("a")) {
+                                 names.set(i, reverseAndCapitalize(names.get(i)));
+                             }
+                         }
+                         return names;
+                     }
+                 
+                     private static String reverseAndCapitalize(String name) {
+                         var reversedLowerCase = new StringBuilder(name).reverse().toString().toLowerCase();
+                         return reversedLowerCase.substring(0,1).toUpperCase() + reversedLowerCase.substring(1).toLowerCase();
+                     }
                 }
                 """;
     }

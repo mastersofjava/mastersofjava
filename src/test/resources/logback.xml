@@ -13,7 +13,7 @@
     <logger name="io.gatling.http.engine.response" level="INFO" />
 
     <!-- uncomment to log WebSocket events -->
-    <logger name="io.gatling.http.action.ws.fsm" level="DEBUG" />
+<!--    <logger name="io.gatling.http.action.ws.fsm" level="DEBUG" />-->
 
     <!-- uncomment to log SSE events -->
 <!--    <logger name="io.gatling.http.action.sse.fsm" level="DEBUG" />-->

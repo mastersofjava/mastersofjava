@@ -1,6 +1,14 @@
 package performance;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +49,8 @@ public class PerformanceTest extends Simulation {
 
     private User mojAdmin = null;
 
+    private String runId = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss").format(LocalDateTime.now());
+
     private final ChainBuilder createUser = exec(session -> {
         User user = initializeUser(session);
         users.add(user);
@@ -54,7 +64,7 @@ public class PerformanceTest extends Simulation {
     });
 
     private final ChainBuilder createTeam = exec(
-            http("Create team").post("/team")
+            http("Create Team").post("/team")
                     .formParam("name", session -> {
                         log.info("Using team name {}", ((User) session.get("user")).team());
                         return ((User) session.get("user")).team();
@@ -90,52 +100,62 @@ public class PerformanceTest extends Simulation {
                             \u0000
                             """))));
 
-    private final ChainBuilder successCompile = exec(ws("Compile (Success)")
+    private final ChainBuilder successCompile = exec(
+            ws("Compile (Success) Request")
             .sendText(session -> getCompileMessage(Conf.assignment.getEmpty()))
             .await(10)
             .on(ws.checkTextMessage("Compile Started").check(regex(".*COMPILING_STARTED.*")).silent())
             .await(10)
-            .on(ws.checkTextMessage("Compile (Success) Response").check(regex(".*COMPILE.*success\":true.*"))));
+            .on(ws.checkTextMessage("Compile (Success) Response").check(regex(".*COMPILE.*success\":true.*")))
+    );
 
-    private final ChainBuilder failCompile = exec(ws("Compile wrong code")
+    private final ChainBuilder failCompile = exec(ws("Compile (Failure) Request")
             .sendText(session -> getCompileMessage(Conf.assignment.getDoesNotCompile()))
             .await(10)
-            .on(ws.checkTextMessage("Compile finished").check(regex(".*COMPILE.*success\":false.*"))));
+            .on(ws.checkTextMessage("Compile Started").check(regex(".*COMPILING_STARTED.*")).silent())
+            .await(10)
+            .on(ws.checkTextMessage("Compile (Failure) Response").check(regex(".*COMPILE.*success\":false.*"))));
 
     private final ChainBuilder attemptCompileAndTest = exec(
-            ws("Attempt #{i}")
+            ws("Test Attempt Request")
                     // randomly choose how many UT's will fail.
                     .sendText(session -> getTestMessage(
                             either(createOptions(Conf.assignment.getAttempts()))))
                     .await(10)
-                    .on(ws.checkTextMessage("Testing started").check(regex(".*TESTING_STARTED.*")))
-                    .await(10)
-                    .on(ws.checkTextMessage("Compile success").check(regex(".*COMPILE.*success\":true.*")))
-                    .await(10)
-                    .on(ws.checkTextMessage("Test0 done").check(regex(".*Test0.*")))
-                    .await(10)
-                    .on(ws.checkTextMessage("Test1 done").check(regex(".*Test1.*")))
-                    .await(10)
-                    .on(ws.checkTextMessage("Test2 done").check(regex(".*Test2.*")))
-                    .await(10)
-                    .on(ws.checkTextMessage("Test3 done").check(regex(".*Test3.*")))
-                    .await(10)
-                    .on(ws.checkTextMessage("Test4 done").check(regex(".*Test4.*")))
-                    .await(10)
-                    .on(ws.checkTextMessage("Test5 done").check(regex(".*Test5.*")))
-                    .await(10)
-                    .on(ws.checkTextMessage("Test6 done").check(regex(".*Test6.*")))
-    );
+                    .on(
+                            ws.checkTextMessage("Attempt Testing Started").check( bodyString().saveAs("msg_#{i}_0")).check(substring("TESTING_STARTED").exists()),
+                            ws.checkTextMessage("Attempt Compile Response").check( bodyString().saveAs("msg_#{i}_1")).check(regex(".*COMPILE.*success\":true.*")),
+                            ws.checkTextMessage("Attempt Test0 Result Received").check( bodyString().saveAs("msg_#{i}_2")),//.check( substring(",\"test\":\"Test0\",").exists()), //regex(".*Test0.*")),
+                            ws.checkTextMessage("Attempt Test1 Result Received").check( bodyString().saveAs("msg_#{i}_3")),//.check( substring(",\"test\":\"Test1\",").exists()),
+                            ws.checkTextMessage("Attempt Test2 Result Received").check( bodyString().saveAs("msg_#{i}_4")),//.check( substring(",\"test\":\"Test2\",").exists()),
+                            ws.checkTextMessage("Attempt Test3 Result Received").check( bodyString().saveAs("msg_#{i}_5")),//.check( substring(",\"test\":\"Test3\",").exists()),
+                            ws.checkTextMessage("Attempt Test4 Result Received").check( bodyString().saveAs("msg_#{i}_6")),//.check( substring(",\"test\":\"Test4\",").exists()),
+                            ws.checkTextMessage("Attempt Test5 Result Received").check( bodyString().saveAs("msg_#{i}_7")),//.check( substring(",\"test\":\"Test5\",").exists()),
+                            ws.checkTextMessage("Attempt Test6 Result Received").check( bodyString().saveAs("msg_#{i}_8"))//.check( substring(",\"test\":\"Test6\",").exists())
+                            )
+    ).exec( session -> {
+        appendToFile("session-"+session.userId()+".txt", "**** BEGIN ATTEMPT "+session.get("i")+" ****\n");
+        for( int i=0; i < 9; i++ ) {
+            if( session.contains("msg_#{i}_"+i)) {
+                appendToFile("output-" + session.userId() + ".txt", session.get("msg_#{i}_" + i));
+            } else {
+                appendToFile("output-" + session.userId() + ".txt", "Missing response "+i+"\n");
+            }
+        }
+        appendToFile("output-"+session.userId()+".txt", "**** END ATTEMPT #{i} ****\n");
+        return session;
 
-    private final ChainBuilder submit = exec(ws("Submit").sendText(session -> getSubmitMessage(Conf.assignment.getSolution()))
+    });
+
+    private final ChainBuilder submit = exec(ws("Submit Request").sendText(session -> getSubmitMessage(Conf.assignment.getSolution()))
             .await(10)
-            .on(ws.checkTextMessage("Submit started").check(regex(".*SUBMIT_STARTED.*")))
+            .on(ws.checkTextMessage("Submit Started").check(regex(".*SUBMIT_STARTED.*")))
             .await(10)
-            .on(ws.checkTextMessage("Compile success").check(regex(".*COMPILE.*success.*true.*")))
+            .on(ws.checkTextMessage("Submit Compile Response").check(regex(".*COMPILE.*success.*true.*")))
             .await(10)
-            .on(ws.checkTextMessage("Test0 done").check(regex(".*Test0.*")))
+            .on(ws.checkTextMessage("Submit Test0 Result Received").check(regex(".*Test0.*")))
             .await(10)
-            .on(ws.checkTextMessage("Hidden test done").check(regex(".*HiddenTest.*")))
+            .on(ws.checkTextMessage("Submit Hidden Test Result Received").check(regex(".*HiddenTest.*")))
             .await(10)
             .on(ws.checkTextMessage("Test1 done").check(regex(".*Test1.*")))
             .await(10)
@@ -173,14 +193,23 @@ public class PerformanceTest extends Simulation {
         ScenarioBuilder scn = scenario("Test " + Conf.assignment.getAssignmentName())
                 .exec(createUser, createTeam, joinAssignment)
                 .pause(1)
-                .exec(successCompile) //, failCompile)
-//                .repeat(Conf.attemptCount, "i")
-//                    .on(attemptCompileAndTest.pause(session -> Duration.ofSeconds(Conf.waitTimeBetweenSubmits.get())))
-//                .pause(1)
-//                .exec(submit)
+                .exec(successCompile, failCompile)
+                .repeat(10,"i")//Conf.attemptCount, "i")
+                    .on(attemptCompileAndTest.pause(session -> Duration.ofSeconds(Conf.waitTimeBetweenSubmits.get())))
+                .pause(1)
+                .exec(submit)
                 .pause(1)
                 .exec(ws("Close Websocket").close());
         setUp(scn.injectOpen(rampUsers(Conf.teams).during(Conf.ramp))).protocols(httpProtocol);
+    }
+    private void appendToFile(String filename, String content ) {
+        try {
+            Path f = Paths.get("target","gatling", "logs-"+runId,filename);
+            Files.createDirectories(f.getParent());
+            Files.writeString(f, ">>>>>>\n"+content+"\n<<<<<\n", StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+        } catch (IOException e) {
+            // ignored
+        }
     }
 
     private static User initializeUser(Session session) {
