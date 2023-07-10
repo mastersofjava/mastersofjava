@@ -137,12 +137,12 @@ public class PerformanceTest extends Simulation {
         appendToFile("session-"+session.userId()+".txt", "**** BEGIN ATTEMPT "+session.get("i")+" ****\n");
         for( int i=0; i < 9; i++ ) {
             if( session.contains("msg_#{i}_"+i)) {
-                appendToFile("output-" + session.userId() + ".txt", session.get("msg_#{i}_" + i));
+                appendToFile("session-" + session.userId() + ".txt", ">>>>>\n"+session.get("msg_#{i}_" + i)+"\n<<<<<\n");
             } else {
-                appendToFile("output-" + session.userId() + ".txt", "Missing response "+i+"\n");
+                appendToFile("session-" + session.userId() + ".txt", "Missing response "+i+"\n");
             }
         }
-        appendToFile("output-"+session.userId()+".txt", "**** END ATTEMPT #{i} ****\n");
+        appendToFile("session-"+session.userId()+".txt", "**** END ATTEMPT #{i} ****\n");
         return session;
 
     });
@@ -206,7 +206,7 @@ public class PerformanceTest extends Simulation {
         try {
             Path f = Paths.get("target","gatling", "logs-"+runId,filename);
             Files.createDirectories(f.getParent());
-            Files.writeString(f, ">>>>>>\n"+content+"\n<<<<<\n", StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+            Files.writeString(f, content, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
         } catch (IOException e) {
             // ignored
         }
