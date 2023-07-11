@@ -24,7 +24,7 @@ public class OperationListener {
 
     private final Tracer tracer;
 
-    @JmsListener(destination = "compile_request",concurrency ="3")
+    @JmsListener(destination = "compile_request",concurrency ="1")
     @NewSpan
     public void receiveCompileRequest(JMSCompileRequest compileRequest) {
         String traceId = traceId();
@@ -38,7 +38,7 @@ public class OperationListener {
                     log.error("FAIL", t);
                 }
                 return cr;
-            });
+            }).join();
         } catch (Exception e) {
             log.error("Compile failed for attempt {}", compileRequest.getAttempt(), e);
             try {
@@ -60,7 +60,7 @@ public class OperationListener {
         }
     }
 
-    @JmsListener(destination = "test_request", concurrency = "3")
+    @JmsListener(destination = "test_request", concurrency = "1")
     @NewSpan
     public void receiveTestRequest(JMSTestRequest testRequest) {
         String traceId = traceId();
@@ -74,7 +74,7 @@ public class OperationListener {
                     log.error("FAIL", t);
                 }
                 return tr;
-            });
+            }).join();
         } catch (Exception e) {
             log.error("Test failed for attempt {}", testRequest.getAttempt(), e);
             try {
@@ -93,7 +93,7 @@ public class OperationListener {
         }
     }
 
-    @JmsListener(destination = "submit_request", concurrency = "3")
+    @JmsListener(destination = "submit_request", concurrency = "1")
     @NewSpan
     public void receiveSubmitRequest(JMSSubmitRequest submitRequest) {
         String traceId = traceId();
@@ -107,7 +107,7 @@ public class OperationListener {
                     log.error("FAIL", t);
                 }
                 return tr;
-            });
+            }).join();
         } catch (Exception e) {
             log.error("Submit failed for attempt {}", submitRequest.getAttempt(), e);
             try {

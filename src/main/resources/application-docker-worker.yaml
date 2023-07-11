@@ -7,7 +7,7 @@ spring:
     embedded:
       enabled: false
     mode: native
-    broker-url: ${CONTROLLER_BROKER_URI}
+    broker-url: ${CONTROLLER_BROKER_URI}?consumerWindowSize=0
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration
