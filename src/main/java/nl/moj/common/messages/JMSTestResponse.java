@@ -6,26 +6,18 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 @Getter
-@Builder
-@JsonDeserialize(builder = JMSTestResponse.JMSTestResponseBuilder.class)
+@SuperBuilder
+@Jacksonized
 @JsonIgnoreProperties(ignoreUnknown = true)
-@ToString(of={"aborted","reason","testCaseResults"})
-public class JMSTestResponse {
-
-    @JsonProperty("trace")
-    private String traceId;
-
-    @JsonProperty("worker")
-    private String worker;
-
-    @JsonProperty("attempt")
-    private UUID attempt;
+@ToString(of = {"aborted", "reason", "testCaseResults"})
+public class JMSTestResponse extends JMSResponse {
 
     @JsonProperty("compileResponse")
     private JMSCompileResponse compileResponse;

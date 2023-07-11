@@ -124,7 +124,7 @@ public class PerformanceTest extends Simulation {
                     // randomly choose how many UT's will fail.
                     .sendText(session -> getTestMessage(
                             either(createOptions(Conf.assignment.getAttempts()))))
-                    .await(10)
+                    .await(30)
                     .on(
                             ws.checkTextMessage("Attempt Testing Started")
                                     .check(bodyString().saveAs("msg_#{i}_0"))
@@ -168,7 +168,7 @@ public class PerformanceTest extends Simulation {
     });
 
     private final ChainBuilder submit = exec(ws("Submit Request").sendText(session -> getSubmitMessage(Conf.assignment.getSolution()))
-            .await(10)
+            .await(30)
             .on(ws.checkTextMessage("Submit Started")
                             .check(bodyString().saveAs("submit_0"))
                             .check(regex(".*SUBMIT_STARTED.*")),
@@ -223,7 +223,7 @@ public class PerformanceTest extends Simulation {
         // clean up
         for (User user : users) {
             try {
-                RestClient.deleteTeam(mojAdmin, user.team());
+                //RestClient.deleteTeam(mojAdmin, user.team());
                 RestClient.deleteKeycloakUser(user);
             } catch (Exception e) {
                 log.error("Cleanup of user {} failed", user.username(), e);

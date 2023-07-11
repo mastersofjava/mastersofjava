@@ -208,15 +208,61 @@ function initXHR() {
 
 function initStats() {
     const fetchStats = () => {
-        get("/metrics/queues")
+        get("/metrics")
             .then(r => {
-                updateQueueStats(r)
+                updateQueueStats(r.queueMetrics)
+                updateOperationStats(r.operationMetrics)
             })
     }
     window.setInterval(() => {
         fetchStats();
     }, 1000);
     fetchStats();
+}
+
+const sortAlpha = (a, b) => {
+    if (a.name < b.name) {
+        return -1;
+    }
+    if (a.name > b.name) {
+        return 1;
+    }
+    return 0;
+}
+
+function updateOperationStats(data) {
+    const $stats = $('#ostats')
+    if ($stats) {
+        $stats.empty()
+
+        const rowTemplate = (n, mi, me, ma) => {
+            return `<tr>
+                <td>${n}</td>
+                <td>${mi}</td>
+                <td>${me}</td>
+                <td>${ma}</td>              
+            </tr>`
+        }
+        const rows = data
+            .sort( sortAlpha )
+            .map(v => rowTemplate(v.name, v.min.toFixed(2), v.mean.toFixed(2), v.max.toFixed(2))).join("\n")
+
+        let statsTable = $.parseHTML(
+            `<table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">Operation Metric</th>
+                  <th scope="col">Min</th>
+                  <th scope="col">Mean</th>
+                  <th scope="col">Max</th>                
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}                
+              </tbody>
+            </table>`)
+        $stats.append(statsTable)
+    }
 }
 
 function updateQueueStats(data) {
@@ -233,15 +279,7 @@ function updateQueueStats(data) {
             </tr>`
         }
         const rows = data
-            .sort( (a, b) => {
-                if (a.name < b.name) {
-                    return -1;
-                }
-                if (a.name > b.name) {
-                    return 1;
-                }
-                return 0;
-            } )
+            .sort( sortAlpha )
             .map(v => rowTemplate(v.name, v.count, v.added, v.expired, v.killed)).join("\n")
         let statsTable = $.parseHTML(
             `<table class="table table-sm table-striped">

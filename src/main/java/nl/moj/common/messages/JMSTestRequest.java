@@ -9,15 +9,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 @Getter
-@Builder
-@JsonDeserialize(builder = JMSTestRequest.JMSTestRequestBuilder.class)
+@SuperBuilder
+@Jacksonized
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class JMSTestRequest {
-
-    @JsonProperty("attempt")
-    private UUID attempt;
+public class JMSTestRequest extends JMSRequest {
 
     @JsonProperty("assignment")
     private UUID assignment;

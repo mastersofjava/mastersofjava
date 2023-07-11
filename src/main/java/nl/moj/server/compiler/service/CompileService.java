@@ -16,13 +16,6 @@
 */
 package nl.moj.server.compiler.service;
 
-import javax.transaction.Transactional;
-import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.messages.JMSCompileRequest;
@@ -32,6 +25,7 @@ import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
 import nl.moj.server.message.service.MessageService;
+import nl.moj.server.metrics.MetricsService;
 import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.service.TeamService;
@@ -41,6 +35,13 @@ import org.springframework.cloud.sleuth.annotation.NewSpan;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,6 +57,7 @@ public class CompileService {
     private final AssignmentService assignmentService;
     private final TaskScheduler taskScheduler;
     private final TransactionHelper trx;
+    private final MetricsService metricsService;
 
     @Transactional
     public void receiveCompileResponse(JMSCompileResponse compileResponse) {
@@ -65,9 +67,14 @@ public class CompileService {
         if (compileAttempt.getDateTimeEnd() == null) {
             compileAttempt = update(compileAttempt, compileResponse);
             messageService.sendCompileFeedback(compileAttempt);
+            registerCompileAttemptMetrics(compileAttempt);
         } else {
             log.info("Ignoring response for compile attempt {}, already have a response.", compileAttempt.getUuid());
         }
+    }
+
+    private void registerCompileAttemptMetrics(CompileAttempt compileAttempt) {
+        metricsService.registerCompileAttemptMetrics(compileAttempt);
     }
 
     @Transactional
@@ -83,7 +90,7 @@ public class CompileService {
 
             CompileAttempt compileAttempt = prepareCompileAttempt(compileRequest);
             // send JMS compile request
-            jmsTemplate.convertAndSend("compile_request", JMSCompileRequest.builder()
+            jmsTemplate.convertAndSend("operation_request", JMSCompileRequest.builder()
                     .attempt(compileAttempt.getUuid())
                     .assignment(compileRequest.getAssignment().getUuid())
                     .sources(compileRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()

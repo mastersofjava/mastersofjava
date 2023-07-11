@@ -32,6 +32,7 @@ import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.service.CompileRequest;
 import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.message.service.MessageService;
+import nl.moj.server.metrics.MetricsService;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
@@ -63,6 +64,7 @@ public class TestService {
     private final AssignmentService assignmentService;
     private final TaskScheduler taskScheduler;
     private final TransactionHelper trx;
+    private final MetricsService metricsService;
 
     @Transactional
     public void receiveTestResponse(JMSTestResponse testResponse) {
@@ -72,6 +74,7 @@ public class TestService {
         if (testAttempt.getDateTimeEnd() == null) {
             testAttempt = update(testAttempt, testResponse);
             messageService.sendTestFeedback(testAttempt);
+            metricsService.registerTestAttemptMetrics(testAttempt);
         } else {
             log.info("Ignoring response for test attempt {}, already have a response.", testAttempt.getUuid());
         }
@@ -91,7 +94,7 @@ public class TestService {
 
             TestAttempt testAttempt = prepareTestAttempt(testRequest);
             // send JMS test request
-            jmsTemplate.convertAndSend("test_request", JMSTestRequest.builder()
+            jmsTemplate.convertAndSend("operation_request", JMSTestRequest.builder()
                     .attempt(testAttempt.getUuid())
                     .assignment(testRequest.getAssignment().getUuid())
                     .sources(testRequest.getSources().entrySet().stream().map(e -> JMSFile.builder()

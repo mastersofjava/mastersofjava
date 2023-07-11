@@ -7,10 +7,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 @Getter
 @Builder
-@JsonDeserialize(builder = JMSTestCase.JMSTestCaseBuilder.class)
+@Jacksonized
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JMSTestCase {
 

@@ -48,6 +48,8 @@ services:
     environment:
       CONTROLLER_URI: "http://controller:8080"
       CONTROLLER_BROKER_URI: "tcp://controller:61616"
+      SPRING_JMS_LISTENER_CONCURRENCY: 3
+      SPRING_JMS_LISTENER_MAX_CONCURRENCY: 3
     networks:
       - moj
     depends_on:

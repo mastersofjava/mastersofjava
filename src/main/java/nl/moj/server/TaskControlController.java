@@ -36,7 +36,7 @@ import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.CompetitionService;
 import nl.moj.server.competition.service.CompetitionServiceException;
 import nl.moj.server.metrics.MetricsService;
-import nl.moj.server.metrics.QueueMetrics;
+import nl.moj.server.metrics.MetricsVO;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentStatus;
@@ -65,7 +65,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 @Controller
@@ -217,10 +216,10 @@ public class TaskControlController {
     }
 
     @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
-    @GetMapping(value = "/metrics/queues", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Set<QueueMetrics>> getQueueMetrics() {
+    @GetMapping(value = "/metrics", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<MetricsVO> getQueueMetrics() {
         try {
-            return ResponseEntity.ok(metricsService.getQueueMetrics());
+            return ResponseEntity.ok(metricsService.getMetrics());
         } catch (Exception e) {
             log.error("Unable to get metrics.", e);
             return ResponseEntity.badRequest().build();

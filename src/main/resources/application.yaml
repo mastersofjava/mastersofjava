@@ -50,11 +50,15 @@ spring:
   artemis:
     embedded:
       enabled: true
-      queues: "compile_request,compile_response,test_request,test_response,submit_request,submit_response"
+      queues: "operation_request,operation_response"
     mode: embedded
-    broker-url: vm://0
+    broker-url: vm://0?consumerWindowSize=0
     user: admin
     password: admin
+  jms:
+    listener:
+      concurrency: 3
+      max-concurrency: 3
   security:
     oauth2:
       client:

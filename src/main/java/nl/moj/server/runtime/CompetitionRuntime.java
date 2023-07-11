@@ -28,6 +28,7 @@ import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.competition.service.CompetitionServiceException;
+import nl.moj.server.metrics.MetricsService;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFile;
 import nl.moj.server.runtime.model.AssignmentFileType;
@@ -66,6 +67,8 @@ public class CompetitionRuntime {
     private final CompetitionRepository competitionRepository;
 
     private final AssignmentRepository assignmentRepository;
+
+    private final MetricsService metricsService;
 
     //TODO this is state we should not have
     @Getter
@@ -124,6 +127,9 @@ public class CompetitionRuntime {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public AssignmentStatus startAssignment(UUID sid, UUID id) throws CompetitionServiceException {
+        // reset metrics
+        metricsService.reset();
+
         // refresh competition
         competition = competitionRepository.findByUuid(competition.getUuid());
 

@@ -119,6 +119,8 @@ public class CompileRunnerService {
             } catch (TimeoutException e) {
                 // process is automatically destroyed
                 co.setTimedOut(true);
+                co.setDateTimeEnd(Instant.now());
+                co.setReason("Compiling timed out.");
                 compileOutput.getBuffer()
                         .append(mojServerProperties.getLimits().getCompileOutputLimits().getTimeoutMessage());
             }

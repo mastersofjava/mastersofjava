@@ -1,14 +1,6 @@
 package nl.moj.server.support;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import nl.moj.common.messages.JMSCompileResponse;
-import nl.moj.common.messages.JMSSubmitResponse;
-import nl.moj.common.messages.JMSTestResponse;
+import nl.moj.common.messages.JMSResponse;
 import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.message.service.JmsMessageListener;
 import nl.moj.server.submit.service.SubmitService;
@@ -16,6 +8,12 @@ import nl.moj.server.test.service.TestService;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Primary
@@ -32,34 +30,14 @@ public class TestJmsListener extends JmsMessageListener {
     }
 
     @Override
-    @JmsListener(destination = "compile_response")
-    public void receiveCompileResponse(JMSCompileResponse compileResponse) {
+    @JmsListener(destination = RESPONSE_DESTINATION)
+    public void receiveOperationResponse(JMSResponse response) {
         try {
-            super.receiveCompileResponse(compileResponse);
+            super.receiveOperationResponse(response);
         } finally {
-            countDown(compileResponse.getAttempt());
+            countDown(response.getAttempt());
         }
 
-    }
-
-    @Override
-    @JmsListener(destination = "test_response")
-    public void receiveTestResponse(JMSTestResponse testResponse) {
-        try {
-            super.receiveTestResponse(testResponse);
-        } finally {
-            countDown(testResponse.getAttempt());
-        }
-    }
-
-    @Override
-    @JmsListener(destination = "submit_response")
-    public void receiveSubmitResponse(JMSSubmitResponse submitResponse) {
-        try {
-            super.receiveSubmitResponse(submitResponse);
-        } finally {
-            countDown(submitResponse.getAttempt());
-        }
     }
 
     private void countDown(UUID attempt) {

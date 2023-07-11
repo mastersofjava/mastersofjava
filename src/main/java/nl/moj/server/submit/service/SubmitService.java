@@ -29,6 +29,7 @@ import nl.moj.common.messages.JMSTestResponse;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession.SessionType;
 import nl.moj.server.message.service.MessageService;
+import nl.moj.server.metrics.MetricsService;
 import nl.moj.server.runtime.ScoreService;
 import nl.moj.server.runtime.TimersRuntime;
 import nl.moj.server.runtime.model.AssignmentStatus;
@@ -77,6 +78,7 @@ public class SubmitService {
     private final TaskScheduler taskScheduler;
     private final TransactionHelper trx;
     private final TimersRuntime timersRuntime;
+    private final MetricsService metricsService;
 
     @Transactional
     public void receiveSubmitResponse(JMSSubmitResponse submitResponse) {
@@ -97,6 +99,7 @@ public class SubmitService {
                 }
             }
             messageService.sendSubmitFeedback(sa);
+            metricsService.registerSubmitAttemptMetrics(sa);
         } else {
             log.info("Ignoring response for submit attempt {}, already have a response.", sa.getUuid());
         }
@@ -195,7 +198,7 @@ public class SubmitService {
                 SubmitAttempt submitAttempt = prepareSubmitAttempt(submitRequest, registered,
                         Duration.ofSeconds(secondsRemaining));
 
-                jmsTemplate.convertAndSend("submit_request",
+                jmsTemplate.convertAndSend("operation_request",
                         JMSSubmitRequest.builder().attempt(submitAttempt.getUuid())
                                 .assignment(submitRequest.getAssignment().getUuid())
                                 .sources(submitRequest.getSources().entrySet().stream()

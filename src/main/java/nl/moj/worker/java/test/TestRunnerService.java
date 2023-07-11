@@ -108,11 +108,15 @@ public class TestRunnerService {
                 } catch (TimeoutException e) {
                     log.info("Test case {} {} timed out.", test.getTestCase(), test.getName());
                     to.setTimedOut(true);
+                    to.setDateTimeEnd(Instant.now());
+                    to.setReason("Compiling timed out.");
                     jUnitOutput.getBuffer().append('\n')
                             .append(mojServerProperties.getLimits().getTestOutputLimits().getTimeoutMessage());
                 } catch (SecurityException se) {
                     log.info("Test case {} {} aborted.", test.getTestCase(), test.getName(), se);
                     to.setAborted(true);
+                    to.setDateTimeEnd(Instant.now());
+                    to.setReason("Testing triggered security policy violation.");
                     to.setReason(se.getMessage());
                 }
 
