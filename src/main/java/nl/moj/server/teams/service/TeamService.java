@@ -77,14 +77,16 @@ public class TeamService {
     public void cleanAssignment(UUID teamId, UUID sessionId, UUID assignmentId) throws IOException {
         Path teamAssignmentBase = getTeamAssignmentDirectory(teamId, sessionId, assignmentRepository.findByUuid(assignmentId)
                 .getName()).resolve("sources");
-        try (Stream<Path> walk = Files.walk(teamAssignmentBase)) {
-            walk.sorted(Comparator.reverseOrder()).forEach(f -> {
-                try {
-                    Files.delete(f);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
+        if( Files.exists(teamAssignmentBase)) {
+            try (Stream<Path> walk = Files.walk(teamAssignmentBase)) {
+                walk.sorted(Comparator.reverseOrder()).forEach(f -> {
+                    try {
+                        Files.delete(f);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+            }
         }
     }
 

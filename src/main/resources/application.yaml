@@ -50,7 +50,7 @@ spring:
   artemis:
     embedded:
       enabled: true
-      queues: compile_request,compile_response,test_request,test_response,submit_request,submit_response
+      queues: "compile_request,compile_response,test_request,test_response,submit_request,submit_response"
     mode: embedded
     broker-url: vm://0
     user: admin

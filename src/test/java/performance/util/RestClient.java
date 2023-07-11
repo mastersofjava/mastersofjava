@@ -39,6 +39,7 @@ public class RestClient {
     }
 
     private static User createUserInGroups(String userName, String password, String... groups) {
+        log.info("Using keycloak " + Conf.keyCloakUrl);
         try (Keycloak keycloak = KeycloakBuilder.builder()
                 .serverUrl(Conf.keyCloakUrl)
                 .realm("master")
@@ -68,10 +69,7 @@ public class RestClient {
             credentialRepresentation.setValue(password);
             moj.users().get(id).resetPassword(credentialRepresentation);
 
-            User u = new User(id, userName, password, null );
-            log.info("Created user {}", u);
-
-            return u;
+            return new User(id, userName, password, null );
         }
     }
 
@@ -142,7 +140,7 @@ public class RestClient {
             Scanner scanner = new Scanner(responseJson).useDelimiter("\\A");
             String responseBody = scanner.hasNext() ? scanner.next() : "";
             JSONObject jsonObject = new JSONObject(responseBody);
-            return new OidcToken(jsonObject.getString("access_token"), jsonObject.getString("refresh_token"), Instant.now().plusSeconds(jsonObject.getInt("expires_in")));
+            return new OidcToken(user.username(),jsonObject.getString("access_token"), jsonObject.getString("refresh_token"), Instant.now().plusSeconds(jsonObject.getInt("expires_in")));
         } catch (Exception e) {
             log.error("Unable to get access token.",e);
             throw new RuntimeException(e);
@@ -150,6 +148,7 @@ public class RestClient {
     }
 
     public static OidcToken refresh(OidcToken token) {
+        log.info("Refreshing token for user {}.", token.getUser());
         if( token.needsRefresh()) {
             try (var httpclient = HttpClients.createDefault()) {
                 HttpPost httppost = new HttpPost(Conf.keyCloakUrl + "/realms/moj/protocol/openid-connect/token");
@@ -167,7 +166,7 @@ public class RestClient {
                 String responseBody = scanner.hasNext() ? scanner.next() : "";
                 JSONObject jsonObject = new JSONObject(responseBody);
 
-                return new OidcToken(jsonObject.getString("access_token"), jsonObject.getString("refresh_token"), Instant.now().plusSeconds(jsonObject.getInt("expires_in")));
+                return new OidcToken(token.getUser(), jsonObject.getString("access_token"), jsonObject.getString("refresh_token"), Instant.now().plusSeconds(jsonObject.getInt("expires_in")));
             } catch (Exception e) {
                 log.error("Unable to refresh access token.",e);
                 throw new RuntimeException(e);

@@ -16,8 +16,12 @@
 */
 package nl.moj.server.config;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
 import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -31,9 +35,18 @@ public class WebSocketConfiguration {
     @EnableWebSocketMessageBroker
     public static class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+        private TaskScheduler taskScheduler;
+
+        @Autowired
+        public void setTaskScheduler(@Lazy TaskScheduler taskScheduler) {
+            this.taskScheduler = taskScheduler;
+        }
+
         @Override
         public void configureMessageBroker(MessageBrokerRegistry config) {
-            config.enableSimpleBroker("/topic", "/queue");
+            config.enableSimpleBroker("/topic", "/queue")
+                    .setHeartbeatValue(new long[]{10000,10000})
+                    .setTaskScheduler(taskScheduler);
             config.setApplicationDestinationPrefixes("/app");
             config.setUserDestinationPrefix("/user");
         }

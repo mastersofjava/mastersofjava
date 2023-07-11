@@ -24,7 +24,7 @@ public class OperationListener {
 
     private final Tracer tracer;
 
-    @JmsListener(destination = "compile_request")
+    @JmsListener(destination = "compile_request",concurrency ="3")
     @NewSpan
     public void receiveCompileRequest(JMSCompileRequest compileRequest) {
         String traceId = traceId();
@@ -60,7 +60,7 @@ public class OperationListener {
         }
     }
 
-    @JmsListener(destination = "test_request")
+    @JmsListener(destination = "test_request", concurrency = "3")
     @NewSpan
     public void receiveTestRequest(JMSTestRequest testRequest) {
         String traceId = traceId();
@@ -93,7 +93,7 @@ public class OperationListener {
         }
     }
 
-    @JmsListener(destination = "submit_request")
+    @JmsListener(destination = "submit_request", concurrency = "3")
     @NewSpan
     public void receiveSubmitRequest(JMSSubmitRequest submitRequest) {
         String traceId = traceId();

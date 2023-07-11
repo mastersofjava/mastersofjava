@@ -1,15 +1,16 @@
 package performance.util;
 
 import java.time.Instant;
-import java.util.Objects;
 
 public class OidcToken {
 
+    private String user;
     private String accessToken;
     private String refreshToken;
     private Instant expires;
 
-    public OidcToken(String accessToken, String refreshToken, Instant expires) {
+    public OidcToken(String user, String accessToken, String refreshToken, Instant expires) {
+        this.user = user;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.expires = expires;
@@ -31,6 +32,10 @@ public class OidcToken {
         return expires;
     }
 
+    public String getUser() {
+        return user;
+    }
+
     public String getAccessToken() {
         if (needsRefresh()) {
             OidcToken token = RestClient.refresh(this);
@@ -44,9 +49,10 @@ public class OidcToken {
     @Override
     public String toString() {
         return "OidcToken{" +
-                "accessToken='" + accessToken + '\'' +
-                ", refreshToken='" + refreshToken + '\'' +
-                ", expires=" + expires +
-                '}';
+                "user='" + user + "'" +
+                "accessToken='" + accessToken + "'" +
+                ", refreshToken='" + refreshToken + "'" +
+                ", expires='" + expires +
+                "'}";
     }
 }

@@ -49,6 +49,9 @@ import org.springframework.stereotype.Controller;
 
 import javax.transaction.Transactional;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -83,7 +86,12 @@ public class MessageService {
         if (ta != null) {
             Team team = ta.getAssignmentStatus().getTeam();
             sendCompileFeedback(ta.getCompileAttempt());
-            ta.getTestCases().forEach(tc -> {
+
+            // Ordering is needed for testing purposes.
+            // TODO add proper test order using assignment descriptor.
+            List<TestCase> tcs = new ArrayList<>(ta.getTestCases());
+            tcs.sort(Comparator.comparing(TestCase::getName));
+            tcs.forEach(tc -> {
                 sendTestFeedback(team, tc);
             });
         }
