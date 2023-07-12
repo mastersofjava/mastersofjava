@@ -16,18 +16,15 @@ public class Conf {
     public static int attemptCount = 12; // 8; (een gemiddeld team doet 12,5 test pogingen, maar slechts 56% daarvan komt door de compile heen)
     public static Supplier<Integer> waitTimeBetweenSubmits = () -> random(0, 60); // 8 submits in 24 minuten = om de 3 minuten gemiddeld een submit.
 
-    public final static String mojServerUrl = "http://localhost:8080";
-    //public final static String mojServerUrl = "http://mastersofjava.nljug";
+    public final static String mojServerUrl = System.getProperty("moj.server.url","http://localhost:8080");
 
-    public final static String keyCloakUrl = "http://localhost:8888";
-    //public final static String keyCloakUrl = "http://auth.mastersofjava.nljug";
-    // The secret of the keyCloak client named 'gatling' with 'Client authentication' set to true
+    public final static String keyCloakUrl = System.getProperty("moj.iam.url","http://localhost:8888");
 
-    public static final String keyCloakAdminUsername = "keycloak";
+    public static final String keyCloakAdminUsername = System.getProperty("moj.iam.username","keycloak");
 
-    public static final String keyCloakAdminPassword = "******";
+    public static final String keyCloakAdminPassword = System.getProperty("moj.iam.password","i-dont-think-so");
 
-    public static final String mojAmin = "performance";
+    public static final String mojAmin = "pt-performance";
 
     public static final TestAssignment assignment = new RequirementHell();
 }
