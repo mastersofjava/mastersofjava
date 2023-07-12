@@ -58,7 +58,7 @@ public class WebSecurityConfiguration {
                 .jwtAuthenticationConverter(customJwtAuthenticationConverter());
 
         http.authorizeRequests(a -> a
-                        .antMatchers("/", "/error", "/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico", "/api/assignment/*/content")
+                        .antMatchers("/","/actuator/health", "/error", "/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico", "/api/assignment/*/content")
                         .permitAll()
                         .antMatchers("/play", "/feedback", "/rankings")
                         .hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access

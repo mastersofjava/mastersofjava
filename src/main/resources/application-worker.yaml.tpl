@@ -19,5 +19,5 @@ spring:
       - org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
-  main:
-    web-application-type: none
+server:
+  port: 8081

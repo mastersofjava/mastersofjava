@@ -64,6 +64,20 @@ spec:
               mountPath: /data
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /actuator/health
+            initialDelaySeconds: 30
+            failureThreshold: 2
+            periodSeconds: 45
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /actuator/health
+            initialDelaySeconds: 10
+            failureThreshold: 5
+            periodSeconds: 10
       {{- if not .Values.global.storage.pvc.enabled }}
       volumes:
         - name: {{ include "controller.fullname" . }}-data
