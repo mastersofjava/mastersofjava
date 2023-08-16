@@ -107,7 +107,7 @@ public class ScoreService {
                 try {
                     // the first submit is always free, hence submits - 1.
                 	StringBuilder explanation = new StringBuilder();
-                    long finalPenalty = calculatePenaltyValue(score, score.getTotalScore(), submits - 1, penalty, "submit", explanation);
+                    long finalPenalty = calculatePenaltyValue(score, score.getTotalScore(), submits - 1, penalty, "extra submit", explanation);
                     score.setResubmitPenalty(finalPenalty);
                     if (finalPenalty>0) {
                     	score.addExplanation(explanation.toString());
