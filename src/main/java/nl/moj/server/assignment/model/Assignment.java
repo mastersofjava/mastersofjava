@@ -51,6 +51,7 @@ public class Assignment {
     @Column(name = "collection", nullable = false)
     private String collection;
 
+    /** The file on disk that contains the assignment descriptor (e.g. assignment.yaml) */
     @Column(name = "assignment_descriptor", unique = true, nullable = false)
     private String assignmentDescriptor;
 

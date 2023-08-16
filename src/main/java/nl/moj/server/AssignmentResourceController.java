@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.common.storage.StorageService;
+import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.authorization.Role;
 import nl.moj.common.config.properties.MojServerProperties;
@@ -86,17 +87,25 @@ public class AssignmentResourceController {
     // are explicitly excluded.
 
     /**
-     * this method ensures that one can place images in the assets of an assignment.
-     * sample usage would be: <img src='/public/assignment_image/<assignment-uuid>/public_Hexagonal_chess.svg'>
+     * This method ensures that one can place images in the assets of an assignment.
+     * 
+     * In an assignment.md file, you can add images placed in the assets/ folder of assignment with name "sudoku solver" like so: 
+     * <img src="/public/asset/sudoku solver/assets/sudoko-region.jpg" alt="sudoku region example" style="height: 300px; width:300px;"/>
      *
      * @param assignment - the assignment name
      * @param file       - the file name of the image that should be rendered
      */
     @GetMapping("/public/asset/{assignment}/{*file}")
     @ResponseBody
-    public ResponseEntity<FileSystemResource> insertAssignmentImage(@PathVariable("assignment") UUID assignment, @PathVariable("file") String file) {
+    public ResponseEntity<FileSystemResource> serveAssignmentImage(@PathVariable("assignment") String assignmentName, @PathVariable("file") String file) {
+    	log.debug("Serving {} from assignment {}", file, assignmentName);
         try {
             // check it is not the solution that is requested.
+        	Assignment assignment = assignmentService.findAssignmentByName(assignmentName);
+        	if (assignment==null) {
+        		log.warn("Assignment {} not found", assignmentName);
+        		return ResponseEntity.notFound().build();
+        	}
             AssignmentDescriptor ad = assignmentService.resolveAssignmentDescriptor(assignment);
             if (ad.getAssignmentFiles().getSolution().stream().anyMatch(s -> Paths.get(file).normalize().equals(s))) {
                 return ResponseEntity.notFound().build();
@@ -116,7 +125,7 @@ public class AssignmentResourceController {
             String mimeType = MimeMappings.DEFAULT.get(FilenameUtils.getExtension(resource.getFileName().toString()));
             return ResponseEntity.ok().contentType(MediaType.parseMediaType(mimeType)).contentLength(fsr.contentLength()).body(fsr);
         } catch (Exception e) {
-            log.error("Unexpected exception reading assignment resource {} for assignment {}.", file, assignment, e);
+            log.error("Unexpected exception reading assignment resource {} for assignment {}.", file, assignmentName, e);
             return ResponseEntity.notFound().build();
         }
     }

@@ -65,6 +65,12 @@ public class AssignmentService {
     private final MojServerProperties mojServerProperties;
 
     private final StorageService storageService;
+    
+    
+    @Transactional(Transactional.TxType.REQUIRED)
+    public Assignment findAssignmentByName(String name) {
+        return assignmentRepository.findByName(name);
+    }
 
     @Transactional(Transactional.TxType.REQUIRED)
     public Path getAssignmentContentFolder(UUID id) {
