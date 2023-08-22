@@ -28,7 +28,7 @@ public class AssignmentResourceTest extends BaseRuntimeTest {
                 .getUuid());
 
         mockMvc.perform(MockMvcRequestBuilders.get("/public/asset/{assignment}/{file}", oa.getAssignment()
-                        .getUuid(), "assets/images/icon.png"))
+                        .getName(), "assets/images/icon.png"))
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andExpect(MockMvcResultMatchers.content().contentType("image/png"));
     }
@@ -40,7 +40,7 @@ public class AssignmentResourceTest extends BaseRuntimeTest {
                 .getUuid());
 
         mockMvc.perform(MockMvcRequestBuilders.get("/public/asset/{assignment}/{file}", oa.getAssignment()
-                        .getUuid(), "assets/images/unknown.png"))
+                        .getName(), "assets/images/unknown.png"))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 }
