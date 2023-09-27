@@ -73,11 +73,19 @@ public class TestService {
 
         if (testAttempt.getDateTimeEnd() == null) {
             testAttempt = update(testAttempt, testResponse);
-            messageService.sendTestFeedback(testAttempt);
+            if( isMostRecent(testAttempt)) {
+                messageService.sendTestFeedback(testAttempt);
+            } else {
+                log.info("Ignoring test feedback for test attempt {}, already a newer test attempt pending.", testAttempt.getUuid());
+            }
             metricsService.registerTestAttemptMetrics(testAttempt);
         } else {
             log.info("Ignoring response for test attempt {}, already have a response.", testAttempt.getUuid());
         }
+    }
+
+    private boolean isMostRecent(TestAttempt testAttempt) {
+        return testAttemptRepository.countNewerAttempts(testAttempt.getAssignmentStatus(), testAttempt.getDateTimeRegister()) == 0;
     }
 
     @Transactional

@@ -66,11 +66,21 @@ public class CompileService {
 
         if (compileAttempt.getDateTimeEnd() == null) {
             compileAttempt = update(compileAttempt, compileResponse);
-            messageService.sendCompileFeedback(compileAttempt);
+
+            // if this is the most recent compileAttempt, send response to client else, skip.
+            if( isMostRecent(compileAttempt)) {
+                messageService.sendCompileFeedback(compileAttempt);
+            } else {
+                log.info("Ignoring compile feedback for compile attempt {}, already a newer compile attempt pending.", compileAttempt.getUuid());
+            }
             registerCompileAttemptMetrics(compileAttempt);
         } else {
             log.info("Ignoring response for compile attempt {}, already have a response.", compileAttempt.getUuid());
         }
+    }
+
+    private boolean isMostRecent(CompileAttempt compileAttempt) {
+        return compileAttemptRepository.countNewerAttempts(compileAttempt.getAssignmentStatus(), compileAttempt.getDateTimeRegister()) == 0;
     }
 
     private void registerCompileAttemptMetrics(CompileAttempt compileAttempt) {

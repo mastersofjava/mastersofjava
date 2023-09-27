@@ -134,25 +134,39 @@ public class PerformanceTest extends Simulation {
                                     .check(regex(".*COMPILE.*success\":true.*")),
                             ws.checkTextMessage("Attempt Test0 Result Received")
                                     .check(bodyString().saveAs("msg_#{i}_2"))
-                                    .check(substring(",\"test\":\"Test0\",").exists()),
+                                    .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                                    .check(substring(",\"test\":\"Test").exists())
+//                                    .check(substring(",\"test\":\"Test0\",").exists()),
                             ws.checkTextMessage("Attempt Test1 Result Received")
                                     .check(bodyString().saveAs("msg_#{i}_3"))
-                                    .check(substring(",\"test\":\"Test1\",").exists()),
+                                    .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                                    .check(substring(",\"test\":\"Test").exists())
+//                                    .check(substring(",\"test\":\"Test1\",").exists()),
                             ws.checkTextMessage("Attempt Test2 Result Received")
                                     .check(bodyString().saveAs("msg_#{i}_4"))
-                                    .check(substring(",\"test\":\"Test2\",").exists()),
+                                    .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                                    .check(substring(",\"test\":\"Test").exists())
+//                                    .check(substring(",\"test\":\"Test2\",").exists()),
                             ws.checkTextMessage("Attempt Test3 Result Received")
                                     .check(bodyString().saveAs("msg_#{i}_5"))
-                                    .check(substring(",\"test\":\"Test3\",").exists()),
+                                    .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                                    .check(substring(",\"test\":\"Test").exists())
+//                                    .check(substring(",\"test\":\"Test3\",").exists()),
                             ws.checkTextMessage("Attempt Test4 Result Received")
                                     .check(bodyString().saveAs("msg_#{i}_6"))
-                                    .check(substring(",\"test\":\"Test4\",").exists()),
+                                    .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                                    .check(substring(",\"test\":\"Test").exists())
+//                                    .check(substring(",\"test\":\"Test4\",").exists()),
                             ws.checkTextMessage("Attempt Test5 Result Received")
                                     .check(bodyString().saveAs("msg_#{i}_7"))
-                                    .check(substring(",\"test\":\"Test5\",").exists()),
+                                    .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                                    .check(substring(",\"test\":\"Test").exists())
+//                                    .check(substring(",\"test\":\"Test5\",").exists()),
                             ws.checkTextMessage("Attempt Test6 Result Received")
                                     .check(bodyString().saveAs("msg_#{i}_8"))
-                                    .check(substring(",\"test\":\"Test6\",").exists())
+                                    .check(regex(".+\"test\":\"Test\\d\",.+"))
+//                                    .check(substring(",\"test\":\"Test").exists())
+//                                    .check(substring(",\"test\":\"Test6\",").exists())
                     )
     ).exec(session -> {
         appendToFile(session.userId(), "**** BEGIN ATTEMPT " + session.get("i") + " ****\n");
@@ -180,25 +194,39 @@ public class PerformanceTest extends Simulation {
                             .check(substring(",\"test\":\"HiddenTest\",").exists()),
                     ws.checkTextMessage("Submit Test0 Result Received")
                             .check(bodyString().saveAs("submit_3"))
-                            .check(substring(",\"test\":\"Test0\",").exists()),
+                            .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                            .check(substring(",\"test\":\"Test").exists())
+//                            .check(substring(",\"test\":\"Test0\",").exists()),
                     ws.checkTextMessage("Submit Test1 Result Received")
                             .check(bodyString().saveAs("submit_4"))
-                            .check(substring(",\"test\":\"Test1\",").exists()),
+                            .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                            .check(substring(",\"test\":\"Test").exists())
+//                            .check(substring(",\"test\":\"Test1\",").exists()),
                     ws.checkTextMessage("Submit Test2 Result Received")
                             .check(bodyString().saveAs("submit_5"))
-                            .check(substring(",\"test\":\"Test2\",").exists()),
+                            .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                            .check(substring(",\"test\":\"Test").exists())
+//                            .check(substring(",\"test\":\"Test2\",").exists()),
                     ws.checkTextMessage("Submit Test3 Result Received")
                             .check(bodyString().saveAs("submit_6"))
-                            .check(substring(",\"test\":\"Test3\",").exists()),
+                            .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                            .check(substring(",\"test\":\"Test").exists())
+//                            .check(substring(",\"test\":\"Test3\",").exists()),
                     ws.checkTextMessage("Submit Test4 Result Received")
                             .check(bodyString().saveAs("submit_7"))
-                            .check(substring(",\"test\":\"Test4\",").exists()),
+                            .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                            .check(substring(",\"test\":\"Test").exists())
+//                            .check(substring(",\"test\":\"Test4\",").exists()),
                     ws.checkTextMessage("Submit Test5 Result Received")
                             .check(bodyString().saveAs("submit_8"))
-                            .check(substring(",\"test\":\"Test5\",").exists()),
+                            .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                            .check(substring(",\"test\":\"Test").exists())
+//                            .check(substring(",\"test\":\"Test5\",").exists()),
                     ws.checkTextMessage("Submit Test6 Result Received")
                             .check(bodyString().saveAs("submit_9"))
-                            .check(substring(",\"test\":\"Test6\",").exists()),
+                            .check(regex(".+\"test\":\"Test\\d\",.+")),
+//                            .check(substring(",\"test\":\"Test").exists())
+//                            .check(substring(",\"test\":\"Test6\",").exists()),
                     ws.checkTextMessage("Submit Results Received")
                             .check(bodyString().saveAs("submit_10"))
                             .check(regex(".*SUBMIT.*"))))

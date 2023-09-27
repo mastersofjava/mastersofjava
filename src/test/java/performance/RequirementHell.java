@@ -11,7 +11,7 @@ public class RequirementHell implements TestAssignment {
              */
             public class SuperAwesomeNameService {
                         
-                public static List<String> doTheThings(List<String> names) {
+                public List<String> doTheThings(List<String> names) {
                     return names.stream().sorted().toList();
                 }
                         
@@ -25,7 +25,7 @@ public class RequirementHell implements TestAssignment {
              */
             public class SuperAwesomeNameService {
                         
-                public static List<String> doTheThings(List<String> names) {
+                public List<String> doTheThings(List<String> names) {
                     return names.stream().sorted((a,b)->a.toLowerCase().compareTo(b.toLowerCase())).toList();
                 }
                         
@@ -39,7 +39,7 @@ public class RequirementHell implements TestAssignment {
              */
             public class SuperAwesomeNameService {
                         
-                public static List<String> doTheThings(List<String> names) {
+                public List<String> doTheThings(List<String> names) {
                     return names.stream()
                       .sorted((a,b)->a.toLowerCase().compareTo(b.toLowerCase()))
                       .filter(a -> !a.contains("e"))
@@ -56,7 +56,7 @@ public class RequirementHell implements TestAssignment {
              */
             public class SuperAwesomeNameService {
                         
-                public static List<String> doTheThings(List<String> names) {
+                public List<String> doTheThings(List<String> names) {
                     return names.stream()
                       .sorted((a,b)-> {
                         if (hasVowel(a) && !hasVowel(b)) {
@@ -69,7 +69,7 @@ public class RequirementHell implements TestAssignment {
                       .filter(a -> !a.contains("e"))
                       .toList();
                 }
-                private static boolean hasVowel(String input) {
+                private boolean hasVowel(String input) {
                     return input.contains("aa")
                       || input.contains("ae")
                       || input.contains("ai")
@@ -106,9 +106,9 @@ public class RequirementHell implements TestAssignment {
              * This class makes the super awesome list of names
              */
             public class SuperAwesomeNameService {
-                static String previous = "";
+                String previous = "";
                         
-                public static List<String> doTheThings(List<String> names) {
+                public List<String> doTheThings(List<String> names) {
                         
                     return names.stream()
                       .sorted((a,b)-> {
@@ -123,7 +123,7 @@ public class RequirementHell implements TestAssignment {
                       .toList();
                 }
                 
-              public static String reverse(String input){
+              public String reverse(String input){
                 System.out.println("+++++++" + input);
               if (input.length() == 1) {
                 return input;

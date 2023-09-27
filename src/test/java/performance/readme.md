@@ -6,8 +6,9 @@ performancewise since it has many unittests that call eachother.
 ## Preparation
 1. Start keycloak and the game server (see readme.md on root level).
 2. Set the values of the 'Conf' class to the correct values. (follow instructions below for client secret)
-3. Upload the 2022-assignments.zip in the /control
-4. Start the requirement hell assignment in the /control
+3. Create the 2022-assignments.zip from https://bitbucket.org/first8/2022-assignments
+4. Upload the 2022-assignments.zip in the /control
+5. Start the requirement hell assignment in the /control
 
 ### Get Keycloak client secret
 1. Go to keycloack and open realm 'moj'

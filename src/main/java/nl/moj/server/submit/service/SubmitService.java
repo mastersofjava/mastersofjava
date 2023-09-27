@@ -28,6 +28,7 @@ import nl.moj.common.messages.JMSTestCaseResult;
 import nl.moj.common.messages.JMSTestResponse;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession.SessionType;
+import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.metrics.MetricsService;
 import nl.moj.server.runtime.ScoreService;
@@ -86,6 +87,7 @@ public class SubmitService {
         SubmitAttempt sa = submitAttemptRepository.findByUuid(submitResponse.getAttempt());
         AssignmentDescriptor ad = assignmentService
                 .resolveAssignmentDescriptor(sa.getAssignmentStatus().getAssignment());
+
         if (sa.getDateTimeEnd() == null) {
             sa = update(sa, submitResponse);
             // score if needed
@@ -94,7 +96,7 @@ public class SubmitService {
                 scoreService.finalizeScore(sa, ad);
             } else {
                 sa.setSuccess(false);
-                if (sa.getAssignmentStatus().getRemainingSubmitAttempts() <= 0) {
+                if (sa.getAssignmentStatus().getRemainingSubmitAttempts() <= 0 || assignmentFinished(sa)) {
                     scoreService.finalizeScore(sa, ad);
                 }
             }
@@ -103,6 +105,16 @@ public class SubmitService {
         } else {
             log.info("Ignoring response for submit attempt {}, already have a response.", sa.getUuid());
         }
+    }
+
+    private boolean assignmentFinished(SubmitAttempt sa) {
+        TeamAssignmentStatus tas = sa.getAssignmentStatus();
+        Optional<AssignmentStatus> as = assignmentStatusRepository.findByCompetitionSessionAndAssignment(tas.getCompetitionSession(),tas.getAssignment());
+        return as.map(AssignmentStatus::getDateTimeEnd).orElse(null) != null;
+    }
+
+    private boolean hasNoPendingSubmits(TeamAssignmentStatus teamAssignmentStatus) {
+        return submitAttemptRepository.countPending(teamAssignmentStatus) == 0;
     }
 
     @Transactional(Transactional.TxType.MANDATORY)
@@ -176,61 +188,74 @@ public class SubmitService {
                 .orElseThrow(() -> new IllegalStateException("Submit request received for assignment "
                         + tas.getAssignment().getUuid() + " that was never started."));
 
-        Instant registered = Instant.now();
+        if( hasNoPendingSubmits(tas)) {
+            Instant registered = Instant.now();
 
-        long secondsRemaining = tas.getCompetitionSession().getSessionType() == SessionType.GROUP
-                ? timersRuntime.getGroupSecondsRemaining(registered)
-                : timersRuntime.getTeamSecondsRemaining(submitRequest.getTeam(), registered);
+            long secondsRemaining = tas.getCompetitionSession().getSessionType() == SessionType.GROUP
+                    ? timersRuntime.getGroupSecondsRemaining(registered)
+                    : timersRuntime.getTeamSecondsRemaining(submitRequest.getTeam(), registered);
 
-        boolean registeredOnTime = tas.getCompetitionSession().getSessionType() == SessionType.GROUP
-                ? timersRuntime.isGroupRegisteredBeforeEnding(as, registered)
-                : timersRuntime.isTeamRegisteredBeforeEnding(submitRequest.getTeam(), registered);
+            boolean registeredOnTime = tas.getCompetitionSession().getSessionType() == SessionType.GROUP
+                    ? timersRuntime.isGroupRegisteredBeforeEnding(as, registered)
+                    : timersRuntime.isTeamRegisteredBeforeEnding(submitRequest.getTeam(), registered);
 
-        int remainingAttempts = tas.getRemainingSubmitAttempts();
-        if (remainingAttempts > 0 && registeredOnTime) {
-            log.debug("Has remaining attempts {} and is registered on time ({}s remaining)", remainingAttempts,
-                    secondsRemaining);
-            try {
-                // save the team progress
-                teamService.updateAssignment(submitRequest.getTeam().getUuid(), submitRequest.getSession().getUuid(),
-                        submitRequest.getAssignment().getUuid(), submitRequest.getSources());
+            int remainingAttempts = tas.getRemainingSubmitAttempts();
+            if (remainingAttempts > 0 && registeredOnTime) {
+                log.debug("Has remaining attempts {} and is registered on time ({}s remaining)", remainingAttempts,
+                        secondsRemaining);
+                try {
+                    // save the team progress
+                    teamService.updateAssignment(submitRequest.getTeam().getUuid(), submitRequest.getSession()
+                                    .getUuid(),
+                            submitRequest.getAssignment().getUuid(), submitRequest.getSources());
 
-                SubmitAttempt submitAttempt = prepareSubmitAttempt(submitRequest, registered,
-                        Duration.ofSeconds(secondsRemaining));
+                    SubmitAttempt submitAttempt = prepareSubmitAttempt(submitRequest, registered,
+                            Duration.ofSeconds(secondsRemaining));
 
-                jmsTemplate.convertAndSend("operation_request",
-                        JMSSubmitRequest.builder().attempt(submitAttempt.getUuid())
-                                .assignment(submitRequest.getAssignment().getUuid())
-                                .sources(submitRequest.getSources().entrySet().stream()
-                                        .map(e -> JMSFile.builder().type(JMSFile.Type.SOURCE).path(e.getKey().toString())
-                                                .content(e.getValue()).build())
-                                        .collect(Collectors.toList()))
-                                .tests(submitAttempt.getTestAttempt().getTestCases().stream()
-                                        .map(tc -> JMSTestCase.builder().testCase(tc.getUuid()).name(tc.getName()).build())
-                                        .collect(Collectors.toList()))
-                                .build());
+                    jmsTemplate.convertAndSend("operation_request",
+                            JMSSubmitRequest.builder().attempt(submitAttempt.getUuid())
+                                    .assignment(submitRequest.getAssignment().getUuid())
+                                    .sources(submitRequest.getSources().entrySet().stream()
+                                            .map(e -> JMSFile.builder()
+                                                    .type(JMSFile.Type.SOURCE)
+                                                    .path(e.getKey().toString())
+                                                    .content(e.getValue())
+                                                    .build())
+                                            .collect(Collectors.toList()))
+                                    .tests(submitAttempt.getTestAttempt().getTestCases().stream()
+                                            .map(tc -> JMSTestCase.builder()
+                                                    .testCase(tc.getUuid())
+                                                    .name(tc.getName())
+                                                    .build())
+                                            .collect(Collectors.toList()))
+                                    .build());
 
-                // schedule controller abort
-                scheduleAbort(submitAttempt);
+                    // schedule controller abort
+                    scheduleAbort(submitAttempt);
 
-                messageService.sendSubmitStarted(submitRequest.getTeam());
+                    messageService.sendSubmitStarted(submitRequest.getTeam());
 
-                log.info("Submit attempt {} for assignment {} by team {} registered.", submitAttempt.getUuid(), submitRequest.getAssignment()
-                        .getUuid(), submitRequest.getTeam().getUuid());
+                    log.info("Submit attempt {} for assignment {} by team {} registered.", submitAttempt.getUuid(), submitRequest.getAssignment()
+                            .getUuid(), submitRequest.getTeam().getUuid());
 
-                return submitAttempt;
-            } catch (IOException e) {
-                messageService.sendSubmitUnprocessable(submitRequest.getTeam());
-                throw new SubmitAttemptRegisterException(String.format("Failed to register submit attempt for assignment %s by team %s.", submitRequest.getAssignment()
-                        .getUuid(), submitRequest.getTeam().getUuid()), e);
+                    return submitAttempt;
+                } catch (IOException e) {
+                    messageService.sendSubmitUnprocessable(submitRequest.getTeam());
+                    throw new SubmitAttemptRegisterException(String.format("Failed to register submit attempt for assignment %s by team %s.", submitRequest.getAssignment()
+                            .getUuid(), submitRequest.getTeam().getUuid()), e);
+                }
             }
-        }
-        log.warn("Submit is not allowed for team '{}' named '{}'", submitRequest.getTeam()
-                .getUuid(), submitRequest.getTeam().getName());
+            log.warn("Submit is not allowed for team '{}' named '{}'", submitRequest.getTeam()
+                    .getUuid(), submitRequest.getTeam().getName());
 
-        messageService.sendSubmitRejected(submitRequest.getTeam(), remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
-        // send submit rejected
-        throw new SubmitAttemptRegisterException(remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
+            messageService.sendSubmitRejected(submitRequest.getTeam(), remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
+            // send submit rejected
+            throw new SubmitAttemptRegisterException(remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
+        }
+
+        // maybe send rejected message with another submit is still pending.
+
+        throw new SubmitAttemptRegisterException("Submit not allowed, submit still pending.");
     }
 
     private SubmitAttempt prepareSubmitAttempt(SubmitRequest submitRequest, Instant registered,

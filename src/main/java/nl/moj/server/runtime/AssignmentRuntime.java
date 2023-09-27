@@ -31,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import nl.moj.server.submit.repository.SubmitAttemptRepository;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
@@ -78,6 +79,7 @@ public class AssignmentRuntime {
 	private final CompetitionSessionRepository competitionSessionRepository;
 
 	private final AssignmentRepository assignmentRepository;
+	private final SubmitAttemptRepository submitAttemptRepository;
 
 	private final TransactionHelper trx;
 	private final TimersRuntime timersRuntime;
@@ -186,16 +188,23 @@ public class AssignmentRuntime {
 		return Optional.empty();
 	}
 
+	private boolean hasNoPendingSubmitAttempts(TeamAssignmentStatus tas) {
+		return submitAttemptRepository.countPending(tas) == 0;
+	}
+
 	private void stopTeamAssignmentStatus(Team t) {
 		TeamAssignmentStatus tas = teamAssignmentStatusRepository
 				.findByAssignmentAndCompetitionSessionAndTeam(assignment, competitionSession, t)
 				.orElse(null);
 		if (tas != null) {
-			if (tas.getDateTimeCompleted() == null) {
+			if (tas.getDateTimeCompleted() == null && hasNoPendingSubmitAttempts(tas)) {
 				tas = scoreService.finalizeScore(tas, assignmentDescriptor);
 				messageService.sendSubmitFeedback(tas);
+				tas.setDateTimeEnd(Instant.now());
+			} else {
+				log.info("Not finalizing score for team {}@{} on assignment end, submit attempt pending.", t.getName(),
+						t.getUuid());
 			}
-			tas.setDateTimeEnd(Instant.now());
 		} else {
 			log.warn("Could not finalize score for team {}@{}, no assignment status found.", t.getName(),
 					t.getUuid());

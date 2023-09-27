@@ -16,12 +16,14 @@
 */
 package nl.moj.server.test.repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.test.model.TestAttempt;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -30,4 +32,7 @@ public interface TestAttemptRepository extends JpaRepository<TestAttempt, Long> 
 
     List<TestAttempt> findByAssignmentStatus(TeamAssignmentStatus assignment);
 
+    @Query(value="select count(ca) from TestAttempt ca " +
+            "where ca.assignmentStatus = ?1 and ca.dateTimeRegister > ?2")
+    long countNewerAttempts(TeamAssignmentStatus tas, Instant dateRegistered);
 }
