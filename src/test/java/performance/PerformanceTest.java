@@ -287,8 +287,8 @@ public class PerformanceTest extends Simulation {
     }
 
     private static User initializeUser(Session session) {
-        User user = RestClient.createUser(String.format("pt-user-%d", session.userId()));
-        return new User(user.id(), user.username(), user.password(), String.format("pt-team-%d", session.userId()));
+        User user = RestClient.createUser(String.format("%spt-user-%d", Conf.prefix,session.userId()));
+        return new User(user.id(), user.username(), user.password(), String.format("%spt-team-%d", Conf.prefix,session.userId()));
     }
 
     private void parseHtml(String html) {
