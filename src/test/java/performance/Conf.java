@@ -9,7 +9,7 @@ import static performance.PerformanceTest.random;
 public class Conf {
 
     // number of teams
-    public static int teams = 75; // 100; (We streven nu naar 100 teams)
+    public static int teams = 50; // 100; (We streven nu naar 100 teams)
     // time in seconds that users starting up (reading the assignment etc)
     public static long ramp = 30; // 200; (Binnen 2 minuten heeft de helft van de teams voor het eerst getest, enkelen doen er veel langer over)
     // Every user will start with a compile, and then run 'x' attempts before submitting
