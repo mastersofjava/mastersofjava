@@ -19,6 +19,10 @@ duration: PT30M
 submit-timeout: PT60S
 test-timeout: PT60S
 
+system-properties:
+  "moj.bar": ${base}/assets/images/icon.png
+  foo: bar
+
 scoring-rules:
   maximum-resubmits: 2
   resubmit-penalty: 50%

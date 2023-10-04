@@ -97,6 +97,7 @@ public class AssignmentServiceTest {
             assertThat(d.getDuration()).isNotNull();
             assertThat(d.getScoringRules()).isNotNull();
             assertThat(d.getAssignmentFiles()).isNotNull();
+            assertThat(d.getSystemProperties()).isNotNull();
         });
     }
 }

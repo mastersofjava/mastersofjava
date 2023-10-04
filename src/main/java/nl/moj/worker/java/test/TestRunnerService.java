@@ -83,6 +83,7 @@ public class TestRunnerService {
                     cmd.add(classpathService.resolveClasspath(List.of(workspace.getTargetRoot())));
                     cmd.add("-Djava.security.manager");
                     cmd.add("-Djava.security.policy=" + policy.toAbsolutePath());
+                    cmd.addAll(resolveSystemProperties(ad));
                     cmd.add("org.junit.runner.JUnitCore");
 
                     // this expects a class name
@@ -136,6 +137,20 @@ public class TestRunnerService {
                     .reason(e.getMessage())
                     .build();
         }
+    }
+
+    private List<String> resolveSystemProperties(AssignmentDescriptor ad) {
+        List<String> systemProperties = new ArrayList<>();
+        if( ad.getSystemProperties() !=  null ) {
+            ad.getSystemProperties().forEach((k, v) -> {
+                String rv = v;
+                if( rv.contains("${base}/")) {
+                    rv = ad.getDirectory().resolve(v.replace("${base}/", "")).toAbsolutePath().toString();
+                }
+                systemProperties.add(String.format("-D%s=%s",k,rv));
+            });
+        }
+        return systemProperties;
     }
 
     private Path resolveSecurityPolicy(AssignmentDescriptor ad) {

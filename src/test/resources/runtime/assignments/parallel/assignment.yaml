@@ -25,6 +25,10 @@ scoring-rules:
   success-bonus: 200
   test-penalty: 20%
 
+system-properties:
+  "moj.bar": ${base}/assets/images/icon.png
+  foo: bar
+
 assignment-files:
   assignment: assets/assignment.txt
   sources:

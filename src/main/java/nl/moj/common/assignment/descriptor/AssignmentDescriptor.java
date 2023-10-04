@@ -19,7 +19,9 @@ package nl.moj.common.assignment.descriptor;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -63,6 +65,9 @@ public class AssignmentDescriptor {
     private ScoringRules scoringRules;
     @JsonProperty("assignment-files")
     private AssignmentFiles assignmentFiles;
+
+    @JsonProperty("system-properties")
+    private Map<String,String> systemProperties = new HashMap<>();
     
 
     // TODO: make this proper properties instead of abusing labels
