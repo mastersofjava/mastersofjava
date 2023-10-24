@@ -46,44 +46,44 @@ function connectCompetition() {
                     $('#tabLink_' + msg.test).css('background-color', colorStr);
                 }
 
-                if (userHandlers.hasOwnProperty(msg.messageType)) {
-                    userHandlers[msg.messageType](msg);
+                if (handlers.hasOwnProperty(msg.messageType)) {
+                    handlers[msg.messageType](msg);
                 }
                 data.ack();
             },
             {ack: 'client'});
         stomp.subscribe("/queue/session",
             function (data) {
-                var msg = JSON.parse(data.body);
-                if (competitionHandlers.hasOwnProperty(msg.messageType)) {
-                    competitionHandlers[msg.messageType](msg);
+                const msg = JSON.parse(data.body);
+                if (handlers.hasOwnProperty(msg.messageType)) {
+                    handlers[msg.messageType](msg);
                 }
                 data.ack();
             },
             {ack: 'client'});
 
-        const userHandlers = {};
-        userHandlers['COMPILE'] = function (msg) {
+        const handlers = {};
+        handlers['COMPILE'] = function (msg) {
             enable();
             appendOutput(msg.message && msg.message.length > 0 ? msg.message : ( msg.success ? 'OK' : 'FAILED' ) );
         };
-        userHandlers['COMPILING_STARTED'] = function (msg) {
+        handlers['COMPILING_STARTED'] = function (msg) {
             updateOutputHeaderColorActionStarted();
         };
-        userHandlers['COMPILING_ENDED'] = function (msg) {
+        handlers['COMPILING_ENDED'] = function (msg) {
             updateOutputHeaderColorActionEnded(msg.success);
         };
-        userHandlers['TEST'] = function (msg) {
+        handlers['TEST'] = function (msg) {
             enable();
             appendOutput(msg.test + ':\r\n' + msg.message);
         };
-        userHandlers['TESTING_STARTED'] = function (msg) {
+        handlers['TESTING_STARTED'] = function (msg) {
             updateOutputHeaderColorActionStarted();
         };
-        userHandlers['TESTING_ENDED'] = function (msg) {
+        handlers['TESTING_ENDED'] = function (msg) {
             updateOutputHeaderColorActionEnded(msg.success);
         };
-        userHandlers['SUBMIT'] = function (msg) {
+        handlers['SUBMIT'] = function (msg) {
             if (!msg.completed) {
                 enable();
             } else {
@@ -93,9 +93,12 @@ function connectCompetition() {
             updateAlertContainerWithScore(msg);
             resizeContent();
         };
-
-        const competitionHandlers = {};
-        competitionHandlers['TIMER_SYNC'] = function (msg) {
+        handlers['START_ASSIGNMENT'] = function (msg) {
+            window.setTimeout(function () {
+                window.location.reload()
+            }, 10);
+        };
+        handlers['TIMER_SYNC'] = function (msg) {
             let lastMessage = msg;
             if (clock) {
                 clock.sync(msg.remainingTime, msg.totalTime);
@@ -107,12 +110,7 @@ function connectCompetition() {
                 console.log('Unhandled timer sync received',msg);
             }
         };
-        competitionHandlers['START_ASSIGNMENT'] = function (msg) {
-            window.setTimeout(function () {
-                window.location.reload()
-            }, 10);
-        };
-        competitionHandlers['STOP_ASSIGNMENT'] = function (msg) {
+        handlers['STOP_ASSIGNMENT'] = function (msg) {
             disable();
             if (clock) {
                 clock.stop();

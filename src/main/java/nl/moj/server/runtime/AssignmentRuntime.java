@@ -181,7 +181,9 @@ public class AssignmentRuntime {
 				// competitionAssignment = null;
 				log.info("Stopped assignment {}", assignment.getName());
 				assignment = null;
-				done.complete(null);
+				if (competitionSession.getSessionType() == SessionType.GROUP) {
+					done.complete(null);
+				}
 				return Optional.of(assignmentStatus);
 			});
 		}
@@ -315,7 +317,7 @@ public class AssignmentRuntime {
 		done = timersRuntime.startTimerForTeam( this::teamStop, t, tas.getAssignment().getAssignmentDuration(),
 				competitionSession);
 		// retrigger start assignment in frontend
-		messageService.sendGroupStart(assignment.getName(), competitionSession.getUuid().toString());
+		messageService.sendTeamStart(t,assignment.getName(), competitionSession.getUuid().toString());
 		return tas;
 	}
 
