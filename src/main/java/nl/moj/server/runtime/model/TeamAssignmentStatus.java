@@ -99,6 +99,18 @@ public class TeamAssignmentStatus {
     	return dateTimeStart!=null;
     }
 
+    public boolean isCompleted() {
+        return dateTimeCompleted != null;
+    }
+
+    public boolean isEnded() {
+        return dateTimeEnd != null;
+    }
+
+    public boolean isActive() {
+        return isStarted() && !isCompleted() && !isEnded();
+    }
+
     public TestAttempt getMostRecentTestAttempt() {
         List<TestAttempt> attempts = getTestAttempts().stream().filter( ta -> ta.getDateTimeEnd() != null ).collect(Collectors.toList());
         if( attempts.isEmpty()) {

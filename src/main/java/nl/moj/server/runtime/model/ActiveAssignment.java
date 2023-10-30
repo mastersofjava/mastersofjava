@@ -52,6 +52,13 @@ public class ActiveAssignment {
         return "[" +assignment.getName() + ", " + competitionSession.getId()+"]";
     }
 
+    public CompetitionSession.SessionType getSessionType() {
+        if( competitionSession != null && competitionSession.getSessionType() != null ) {
+            return competitionSession.getSessionType();
+        }
+        return null;
+    }
+
     public List<String> getTestNames() {
         return assignmentFiles
                 .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST ||

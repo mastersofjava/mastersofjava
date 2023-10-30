@@ -53,38 +53,21 @@ public class RankingsService {
 
     @Transactional(Transactional.TxType.MANDATORY)
     public List<Ranking> getRankings(CompetitionSession session) {
-        return getRankings(session, null);
-    }
-
-    @Transactional(Transactional.TxType.REQUIRED)
-    public List<Ranking> getRankings(UUID sessionId, String selectedYearFilter) {
-        return getRankings(competitionSessionRepository.findByUuid(sessionId),null);
-    }
-
-    @Transactional(Transactional.TxType.MANDATORY)
-    public List<Ranking> getRankings(CompetitionSession session, String selectedYearFilter) {
         List<Ranking> rankings = new ArrayList<>();
         if (session != null) {
-            final List<AssignmentResult> sessionList = assignmentResultRepository.findByCompetitionSession(session);
-            final List<AssignmentResult> assignmentResultsPerYear = new ArrayList<>();
-
-            for (AssignmentResult result: sessionList) {
-                boolean isInsertAssignment = selectedYearFilter==null || result.getAssignmentStatus().getAssignment().getAssignmentDescriptor().contains(selectedYearFilter);
-
-                if (isInsertAssignment) {
-                    assignmentResultsPerYear.add(result);
-                }
-            }
+            final List<AssignmentResult> assignmentResults = assignmentResultRepository.findByCompetitionSession(session);
             teamRepository.findAll().forEach(team -> {
-                Ranking rank = Ranking.builder()
-                        .team(team.getName())
-                        .totalScore(calculateTotalScore(assignmentResultsPerYear, team))
-                        .build();
-                getTeamAssignments(assignmentResultsPerYear, team).forEach(ar -> {
-                    Assignment assignment = ar.getAssignmentStatus().getAssignment();
-                    rank.addAssignmentScore(assignment, ar.getFinalScore());
-                });
-                rankings.add(rank);
+                if( session.getSessionType() == CompetitionSession.SessionType.GROUP || teamHasAtLeastOneResult(assignmentResults,team)) {
+                    Ranking rank = Ranking.builder()
+                            .team(team.getName())
+                            .totalScore(calculateTotalScore(assignmentResults, team))
+                            .build();
+                    getTeamAssignments(assignmentResults, team).forEach(ar -> {
+                        Assignment assignment = ar.getAssignmentStatus().getAssignment();
+                        rank.addAssignmentScore(assignment, ar.getFinalScore());
+                    });
+                    rankings.add(rank);
+                }
             });
 
             rankings.sort(Comparator.comparingLong(Ranking::getTotalScore));
@@ -117,5 +100,9 @@ public class RankingsService {
         return getTeamAssignments(assignmentResults, t)
                 .map(AssignmentResult::getFinalScore)
                 .reduce(0L, Long::sum);
+    }
+
+    private boolean teamHasAtLeastOneResult(List<AssignmentResult> assignmentResults, Team t) {
+        return getTeamAssignments(assignmentResults, t).findAny().isPresent();
     }
 }

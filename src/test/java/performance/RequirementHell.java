@@ -155,7 +155,7 @@ public class RequirementHell implements TestAssignment {
                  */
                 public class SuperAwesomeNameService {
                             
-                    public static List<String> doTheThings(List<String> names) {
+                    public List<String> doTheThings(List<String> names) {
                         // TODO: implement here
                     }
                             
@@ -173,7 +173,7 @@ public class RequirementHell implements TestAssignment {
                  */
                 public class SuperAwesomeNameService {
                             
-                    public static List<String> doTheThings(List<String> names) {
+                    public List<String> doTheThings(List<String> names) {
                         // TODO: implement here
                         return names;
                     }
@@ -195,7 +195,7 @@ public class RequirementHell implements TestAssignment {
                   * This class makes the super awesome list of names
                   */
                  public class SuperAwesomeNameService {
-                     public static List<String> doTheThings(List<String> names) {
+                     public List<String> doTheThings(List<String> names) {
                          names.sort(comparing(String::toLowerCase));
                          for (int i = 1; i < names.size(); i++) {
                              if (names.get(i - 1).contains("a")) {
@@ -205,7 +205,7 @@ public class RequirementHell implements TestAssignment {
                          return names;
                      }
                  
-                     private static String reverseAndCapitalize(String name) {
+                     private String reverseAndCapitalize(String name) {
                          var reversedLowerCase = new StringBuilder(name).reverse().toString().toLowerCase();
                          return reversedLowerCase.substring(0,1).toUpperCase() + reversedLowerCase.substring(1).toLowerCase();
                      }

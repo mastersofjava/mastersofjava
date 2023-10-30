@@ -28,7 +28,6 @@ import nl.moj.common.messages.JMSTestCaseResult;
 import nl.moj.common.messages.JMSTestResponse;
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionSession.SessionType;
-import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.message.service.MessageService;
 import nl.moj.server.metrics.MetricsService;
 import nl.moj.server.runtime.ScoreService;
@@ -93,11 +92,11 @@ public class SubmitService {
             // score if needed
             if (isSuccess(sa, submitResponse)) {
                 sa.setSuccess(true);
-                scoreService.finalizeScore(sa, ad);
+                finalizeScore(sa, ad);
             } else {
                 sa.setSuccess(false);
                 if (sa.getAssignmentStatus().getRemainingSubmitAttempts() <= 0 || assignmentFinished(sa)) {
-                    scoreService.finalizeScore(sa, ad);
+                    finalizeScore(sa, ad);
                 }
             }
             messageService.sendSubmitFeedback(sa);
@@ -107,9 +106,19 @@ public class SubmitService {
         }
     }
 
+    private void finalizeScore(SubmitAttempt sa, AssignmentDescriptor ad) {
+        scoreService.finalizeScore(sa, ad);
+        if (sa.getAssignmentStatus() != null && sa.getAssignmentStatus().getCompetitionSession() != null) {
+            if (sa.getAssignmentStatus().getCompetitionSession().getSessionType() == SessionType.SINGLE) {
+                sa.getAssignmentStatus().setDateTimeEnd(Instant.now());
+                timersRuntime.clearTimers(sa.getAssignmentStatus().getTeam());
+            }
+        }
+    }
+
     private boolean assignmentFinished(SubmitAttempt sa) {
         TeamAssignmentStatus tas = sa.getAssignmentStatus();
-        Optional<AssignmentStatus> as = assignmentStatusRepository.findByCompetitionSessionAndAssignment(tas.getCompetitionSession(),tas.getAssignment());
+        Optional<AssignmentStatus> as = assignmentStatusRepository.findByCompetitionSessionAndAssignment(tas.getCompetitionSession(), tas.getAssignment());
         return as.map(AssignmentStatus::getDateTimeEnd).orElse(null) != null;
     }
 
@@ -188,7 +197,7 @@ public class SubmitService {
                 .orElseThrow(() -> new IllegalStateException("Submit request received for assignment "
                         + tas.getAssignment().getUuid() + " that was never started."));
 
-        if( hasNoPendingSubmits(tas)) {
+        if (hasNoPendingSubmits(tas)) {
             Instant registered = Instant.now();
 
             long secondsRemaining = tas.getCompetitionSession().getSessionType() == SessionType.GROUP

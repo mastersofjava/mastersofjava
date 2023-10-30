@@ -43,7 +43,8 @@
             </div>
         </div>
         <div class="col-2 d-flex justify-content-center">
-            <div id="assignment-clock" th:attrappend="data-time-left=${timeLeft},data-time=${time},running=${running}"
+            <div id="assignment-clock" th:classappend="${enableClock?'':'visually-hidden'}"
+                 th:attrappend="data-time-left=${timeLeft},data-time=${time},running=${running}"
                  class="align-self-center">
                 <div class="time d-flex justify-content-center" style="height: 160px; width: 160px;">
                     <h2 class="align-self-center">--:--</h2>

@@ -69,6 +69,7 @@ public class FeedbackController {
 
         // TODO probably use ids/uuids here, but they are not being used in the feedback messages atm.
         List<String> testIds = new ArrayList<>();
+        model.addObject("enableClock", state.getSessionType() == CompetitionSession.SessionType.GROUP );
         if (state.isRunning()) {
             testIds = state.getTestNames();
             model.addObject("uuid", state.getAssignment().getUuid().toString());

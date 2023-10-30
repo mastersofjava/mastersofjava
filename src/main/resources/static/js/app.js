@@ -38,9 +38,7 @@ function connectCompetition() {
         // This is needed because this will be executed after a (re)connect
         stomp.subscribe('/user/queue/session',
             function (data) {
-                var msg = JSON.parse(data.body);
-                console.log('received', msg);
-
+                const msg = JSON.parse(data.body);
                 if ('TEST' === msg.messageType && msg.test) {
                     var colorStr = msg.success ? 'lightgreen' : 'pink';
                     $('#tabLink_' + msg.test).css('background-color', colorStr);
@@ -88,6 +86,9 @@ function connectCompetition() {
                 enable();
             } else {
                 disable();
+                if (clock) {
+                    clock.setPaused(true);
+                }
             }
             updateSubmits(msg.remainingSubmits);
             updateAlertContainerWithScore(msg);

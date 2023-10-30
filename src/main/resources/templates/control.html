@@ -37,6 +37,7 @@
                 <h3><span>'[[${assignment.getName()}]]'</span></h3>
             </div>
             <div id="assignment-clock"
+                 th:classappend="${cs.getType() == T(nl.moj.server.competition.model.CompetitionSession$SessionType).GROUP ? '': 'visually-hidden'}"
                  th:if="${cs.isAssignmentActive()}" th:with="assignment=${cs.getActiveAssignment()}"
                  th:attrappend="data-time-left=${assignment.getSecondsLeft()},data-time=${assignment.getSeconds()}"
                  class="align-self-center">

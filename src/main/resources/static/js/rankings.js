@@ -26,8 +26,10 @@ function connect() {
         console.log('Subscribe to /rankings/queue/rankings');
         stompClient.subscribe('/queue/rankings',
             function (msg) {
-                window.location.reload();
                 msg.ack();
+                window.setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             },
             {ack: 'client'});
     };
@@ -46,7 +48,7 @@ function connectControl() {
         heartbeatOutgoing: 4000
     });
 
-    stompControlClient.onConnect = function(frame) {
+    stompControlClient.onConnect = function (frame) {
         console.log('Connected to control');
         console.log('Subscribe to /control/queue/time');
         stompControlClient.subscribe('/queue/time',
@@ -83,7 +85,7 @@ function disconnect() {
     if (stompClient != null) {
         stompClient.deactivate();
     }
-    if( stompControlClient != null ) {
+    if (stompControlClient != null) {
         stompControlClient.deactivate();
     }
 }
@@ -94,7 +96,7 @@ function initializeAssignmentClock() {
 }
 
 function initPopovers() {
-    $('[data-bs-toggle="popover"]').each( (_,el) => {
+    $('[data-bs-toggle="popover"]').each((_, el) => {
         new bootstrap.Popover(el)
     })
 
@@ -108,9 +110,9 @@ function initPopovers() {
         return txt;
     }
 
-    $('[data-score-popup]').each((_,el) => {
+    $('[data-score-popup]').each((_, el) => {
         let $popup = $(el)
-        new bootstrap.Popover(el,{
+        new bootstrap.Popover(el, {
             container: 'body',
             content: html($popup.data('score-popup')),
             html: true,

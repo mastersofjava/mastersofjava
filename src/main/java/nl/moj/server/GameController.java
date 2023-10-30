@@ -24,6 +24,7 @@ import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.*;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
+import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.teams.controller.TeamForm;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
@@ -38,7 +39,9 @@ import javax.transaction.Transactional;
 import java.security.Principal;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Controller
 @AllArgsConstructor
@@ -110,6 +113,8 @@ public class GameController {
 //                || as.getSubmitAttempts().stream().anyMatch(sa -> sa.getSuccess() != null && sa.getSuccess());
 
         AssignmentResult ar = as.getAssignmentResult();
+        Long submitTime = as.getSubmitAttempts().stream().filter( sa -> Objects.nonNull(sa.getDateTimeEnd()))
+                    .max(Comparator.comparing(SubmitAttempt::getDateTimeEnd)).map( sa -> sa.getAssignmentTimeRemaining() != null ? sa.getAssignmentTimeRemaining().getSeconds() : 0L ).orElse(0L);
 
         TeamAssignmentModel tam = TeamAssignmentModel.builder()
                 .assignmentName(state.getAssignmentDescriptor().getDisplayName())
@@ -122,8 +127,7 @@ public class GameController {
                 .score(ar != null ? ar.getFinalScore() : 0L)
                 .submits(ad.getScoringRules().getMaximumResubmits() + 1)
                 .submitsRemaining(as.getRemainingSubmitAttempts())
-                // TODO this is used to render the clock after submit, can we do this smarter?
-                .submitTime(ar != null ? ar.getInitialScore() : 0L)
+                .submitTime(submitTime)
                 .build();
 
         model.addAttribute("assignment", tam);

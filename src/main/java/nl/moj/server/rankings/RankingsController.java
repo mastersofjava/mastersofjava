@@ -23,6 +23,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.rankings.model.Ranking;
 import nl.moj.server.rankings.service.RankingsService;
 import nl.moj.server.runtime.CompetitionRuntime;
@@ -49,10 +50,8 @@ public class RankingsController {
     @Transactional(Transactional.TxType.REQUIRED)
     public ModelAndView getRankings() {
         ActiveAssignment state = competitionRuntime.getActiveAssignment(null);
-
-        log.info("session " + HttpUtil.getParam("session") + " - " + competitionRuntime);
-
         Competition competition = competitionRuntime.getCompetition();
+
         List<Ranking> rankings = enrich(rankingsService.getRankings(competitionRuntime.getSessionId()));
         ModelAndView model = new ModelAndView("rankings");
         model.addObject("oas", rankingsService.getRankingHeaders(competitionRuntime.getSessionId()));
@@ -65,6 +64,8 @@ public class RankingsController {
         model.addObject("bottom2", parts.get(1));
         model.addObject("bottom3", parts.get(2));
         model.addObject("bottom4", parts.get(3));
+
+        model.addObject("enableClock", state.getSessionType() == CompetitionSession.SessionType.GROUP );
         if (state.isRunning()) {
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addObject("timeLeft", state.getSecondsRemaining());

@@ -2,10 +2,12 @@ function Clock(initialOffset) {
     this.offset = initialOffset || '440';
     this.current = 0;
     this.time = $('#assignment-clock').attr('data-time');
-    this.finished = false;
+    this.finished = $('#content').attr('finished') === 'true';
     this.isPaused = false;
     this.soundPlayer = new SoundPlayer();
     this.ticksStart = -1;
+
+    console.log('clock:finished', this.finished)
 
     this.start = function () {
         let $assignmentClock = $('#assignment-clock');
@@ -43,10 +45,12 @@ function Clock(initialOffset) {
 
         // the countdown in the client (synchronized also from the server every 10 seconds)
         let interval = setInterval(() => {
-            if (clock.finished || clock.current - clock.time >= 0) {
+            if (clock.finished ) {
                 clearInterval(interval);
-                clock.current = clock.time
-                renderTime();
+                if( clock.current - clock.time >= 0 ) {
+                    clock.current = clock.time
+                    renderTime();
+                }
             } else {
                 if (!clock.isPaused) {
                     renderTime();
