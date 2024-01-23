@@ -24,4 +24,4 @@ application-controller-local.yaml
 application-worker-local.yaml
 application-single-local.yaml
 .factorypath
-scripts
+/scripts

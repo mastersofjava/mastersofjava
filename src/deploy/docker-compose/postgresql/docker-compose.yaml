@@ -1,4 +1,3 @@
-
 version: '2.4'
 services:
   postgresql:
@@ -12,6 +11,6 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_MULTIPLE_DATABASES: "moj:moj:moj"
+      POSTGRES_MULTIPLE_DATABASES: "iam:iam:iam,moj:moj:moj"
     volumes:
       - "./scripts:/docker-entrypoint-initdb.d"

@@ -1,7 +1,7 @@
 version: '2.4'
 services:
   worker:
-    image: docker.first8.nl/moj/moj-worker:17
+    image: your.registry/moj/moj-worker:17
     cpus: 3
     mem_reservation: 2g
     mem_limit: 4g

@@ -1,0 +1,16 @@
+version: '2.4'
+services:
+  single:
+    image: your.registry/moj/moj-single:17
+    cpus: 3
+    mem_reservation: 2g
+    mem_limit: 4g
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      OIDC_ISSUER_URI: "<oidc-issuer-url>"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://localhost:5432/moj"
+      SPRING_DATASOURCE_USERNAME: "moj"
+      SPRING_DATASOURCE_PASSWORD: "moj"
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.postgresql.Driver"

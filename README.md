@@ -1,52 +1,70 @@
 # Masters of Java
 
-This project is a rebuild of the famous original Masters of Java software orginally built by Erik Hooijmeijer 
+This project is a rebuild of the famous original Masters of Java software, originally built by Erik Hooijmeijer 
 in 2004 [see http://www.ctrl-alt-dev.nl/mastersofjava/](http://www.ctrl-alt-dev.nl/mastersofjava/). This project takes the original concept, but instead 
-of a classical client/server Swing application, it is a completely web-based re-implementation.
+of a classical client/server Swing application, it is a complete web-based re-implementation.
 
 Assignments for previous years can be found at [https://github.com/First8/mastersofjava/](https://github.com/First8/mastersofjava/).
-
-## moj game server
-
-The game server uses Spring Boot,Keycloak, Thymeleaf, H2 database and Websockets.
 
 ### Requirements
 
 - Java 17+
 - Maven 3.5+
-- [Keycloak](www.keycloak.org)
+- [Keycloak](https://www.keycloak.org)
+- [PostgreSQL](https://www.postgresql.org)
+- [Docker (Optional)](https://www.docker.com)
 
 ## Building
 
-Building consists of two parts:
-
-* Software
-* Containers
-
-### Software
 Building the software is done using maven. The command below will build the software and run all testcases.
 
 ```shell
 $ mvn clean verify 
 ```
 
-### Containers
-Building the containers is also done using maven but some additional configuration is needed.
+## Building Containers
+Building the containers is also done using maven and supports building to the docker-daemon and building and pushing
+to a registry directly.
+
+### Docker Build
+To build all the containers in the Docker daemon the following can be used.
+
+```shell
+$ export REGISTRY=<your-registry>
+$ mvn -Dmoj.image.base=${REGISTRY}/moj/moj -P docker-build clean deploy
+```
+
+### Registry Build
+To build and push all the containers to a container registry the following can be used.
 
 ```shell
 $ export REGISTRY=<your-registry>
 $ export REGISTRY_USERNAME=<your-push-user>
 $ export REGISTRY_PASSWORD=<your-registry-password>
 
-$ mvn -Dmoj.image.base=${REGISTRY}/moj/moj git-commit-id:revision jib:build@single jib:build@controller jib:build@worker
+$ mvn -Dmoj.image.base=${REGISTRY}/moj/moj -P registry-build clean deploy
 ```
-This will push all containers to your registry.  
+This will build and push all containers to your registry.  
 
-## Running Containers Local
-To run everything local in containsers see [deploy using docker desktop](src/deploy/docker-desktop/README.md).
+## Running Containers
+To run everything in containers see [deploying with docker compose](src/deploy/docker-compose).
 
-## Running Local
-To run everything locally follow the steps below
+## Running in Kubernetes
+To run everything in Kubernetes see [deploying with Helm](src/deploy/helm/README.md).
+
+## Running Local 
+Running everything locally is primarily useful when developing. It will default use H2 as data storage, but PostgreSQL
+works too, but requires the datasource to be configured by adding the following to the application-*-local.yaml files
+for controller and single.
+
+```
+spring:
+  datasource:
+    url: jdbc:postgresql://<hostname>:<port>/<db>
+    username: <username>
+    password: <password>
+    driver-class-name: org.postgresql.Driver
+```
 
 ### Preparation
 
@@ -63,20 +81,21 @@ Use the following steps to get Keycloak up and running.
 - Download the latest standalone keycloak ( >= 21 ) from the link on the page [here](https://www.keycloak.org/downloads)
 - Unpack the installation file to a directory
 - Copy the `src/main/keycloak-template/moj` directory from this project to `themes` directory within the keycloak 
-  installation directory 
+  installation directory. The `themes` folder should now have folder named `moj`.
 - Run it using `bin/kc.sh start --hostname localhost --hostname-strict-https false --http-enabled true --http-port 8888`
   (or for windows users: `bin/kc.bat start --hostname localhost --hostname-strict-https false --http-enabled true --http-port 8888`)
-- Go the webpage at http://localhost:8888
+- Copy the `src/deploy/docker-compose/iam/realms/realm-mastersofjava.json` file and replace `host.docker.internal` with `localhost`.
+- Go the webpage at [http://localhost:8888](http://localhost:8888)
    * Create an admin account and log in
    * Open the top left dropdown and select 'Add realm'
-     * Click on 'Browse' and select the file `realm-mastersofjava.json` in the `src/deploy/docker-desktop/realms` folder.
+     * Click on 'Browse' and select the `realm-mastersofjava.json` in the `src/deploy/docker-compose/iam/realms` folder.
      * Click 'Create'
    * Click on 'Users' in the menu bar on the left.
      * Click on 'Create new user' and fill in the following form values:
-       * Email: <a valid email address>
+       * Email: 'your-email address'
        * Email verified: toggle to 'On'
-       * Firstname: 'A'
-       * Lastname: 'Admin'
+       * Firstname: 'Jane'
+       * Lastname: 'Doe'
        * Required user actions: leave blank
        * Click 'Join Groups'
          * Select `admin`
@@ -128,7 +147,7 @@ to run tests or compiles all the time having more workers is better.
 
 ### GUI
 
-The Gamemaster dashboard can be found on [http://localhost:8080/control](http://localhost:8080/control). The first time 
+The Game Master dashboard can be found on [http://localhost:8080/control](http://localhost:8080/control). The first time 
 you start the application you will have to log in using the admin credentials created in the keycloak setup and the 
 MoJ game server admin console should appear. 
 
@@ -138,7 +157,7 @@ separate browser session, e.g. using a 'private window' or another browser imple
 
 # License
 
-   Copyright 2020 First Eight BV (The Netherlands)
+   Copyright 2020-2024 First Eight BV (The Netherlands)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.

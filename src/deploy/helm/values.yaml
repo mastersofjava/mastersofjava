@@ -7,7 +7,9 @@ global:
     database:
       # name of the database, defaults to 'iam'. Must match [a-z_][a-z_0-9]*
       name:
+      # username defaults to 'iam'
       username:
+      # password defaults to 'iam'
       password:
     ingress:
       host: auth-moj.local
@@ -17,7 +19,9 @@ global:
     database:
       # name of the database, defaults to 'controller'. Must match [a-z_][a-z_0-9]*
       name:
+      # username defaults to controller
       username:
+      # password defaults to controller
       password:
     ingress:
       host: moj.local
