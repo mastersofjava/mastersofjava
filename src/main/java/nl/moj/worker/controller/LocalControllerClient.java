@@ -21,25 +21,25 @@ public class LocalControllerClient implements ControllerClient {
 
     public AssignmentDescriptor getAssignmentDescriptor(UUID assignmentUuid) throws IOException {
 
-//        Path assignment = getAssigmentContentFolder(assignmentUuid);
-//        Path descriptor = assignment.resolve("assignment.yaml");
-//        if (!Files.exists(descriptor)) {
-//            descriptor = assignment.resolve("assignment.yml");
-//        }
-//        if (!Files.exists(descriptor)) {
-//            throw new IOException("Unable to resolve assignment descriptor for assignment " + assignmentUuid + ".");
-//        }
-//
-//        try {
-//            AssignmentDescriptor ad = yamlMapper.readValue(Files.newInputStream(descriptor),
-//                    AssignmentDescriptor.class);
-//            ad.setDirectory(descriptor.getParent());
-//            ad.setOriginalAssignmentDescriptor(descriptor.toString());
-//            return ad;
-//        } catch (Exception e) {
-//            throw new IOException("Unable to read assignment descriptor " + descriptor + ".",
-//                    e);
-//        }
+        //        Path assignment = getAssigmentContentFolder(assignmentUuid);
+        //        Path descriptor = assignment.resolve("assignment.yaml");
+        //        if (!Files.exists(descriptor)) {
+        //            descriptor = assignment.resolve("assignment.yml");
+        //        }
+        //        if (!Files.exists(descriptor)) {
+        //            throw new IOException("Unable to resolve assignment descriptor for assignment " + assignmentUuid + ".");
+        //        }
+        //
+        //        try {
+        //            AssignmentDescriptor ad = yamlMapper.readValue(Files.newInputStream(descriptor),
+        //                    AssignmentDescriptor.class);
+        //            ad.setDirectory(descriptor.getParent());
+        //            ad.setOriginalAssignmentDescriptor(descriptor.toString());
+        //            return ad;
+        //        } catch (Exception e) {
+        //            throw new IOException("Unable to read assignment descriptor " + descriptor + ".",
+        //                    e);
+        //        }
 
         return assignmentService.resolveAssignmentDescriptor(assignmentUuid);
     }

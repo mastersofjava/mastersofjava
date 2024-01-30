@@ -16,6 +16,16 @@
 */
 package nl.moj.server.runtime;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.springframework.stereotype.Service;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,14 +48,6 @@ import nl.moj.server.runtime.repository.AssignmentStatusRepository;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
-import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -79,7 +81,8 @@ public class CompetitionRuntime {
     private UUID sessionId;
 
     @Transactional(Transactional.TxType.REQUIRED)
-    public CompetitionSession startSession(UUID id, CompetitionSession.SessionType sessionType) throws CompetitionServiceException {
+    public CompetitionSession startSession(UUID id, CompetitionSession.SessionType sessionType)
+            throws CompetitionServiceException {
         Competition competition = competitionRepository.findByUuid(id);
         if (competition == null) {
             throw new CompetitionServiceException("No competition for id " + id);
@@ -136,7 +139,8 @@ public class CompetitionRuntime {
         if (isAssignmentRunning(sid, id)) {
             log.info("Not starting assignment {} for session {}, already running.", id, sid);
             return assignmentStatusRepository.findByCompetitionSession_UuidAndAssignment_Uuid(sid, id)
-                    .orElseThrow(() -> new CompetitionServiceException(String.format("Cannot start assignment %s, assignment not found.", id)));
+                    .orElseThrow(() -> new CompetitionServiceException(
+                            String.format("Cannot start assignment %s, assignment not found.", id)));
         }
 
         Optional<CompetitionAssignment> ca = competition.getAssignments().stream()
@@ -177,11 +181,13 @@ public class CompetitionRuntime {
 
         CompetitionSession cs = competitionSessionRepository.findByUuid(sid);
         if (cs == null) {
-            throw new CompetitionServiceException(String.format("Unable to reset assignment %s, session %s not found.", id, sid));
+            throw new CompetitionServiceException(
+                    String.format("Unable to reset assignment %s, session %s not found.", id, sid));
         }
         Assignment assignment = assignmentRepository.findByUuid(id);
         if (assignment == null) {
-            throw new CompetitionServiceException(String.format("Unable to reset assignment %s, assignment %s not found.", id, sid));
+            throw new CompetitionServiceException(
+                    String.format("Unable to reset assignment %s, assignment %s not found.", id, sid));
         }
 
         // stop assignment it might be running
@@ -199,7 +205,8 @@ public class CompetitionRuntime {
             try {
                 teamService.cleanAssignment(teamAssignmentStatus.getTeam().getUuid(), sid, id);
             } catch (IOException e) {
-                log.warn("Failed to clean team {} assignment {} content folder, ignoring", teamAssignmentStatus.getTeam().getUuid(), id, e);
+                log.warn("Failed to clean team {} assignment {} content folder, ignoring",
+                        teamAssignmentStatus.getTeam().getUuid(), id, e);
             }
         });
 
@@ -217,7 +224,8 @@ public class CompetitionRuntime {
         return sid != null && sid.equals(getSessionId()) && id != null && id.equals(getCurrentAssignment());
     }
 
-    private CompetitionSession createNewCompetitionSession(Competition competition, CompetitionSession.SessionType sessionType) {
+    private CompetitionSession createNewCompetitionSession(Competition competition,
+            CompetitionSession.SessionType sessionType) {
         var newCompetitionSession = new CompetitionSession();
         newCompetitionSession.setUuid(UUID.randomUUID());
         newCompetitionSession.setCompetition(competition);

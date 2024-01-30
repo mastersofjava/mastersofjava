@@ -1,18 +1,5 @@
 package nl.moj.server.metrics;
 
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.Measurement;
-import io.micrometer.core.instrument.Meter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.distribution.HistogramSnapshot;
-import lombok.RequiredArgsConstructor;
-import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.server.submit.model.SubmitAttempt;
-import nl.moj.server.test.model.TestAttempt;
-import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -24,6 +11,21 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
+
+import org.springframework.stereotype.Service;
+
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Measurement;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.distribution.HistogramSnapshot;
+import lombok.RequiredArgsConstructor;
+import nl.moj.server.compiler.model.CompileAttempt;
+import nl.moj.server.submit.model.SubmitAttempt;
+import nl.moj.server.test.model.TestAttempt;
 
 @Service
 @RequiredArgsConstructor
@@ -123,17 +125,17 @@ public class MetricsService {
 
     public Set<OperationMetrics> getOperationMetrics() {
 
-        record TimerSnapshot(String name, HistogramSnapshot snapshot) {}
+        record TimerSnapshot(String name, HistogramSnapshot snapshot) {
+        }
         Set<TimerSnapshot> timers = Set.of(
                 new TimerSnapshot("Compile Duration", compileDuration.takeSnapshot()),
                 new TimerSnapshot("Compile Round Trip", compileRoundTrip.takeSnapshot()),
                 new TimerSnapshot("Test Duration", testDuration.takeSnapshot()),
                 new TimerSnapshot("Test Round Trip", testRoundTrip.takeSnapshot()),
                 new TimerSnapshot("Submit Duration", submitDuration.takeSnapshot()),
-                new TimerSnapshot("Submit Round Trip", submitRoundTrip.takeSnapshot())
-        );
+                new TimerSnapshot("Submit Round Trip", submitRoundTrip.takeSnapshot()));
 
-        return timers.stream().map( t -> OperationMetrics.builder()
+        return timers.stream().map(t -> OperationMetrics.builder()
                 .name(t.name())
                 .max(t.snapshot().max(TimeUnit.SECONDS))
                 .mean(t.snapshot().mean(TimeUnit.SECONDS))
@@ -149,8 +151,7 @@ public class MetricsService {
                 "artemis.messages.acknowledged",
                 "artemis.messages.added",
                 "artemis.messages.expired",
-                "artemis.messages.killed"
-        );
+                "artemis.messages.killed");
 
         Map<String, Map<String, Double>> values = getMeters().stream()
                 .filter(m -> METER_NAMES.contains(m.getId().getName()))

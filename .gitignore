@@ -3,6 +3,7 @@ bin/
 gen/
 target/
 mojserver.log*
+.cache
 # Eclipse project files
 .classpath
 .project

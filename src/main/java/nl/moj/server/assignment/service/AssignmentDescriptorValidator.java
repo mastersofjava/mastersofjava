@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -19,15 +19,17 @@ package nl.moj.server.assignment.service;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+
 import nl.moj.common.assignment.descriptor.*;
 import nl.moj.server.assignment.model.AssignmentDescriptorValidationResult;
-import org.springframework.stereotype.Service;
 
 @Service
 public class AssignmentDescriptorValidator {
 
     public AssignmentDescriptorValidationResult validate(AssignmentDescriptor descriptor) {
-        AssignmentDescriptorValidationResult result = new AssignmentDescriptorValidationResult(descriptor.getName(), descriptor);
+        AssignmentDescriptorValidationResult result = new AssignmentDescriptorValidationResult(descriptor.getName(),
+                descriptor);
 
         validateScoringRules(result, descriptor.getScoringRules());
         validateAssignmentFiles(result, descriptor);
@@ -170,7 +172,8 @@ public class AssignmentDescriptorValidator {
                     result.addValidationMessage(String.format("%s must be >= 0 and <= 100.", valueName));
                 }
             } catch (NumberFormatException nfe) {
-                result.addValidationMessage(String.format("%s invalid, must be a number (e.g. 25) or a percentage string (e.g. 25%%).", valueName));
+                result.addValidationMessage(
+                        String.format("%s invalid, must be a number (e.g. 25) or a percentage string (e.g. 25%%).", valueName));
             }
         }
     }

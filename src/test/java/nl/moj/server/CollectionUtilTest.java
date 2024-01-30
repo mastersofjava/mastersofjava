@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,14 +16,15 @@
 */
 package nl.moj.server;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import nl.moj.server.util.CollectionUtil;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import nl.moj.server.util.CollectionUtil;
 
 public class CollectionUtilTest {
 
@@ -83,7 +84,8 @@ public class CollectionUtilTest {
 
     @Test
     public void test6Items() {
-        List<List<String>> items = CollectionUtil.partition(Arrays.asList("test1", "test2", "test3", "test4", "test5", "test6"), 3);
+        List<List<String>> items = CollectionUtil.partition(Arrays.asList("test1", "test2", "test3", "test4", "test5", "test6"),
+                3);
         assertThat(items.size()).isEqualTo(3);
         assertThat(items.get(0).size()).isEqualTo(2);
         assertThat(items.get(1).size()).isEqualTo(2);

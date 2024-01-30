@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,18 +16,20 @@
 */
 package nl.moj.common.config.properties;
 
-import javax.validation.constraints.NotNull;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import lombok.Data;
-import nl.moj.modes.Mode;
+import javax.validation.constraints.NotNull;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+import lombok.Data;
+import nl.moj.modes.Mode;
+
 @Data
-@ConfigurationProperties(prefix = MojServerProperties.PREFIX )
+@ConfigurationProperties(prefix = MojServerProperties.PREFIX)
 public class MojServerProperties {
 
     public static final String PREFIX = "moj.server";

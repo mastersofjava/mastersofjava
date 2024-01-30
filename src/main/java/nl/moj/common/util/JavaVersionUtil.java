@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -21,9 +21,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
+
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.config.properties.Languages;
-import org.apache.commons.io.IOUtils;
 
 @Slf4j
 public class JavaVersionUtil {
@@ -47,8 +48,8 @@ public class JavaVersionUtil {
                 }
             }
         } catch (Exception e) {
-            if( log.isTraceEnabled()) {
-                log.trace("Unable to retrieve JVM version, assuming 'null'",e);
+            if (log.isTraceEnabled()) {
+                log.trace("Unable to retrieve JVM version, assuming 'null'", e);
             } else {
                 log.warn("Unable to retrieve JVM version, assuming 'null'");
             }
@@ -66,10 +67,12 @@ public class JavaVersionUtil {
                 return e;
             }
         } catch (Exception e) {
-            if( log.isTraceEnabled()) {
-                log.trace("Unable to retrieve JVM version, could not run configured {}, assuming 'null'", javaVersion.getRuntime(), e);
+            if (log.isTraceEnabled()) {
+                log.trace("Unable to retrieve JVM version, could not run configured {}, assuming 'null'",
+                        javaVersion.getRuntime(), e);
             } else {
-                log.warn("Unable to retrieve JVM version, could not run configured {}, assuming 'null'", javaVersion.getRuntime());
+                log.warn("Unable to retrieve JVM version, could not run configured {}, assuming 'null'",
+                        javaVersion.getRuntime());
             }
         }
         return null;

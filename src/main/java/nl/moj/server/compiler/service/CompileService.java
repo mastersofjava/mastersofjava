@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -15,6 +15,19 @@
    limitations under the License.
 */
 package nl.moj.server.compiler.service;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.springframework.cloud.sleuth.annotation.NewSpan;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,17 +44,6 @@ import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.JMSResponseHelper;
 import nl.moj.server.util.TransactionHelper;
-import org.springframework.cloud.sleuth.annotation.NewSpan;
-import org.springframework.jms.core.JmsTemplate;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
-import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -68,10 +70,11 @@ public class CompileService {
             compileAttempt = update(compileAttempt, compileResponse);
 
             // if this is the most recent compileAttempt, send response to client else, skip.
-            if( isMostRecent(compileAttempt)) {
+            if (isMostRecent(compileAttempt)) {
                 messageService.sendCompileFeedback(compileAttempt);
             } else {
-                log.info("Ignoring compile feedback for compile attempt {}, already a newer compile attempt pending.", compileAttempt.getUuid());
+                log.info("Ignoring compile feedback for compile attempt {}, already a newer compile attempt pending.",
+                        compileAttempt.getUuid());
             }
             registerCompileAttemptMetrics(compileAttempt);
         } else {
@@ -80,7 +83,8 @@ public class CompileService {
     }
 
     private boolean isMostRecent(CompileAttempt compileAttempt) {
-        return compileAttemptRepository.countNewerAttempts(compileAttempt.getAssignmentStatus(), compileAttempt.getDateTimeRegister()) == 0;
+        return compileAttemptRepository.countNewerAttempts(compileAttempt.getAssignmentStatus(),
+                compileAttempt.getDateTimeRegister()) == 0;
     }
 
     private void registerCompileAttemptMetrics(CompileAttempt compileAttempt) {
@@ -115,19 +119,22 @@ public class CompileService {
 
             messageService.sendCompilingStarted(compileRequest.getTeam());
 
-            log.info("Compile attempt {} for assignment {} by team {} registered.", compileAttempt.getUuid(), compileRequest.getAssignment()
-                    .getUuid(), compileRequest.getTeam().getUuid());
+            log.info("Compile attempt {} for assignment {} by team {} registered.", compileAttempt.getUuid(),
+                    compileRequest.getAssignment()
+                            .getUuid(),
+                    compileRequest.getTeam().getUuid());
             return compileAttempt;
         } catch (IOException e) {
             messageService.sendCompileUnprocessable(compileRequest.getTeam());
-            throw new CompileAttemptRegisterException(String.format("Failed to register compile attempt for assignment %s by team %s.", compileRequest.getAssignment()
-                    .getUuid(), compileRequest.getTeam().getUuid()), e);
+            throw new CompileAttemptRegisterException(String
+                    .format("Failed to register compile attempt for assignment %s by team %s.", compileRequest.getAssignment()
+                            .getUuid(), compileRequest.getTeam().getUuid()),
+                    e);
         }
     }
 
     @Transactional
-    public CompileAttempt
-    prepareCompileAttempt(CompileRequest compileRequest) {
+    public CompileAttempt prepareCompileAttempt(CompileRequest compileRequest) {
         TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignment_IdAndCompetitionSession_IdAndTeam_Id(
                 compileRequest.getAssignment().getId(), compileRequest.getSession().getId(),
                 compileRequest.getTeam().getId());

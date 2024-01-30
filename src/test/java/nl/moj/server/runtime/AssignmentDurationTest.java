@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -19,13 +19,14 @@ package nl.moj.server.runtime;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.server.competition.model.CompetitionAssignment;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.assignment.service.AssignmentService;
+import nl.moj.server.competition.model.CompetitionAssignment;
 
 @SpringBootTest
 public class AssignmentDurationTest extends BaseRuntimeTest {
@@ -47,7 +48,8 @@ public class AssignmentDurationTest extends BaseRuntimeTest {
 
         AssignmentDescriptor ad = assignmentService.resolveAssignmentDescriptor(oa.getAssignment());
 
-        CompletableFuture<Void> done = assignmentRuntime.startCompletable(competitionRuntime.getSessionId(), oa.getAssignment().getUuid());
+        CompletableFuture<Void> done = assignmentRuntime.startCompletable(competitionRuntime.getSessionId(),
+                oa.getAssignment().getUuid());
 
         try {
             done.get(ad.getDuration().toSeconds() + 10, TimeUnit.SECONDS);

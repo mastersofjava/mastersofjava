@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,6 +16,8 @@
 */
 package nl.moj.server.runtime;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,8 +26,14 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import nl.moj.server.competition.model.CompetitionAssignment;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
 import nl.moj.common.config.properties.MojServerProperties;
+import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.submit.SubmitFacade;
 import nl.moj.server.submit.model.SourceMessage;
@@ -33,13 +41,6 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.user.model.User;
 import nl.moj.server.util.CompletableFutures;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
@@ -87,7 +88,6 @@ public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
             Duration timeout = state.getAssignmentDescriptor().getTestTimeout();
             timeout = timeout.plus(mojServerProperties.getLimits().getCompileTimeout());
 
-
             // make sure team 1 runs for 0.1s and one for 0.5
 
             SourceMessage src1 = createWithDelay("100", state);
@@ -110,14 +110,14 @@ public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
             // test that there is no overlap in execution windows.
             assertNoOverlappingExecutionWindows(t1result, t2result);
 
-
         } catch (Exception e) {
             Assertions.fail("Caught unexpected exception.", e);
         }
     }
 
     // no clue why this isn't working
-    @Test @Disabled
+    @Test
+    @Disabled
     public void parallelExecutionShouldHaveOverlappingExecutionWindows() {
 
         Team team1 = getTeam();
@@ -155,7 +155,6 @@ public class ExecutionOrderAssignmentTest extends BaseRuntimeTest {
 
             // test that there is no overlap in execution windows.
             assertOverlappingExecutionWindows(t1result, t2result);
-
 
         } catch (Exception e) {
             Assertions.fail("Caught unexpected exception.", e);

@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -17,8 +17,13 @@
 package nl.moj.server.rankings;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+
+import javax.transaction.Transactional;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.servlet.ModelAndView;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,14 +33,7 @@ import nl.moj.server.rankings.model.Ranking;
 import nl.moj.server.rankings.service.RankingsService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
-import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.util.CollectionUtil;
-import nl.moj.server.util.HttpUtil;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.servlet.ModelAndView;
-
-import javax.transaction.Transactional;
 
 @Slf4j
 @Controller
@@ -65,7 +63,7 @@ public class RankingsController {
         model.addObject("bottom3", parts.get(2));
         model.addObject("bottom4", parts.get(3));
 
-        model.addObject("enableClock", state.getSessionType() == CompetitionSession.SessionType.GROUP );
+        model.addObject("enableClock", state.getSessionType() == CompetitionSession.SessionType.GROUP);
         if (state.isRunning()) {
             model.addObject("assignment", state.getAssignmentDescriptor().getDisplayName());
             model.addObject("timeLeft", state.getSecondsRemaining());

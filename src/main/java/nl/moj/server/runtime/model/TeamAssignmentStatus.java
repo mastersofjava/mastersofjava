@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,10 +16,11 @@
 */
 package nl.moj.server.runtime.model;
 
-import javax.persistence.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import javax.persistence.*;
 
 import lombok.*;
 import nl.moj.server.assignment.model.Assignment;
@@ -30,17 +31,18 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestAttempt;
 
 @Entity
-@Table(name = "team_assignment_statuses", uniqueConstraints = @UniqueConstraint(name = "team_assignment_statuses_cs_a_t_uk", columnNames = {"competition_session_id", "assignment_id", "team_id"}))
+@Table(name = "team_assignment_statuses", uniqueConstraints = @UniqueConstraint(name = "team_assignment_statuses_cs_a_t_uk", columnNames = {
+        "competition_session_id", "assignment_id", "team_id" }))
 @SequenceGenerator(name = "team_assignment_status_id_seq", sequenceName = "team_assignment_statuses_seq")
 
 @Builder
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of = {"uuid"})
+@EqualsAndHashCode(of = { "uuid" })
 /**
  * Stores all attempts for an assignment for a specific team.
- */		
+ */
 public class TeamAssignmentStatus {
 
     @Id
@@ -59,9 +61,8 @@ public class TeamAssignmentStatus {
     @JoinColumn(name = "team_id", nullable = false)
     private Team team;
 
-    
-	// todo: JFALLMODE add time remaining
-	// todo: JFALLMODE add isStarted() based on if daterTimeStarted==null
+    // todo: JFALLMODE add time remaining
+    // todo: JFALLMODE add isStarted() based on if daterTimeStarted==null
 
     @ManyToOne
     @JoinColumn(name = "assignment_id", nullable = false)
@@ -88,15 +89,16 @@ public class TeamAssignmentStatus {
     @OneToMany(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
     private List<SubmitAttempt> submitAttempts = new ArrayList<>();
 
-    @OneToOne(mappedBy="assignmentStatus", cascade = CascadeType.REMOVE)
+    @OneToOne(mappedBy = "assignmentStatus", cascade = CascadeType.REMOVE)
     private AssignmentResult assignmentResult;
-    
+
     /**
      * Indicates if the active assignment is started for this team (in single mode).
+     *
      * @return true if started (dateTimeStart set), false otherwise
      */
     public boolean isStarted() {
-    	return dateTimeStart!=null;
+        return dateTimeStart != null;
     }
 
     public boolean isCompleted() {
@@ -112,8 +114,9 @@ public class TeamAssignmentStatus {
     }
 
     public TestAttempt getMostRecentTestAttempt() {
-        List<TestAttempt> attempts = getTestAttempts().stream().filter( ta -> ta.getDateTimeEnd() != null ).collect(Collectors.toList());
-        if( attempts.isEmpty()) {
+        List<TestAttempt> attempts = getTestAttempts().stream().filter(ta -> ta.getDateTimeEnd() != null)
+                .collect(Collectors.toList());
+        if (attempts.isEmpty()) {
             return null;
         }
         attempts.sort(Comparator.comparing(TestAttempt::getDateTimeEnd).reversed());
@@ -121,8 +124,9 @@ public class TeamAssignmentStatus {
     }
 
     public SubmitAttempt getMostRecentSubmitAttempt() {
-        List<SubmitAttempt> attempts = getSubmitAttempts().stream().filter( ta -> ta.getDateTimeEnd() != null ).collect(Collectors.toList());
-        if( attempts.isEmpty()) {
+        List<SubmitAttempt> attempts = getSubmitAttempts().stream().filter(ta -> ta.getDateTimeEnd() != null)
+                .collect(Collectors.toList());
+        if (attempts.isEmpty()) {
             return null;
         }
         attempts.sort(Comparator.comparing(SubmitAttempt::getDateTimeEnd).reversed());
@@ -136,6 +140,6 @@ public class TeamAssignmentStatus {
 
     public int countNotAbortedSubmitAttempts() {
         return Long.valueOf(getSubmitAttempts().stream()
-                .filter( sa -> sa.getAborted() == null || sa.getAborted().equals(Boolean.FALSE)).count()).intValue();
+                .filter(sa -> sa.getAborted() == null || sa.getAborted().equals(Boolean.FALSE)).count()).intValue();
     }
 }

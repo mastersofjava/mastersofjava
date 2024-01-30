@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -18,9 +18,10 @@ package nl.moj.server.competition.repository;
 
 import java.util.UUID;
 
-import nl.moj.server.competition.model.Competition;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import nl.moj.server.competition.model.Competition;
 
 @Repository
 public interface CompetitionRepository extends JpaRepository<Competition, Long> {

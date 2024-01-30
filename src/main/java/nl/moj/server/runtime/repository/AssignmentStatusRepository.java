@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,21 +16,20 @@
 */
 package nl.moj.server.runtime.repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.competition.model.CompetitionSession;
-import nl.moj.server.runtime.model.TeamAssignmentStatus;
-import nl.moj.server.teams.model.Team;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.runtime.model.AssignmentStatus;
 
 @Repository
 public interface AssignmentStatusRepository extends JpaRepository<AssignmentStatus, Long> {
 
     Optional<AssignmentStatus> findByCompetitionSessionAndAssignment(CompetitionSession session, Assignment assignment);
+
     Optional<AssignmentStatus> findByCompetitionSession_UuidAndAssignment_Uuid(UUID session, UUID assignment);
 }

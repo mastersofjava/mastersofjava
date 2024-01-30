@@ -2,8 +2,9 @@ package nl.moj.server.metrics;
 
 import java.util.Map;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.activemq.artemis.core.server.metrics.ActiveMQMetricsPlugin;
+
+import io.micrometer.core.instrument.MeterRegistry;
 
 public class MojMetricsPlugin implements ActiveMQMetricsPlugin {
 

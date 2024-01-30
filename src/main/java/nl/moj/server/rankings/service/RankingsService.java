@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -17,8 +17,11 @@
 package nl.moj.server.rankings.service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.transaction.Transactional;
+
+import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.model.Assignment;
@@ -29,13 +32,9 @@ import nl.moj.server.rankings.model.Ranking;
 import nl.moj.server.rankings.model.RankingHeader;
 import nl.moj.server.runtime.model.AssignmentResult;
 import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.model.CompetitionState;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
-import org.springframework.stereotype.Component;
-
-import javax.transaction.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -57,7 +56,8 @@ public class RankingsService {
         if (session != null) {
             final List<AssignmentResult> assignmentResults = assignmentResultRepository.findByCompetitionSession(session);
             teamRepository.findAll().forEach(team -> {
-                if( session.getSessionType() == CompetitionSession.SessionType.GROUP || teamHasAtLeastOneResult(assignmentResults,team)) {
+                if (session.getSessionType() == CompetitionSession.SessionType.GROUP
+                        || teamHasAtLeastOneResult(assignmentResults, team)) {
                     Ranking rank = Ranking.builder()
                             .team(team.getName())
                             .totalScore(calculateTotalScore(assignmentResults, team))
@@ -86,10 +86,11 @@ public class RankingsService {
         return session.getAssignmentStatuses()
                 .stream()
                 .sorted(Comparator.comparing(AssignmentStatus::getDateTimeStart))
-                .map( as -> RankingHeader.builder()
+                .map(as -> RankingHeader.builder()
                         .assignment(as.getAssignment().getUuid())
                         .displayName(assignmentService.resolveAssignmentDescriptor(as.getAssignment()).getDisplayName())
-                        .build()).toList();
+                        .build())
+                .toList();
     }
 
     private Stream<AssignmentResult> getTeamAssignments(List<AssignmentResult> assignmentResults, Team t) {

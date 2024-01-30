@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,9 +16,7 @@
 */
 package nl.moj.server.assignment.service;
 
-import javax.transaction.Transactional;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,7 +27,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.transaction.Transactional;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
@@ -42,10 +45,6 @@ import nl.moj.server.assignment.model.AssignmentDescriptorValidationResult;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.runtime.JavaAssignmentFileResolver;
 import nl.moj.server.runtime.model.AssignmentFile;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -65,8 +64,7 @@ public class AssignmentService {
     private final MojServerProperties mojServerProperties;
 
     private final StorageService storageService;
-    
-    
+
     @Transactional(Transactional.TxType.REQUIRED)
     public Assignment findAssignmentByName(String name) {
         return assignmentRepository.findByName(name);
@@ -105,8 +103,8 @@ public class AssignmentService {
     }
 
     public Duration resolveTestAbortTimout(Assignment assignment, int numberOfTests) {
-        AssignmentDescriptor ad =resolveAssignmentDescriptor(assignment);
-        return resolveTestAbortTimout(ad,numberOfTests).plusSeconds(5);
+        AssignmentDescriptor ad = resolveAssignmentDescriptor(assignment);
+        return resolveTestAbortTimout(ad, numberOfTests).plusSeconds(5);
     }
 
     private Duration resolveTestAbortTimout(AssignmentDescriptor ad, int numberOfTests) {
@@ -173,7 +171,8 @@ public class AssignmentService {
             return Collections.emptyList();
         }
         if (!ASSIGNMENT_FILES.containsKey(uuid)) {
-            ASSIGNMENT_FILES.put(uuid, new JavaAssignmentFileResolver().resolve(resolveAssignmentDescriptor(assignment.getAssignmentDescriptor())));
+            ASSIGNMENT_FILES.put(uuid, new JavaAssignmentFileResolver()
+                    .resolve(resolveAssignmentDescriptor(assignment.getAssignmentDescriptor())));
         }
         return ASSIGNMENT_FILES.get(uuid);
     }
@@ -200,13 +199,15 @@ public class AssignmentService {
             files.filter(assignmentDescriptorService::isAssignmentDescriptor)
                     .forEach(file -> {
                         try {
-                            AssignmentDescriptor assignmentDescriptor = assignmentDescriptorService.parseAssignmentDescriptor(file);
+                            AssignmentDescriptor assignmentDescriptor = assignmentDescriptorService
+                                    .parseAssignmentDescriptor(file);
                             ScoringRules scoringRules = assignmentDescriptor.getScoringRules();
                             Assignment assignment = new Assignment();
                             assignment.setName(assignmentDescriptor.getName());
                             assignment.setAssignmentDescriptor(file.toAbsolutePath().toString());
                             assignment.setAssignmentDuration(assignmentDescriptor.getDuration());
-                            assignment.setAllowedSubmits(scoringRules.getMaximumResubmits() != null ? scoringRules.getMaximumResubmits() + 1 : 1);
+                            assignment.setAllowedSubmits(
+                                    scoringRules.getMaximumResubmits() != null ? scoringRules.getMaximumResubmits() + 1 : 1);
                             assignment.setCollection(file.getName(base.getNameCount()).toString());
                             result.add(assignment);
                         } catch (Exception e) {
@@ -217,6 +218,5 @@ public class AssignmentService {
         }
         return result;
     }
-
 
 }

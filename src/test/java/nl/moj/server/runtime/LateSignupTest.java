@@ -1,14 +1,15 @@
 package nl.moj.server.runtime;
 
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.competition.model.CompetitionAssignment;
-import nl.moj.server.runtime.model.TeamAssignmentStatus;
-import nl.moj.server.util.TransactionHelper;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
+import nl.moj.server.util.TransactionHelper;
 
 @SpringBootTest
 @Slf4j

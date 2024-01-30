@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,14 +16,22 @@
 */
 package nl.moj.server.feedback;
 
-import javax.annotation.security.RolesAllowed;
-import javax.servlet.http.HttpServletRequest;
-import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import javax.annotation.security.RolesAllowed;
+import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
+
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
 
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.model.Assignment;
@@ -34,14 +42,7 @@ import nl.moj.server.feedback.service.FeedbackService;
 import nl.moj.server.runtime.CompetitionRuntime;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.util.CollectionUtil;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 @RequiredArgsConstructor
@@ -59,7 +60,8 @@ public class FeedbackController {
         UUID sessionId = competitionRuntime.getSessionId();
 
         // TODO this should be fixed once competition runtime gets cleaned up.
-        List<TeamFeedback> assignmentFeedback = feedbackService.getAssignmentFeedback(sessionId, assignment != null ? assignment.getUuid() : null);
+        List<TeamFeedback> assignmentFeedback = feedbackService.getAssignmentFeedback(sessionId,
+                assignment != null ? assignment.getUuid() : null);
         orderTeamsByName(assignmentFeedback);
 
         List<List<TeamFeedback>> partitionedTeams = CollectionUtil.partition(assignmentFeedback, 3);
@@ -69,7 +71,7 @@ public class FeedbackController {
 
         // TODO probably use ids/uuids here, but they are not being used in the feedback messages atm.
         List<String> testIds = new ArrayList<>();
-        model.addObject("enableClock", state.getSessionType() == CompetitionSession.SessionType.GROUP );
+        model.addObject("enableClock", state.getSessionType() == CompetitionSession.SessionType.GROUP);
         if (state.isRunning()) {
             testIds = state.getTestNames();
             model.addObject("uuid", state.getAssignment().getUuid().toString());
@@ -91,9 +93,8 @@ public class FeedbackController {
     }
 
     @GetMapping(value = "/feedback/solution/{assignment}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
-    public @ResponseBody
-    Submission getAssignmentSolution(@PathVariable("assignment") UUID assignment) {
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
+    public @ResponseBody Submission getAssignmentSolution(@PathVariable("assignment") UUID assignment) {
         return Submission.builder()
                 .files(competitionRuntime.getSolutionFiles(assignment).stream()
                         .map(f -> FileSubmission.builder()
@@ -107,12 +108,12 @@ public class FeedbackController {
     }
 
     @GetMapping(value = "/feedback/solution/{assignment}/team/{team}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
-    public @ResponseBody
-    Submission getSubmission(@PathVariable("assignment") UUID assignment, @PathVariable("team") UUID team) {
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
+    public @ResponseBody Submission getSubmission(@PathVariable("assignment") UUID assignment,
+            @PathVariable("team") UUID team) {
         return Submission.builder()
                 .team(team)
-                .files(competitionRuntime.getTeamSolutionFiles(team,competitionRuntime.getSessionId(),assignment).stream()
+                .files(competitionRuntime.getTeamSolutionFiles(team, competitionRuntime.getSessionId(), assignment).stream()
                         .filter(f -> f.getFileType() == AssignmentFileType.EDIT)
                         .map(f -> FileSubmission.builder()
                                 .uuid(f.getUuid())

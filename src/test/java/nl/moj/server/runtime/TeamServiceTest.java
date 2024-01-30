@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,19 +16,20 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.competition.model.CompetitionAssignment;
-import nl.moj.server.competition.service.CompetitionServiceException;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentFileType;
-import nl.moj.server.teams.service.TeamService;
+import java.util.List;
+import java.util.stream.Stream;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.List;
-import java.util.stream.Stream;
+import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.service.CompetitionServiceException;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentFileType;
+import nl.moj.server.teams.service.TeamService;
 
 @SpringBootTest
 public class TeamServiceTest extends BaseRuntimeTest {
@@ -38,7 +39,6 @@ public class TeamServiceTest extends BaseRuntimeTest {
 
     @Autowired
     private TeamService teamService;
-
 
     private static Stream<String> assignments() {
         return Stream.of("sequential", "parallel");

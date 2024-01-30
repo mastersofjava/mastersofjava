@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -85,7 +85,8 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
     @MethodSource("assignments")
     public void shouldUseSpecifiedAssignmentTestTimeout(String assignment) throws Exception {
         startSelectedAssignment(assignment);
-        Duration timeout = assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment(),1);
+        Duration timeout = assignmentService
+                .resolveTestAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment(), 1);
         SourceMessage src = createSourceMessageWithLongTimeout(timeout);
         TestAttempt testAttempt = doTest(src);
         assertTimeout(testAttempt);
@@ -108,10 +109,11 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         startSelectedAssignment(assignment);
         SourceMessage src = createSourceMessageWithNoTimeout();
 
-        Duration timeout = assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
+        Duration timeout = assignmentService
+                .resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
         stopSelectedAssignment();
 
-        SubmitAttempt submitAttempt = doSubmit(src,timeout);
+        SubmitAttempt submitAttempt = doSubmit(src, timeout);
 
         Assertions.assertThat(submitAttempt).isNull();
         assertFinalScore(src).isEqualTo(0);
@@ -130,7 +132,7 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
         src.setSources(files);
         src.setUuid(getTeam().getUuid().toString());
         src.setAssignmentName(state.getAssignment().getName());
-        src.setTimeLeft(""+state.getTimeRemaining().toSeconds());
+        src.setTimeLeft("" + state.getTimeRemaining().toSeconds());
         src.setTests(Collections.singletonList(state.getTestFiles().get(0).getUuid().toString()));
 
         return src;
@@ -145,52 +147,57 @@ public class AssignmentSubmitTest extends BaseRuntimeTest {
             CompetitionAssignment oa = getAssignment(assignment);
             competitionRuntime.startAssignment(competitionRuntime.getSessionId(), oa.getAssignment()
                     .getUuid());
-        } catch( CompetitionServiceException cse ) {
+        } catch (CompetitionServiceException cse) {
             throw new RuntimeException(cse);
         }
     }
 
     private CompileAttempt doCompile(SourceMessage src) {
-        Duration timeout = assignmentService.resolveCompileAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
+        Duration timeout = assignmentService
+                .resolveCompileAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
         CompileAttempt ca = submitFacade.registerCompileRequest(src, getPrincipal(getUser()));
-        if( ca != null ) {
+        if (ca != null) {
             awaitAttempt(ca.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
         }
         return ca;
     }
 
     private TestAttempt doTest(SourceMessage src) {
-        return doTest(src,null);
+        return doTest(src, null);
     }
 
     private TestAttempt doTest(SourceMessage src, Duration d) {
-        Duration timeout = d != null ? d : assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment(), src.getTests().size())
-                .plusSeconds(5);
+        Duration timeout = d != null ? d
+                : assignmentService
+                        .resolveTestAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment(),
+                                src.getTests().size())
+                        .plusSeconds(5);
         TestAttempt ta = submitFacade.registerTestRequest(src, getPrincipal(getUser()));
-        if( ta != null ) {
+        if (ta != null) {
             awaitAttempt(ta.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
         }
         return ta;
     }
 
     private SubmitAttempt doSubmit(SourceMessage src) {
-        return doSubmit(src,null);
+        return doSubmit(src, null);
     }
+
     private SubmitAttempt doSubmit(SourceMessage src, Duration d) {
-        Duration timeout = d != null ? d : assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
+        Duration timeout = d != null ? d
+                : assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment())
+                        .plusSeconds(5);
         SubmitAttempt sa = submitFacade.registerSubmitRequest(src, getPrincipal(getUser()));
-        if( sa != null ) {
+        if (sa != null) {
             awaitAttempt(sa.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
         }
         return sa;
     }
 
     private void stopSelectedAssignment() throws Exception {
-        if( competitionRuntime.getCurrentAssignment() != null ) {
+        if (competitionRuntime.getCurrentAssignment() != null) {
             competitionRuntime.stopAssignment(getSessionId(), competitionRuntime.getCurrentAssignment());
         }
     }
-
-
 
 }

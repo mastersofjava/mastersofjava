@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,16 +16,14 @@
 */
 package nl.moj.server.teams.model;
 
-import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import javax.persistence.*;
+
 import lombok.*;
 import nl.moj.server.user.model.User;
-import org.hibernate.annotations.LazyCollection;
-import org.hibernate.annotations.LazyCollectionOption;
 
 @Entity
 @Table(name = "teams")
@@ -35,7 +33,7 @@ import org.hibernate.annotations.LazyCollectionOption;
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of = {"uuid"})
+@EqualsAndHashCode(of = { "uuid" })
 @ToString(exclude = "users")
 public class Team {
 
@@ -72,4 +70,3 @@ public class Team {
     }
 
 }
-

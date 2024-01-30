@@ -16,6 +16,18 @@
 */
 package nl.moj.server.runtime;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+
+import org.springframework.stereotype.Component;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,17 +54,6 @@ import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.util.PathUtil;
 import nl.moj.server.util.TransactionHelper;
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 @Component
 @RequiredArgsConstructor
@@ -95,7 +96,7 @@ public class AssignmentRuntime {
      * Starts the given {@link CompetitionAssignment} and returns a Future&lt;?&gt;
      * referencing which completes when the assignment is supposed to end.
      *
-     * @param sessionId    the session to start the assignment for
+     * @param sessionId the session to start the assignment for
      * @param assignmentId the assignment to start
      * @return the {@link Future}
      */
@@ -158,7 +159,7 @@ public class AssignmentRuntime {
      */
     public Optional<AssignmentStatus> groupStop() {
         if (running) {
-            return trx.requiresNew(() -> {
+            Optional<AssignmentStatus> result = trx.requiresNew(() -> {
                 messageService.sendGroupStop(assignment.getName(), competitionSession.getUuid().toString());
                 teamService.getTeams().forEach(t -> {
                     stopTeamAssignmentStatus(t);
@@ -173,11 +174,13 @@ public class AssignmentRuntime {
                 // competitionAssignment = null;
                 log.info("Stopped assignment {}", assignment.getName());
                 assignment = null;
-                if (competitionSession.getSessionType() == SessionType.GROUP) {
-                    done.complete(null);
-                }
+
                 return Optional.of(assignmentStatus);
             });
+            if (competitionSession.getSessionType() == SessionType.GROUP) {
+                done.complete(null);
+            }
+            return result;
         }
         return Optional.empty();
     }
@@ -222,7 +225,8 @@ public class AssignmentRuntime {
 
     /**
      * Creates a dto representing the current state.
-     * If in single mode, determine the remaining time for the given team ((or leave team specific fields empty if null, e.g. for a non-team specific view).
+     * If in single mode, determine the remaining time for the given team ((or leave team specific fields empty if null, e.g.
+     * for a non-team specific view).
      * Otherwise, determine it for the group.
      *
      * @param team the team (if applicable)
@@ -272,7 +276,7 @@ public class AssignmentRuntime {
     }
 
     private AssignmentStatus initAssignmentStatus(CompetitionSession session, Assignment assignment,
-                                                  AssignmentDescriptor ad) {
+            AssignmentDescriptor ad) {
         return assignmentStatusService.createOrGet(session, assignment, ad.getDuration());
     }
 

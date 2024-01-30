@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -18,12 +18,13 @@ package nl.moj.worker;
 
 import java.io.IOException;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.bootstrap.BootstrapService;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
+
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.bootstrap.BootstrapService;
 
 @Component
 @AllArgsConstructor

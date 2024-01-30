@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,12 +16,12 @@
 */
 package nl.moj.server.test.model;
 
-import javax.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
-import lombok.*;
+import javax.persistence.*;
 
+import lombok.*;
 
 @Entity
 @Table(name = "test_cases")
@@ -31,8 +31,8 @@ import lombok.*;
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of = {"uuid"})
-@ToString(exclude = {"testAttempt"})
+@EqualsAndHashCode(of = { "uuid" })
+@ToString(exclude = { "testAttempt" })
 public class TestCase {
 
     @Id

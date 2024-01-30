@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,13 +16,12 @@
 */
 package nl.moj.server.teams.repository;
 
-import nl.moj.server.teams.model.Team;
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.UUID;
+import nl.moj.server.teams.model.Team;
 
 @Repository
 public interface TeamRepository extends JpaRepository<Team, Long> {

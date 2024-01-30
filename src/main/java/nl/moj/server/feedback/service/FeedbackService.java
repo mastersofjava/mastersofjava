@@ -1,5 +1,16 @@
 package nl.moj.server.feedback.service;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.model.Assignment;
@@ -13,15 +24,6 @@ import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.test.model.TestAttempt;
-import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -35,7 +37,8 @@ public class FeedbackService {
 
     @Transactional(Transactional.TxType.REQUIRED)
     public List<TeamFeedback> getAssignmentFeedback(UUID sessionId, UUID assignmentId) {
-        return getAssignmentFeedback(assignmentRepository.findByUuid(assignmentId), competitionSessionRepository.findByUuid(sessionId));
+        return getAssignmentFeedback(assignmentRepository.findByUuid(assignmentId),
+                competitionSessionRepository.findByUuid(sessionId));
     }
 
     @Transactional(Transactional.TxType.MANDATORY)
@@ -52,7 +55,8 @@ public class FeedbackService {
             return Collections.emptyList();
         }
 
-        List<TeamAssignmentStatus> statuses = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment, session);
+        List<TeamAssignmentStatus> statuses = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSession(assignment,
+                session);
         List<TeamFeedback> results = new ArrayList<>();
         for (Team t : allTeams) {
             Optional<TeamAssignmentStatus> s = statuses.stream().filter(as -> as.getTeam().equals(t)).findFirst();

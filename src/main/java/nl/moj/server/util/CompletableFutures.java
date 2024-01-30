@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -23,11 +23,12 @@ import java.util.stream.Collectors;
 
 public class CompletableFutures {
 
-    private CompletableFutures() {}
+    private CompletableFutures() {
+    }
 
     public static <T> CompletableFuture<List<T>> allOf(List<CompletableFuture<T>> futures) {
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenApply(v ->
-                futures.stream().map(CompletableFuture::join).collect(Collectors.toList()));
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> futures.stream().map(CompletableFuture::join).collect(Collectors.toList()));
     }
 
     @SafeVarargs

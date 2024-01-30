@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -19,6 +19,8 @@ package nl.moj.server.competition.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.assignment.model.Assignment;
@@ -26,7 +28,6 @@ import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.repository.CompetitionRepository;
-import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j

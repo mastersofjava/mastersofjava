@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,20 +16,21 @@
 */
 package nl.moj.server.assignment;
 
+import static nl.moj.server.TestUtil.classpathResourceToPath;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.File;
 import java.util.List;
 
-import nl.moj.server.DbUtil;
-import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.assignment.service.AssignmentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static nl.moj.server.TestUtil.classpathResourceToPath;
-import static org.assertj.core.api.Assertions.assertThat;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.server.DbUtil;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.assignment.service.AssignmentService;
 
 @SpringBootTest
 public class AssignmentServiceTest {
@@ -47,7 +48,8 @@ public class AssignmentServiceTest {
 
     @Test
     public void shouldDiscoverAssignments() throws Exception {
-        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"), "assignments");
+        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"),
+                "assignments");
 
         assignments.forEach(a -> {
             assertThat(a.getId()).isNotNull();
@@ -58,7 +60,8 @@ public class AssignmentServiceTest {
 
     @Test
     public void shouldUpdateAssignments() throws Exception {
-        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"), "assignments");
+        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"),
+                "assignments");
 
         assertThat(assignments.size()).isEqualTo(2);
         assignments.forEach(a -> {
@@ -67,20 +70,22 @@ public class AssignmentServiceTest {
             assertThat(a.getAssignmentDescriptor()).contains(File.separator + "assignments" + File.separator);
         });
 
-        List<Assignment> updatedAssignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments-updated"), "assignments");
+        List<Assignment> updatedAssignments = assignmentService
+                .updateAssignments(classpathResourceToPath("/assignments-updated"), "assignments");
 
         assertThat(updatedAssignments.size()).isEqualTo(2);
         updatedAssignments.forEach(a -> {
             assertThat(a.getId()).isNotNull();
             assertThat(a.getName()).isNotBlank();
-            assertThat(a.getAssignmentDescriptor()).contains(File.separator+ "assignments-updated" + File.separator);
+            assertThat(a.getAssignmentDescriptor()).contains(File.separator + "assignments-updated" + File.separator);
 
         });
     }
 
     @Test
     public void shouldGetAssignmentDescriptor() throws Exception {
-        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"), "assignments");
+        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/assignments"),
+                "assignments");
 
         assertThat(assignments.size()).isEqualTo(2);
         assignments.forEach(a -> {
@@ -88,7 +93,6 @@ public class AssignmentServiceTest {
             assertThat(a.getName()).isNotBlank();
             assertThat(a.getAssignmentDescriptor()).contains(File.separator + "assignments" + File.separator);
         });
-
 
         assignments.forEach(a -> {
             AssignmentDescriptor d = assignmentService.resolveAssignmentDescriptor(a);

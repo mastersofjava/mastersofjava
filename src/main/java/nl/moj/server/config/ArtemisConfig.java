@@ -2,14 +2,15 @@ package nl.moj.server.config;
 
 import java.util.Collections;
 
+import org.apache.activemq.artemis.core.config.MetricsConfiguration;
+import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCustomizer;
+import org.springframework.context.annotation.Configuration;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.modes.Mode;
 import nl.moj.server.metrics.MojMetricsPlugin;
-import org.apache.activemq.artemis.core.config.MetricsConfiguration;
-import org.springframework.boot.autoconfigure.jms.artemis.ArtemisConfigurationCustomizer;
-import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @RequiredArgsConstructor

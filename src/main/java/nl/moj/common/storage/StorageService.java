@@ -3,15 +3,15 @@ package nl.moj.common.storage;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.UUID;
+
+import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.modes.Mode;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -51,7 +51,7 @@ public class StorageService {
         return mojServerProperties.getDataDirectory().resolve(JAVADOC);
     }
 
-    public Path getSessionTeamFolder(UUID sessionId,UUID teamId) {
+    public Path getSessionTeamFolder(UUID sessionId, UUID teamId) {
         return getSessionsFolder()
                 .resolve(sessionId.toString())
                 .resolve(TEAMS)

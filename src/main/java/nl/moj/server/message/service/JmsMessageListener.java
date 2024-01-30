@@ -1,5 +1,8 @@
 package nl.moj.server.message.service;
 
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.messages.JMSCompileResponse;
@@ -9,8 +12,6 @@ import nl.moj.common.messages.JMSTestResponse;
 import nl.moj.server.compiler.service.CompileService;
 import nl.moj.server.submit.service.SubmitService;
 import nl.moj.server.test.service.TestService;
-import org.springframework.jms.annotation.JmsListener;
-import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j

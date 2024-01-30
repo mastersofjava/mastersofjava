@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,22 +16,24 @@
 */
 package nl.moj.server.runtime;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.AssignmentResult;
-import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.model.Score;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
-import org.springframework.stereotype.Service;
 
 /**
  * The ScoreService calculates the score.
@@ -76,13 +78,13 @@ public class ScoreService {
     }
 
     private Score calculateScore(SubmitAttempt sa, TeamAssignmentStatus as, AssignmentDescriptor ad) {
-    	Score score = new Score();
-    	calculateSubmitBonus(score, sa, ad);
-    	calculateInitialScore(score, sa);
+        Score score = new Score();
+        calculateSubmitBonus(score, sa, ad);
+        calculateInitialScore(score, sa);
         calculateTestBonus(score, sa, as, ad);
         calculateTestPenalty(score, sa, ad);
-    	calculateSubmitPenalty(score, sa, ad);
-    	return score;
+        calculateSubmitPenalty(score, sa, ad);
+        return score;
     }
 
     /**
@@ -90,15 +92,17 @@ public class ScoreService {
      */
     private void calculateInitialScore(Score score, SubmitAttempt sa) {
         if (sa != null && sa.getSuccess() != null && sa.getSuccess()) {
-        	score.setInitialScore(sa.getAssignmentTimeRemaining().toSeconds());
-        	score.addExplanation("" + sa.getAssignmentTimeRemaining().toMinutes() +":" + sa.getAssignmentTimeRemaining().toSecondsPart() + " left after successful submission: " + score.getInitialScore() + " points" );
+            score.setInitialScore(sa.getAssignmentTimeRemaining().toSeconds());
+            score.addExplanation(
+                    "" + sa.getAssignmentTimeRemaining().toMinutes() + ":" + sa.getAssignmentTimeRemaining().toSecondsPart()
+                            + " left after successful submission: " + score.getInitialScore() + " points");
         } else {
-        	score.setInitialScore(0L);
-        	score.addExplanation("No successful submission bonus seconds: 0 points" );
+            score.setInitialScore(0L);
+            score.addExplanation("No successful submission bonus seconds: 0 points");
         }
     }
 
-    private void calculateSubmitPenalty(Score score,SubmitAttempt sa, AssignmentDescriptor ad) {
+    private void calculateSubmitPenalty(Score score, SubmitAttempt sa, AssignmentDescriptor ad) {
         if (sa != null && sa.getSuccess() != null && sa.getSuccess()) {
             TeamAssignmentStatus as = sa.getAssignmentStatus();
             int submits = as.countNotAbortedSubmitAttempts();
@@ -106,20 +110,22 @@ public class ScoreService {
                 String penalty = ad.getScoringRules().getResubmitPenalty().trim();
                 try {
                     // the first submit is always free, hence submits - 1.
-                	StringBuilder explanation = new StringBuilder();
-                    long finalPenalty = calculatePenaltyValue(score, score.getTotalScore(), submits - 1, penalty, "extra submit", explanation);
+                    StringBuilder explanation = new StringBuilder();
+                    long finalPenalty = calculatePenaltyValue(score, score.getTotalScore(), submits - 1, penalty,
+                            "extra submit", explanation);
                     score.setResubmitPenalty(finalPenalty);
-                    if (finalPenalty>0) {
-                    	score.addExplanation(explanation.toString());
+                    if (finalPenalty > 0) {
+                        score.addExplanation(explanation.toString());
                     }
                     return;
                 } catch (Exception nfe) {
-                	throw new IllegalArgumentException("Cannot use submit penalty '"+penalty+"'. Expected a number or valid percentage.");
+                    throw new IllegalArgumentException(
+                            "Cannot use submit penalty '" + penalty + "'. Expected a number or valid percentage.");
                 }
             }
         }
         score.setResubmitPenalty(0L);
-        
+
     }
 
     private void calculateTestPenalty(Score score, SubmitAttempt sa, AssignmentDescriptor ad) {
@@ -130,22 +136,25 @@ public class ScoreService {
             if (testRuns > 0 && ad.getScoringRules().getTestPenalty() != null) {
                 String penalty = ad.getScoringRules().getTestPenalty().trim();
                 try {
-                	StringBuilder explanation = new StringBuilder();
-                    long finalPenalty = calculatePenaltyValue(score, score.getTotalScore(), testRuns, penalty, "test", explanation);
+                    StringBuilder explanation = new StringBuilder();
+                    long finalPenalty = calculatePenaltyValue(score, score.getTotalScore(), testRuns, penalty, "test",
+                            explanation);
                     score.setTestPenalty(finalPenalty);
-                    if (finalPenalty>0) {
-                    	score.addExplanation(explanation.toString());
+                    if (finalPenalty > 0) {
+                        score.addExplanation(explanation.toString());
                     }
                 } catch (Exception nfe) {
-                	throw new IllegalArgumentException("Cannot use test penalty '"+penalty+"'. Expected a number or valid percentage.");
+                    throw new IllegalArgumentException(
+                            "Cannot use test penalty '" + penalty + "'. Expected a number or valid percentage.");
                 }
             }
         }
-        
+
     }
 
     /**
-     * Both for test runs and 
+     * Both for test runs and
+     *
      * @param score the score object to record the penalty in
      * @param baseScore the base score to use for penalty calculation
      * @param count how many times to apply the penalty
@@ -153,29 +162,32 @@ public class ScoreService {
      * @param explanation a StringBuilder to append to explanation to
      * @throws NumberFormatException
      */
-    private long calculatePenaltyValue(Score score, Long baseScore, Integer count, String penalty, String penaltyName, StringBuilder explanation) throws NumberFormatException {
-    	if (count==0) {
-    		explanation.append("No "+penaltyName+" penalty: 0 points");
-    		return 0;
-		} else {
-	        if (penalty.endsWith("%") && count > 0) {
-	            long p = 100L - Long.parseLong(penalty.substring(0, penalty.length() - 1));
-	            if (p < 0) {
-	                throw new IllegalArgumentException("Penalty percentage value must be <= 100%");
-	            }
-	            long finalPenalty = baseScore - Math.round(baseScore * Math.pow((p / 100.0), count.doubleValue()));
-	            explanation.append("" + count + " "+penaltyName+"s, deducting " + penalty + " " + count + " times from base score of "+baseScore+": -" + finalPenalty + " points" );
-	            return finalPenalty;
-	        } else {
-	            long p = Long.parseLong(penalty);
-	            if (p < 0) {
-	                throw new IllegalArgumentException("Penalty value must be >= 0.");
-	            }
-	            long finalPenalty = p * count;
-	            explanation.append("" + count + " "+penaltyName+", deducting " + penalty + " " + count + " times from base score of "+baseScore+": -" + finalPenalty + " points" );
-	            return finalPenalty;
-	        }
-    	}
+    private long calculatePenaltyValue(Score score, Long baseScore, Integer count, String penalty, String penaltyName,
+            StringBuilder explanation) throws NumberFormatException {
+        if (count == 0) {
+            explanation.append("No " + penaltyName + " penalty: 0 points");
+            return 0;
+        } else {
+            if (penalty.endsWith("%") && count > 0) {
+                long p = 100L - Long.parseLong(penalty.substring(0, penalty.length() - 1));
+                if (p < 0) {
+                    throw new IllegalArgumentException("Penalty percentage value must be <= 100%");
+                }
+                long finalPenalty = baseScore - Math.round(baseScore * Math.pow((p / 100.0), count.doubleValue()));
+                explanation.append("" + count + " " + penaltyName + "s, deducting " + penalty + " " + count
+                        + " times from base score of " + baseScore + ": -" + finalPenalty + " points");
+                return finalPenalty;
+            } else {
+                long p = Long.parseLong(penalty);
+                if (p < 0) {
+                    throw new IllegalArgumentException("Penalty value must be >= 0.");
+                }
+                long finalPenalty = p * count;
+                explanation.append("" + count + " " + penaltyName + ", deducting " + penalty + " " + count
+                        + " times from base score of " + baseScore + ": -" + finalPenalty + " points");
+                return finalPenalty;
+            }
+        }
     }
 
     /**
@@ -192,8 +204,8 @@ public class ScoreService {
             score.setSubmitBonus(submitBonus);
             score.addExplanation("Successful submit: " + submitBonus + " points");
         } else {
-        	score.setSubmitBonus(0L);
-        	score.addExplanation("No successful submit: 0 points");
+            score.setSubmitBonus(0L);
+            score.addExplanation("No successful submit: 0 points");
         }
     }
 
@@ -215,18 +227,20 @@ public class ScoreService {
         if (!succeededTestCases.isEmpty()) {
             boolean useDefaultBonus = ad.getLabels().stream().noneMatch(l -> l.startsWith("test"));
             if (useDefaultBonus) {
-            	score.setTestBonus((long)succeededTestCases.size());
-            	score.addExplanation("Mini bonus for "+succeededTestCases.size()+" successful tests:" + score.getTestBonus() + " points");
+                score.setTestBonus((long) succeededTestCases.size());
+                score.addExplanation("Mini bonus for " + succeededTestCases.size() + " successful tests:" + score.getTestBonus()
+                        + " points");
             } else {
-            	calculateTestBonusViaConfiguration(score, succeededTestCases, ad);
+                calculateTestBonusViaConfiguration(score, succeededTestCases, ad);
             }
         } else {
-        	score.setTestBonus(0L);
-        	score.addExplanation("No bonus for "+succeededTestCases.size()+" successful tests: 0 points");
+            score.setTestBonus(0L);
+            score.addExplanation("No bonus for " + succeededTestCases.size() + " successful tests: 0 points");
         }
     }
 
-    private void calculateTestBonusViaConfiguration(Score score, Set<String> succeededTestCases, AssignmentDescriptor configuration) {
+    private void calculateTestBonusViaConfiguration(Score score, Set<String> succeededTestCases,
+            AssignmentDescriptor configuration) {
         Map<String, Integer> configDetails = new LinkedHashMap<>();
         long sum = 0;
         for (String label : configuration.getLabels()) {
@@ -240,9 +254,9 @@ public class ScoreService {
             String key = testCase.replace(".java", "").toLowerCase();
             if (configDetails.containsKey(key)) {
                 sum += configDetails.get(key);
-            	score.addExplanation("Test "+testCase+" success bonus: " + configDetails.get(key) + " points");
+                score.addExplanation("Test " + testCase + " success bonus: " + configDetails.get(key) + " points");
             }
         }
-    	score.setTestBonus(sum);
+        score.setTestBonus(sum);
     }
 }

@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -19,15 +19,16 @@ package nl.moj.common.config;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.config.properties.MojServerProperties;
-import nl.moj.server.util.NamedThreadFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.config.properties.MojServerProperties;
+import nl.moj.server.util.NamedThreadFactory;
 
 @Configuration
 @EnableAsync

@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,14 +16,16 @@
 */
 package nl.moj.server.competition.model;
 
-import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.persistence.*;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -33,7 +35,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "competitions")
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competitions_seq", sequenceName = "competitions_seq")
-@EqualsAndHashCode(of = {"uuid"})
+@EqualsAndHashCode(of = { "uuid" })
 public class Competition {
 
     @Id

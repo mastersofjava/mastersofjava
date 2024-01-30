@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -18,13 +18,14 @@ package nl.moj.server;
 
 import javax.transaction.Transactional;
 
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.stereotype.Component;
+
 import lombok.AllArgsConstructor;
 import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.modes.Mode;
 import nl.moj.server.runtime.CompetitionRuntime;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.stereotype.Component;
 
 @Component
 @AllArgsConstructor
@@ -48,4 +49,3 @@ public class ServerStartupListener implements ApplicationListener<ContextRefresh
         }
     }
 }
-

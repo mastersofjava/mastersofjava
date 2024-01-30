@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,12 +16,13 @@
 */
 package nl.moj.server.compiler.model;
 
-import lombok.*;
-import nl.moj.server.runtime.model.TeamAssignmentStatus;
-
-import javax.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
+
+import javax.persistence.*;
+
+import lombok.*;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 
 @Entity
 @Table(name = "compile_attempts")
@@ -31,8 +32,8 @@ import java.util.UUID;
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of = {"uuid"})
-@ToString(exclude = {"assignmentStatus"})
+@EqualsAndHashCode(of = { "uuid" })
+@ToString(exclude = { "assignmentStatus" })
 public class CompileAttempt {
 
     @Id

@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,10 +16,11 @@
 */
 package nl.moj.worker.util;
 
-import nl.moj.common.config.properties.Limits;
+import static java.lang.Math.min;
+
 import org.zeroturnaround.exec.stream.LogOutputStream;
 
-import static java.lang.Math.min;
+import nl.moj.common.config.properties.Limits;
 
 /**
  * Support class to capture a limited shard of potentially huge output. The

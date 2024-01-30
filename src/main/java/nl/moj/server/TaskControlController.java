@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -15,6 +15,31 @@
    limitations under the License.
 */
 package nl.moj.server;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.annotation.security.RolesAllowed;
+import javax.transaction.Transactional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -43,29 +68,6 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
 import nl.moj.server.util.TransactionHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
-import javax.annotation.security.RolesAllowed;
-import javax.transaction.Transactional;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
@@ -93,7 +95,7 @@ public class TaskControlController {
 
     private final MetricsService metricsService;
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @PostMapping(value = "/api/assignment/discover", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> discoverAssignments() {
         try {
@@ -103,7 +105,8 @@ public class TaskControlController {
             }
             log.info("Found {} assignments in folder {}.", assignments.size(), storageService.getAssignmentsFolder());
             return ResponseEntity.ok()
-                    .body(Map.of("m", String.format("Discovered %d assignments, reloading", assignments.size()), "reload", "true"));
+                    .body(Map.of("m", String.format("Discovered %d assignments, reloading", assignments.size()), "reload",
+                            "true"));
         } catch (Exception e) {
             log.error("Assignment discovery failed.", e);
             return ResponseEntity.ok()
@@ -111,7 +114,7 @@ public class TaskControlController {
         }
     }
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @PostMapping(value = "/api/competition", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> addCompetition(@RequestBody AddCompetition addCompetition) {
         try {
@@ -123,7 +126,7 @@ public class TaskControlController {
         }
     }
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @PostMapping(value = "/api/competition/{cid}/groupSession", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> startGroupSession(@PathVariable("cid") UUID id) {
         try {
@@ -136,7 +139,7 @@ public class TaskControlController {
         }
     }
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @PostMapping(value = "/api/competition/{cid}/singleSession", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> startSingleSession(@PathVariable("cid") UUID id) {
         try {
@@ -149,7 +152,7 @@ public class TaskControlController {
         }
     }
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @PostMapping(value = "/api/session/{sid}/assignment/{aid}/start", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AssignmentVO> startAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
         try {
@@ -161,7 +164,7 @@ public class TaskControlController {
         }
     }
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @PostMapping(value = "/api/session/{sid}/assignment/{aid}/stop", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AssignmentVO> stopAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
         try {
@@ -174,21 +177,21 @@ public class TaskControlController {
         }
     }
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @PostMapping(value = "/api/session/{sid}/assignment/{aid}/pause", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> pauseAssignment(@PathVariable("sid") UUID sid,
-                                                               @PathVariable("aid") UUID aid) {
+            @PathVariable("aid") UUID aid) {
         return ResponseEntity.badRequest().build();
     }
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @PostMapping(value = "/api/session/{sid}/assignment/{aid}/resume", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> resumeAssignment(@PathVariable("sid") UUID sid,
-                                                                @PathVariable("aid") UUID aid) {
+            @PathVariable("aid") UUID aid) {
         return ResponseEntity.badRequest().build();
     }
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @PostMapping(value = "/api/session/{sid}/assignment/{aid}/reset", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> resetAssignment(@PathVariable("sid") UUID sid, @PathVariable("aid") UUID aid) {
         try {
@@ -200,7 +203,7 @@ public class TaskControlController {
         }
     }
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @GetMapping("/control")
     @Transactional
     public String taskControl(Model model, Authentication principal) {
@@ -215,7 +218,7 @@ public class TaskControlController {
         return "control";
     }
 
-    @RolesAllowed({Role.GAME_MASTER, Role.ADMIN})
+    @RolesAllowed({ Role.GAME_MASTER, Role.ADMIN })
     @GetMapping(value = "/metrics", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<MetricsVO> getQueueMetrics() {
         try {

@@ -1,19 +1,20 @@
 package nl.moj.server.support;
 
-import nl.moj.common.messages.JMSResponse;
-import nl.moj.server.compiler.service.CompileService;
-import nl.moj.server.message.service.JmsMessageListener;
-import nl.moj.server.submit.service.SubmitService;
-import nl.moj.server.test.service.TestService;
-import org.springframework.context.annotation.Primary;
-import org.springframework.jms.annotation.JmsListener;
-import org.springframework.stereotype.Service;
-
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import org.springframework.context.annotation.Primary;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Service;
+
+import nl.moj.common.messages.JMSResponse;
+import nl.moj.server.compiler.service.CompileService;
+import nl.moj.server.message.service.JmsMessageListener;
+import nl.moj.server.submit.service.SubmitService;
+import nl.moj.server.test.service.TestService;
 
 @Service
 @Primary

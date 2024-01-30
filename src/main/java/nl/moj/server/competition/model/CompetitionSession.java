@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,11 +16,11 @@
 */
 package nl.moj.server.competition.model;
 
-
-import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import javax.persistence.*;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -33,14 +33,15 @@ import nl.moj.server.runtime.model.AssignmentStatus;
 @Table(name = "competition_sessions")
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competition_sessions_seq", sequenceName = "competition_sessions_seq")
-@EqualsAndHashCode(of = {"uuid"})
-@ToString(exclude = {"assignmentStatuses"})
+@EqualsAndHashCode(of = { "uuid" })
+@ToString(exclude = { "assignmentStatuses" })
 
 public class CompetitionSession {
-	
-	public static enum SessionType {
-		SINGLE, GROUP
-	}
+
+    public static enum SessionType {
+        SINGLE,
+        GROUP
+    }
 
     @Id
     @GeneratedValue(generator = "competition_sessions_seq", strategy = GenerationType.SEQUENCE)
@@ -60,5 +61,5 @@ public class CompetitionSession {
     @Column(name = "session_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private SessionType sessionType;
-    
+
 }

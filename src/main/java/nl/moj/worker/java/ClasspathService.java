@@ -8,10 +8,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.storage.StorageService;
-import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j

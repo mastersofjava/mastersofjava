@@ -1,16 +1,18 @@
 package nl.moj.server.runtime.service;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+
+import javax.transaction.Transactional;
+
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.runtime.model.AssignmentStatus;
 import nl.moj.server.runtime.repository.AssignmentStatusRepository;
-import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +22,8 @@ public class AssignmentStatusService {
 
     @Transactional(Transactional.TxType.MANDATORY)
     public AssignmentStatus createOrGet(CompetitionSession session, Assignment assignment, Duration timeRemaining) {
-        AssignmentStatus assignmentStatus = assignmentStatusRepository.findByCompetitionSessionAndAssignment(session, assignment)
+        AssignmentStatus assignmentStatus = assignmentStatusRepository
+                .findByCompetitionSessionAndAssignment(session, assignment)
                 .orElseGet(() -> {
                     AssignmentStatus as = new AssignmentStatus();
                     as.setAssignment(assignment);
@@ -35,8 +38,10 @@ public class AssignmentStatusService {
 
     @Transactional
     public AssignmentStatus updateTimeRemaining(UUID session, UUID assignment, Duration timeRemaining) {
-        AssignmentStatus assignmentStatus = assignmentStatusRepository.findByCompetitionSession_UuidAndAssignment_Uuid(session, assignment)
-                .orElseThrow(() -> new IllegalStateException("Could not find status for current assignment " + assignment + " in session " + session));
+        AssignmentStatus assignmentStatus = assignmentStatusRepository
+                .findByCompetitionSession_UuidAndAssignment_Uuid(session, assignment)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Could not find status for current assignment " + assignment + " in session " + session));
 
         assignmentStatus.setTimeRemaining(timeRemaining);
         return assignmentStatus;

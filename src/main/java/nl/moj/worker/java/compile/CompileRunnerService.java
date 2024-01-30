@@ -12,17 +12,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.common.config.properties.MojServerProperties;
-import nl.moj.worker.util.LengthLimitedOutputCatcher;
-import nl.moj.worker.java.ClasspathService;
-import nl.moj.worker.workspace.Workspace;
 import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.listener.ProcessListener;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.config.properties.MojServerProperties;
+import nl.moj.worker.java.ClasspathService;
+import nl.moj.worker.util.LengthLimitedOutputCatcher;
+import nl.moj.worker.workspace.Workspace;
 
 @Service
 @RequiredArgsConstructor
@@ -77,7 +78,8 @@ public class CompileRunnerService {
                     sources.forEach(s -> {
                         if (!Files.isDirectory(s)) {
                             if (!Files.exists(s)) {
-                                throw new IllegalStateException("Source file " + s + " does not exist in workspace, though was found listing it.");
+                                throw new IllegalStateException(
+                                        "Source file " + s + " does not exist in workspace, though was found listing it.");
                             }
                             cmd.add(s.toAbsolutePath().toString());
                         }
@@ -99,21 +101,21 @@ public class CompileRunnerService {
                         }).execute();
                 co.setSuccess(processResult.getExitValue() == 0);
 
-//                InputStream is = commandExecutor.pumps().getInput();
-//                OutputStream error = commandExecutor.pumps().getErr();
-//                OutputStream out = commandExecutor.pumps().getOut();
-//                commandExecutor.pumps().flush();
-//
-//                if (is != null) {
-//                    is.close();
-//                }
-//                if (error != null) {
-//                    error.close();
-//                }
-//                if (out != null) {
-//                    out.close();
-//                }
-//                commandExecutor.pumps().stop();
+                //                InputStream is = commandExecutor.pumps().getInput();
+                //                OutputStream error = commandExecutor.pumps().getErr();
+                //                OutputStream out = commandExecutor.pumps().getOut();
+                //                commandExecutor.pumps().flush();
+                //
+                //                if (is != null) {
+                //                    is.close();
+                //                }
+                //                if (error != null) {
+                //                    error.close();
+                //                }
+                //                if (out != null) {
+                //                    out.close();
+                //                }
+                //                commandExecutor.pumps().stop();
                 co.setDateTimeEnd(Instant.now());
 
             } catch (TimeoutException e) {

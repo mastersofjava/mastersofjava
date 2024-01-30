@@ -1,6 +1,5 @@
 package nl.moj.server.user.service;
 
-import javax.transaction.Transactional;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,12 +7,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
-import nl.moj.server.user.model.User;
-import nl.moj.server.user.repository.UserRepository;
+import javax.transaction.Transactional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEvent;
@@ -24,6 +19,13 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.teams.model.Team;
+import nl.moj.server.teams.repository.TeamRepository;
+import nl.moj.server.user.model.User;
+import nl.moj.server.user.repository.UserRepository;
 
 @Slf4j
 @Service

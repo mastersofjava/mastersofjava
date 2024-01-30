@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,12 +16,7 @@
 */
 package nl.moj.common.config;
 
-import javax.validation.constraints.NotNull;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-
-import lombok.Data;
 
 public class Directories {
     public static final String SESSIONS = "sessions";

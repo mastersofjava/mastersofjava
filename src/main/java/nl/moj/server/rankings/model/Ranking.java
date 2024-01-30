@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -25,7 +25,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.competition.model.CompetitionAssignment;
 
 @Data
 @Builder

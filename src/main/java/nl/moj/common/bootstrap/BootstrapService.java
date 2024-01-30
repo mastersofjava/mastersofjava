@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -22,12 +22,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
+import org.springframework.stereotype.Service;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.common.storage.StorageService;
 import nl.moj.modes.Mode;
-import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -50,7 +51,6 @@ public class BootstrapService {
             "clock-tick.mp3"
     };
 
-
     public boolean isBootstrapNeeded() {
         return !dataValid();
     }
@@ -70,7 +70,8 @@ public class BootstrapService {
         log.info("Populating needed libs.");
         Path libs = storageService.getLibsFolder();
         for (String lib : LIBS) {
-            Files.copy(getClass().getResourceAsStream("/bootstrap/libs/" + lib), libs.resolve(lib), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(getClass().getResourceAsStream("/bootstrap/libs/" + lib), libs.resolve(lib),
+                    StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -78,7 +79,8 @@ public class BootstrapService {
         log.info("Populating sounds.");
         Path sounds = storageService.getSoundsFolder();
         for (String sound : SOUNDS) {
-            Files.copy(getClass().getResourceAsStream("/bootstrap/sounds/" + sound), sounds.resolve(sound), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(getClass().getResourceAsStream("/bootstrap/sounds/" + sound), sounds.resolve(sound),
+                    StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

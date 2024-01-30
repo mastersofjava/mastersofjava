@@ -1,5 +1,14 @@
 package nl.moj.worker;
 
+import java.time.Instant;
+import java.util.Objects;
+
+import org.springframework.cloud.sleuth.Tracer;
+import org.springframework.cloud.sleuth.annotation.NewSpan;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.messages.JMSCompileRequest;
@@ -10,14 +19,6 @@ import nl.moj.common.messages.JMSSubmitResponse;
 import nl.moj.common.messages.JMSTestRequest;
 import nl.moj.common.messages.JMSTestResponse;
 import nl.moj.worker.java.JavaService;
-import org.springframework.cloud.sleuth.Tracer;
-import org.springframework.cloud.sleuth.annotation.NewSpan;
-import org.springframework.jms.annotation.JmsListener;
-import org.springframework.jms.core.JmsTemplate;
-import org.springframework.stereotype.Service;
-
-import java.time.Instant;
-import java.util.Objects;
 
 @Service
 @Slf4j

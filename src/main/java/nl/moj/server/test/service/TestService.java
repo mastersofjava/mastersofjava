@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,13 +16,19 @@
 */
 package nl.moj.server.test.service;
 
-import javax.transaction.Transactional;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.springframework.cloud.sleuth.annotation.NewSpan;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,10 +49,6 @@ import nl.moj.server.test.repository.TestAttemptRepository;
 import nl.moj.server.test.repository.TestCaseRepository;
 import nl.moj.server.util.JMSResponseHelper;
 import nl.moj.server.util.TransactionHelper;
-import org.springframework.cloud.sleuth.annotation.NewSpan;
-import org.springframework.jms.core.JmsTemplate;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -73,10 +75,11 @@ public class TestService {
 
         if (testAttempt.getDateTimeEnd() == null) {
             testAttempt = update(testAttempt, testResponse);
-            if( isMostRecent(testAttempt)) {
+            if (isMostRecent(testAttempt)) {
                 messageService.sendTestFeedback(testAttempt);
             } else {
-                log.info("Ignoring test feedback for test attempt {}, already a newer test attempt pending.", testAttempt.getUuid());
+                log.info("Ignoring test feedback for test attempt {}, already a newer test attempt pending.",
+                        testAttempt.getUuid());
             }
             metricsService.registerTestAttemptMetrics(testAttempt);
         } else {
@@ -85,7 +88,8 @@ public class TestService {
     }
 
     private boolean isMostRecent(TestAttempt testAttempt) {
-        return testAttemptRepository.countNewerAttempts(testAttempt.getAssignmentStatus(), testAttempt.getDateTimeRegister()) == 0;
+        return testAttemptRepository.countNewerAttempts(testAttempt.getAssignmentStatus(),
+                testAttempt.getDateTimeRegister()) == 0;
     }
 
     @Transactional
@@ -121,14 +125,18 @@ public class TestService {
 
             messageService.sendTestingStarted(testRequest.getTeam());
 
-            log.info("Test attempt {} for assignment {} by team {} registered.", testAttempt.getUuid(), testRequest.getAssignment()
-                    .getUuid(), testRequest.getTeam().getUuid());
+            log.info("Test attempt {} for assignment {} by team {} registered.", testAttempt.getUuid(),
+                    testRequest.getAssignment()
+                            .getUuid(),
+                    testRequest.getTeam().getUuid());
             return testAttempt;
 
         } catch (IOException e) {
             messageService.sendTestUnprocessable(testRequest.getTeam());
-            throw new TestAttemptRegisterException(String.format("Unable to register test attempt for assignment %s by team %s.", testRequest.getAssignment()
-                    .getUuid(), testRequest.getTeam().getUuid()), e);
+            throw new TestAttemptRegisterException(
+                    String.format("Unable to register test attempt for assignment %s by team %s.", testRequest.getAssignment()
+                            .getUuid(), testRequest.getTeam().getUuid()),
+                    e);
         }
     }
 

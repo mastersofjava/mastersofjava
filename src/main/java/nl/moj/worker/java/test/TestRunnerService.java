@@ -10,19 +10,20 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.common.messages.JMSTestCase;
-import nl.moj.common.config.properties.MojServerProperties;
-import nl.moj.common.storage.StorageService;
-import nl.moj.worker.util.LengthLimitedOutputCatcher;
-import nl.moj.worker.java.ClasspathService;
-import nl.moj.worker.workspace.Workspace;
 import org.springframework.stereotype.Service;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.listener.ProcessListener;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.config.properties.MojServerProperties;
+import nl.moj.common.messages.JMSTestCase;
+import nl.moj.common.storage.StorageService;
+import nl.moj.worker.java.ClasspathService;
+import nl.moj.worker.util.LengthLimitedOutputCatcher;
+import nl.moj.worker.workspace.Workspace;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +32,7 @@ public class TestRunnerService {
 
     public static final String SECURITY_POLICY_FOR_UNIT_TESTS = "securityPolicyForUnitTests.policy";
 
-    private static  final Pattern JUNIT_PREFIX_P = Pattern.compile("^JUnit version.*$|^\\.$|^I$|^E$",
+    private static final Pattern JUNIT_PREFIX_P = Pattern.compile("^JUnit version.*$|^\\.$|^I$|^E$",
             Pattern.MULTILINE);
     private static final Pattern WARN_SECURITY_MANAGER = Pattern.compile("^WARNING:.+Security Manager.*$",
             Pattern.MULTILINE);
@@ -66,8 +67,8 @@ public class TestRunnerService {
 
             try (final LengthLimitedOutputCatcher jUnitOutput = new LengthLimitedOutputCatcher(
                     mojServerProperties.getLimits().getTestOutputLimits());
-                 final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(
-                         mojServerProperties.getLimits().getTestOutputLimits())) {
+                    final LengthLimitedOutputCatcher jUnitError = new LengthLimitedOutputCatcher(
+                            mojServerProperties.getLimits().getTestOutputLimits())) {
 
                 try {
                     List<String> cmd = new ArrayList<>();
@@ -141,13 +142,13 @@ public class TestRunnerService {
 
     private List<String> resolveSystemProperties(AssignmentDescriptor ad) {
         List<String> systemProperties = new ArrayList<>();
-        if( ad.getSystemProperties() !=  null ) {
+        if (ad.getSystemProperties() != null) {
             ad.getSystemProperties().forEach((k, v) -> {
                 String rv = v;
-                if( rv.contains("${base}/")) {
+                if (rv.contains("${base}/")) {
                     rv = ad.getDirectory().resolve(v.replace("${base}/", "")).toAbsolutePath().toString();
                 }
-                systemProperties.add(String.format("-D%s=%s",k,rv));
+                systemProperties.add(String.format("-D%s=%s", k, rv));
             });
         }
         return systemProperties;

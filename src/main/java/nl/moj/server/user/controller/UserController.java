@@ -1,22 +1,16 @@
 package nl.moj.server.user.controller;
 
 import javax.annotation.security.RolesAllowed;
-import java.security.Principal;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.authorization.Role;
-import nl.moj.server.teams.controller.TeamForm;
-import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.service.TeamService;
-import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 
 @Slf4j
 @Controller

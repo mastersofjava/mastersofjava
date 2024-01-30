@@ -2,8 +2,9 @@ package nl.moj.modes.condition;
 
 import java.lang.annotation.*;
 
-import nl.moj.modes.Mode;
 import org.springframework.context.annotation.Conditional;
+
+import nl.moj.modes.Mode;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

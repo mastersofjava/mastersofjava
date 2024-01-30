@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -25,10 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.assignment.descriptor.*;
-import nl.moj.server.runtime.model.AssignmentFile;
-import nl.moj.server.runtime.model.AssignmentFileType;
 import org.apache.commons.io.IOUtils;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
@@ -36,6 +32,11 @@ import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
+
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.assignment.descriptor.*;
+import nl.moj.server.runtime.model.AssignmentFile;
+import nl.moj.server.runtime.model.AssignmentFileType;
 
 @Slf4j
 public class JavaAssignmentFileResolver {
@@ -46,48 +47,59 @@ public class JavaAssignmentFileResolver {
         // get all sources
         Sources sources = ad.getAssignmentFiles().getSources();
         sources.getEditable().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), sources.getBase(), p, AssignmentFileType.EDIT, false));
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), sources.getBase(), p,
+                    AssignmentFileType.EDIT, false));
         });
         sources.getReadonly().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), sources.getBase(), p, AssignmentFileType.READONLY, true));
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), sources.getBase(), p,
+                    AssignmentFileType.READONLY, true));
         });
         sources.getHidden().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), sources.getBase(), p, AssignmentFileType.HIDDEN, true));
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), sources.getBase(), p,
+                    AssignmentFileType.HIDDEN, true));
         });
 
         // get all resources
         Resources resources = ad.getAssignmentFiles().getResources();
         resources.getFiles().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), resources.getBase(), p, AssignmentFileType.RESOURCE, true));
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), resources.getBase(), p,
+                    AssignmentFileType.RESOURCE, true));
         });
 
         // get all test sources
         TestSources testSources = ad.getAssignmentFiles().getTestSources();
         testSources.getTests().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testSources.getBase(), p, AssignmentFileType.TEST, true));
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testSources.getBase(), p,
+                    AssignmentFileType.TEST, true));
         });
         testSources.getHiddenTests().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testSources.getBase(), p, AssignmentFileType.HIDDEN_TEST, true));
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testSources.getBase(), p,
+                    AssignmentFileType.HIDDEN_TEST, true));
         });
         testSources.getInvisibleTests().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testSources.getBase(), p, AssignmentFileType.INVISIBLE_TEST, true));
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testSources.getBase(), p,
+                    AssignmentFileType.INVISIBLE_TEST, true));
         });
 
         // get all test resources
         TestResources testResources = ad.getAssignmentFiles().getTestResources();
         testResources.getFiles().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testResources.getBase(), p, AssignmentFileType.TEST_RESOURCE, true));
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testResources.getBase(), p,
+                    AssignmentFileType.TEST_RESOURCE, true));
         });
         testResources.getHiddenFiles().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testResources.getBase(), p, AssignmentFileType.HIDDEN_TEST_RESOURCE, true));
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testResources.getBase(), p,
+                    AssignmentFileType.HIDDEN_TEST_RESOURCE, true));
         });
         testResources.getInvisibleFiles().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testResources.getBase(), p, AssignmentFileType.INVISIBLE_TEST_RESOURCE, true));
+            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), testResources.getBase(), p,
+                    AssignmentFileType.INVISIBLE_TEST_RESOURCE, true));
         });
 
         // get all solution files
         ad.getAssignmentFiles().getSolution().forEach(p -> {
-            originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), null, p, AssignmentFileType.SOLUTION, true));
+            originalAssignmentFiles
+                    .add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), null, p, AssignmentFileType.SOLUTION, true));
         });
         // get the assignment
         originalAssignmentFiles.add(convertToAssignmentFile(ad.getName(), ad.getDirectory(), null, ad.getAssignmentFiles()
@@ -95,11 +107,14 @@ public class JavaAssignmentFileResolver {
 
         return originalAssignmentFiles;
     }
-    public AssignmentFile convertToAssignmentFile(String assignment, Path assignmentBase, Path prefix, Path file, AssignmentFileType type, boolean readOnly) {
+
+    public AssignmentFile convertToAssignmentFile(String assignment, Path assignmentBase, Path prefix, Path file,
+            AssignmentFileType type, boolean readOnly) {
         return convertToAssignmentFile(assignment, assignmentBase, prefix, file, type, readOnly, UUID.randomUUID());
     }
 
-    public AssignmentFile convertToAssignmentFile(String assignment, Path assignmentBase, Path prefix, Path file, AssignmentFileType type, boolean readOnly, UUID uuid) {
+    public AssignmentFile convertToAssignmentFile(String assignment, Path assignmentBase, Path prefix, Path file,
+            AssignmentFileType type, boolean readOnly, UUID uuid) {
         Path ap = assignmentBase;
         Path bp = assignmentBase;
         if (prefix != null) {

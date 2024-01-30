@@ -1,17 +1,5 @@
 package nl.moj.server.runtime;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.server.assignment.model.Assignment;
-import nl.moj.server.competition.model.CompetitionSession;
-import nl.moj.server.message.service.MessageService;
-import nl.moj.server.runtime.model.AssignmentStatus;
-import nl.moj.server.runtime.service.AssignmentStatusService;
-import nl.moj.server.teams.model.Team;
-import org.apache.commons.lang3.time.StopWatch;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,6 +12,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+
+import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.stereotype.Component;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.server.assignment.model.Assignment;
+import nl.moj.server.competition.model.CompetitionSession;
+import nl.moj.server.message.service.MessageService;
+import nl.moj.server.runtime.model.AssignmentStatus;
+import nl.moj.server.runtime.service.AssignmentStatusService;
+import nl.moj.server.teams.model.Team;
 
 @Component
 @RequiredArgsConstructor
@@ -48,31 +49,32 @@ public class TimersRuntime {
     }
 
     public CompletableFuture<Void> startTimersForGroup(Runnable stopFunction, Duration timeRemaining,
-                                                       Assignment assignment, CompetitionSession competitionSession) {
+            Assignment assignment, CompetitionSession competitionSession) {
 
         timer.put(GROUP_UUID, StopWatch.createStarted());
         initialRemaining.put(GROUP_UUID, timeRemaining);
         endTimes.put(GROUP_UUID, Instant.now().plus(timeRemaining));
 
-        addHandler(GROUP_UUID,scheduleGroupStop(stopFunction, timeRemaining));
-        addHandler(GROUP_UUID,scheduleGroupTimeSync(assignment.getAssignmentDuration(), assignment.getUuid(), competitionSession));
+        addHandler(GROUP_UUID, scheduleGroupStop(stopFunction, timeRemaining));
+        addHandler(GROUP_UUID,
+                scheduleGroupTimeSync(assignment.getAssignmentDuration(), assignment.getUuid(), competitionSession));
         return new CompletableFuture<>();
     }
 
     public CompletableFuture<Void> startTimerForTeam(Function<Team, Void> stopFunction, Team team,
-                                                     Duration assignmentDuration, CompetitionSession competitionSession) {
+            Duration assignmentDuration, CompetitionSession competitionSession) {
         timer.put(team.getUuid(), StopWatch.createStarted());
         initialRemaining.put(team.getUuid(), assignmentDuration);
         endTimes.put(team.getUuid(), Instant.now().plus(assignmentDuration));
 
-        addHandler(team.getUuid(),scheduleTeamStop(stopFunction, team, assignmentDuration));
-        addHandler(team.getUuid(),scheduleTeamTimeSync(team, assignmentDuration, competitionSession));
+        addHandler(team.getUuid(), scheduleTeamStop(stopFunction, team, assignmentDuration));
+        addHandler(team.getUuid(), scheduleTeamTimeSync(team, assignmentDuration, competitionSession));
 
         return null;
     }
 
     public void addHandler(UUID teamId, Future<?> handler) {
-        if( !handlers.containsKey(teamId)) {
+        if (!handlers.containsKey(teamId)) {
             handlers.put(teamId, new ArrayList<>());
         }
         handlers.get(teamId).add(handler);
@@ -88,8 +90,11 @@ public class TimersRuntime {
 
     public boolean isGroupRegisteredBeforeEnding(AssignmentStatus as, Instant registered) {
         // for groups we use the assignmentstate assigned end time
-        log.debug("checking before ending, as.getDateTimeEnd={} and expected endtime={}. Falling back to old behaviour using as.getDateTimeEnd", as.getDateTimeEnd(), endTimes.get(GROUP_UUID));
-        return /*isRegisteredBeforeEnding(GROUP_UUID, registered) || */as.getDateTimeEnd() == null || (as.getDateTimeEnd() != null && registered.isBefore(as.getDateTimeEnd()));
+        log.debug(
+                "checking before ending, as.getDateTimeEnd={} and expected endtime={}. Falling back to old behaviour using as.getDateTimeEnd",
+                as.getDateTimeEnd(), endTimes.get(GROUP_UUID));
+        return /* isRegisteredBeforeEnding(GROUP_UUID, registered) || */as.getDateTimeEnd() == null
+                || (as.getDateTimeEnd() != null && registered.isBefore(as.getDateTimeEnd()));
     }
 
     public boolean isTeamRegisteredBeforeEnding(Team team, Instant registered) {
@@ -158,18 +163,18 @@ public class TimersRuntime {
 
     public void clearTimers() {
 
-        if( this.timer != null ) {
-            this.timer.forEach((k,v) -> {
+        if (this.timer != null) {
+            this.timer.forEach((k, v) -> {
                 v.stop();
             });
             this.timer.clear();
         }
 
-        if( this.initialRemaining != null ) {
+        if (this.initialRemaining != null) {
             this.initialRemaining.clear();
         }
 
-        if( this.endTimes != null ) {
+        if (this.endTimes != null) {
             this.endTimes.clear();
         }
 
@@ -186,18 +191,18 @@ public class TimersRuntime {
     }
 
     public void clearTimers(Team team) {
-        if( team !=null ) {
+        if (team != null) {
 
-            if( this.timer != null && this.timer.containsKey(team.getUuid())) {
+            if (this.timer != null && this.timer.containsKey(team.getUuid())) {
                 this.timer.get(team.getUuid()).stop();
                 this.timer.remove(team.getUuid());
             }
 
-            if( this.initialRemaining != null ) {
+            if (this.initialRemaining != null) {
                 this.initialRemaining.remove(team.getUuid());
             }
 
-            if( this.endTimes != null ) {
+            if (this.endTimes != null) {
                 this.endTimes.remove(team.getUuid());
             }
 
@@ -213,7 +218,7 @@ public class TimersRuntime {
     }
 
     public Future<?> scheduleGroupTimeSync(Duration assignmentDuration, UUID assignmentUuid,
-                                           CompetitionSession competitionSession) {
+            CompetitionSession competitionSession) {
         return taskScheduler.scheduleAtFixedRate(() -> {
             Duration remaining = getGroupTimeRemaining();
             messageService.sendGroupRemainingTime(remaining, assignmentDuration, competitionSession.getUuid());
@@ -222,7 +227,7 @@ public class TimersRuntime {
     }
 
     public Future<?> scheduleTeamTimeSync(Team team, Duration assignmentDuration,
-                                          CompetitionSession competitionSession) {
+            CompetitionSession competitionSession) {
         return taskScheduler.scheduleAtFixedRate(() -> {
             Duration remaining = getTeamTimeRemaining(team);
             messageService.sendTeamRemainingTime(team, remaining, assignmentDuration, competitionSession.getUuid());

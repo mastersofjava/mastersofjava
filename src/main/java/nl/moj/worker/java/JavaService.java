@@ -1,20 +1,21 @@
 package nl.moj.worker.java;
 
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.common.messages.*;
-import nl.moj.worker.controller.ControllerClient;
 import nl.moj.server.util.CompletableFutures;
 import nl.moj.worker.ExecutionService;
 import nl.moj.worker.WorkerService;
+import nl.moj.worker.controller.ControllerClient;
 import nl.moj.worker.java.compile.CompileOutput;
 import nl.moj.worker.java.compile.CompileRunnerService;
 import nl.moj.worker.java.test.TestCaseOutput;
@@ -22,7 +23,6 @@ import nl.moj.worker.java.test.TestOutput;
 import nl.moj.worker.java.test.TestRunnerService;
 import nl.moj.worker.workspace.Workspace;
 import nl.moj.worker.workspace.WorkspaceService;
-import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -173,18 +173,17 @@ public class JavaService {
                 .thenCompose(co -> {
                     if (co.isSuccess()) {
                         List<CompletableFuture<TestCaseOutput>> tests = new ArrayList<>();
-                        testCases.forEach(tc ->
-                                tests.add(CompletableFuture.supplyAsync(() -> testRunnerService.test(workspace, tc),
+                        testCases.forEach(
+                                tc -> tests.add(CompletableFuture.supplyAsync(() -> testRunnerService.test(workspace, tc),
                                         executionService.getExecutor(ad))));
-                        return CompletableFutures.allOf(tests).thenApply(tcs ->
-                                TestOutput.builder()
-                                        .compileOutput(co)
-                                        .testCases(tcs)
-                                        .dateTimeStart(co.getDateTimeStart())
-                                        .dateTimeEnd(Instant.now())
-                                        .build());
+                        return CompletableFutures.allOf(tests).thenApply(tcs -> TestOutput.builder()
+                                .compileOutput(co)
+                                .testCases(tcs)
+                                .dateTimeStart(co.getDateTimeStart())
+                                .dateTimeEnd(Instant.now())
+                                .build());
                     } else {
-                        List<TestCaseOutput> tcs = testCases.stream().map( tc -> TestCaseOutput
+                        List<TestCaseOutput> tcs = testCases.stream().map(tc -> TestCaseOutput
                                 .builder()
                                 .aborted(true)
                                 .testCase(tc.getTestCase())
@@ -194,8 +193,7 @@ public class JavaService {
                                 .dateTimeStart(Instant.now())
                                 .dateTimeEnd(Instant.now())
                                 .timedOut(false)
-                                .build()
-                        ).toList();
+                                .build()).toList();
 
                         return CompletableFuture.completedFuture(TestOutput.builder()
                                 .compileOutput(co)

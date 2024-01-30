@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,6 +16,12 @@
 */
 package nl.moj.server;
 
+import javax.transaction.Transactional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.competition.repository.CompetitionRepository;
@@ -24,14 +30,12 @@ import nl.moj.server.runtime.repository.AssignmentResultRepository;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.user.repository.UserRepository;
-import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class DbUtil {
 
+    private static final Logger log = LoggerFactory.getLogger(DbUtil.class);
 
     private final CompetitionRepository competitionRepository;
     private final AssignmentRepository assignmentRepository;
@@ -43,6 +47,7 @@ public class DbUtil {
 
     @Transactional
     public void cleanup() {
+        log.info("Cleaning DB");
         assignmentResultRepository.deleteAll();
         teamAssignmentStatusRepository.deleteAll();
         competitionSessionRepository.deleteAll();
@@ -50,6 +55,7 @@ public class DbUtil {
         assignmentRepository.deleteAll();
         userRepository.deleteAll();
         teamRepository.deleteAll();
+        log.info("Cleaned DB");
     }
 
 }

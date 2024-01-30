@@ -1,7 +1,8 @@
 package nl.moj.server.util;
 
-import javax.transaction.Transactional;
 import java.util.function.Supplier;
+
+import javax.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
 

@@ -16,6 +16,19 @@
 */
 package nl.moj.server;
 
+import java.security.Principal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+
+import javax.transaction.Transactional;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,21 +40,9 @@ import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.teams.controller.TeamForm;
 import nl.moj.server.teams.model.Team;
-import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.teams.service.TeamService;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-
-import javax.transaction.Transactional;
-import java.security.Principal;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
 
 @Controller
 @AllArgsConstructor
@@ -60,7 +61,6 @@ public class GameController {
         return "index";
     }
 
-    
     @GetMapping("/play")
     @Transactional
     public String play(Model model, Principal principal) {
@@ -80,11 +80,13 @@ public class GameController {
         ActiveAssignment activeAssignment = competition.getActiveAssignment(team);
         model.addAttribute("team", team.getName());
         model.addAttribute("sessionId", competition.getSessionId());
-		model.addAttribute("assignmentActive", activeAssignment.isRunning());
+        model.addAttribute("assignmentActive", activeAssignment.isRunning());
 
         if (activeAssignment.isRunning()) {
-            TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(), activeAssignment
-                    .getCompetitionSession(), team).orElse(null);
+            TeamAssignmentStatus as = teamAssignmentStatusRepository
+                    .findByAssignmentAndCompetitionSessionAndTeam(activeAssignment.getAssignment(), activeAssignment
+                            .getCompetitionSession(), team)
+                    .orElse(null);
             if (as == null) {
                 as = competition.handleLateSignup(team);
             }
@@ -95,10 +97,10 @@ public class GameController {
         return "play";
     }
 
-
     private void addTeamAssignmentStateToModel(Model model, ActiveAssignment state, TeamAssignmentStatus as) {
         AssignmentDescriptor ad = state.getAssignmentDescriptor();
-        List<AssignmentFile> files = teamService.getTeamAssignmentFiles(as.getTeam().getUuid(), competition.getSessionId(), state.getAssignment().getUuid());
+        List<AssignmentFile> files = teamService.getTeamAssignmentFiles(as.getTeam().getUuid(), competition.getSessionId(),
+                state.getAssignment().getUuid());
 
         // TODO ugly
         files.sort((arg0, arg1) -> {
@@ -109,12 +111,14 @@ public class GameController {
         });
 
         boolean completed = as.getDateTimeCompleted() != null;
-//        || as.getRemainingSubmitAttempts() <= 0
-//                || as.getSubmitAttempts().stream().anyMatch(sa -> sa.getSuccess() != null && sa.getSuccess());
+        //        || as.getRemainingSubmitAttempts() <= 0
+        //                || as.getSubmitAttempts().stream().anyMatch(sa -> sa.getSuccess() != null && sa.getSuccess());
 
         AssignmentResult ar = as.getAssignmentResult();
-        Long submitTime = as.getSubmitAttempts().stream().filter( sa -> Objects.nonNull(sa.getDateTimeEnd()))
-                    .max(Comparator.comparing(SubmitAttempt::getDateTimeEnd)).map( sa -> sa.getAssignmentTimeRemaining() != null ? sa.getAssignmentTimeRemaining().getSeconds() : 0L ).orElse(0L);
+        Long submitTime = as.getSubmitAttempts().stream().filter(sa -> Objects.nonNull(sa.getDateTimeEnd()))
+                .max(Comparator.comparing(SubmitAttempt::getDateTimeEnd))
+                .map(sa -> sa.getAssignmentTimeRemaining() != null ? sa.getAssignmentTimeRemaining().getSeconds() : 0L)
+                .orElse(0L);
 
         TeamAssignmentModel tam = TeamAssignmentModel.builder()
                 .assignmentName(state.getAssignmentDescriptor().getDisplayName())

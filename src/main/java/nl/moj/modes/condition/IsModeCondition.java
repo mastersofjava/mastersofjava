@@ -3,7 +3,6 @@ package nl.moj.modes.condition;
 import java.util.ArrayList;
 import java.util.List;
 
-import nl.moj.modes.Mode;
 import org.springframework.boot.autoconfigure.condition.ConditionMessage;
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -14,6 +13,8 @@ import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotationPredicates;
 import org.springframework.core.env.PropertyResolver;
 import org.springframework.core.type.AnnotatedTypeMetadata;
+
+import nl.moj.modes.Mode;
 
 public class IsModeCondition extends SpringBootCondition {
 

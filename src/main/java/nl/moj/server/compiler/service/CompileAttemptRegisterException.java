@@ -1,7 +1,7 @@
 package nl.moj.server.compiler.service;
 
 public class CompileAttemptRegisterException extends Exception {
-    
+
     public CompileAttemptRegisterException(String message) {
         super(message);
     }

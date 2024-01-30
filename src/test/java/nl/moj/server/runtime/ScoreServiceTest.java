@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,19 +16,30 @@
 */
 package nl.moj.server.runtime;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.common.assignment.descriptor.ScoringRules;
+import nl.moj.common.config.properties.Competition;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.common.config.properties.Competition;
-import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.ActiveAssignment;
 import nl.moj.server.runtime.model.AssignmentResult;
 import nl.moj.server.runtime.model.TeamAssignmentStatus;
@@ -38,16 +49,6 @@ import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 public class ScoreServiceTest {
@@ -70,22 +71,24 @@ public class ScoreServiceTest {
         team = new Team();
         team.setId(1L);
         team.setName("Team 1");
-        Mockito.when(teamAssignmentStatusRepository.save(Mockito.any(TeamAssignmentStatus.class))).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        Mockito.when(assignmentResultRepository.save(Mockito.any(AssignmentResult.class))).thenAnswer( invocationOnMock -> invocationOnMock.getArgument(0));
+        Mockito.when(teamAssignmentStatusRepository.save(Mockito.any(TeamAssignmentStatus.class)))
+                .thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        Mockito.when(assignmentResultRepository.save(Mockito.any(AssignmentResult.class)))
+                .thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         scoreService = new ScoreService(mojServerProperties, teamAssignmentStatusRepository, assignmentResultRepository);
 
     }
 
     private ActiveAssignment prepareAssignmentStatus(Team team, Long initialScore, Integer testRuns,
-                                                     List<String> totalTestCases, Integer successTestCases,
-                                                     Integer submits, boolean lastSubmitSuccess, ScoringRules scoringRules) {
+            List<String> totalTestCases, Integer successTestCases,
+            Integer submits, boolean lastSubmitSuccess, ScoringRules scoringRules) {
         return prepareAssignmentStatus(team, Collections.emptyList(), initialScore, testRuns, totalTestCases, successTestCases,
                 submits, lastSubmitSuccess, scoringRules);
     }
 
     private ActiveAssignment prepareAssignmentStatus(Team team, List<String> labels, Long initialScore, Integer testRuns,
-                                                     List<String> totalTestCases, Integer successTestCases,
-                                                     Integer submits, boolean lastSubmitSuccess, ScoringRules scoringRules) {
+            List<String> totalTestCases, Integer successTestCases,
+            Integer submits, boolean lastSubmitSuccess, ScoringRules scoringRules) {
         assignmentStatus = TeamAssignmentStatus.builder()
                 .team(team)
                 .build();
@@ -94,7 +97,8 @@ public class ScoreServiceTest {
         ad.setScoringRules(scoringRules);
         ad.setLabels(labels);
         List<TestAttempt> testAttempts = createTestAttempts(testRuns, totalTestCases, successTestCases);
-        List<SubmitAttempt> submitAttempts = createSubmitAttempts(submits, lastSubmitSuccess, initialScore,totalTestCases, successTestCases);
+        List<SubmitAttempt> submitAttempts = createSubmitAttempts(submits, lastSubmitSuccess, initialScore, totalTestCases,
+                successTestCases);
 
         submitAttempts.forEach(sa -> {
             sa.setAssignmentStatus(assignmentStatus);
@@ -119,7 +123,8 @@ public class ScoreServiceTest {
                 .build();
     }
 
-    private List<SubmitAttempt> createSubmitAttempts(int count, boolean lastSubmitSuccess, long timeRemaining, List<String> totalTestCases, int successTestCases) {
+    private List<SubmitAttempt> createSubmitAttempts(int count, boolean lastSubmitSuccess, long timeRemaining,
+            List<String> totalTestCases, int successTestCases) {
         List<SubmitAttempt> sa = new ArrayList<>();
         Instant now = Instant.now();
         for (int i = 0; i < count; i++) {
@@ -190,7 +195,8 @@ public class ScoreServiceTest {
         Mockito.when(mojServerProperties.getCompetition()).thenReturn(c);
     }
 
-    private ScoringRules prepareScoringRules(Integer maxResubmits, String resubmitPenalty, Integer successBonus, String testPenalty) {
+    private ScoringRules prepareScoringRules(Integer maxResubmits, String resubmitPenalty, Integer successBonus,
+            String testPenalty) {
         ScoringRules scoringRules = new ScoringRules();
         scoringRules.setMaximumResubmits(maxResubmits);
         scoringRules.setResubmitPenalty(resubmitPenalty);
@@ -205,7 +211,8 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 1, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -222,7 +229,8 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 1, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -239,7 +247,8 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 2, 2, false, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
         System.out.println(ar.getScoreExplanation());
 
@@ -257,9 +266,10 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 2, 2, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
-        
+
         Assertions.assertThat(ar).isNotNull();
         Assertions.assertThat(ar.getInitialScore()).isEqualTo(2000L);
         Assertions.assertThat(ar.getFinalScore()).isEqualTo(1702L);
@@ -271,10 +281,12 @@ public class ScoreServiceTest {
     public void failedSubmitHasTestSuccessScoresWithAllTestsOK() {
         ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
 
-        ActiveAssignment state = prepareAssignmentStatus(team, List.of("test1_75", "test2_150"), 2000L, 1, List.of("Test1.java", "Test2.java"),
+        ActiveAssignment state = prepareAssignmentStatus(team, List.of("test1_75", "test2_150"), 2000L, 1,
+                List.of("Test1.java", "Test2.java"),
                 2, 1, false, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -288,10 +300,12 @@ public class ScoreServiceTest {
     public void successSubmitHasTestSuccessScoresWithAllTestsOK() {
         ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
 
-        ActiveAssignment state = prepareAssignmentStatus(team, List.of("test1_75", "test2_150"), 2000L, 1, List.of("Test1.java", "Test2.java"),
+        ActiveAssignment state = prepareAssignmentStatus(team, List.of("test1_75", "test2_150"), 2000L, 1,
+                List.of("Test1.java", "Test2.java"),
                 2, 1, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -305,10 +319,12 @@ public class ScoreServiceTest {
     public void failedSubmitHasTestSuccessScores() {
         ScoringRules scoringRules = prepareScoringRules(2, "500", 0, null);
 
-        ActiveAssignment state = prepareAssignmentStatus(team, List.of("test1_75", "test2_150"), 2000L, 1, List.of("Test1.java", "Test2.java"),
+        ActiveAssignment state = prepareAssignmentStatus(team, List.of("test1_75", "test2_150"), 2000L, 1,
+                List.of("Test1.java", "Test2.java"),
                 1, 1, false, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -326,7 +342,8 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 3, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -342,7 +359,8 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 1, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -358,7 +376,8 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 3, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -374,7 +393,8 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 1, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -384,7 +404,6 @@ public class ScoreServiceTest {
         Assertions.assertThat(ar.getBonus()).isEqualTo(0L);
     }
 
-
     @Test
     public void invalidResubmitPenaltiesThrowsException() {
         ScoringRules scoringRules = prepareScoringRules(2, "foo", 0, null);
@@ -392,7 +411,8 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 2, true, scoringRules);
 
-        assertThrows(IllegalArgumentException.class, () -> scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor()));
+        assertThrows(IllegalArgumentException.class, () -> scoreService
+                .finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor()));
     }
 
     // TestCase Penalties
@@ -403,7 +423,8 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 2, List.of("test1", "test2"),
                 0, 2, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -419,7 +440,8 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 1, true, scoringRules);
 
-        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor());
+        TeamAssignmentStatus as = scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(),
+                state.getAssignmentDescriptor());
         AssignmentResult ar = as.getAssignmentResult();
 
         Assertions.assertThat(ar).isNotNull();
@@ -435,6 +457,7 @@ public class ScoreServiceTest {
         ActiveAssignment state = prepareAssignmentStatus(team, 2000L, 3, List.of("test1", "test2"),
                 0, 2, true, scoringRules);
 
-        assertThrows(IllegalArgumentException.class, () -> scoreService.finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor()));
+        assertThrows(IllegalArgumentException.class, () -> scoreService
+                .finalizeScore(assignmentStatus.getMostRecentSubmitAttempt(), state.getAssignmentDescriptor()));
     }
 }

@@ -1,20 +1,22 @@
 package nl.moj.server.util;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.transaction.Transactional;
+
+import org.springframework.stereotype.Service;
 
 import nl.moj.common.messages.*;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.test.model.TestAttempt;
-import org.springframework.stereotype.Service;
 
 @Service
 public class JMSResponseHelper {
 
-    private  static final String ABORT_WORKER = "<abort-worker>";
+    private static final String ABORT_WORKER = "<abort-worker>";
 
     @Transactional(Transactional.TxType.MANDATORY)
     public JMSCompileResponse abortResponse(CompileAttempt ca) {
@@ -34,7 +36,7 @@ public class JMSResponseHelper {
     @Transactional(Transactional.TxType.MANDATORY)
     public JMSTestResponse abortResponse(TestAttempt ta) {
         List<JMSTestCaseResult> tcs = new ArrayList<>();
-        ta.getTestCases().forEach( tc -> {
+        ta.getTestCases().forEach(tc -> {
             tcs.add(JMSTestCaseResult.builder()
                     .testCase(tc.getUuid())
                     .worker(ABORT_WORKER)

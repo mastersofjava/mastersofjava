@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,9 +16,10 @@
 */
 package nl.moj.server.assignment.model;
 
-import javax.persistence.*;
 import java.time.Duration;
 import java.util.UUID;
+
+import javax.persistence.*;
 
 import lombok.*;
 
@@ -34,7 +35,7 @@ import lombok.*;
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of = {"uuid"})
+@EqualsAndHashCode(of = { "uuid" })
 public class Assignment {
 
     @Id
@@ -60,6 +61,5 @@ public class Assignment {
 
     @Column(name = "allowed_submits", nullable = false)
     private Integer allowedSubmits;
-
 
 }

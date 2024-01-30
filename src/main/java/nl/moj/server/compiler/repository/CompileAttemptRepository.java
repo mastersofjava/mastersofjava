@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -20,11 +20,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import nl.moj.server.compiler.model.CompileAttempt;
-import nl.moj.server.runtime.model.TeamAssignmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
+import nl.moj.server.compiler.model.CompileAttempt;
+import nl.moj.server.runtime.model.TeamAssignmentStatus;
 
 @Repository
 public interface CompileAttemptRepository extends JpaRepository<CompileAttempt, Long> {
@@ -32,7 +33,7 @@ public interface CompileAttemptRepository extends JpaRepository<CompileAttempt, 
 
     List<CompileAttempt> findByAssignmentStatus(TeamAssignmentStatus assignment);
 
-    @Query(value="select count(ca) from CompileAttempt ca " +
+    @Query(value = "select count(ca) from CompileAttempt ca " +
             "where ca.assignmentStatus = ?1 and ca.dateTimeRegister > ?2")
     long countNewerAttempts(TeamAssignmentStatus tas, Instant dateRegistered);
 

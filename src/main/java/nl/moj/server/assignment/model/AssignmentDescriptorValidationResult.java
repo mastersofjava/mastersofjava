@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-
 
 @Getter
 @AllArgsConstructor

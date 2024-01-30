@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Data;
 
 @Data
@@ -48,7 +49,7 @@ public class AssignmentDescriptor {
     private Integer difficulty;
     @JsonProperty("java-version")
     private Integer javaVersion;
-    @JsonProperty(value = "java-preview-enabled",defaultValue = "true")
+    @JsonProperty(value = "java-preview-enabled", defaultValue = "true")
     private boolean javaPreviewEnabled;
     @JsonProperty("duration")
     private Duration duration;
@@ -67,13 +68,12 @@ public class AssignmentDescriptor {
     private AssignmentFiles assignmentFiles;
 
     @JsonProperty("system-properties")
-    private Map<String,String> systemProperties = new HashMap<>();
-    
+    private Map<String, String> systemProperties = new HashMap<>();
 
     // TODO: make this proper properties instead of abusing labels
     public List<String> readScoreLables() {
         List<String> scoreLabels = new ArrayList<>();
-        for (String label :this.getLabels()) {
+        for (String label : this.getLabels()) {
             if (label.startsWith("test")) {
                 scoreLabels.add(label);
             }

@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,16 +16,39 @@
 */
 package nl.moj.server.runtime;
 
+import static nl.moj.server.TestUtil.classpathResourceToPath;
+
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.transaction.Transactional;
+
+import org.assertj.core.api.AbstractLongAssert;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.util.Assert;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.storage.StorageService;
+import nl.moj.common.bootstrap.BootstrapService;
+import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.DbUtil;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.assignment.repository.AssignmentRepository;
 import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.common.bootstrap.BootstrapService;
 import nl.moj.server.competition.model.Competition;
 import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.model.CompetitionSession;
@@ -34,7 +57,6 @@ import nl.moj.server.competition.repository.CompetitionRepository;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
 import nl.moj.server.compiler.model.CompileAttempt;
 import nl.moj.server.compiler.repository.CompileAttemptRepository;
-import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.server.runtime.model.*;
 import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.submit.model.SourceMessage;
@@ -49,27 +71,6 @@ import nl.moj.server.user.model.User;
 import nl.moj.server.user.repository.UserRepository;
 import nl.moj.server.util.PathUtil;
 import nl.moj.server.util.TransactionHelper;
-import org.assertj.core.api.AbstractLongAssert;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.util.Assert;
-
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
-import java.nio.charset.StandardCharsets;
-import java.security.Principal;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static nl.moj.server.TestUtil.classpathResourceToPath;
 
 @Slf4j
 @DirtiesContext
@@ -146,6 +147,8 @@ public abstract class BaseRuntimeTest {
         } catch (NullPointerException npe) {
             log.error("Nullpointer: {}", npe.getMessage(), npe);
             throw npe;
+        } catch (DataIntegrityViolationException dive) {
+            log.error("DB cleaning failed {}", dive.getMessage(), dive);
         }
     }
 
@@ -174,11 +177,19 @@ public abstract class BaseRuntimeTest {
 
     @AfterEach
     public void cleanup() throws Exception {
-        if (competitionRuntime.getCurrentAssignment() != null) {
-            competitionRuntime.stopAssignment(sessionId, competitionRuntime.getCurrentAssignment());
+        try {
+            if (competitionRuntime.getCurrentAssignment() != null) {
+                competitionRuntime.stopAssignment(sessionId, competitionRuntime.getCurrentAssignment());
+            }
+            dbUtil.cleanup();
+            mockJmsService.reset();
+            PathUtil.delete(mojServerProperties.getDataDirectory(), true);
+        } catch (NullPointerException npe) {
+            log.error("Nullpointer: {}", npe.getMessage(), npe);
+            throw npe;
+        } catch (DataIntegrityViolationException dive) {
+            log.error("DB cleaning failed {}", dive.getMessage(), dive);
         }
-        dbUtil.cleanup();
-        PathUtil.delete(mojServerProperties.getDataDirectory(), true);
     }
 
     protected Principal getPrincipal(User user) {
@@ -206,7 +217,8 @@ public abstract class BaseRuntimeTest {
         team = addTeam();
         user = addUser(team);
 
-        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/runtime/assignments"), "runtime");
+        List<Assignment> assignments = assignmentService.updateAssignments(classpathResourceToPath("/runtime/assignments"),
+                "runtime");
         AtomicInteger count = new AtomicInteger(0);
         final Competition c = new Competition();
         c.setUuid(UUID.randomUUID());
@@ -255,11 +267,11 @@ public abstract class BaseRuntimeTest {
         return trx.required(() -> Arrays.stream(tas).flatMap(ta -> {
             TestAttempt r = refresh(ta);
             return Stream.concat(Stream.of(ExecutionWindow.builder()
-                            .start(r.getCompileAttempt().getDateTimeStart())
-                            .end(r.getCompileAttempt().getDateTimeEnd())
-                            .worker(r.getCompileAttempt().getWorker())
-                            .type("compile")
-                            .build()),
+                    .start(r.getCompileAttempt().getDateTimeStart())
+                    .end(r.getCompileAttempt().getDateTimeEnd())
+                    .worker(r.getCompileAttempt().getWorker())
+                    .type("compile")
+                    .build()),
                     r.getTestCases()
                             .stream()
                             .map(tr -> ExecutionWindow.builder()
@@ -315,7 +327,8 @@ public abstract class BaseRuntimeTest {
             Assignment assignment = assignmentRepository.findByName(src.getAssignmentName());
             CompetitionSession session = competitionSessionRepository.findByUuid(getSessionId());
             Team team = teamRepository.findByUuid(UUID.fromString(src.getUuid()));
-            TeamAssignmentStatus tas = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(assignment, session, team).orElse(null);
+            TeamAssignmentStatus tas = teamAssignmentStatusRepository
+                    .findByAssignmentAndCompetitionSessionAndTeam(assignment, session, team).orElse(null);
 
             Assertions.assertThat(tas).isNotNull();
             AssignmentResult r = tas.getAssignmentResult();
@@ -414,7 +427,7 @@ public abstract class BaseRuntimeTest {
             Assertions.assertThat(r).isNotNull();
             Assertions.assertThat(r.getAborted()).isTrue();
 
-            r.getTestCases().forEach( tc -> {
+            r.getTestCases().forEach(tc -> {
                 Assertions.assertThat(tc.getAborted()).isTrue();
                 Assertions.assertThat(tc.getSuccess()).isFalse();
                 Assertions.assertThat(tc.getTimeout()).isFalse();

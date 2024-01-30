@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -28,7 +28,7 @@ import lombok.*;
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@ToString(exclude = {"assignmentStatus"})
+@ToString(exclude = { "assignmentStatus" })
 public class AssignmentResult {
 
     @Id
@@ -51,7 +51,7 @@ public class AssignmentResult {
 
     @Column(name = "final_score", nullable = false)
     private Long finalScore;
-    
+
     @Column(name = "score_explanation", nullable = false)
     private String scoreExplanation;
 

@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,15 +16,16 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.competition.model.CompetitionAssignment;
-import nl.moj.server.competition.service.CompetitionServiceException;
-import nl.moj.server.message.service.MessageService;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+
+import nl.moj.server.competition.model.CompetitionAssignment;
+import nl.moj.server.competition.service.CompetitionServiceException;
+import nl.moj.server.message.service.MessageService;
 
 @SpringBootTest
 public class NonExistingJDKTest extends BaseRuntimeTest {

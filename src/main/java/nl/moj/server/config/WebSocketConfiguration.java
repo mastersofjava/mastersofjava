@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,7 +16,6 @@
 */
 package nl.moj.server.config;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -45,7 +44,7 @@ public class WebSocketConfiguration {
         @Override
         public void configureMessageBroker(MessageBrokerRegistry config) {
             config.enableSimpleBroker("/topic", "/queue")
-                    .setHeartbeatValue(new long[]{10000,10000})
+                    .setHeartbeatValue(new long[] { 10000, 10000 })
                     .setTaskScheduler(taskScheduler);
             config.setApplicationDestinationPrefixes("/app");
             config.setUserDestinationPrefix("/user");
@@ -62,7 +61,7 @@ public class WebSocketConfiguration {
     }
 
     @Configuration
-    public static  class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
+    public static class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
 
         protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
             messages.simpDestMatchers("/*").authenticated();

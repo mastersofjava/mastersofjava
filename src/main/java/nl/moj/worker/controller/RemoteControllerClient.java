@@ -9,16 +9,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.client.RestTemplate;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 import nl.moj.common.assignment.service.AssignmentDescriptorService;
 import nl.moj.common.config.properties.MojServerProperties;
 import nl.moj.common.util.ZipUtils;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.client.RestTemplate;
 
 @RequiredArgsConstructor
 @Slf4j

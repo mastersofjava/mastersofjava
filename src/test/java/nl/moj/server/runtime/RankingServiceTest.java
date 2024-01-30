@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,15 +16,16 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.server.rankings.model.Ranking;
-import nl.moj.server.rankings.service.RankingsService;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import nl.moj.server.rankings.model.Ranking;
+import nl.moj.server.rankings.service.RankingsService;
 
 @SpringBootTest
 public class RankingServiceTest extends BaseRuntimeTest {

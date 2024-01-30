@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,7 +16,19 @@
 */
 package nl.moj.server.runtime;
 
-import nl.moj.common.config.properties.MojServerProperties;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
 import nl.moj.server.assignment.service.AssignmentService;
 import nl.moj.server.competition.model.CompetitionAssignment;
 import nl.moj.server.competition.service.CompetitionServiceException;
@@ -26,18 +38,6 @@ import nl.moj.server.submit.SubmitFacade;
 import nl.moj.server.submit.model.SourceMessage;
 import nl.moj.server.submit.model.SubmitAttempt;
 import nl.moj.server.test.model.TestAttempt;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-
-import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 @SpringBootTest
 @ActiveProfiles("test-controller")
@@ -105,33 +105,37 @@ public class AssignmentSubmitAbortTest extends BaseRuntimeTest {
             CompetitionAssignment oa = getAssignment(assignment);
             competitionRuntime.startAssignment(competitionRuntime.getSessionId(), oa.getAssignment()
                     .getUuid());
-        } catch( CompetitionServiceException cse ) {
+        } catch (CompetitionServiceException cse) {
             throw new RuntimeException(cse);
         }
     }
 
     private CompileAttempt doCompile(SourceMessage src) {
-        Duration timeout = assignmentService.resolveCompileAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
+        Duration timeout = assignmentService
+                .resolveCompileAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
         CompileAttempt ca = submitFacade.registerCompileRequest(src, getPrincipal(getUser()));
-        if( ca != null ) {
+        if (ca != null) {
             awaitAttempt(ca.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
         }
         return ca;
     }
 
     private TestAttempt doTest(SourceMessage src) {
-        Duration timeout = assignmentService.resolveTestAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment(),src.getTests().size()).plusSeconds(5);
+        Duration timeout = assignmentService
+                .resolveTestAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment(), src.getTests().size())
+                .plusSeconds(5);
         TestAttempt ta = submitFacade.registerTestRequest(src, getPrincipal(getUser()));
-        if( ta != null ) {
+        if (ta != null) {
             awaitAttempt(ta.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
         }
         return ta;
     }
 
     private SubmitAttempt doSubmit(SourceMessage src) {
-        Duration timeout = assignmentService.resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
+        Duration timeout = assignmentService
+                .resolveSubmitAbortTimout(competitionRuntime.getActiveAssignment(null).getAssignment()).plusSeconds(5);
         SubmitAttempt sa = submitFacade.registerSubmitRequest(src, getPrincipal(getUser()));
-        if( sa != null ) {
+        if (sa != null) {
             awaitAttempt(sa.getUuid(), timeout.toMillis(), TimeUnit.MILLISECONDS);
         }
         return sa;

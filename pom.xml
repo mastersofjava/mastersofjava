@@ -25,6 +25,9 @@
         <java.version>17</java.version>
         <moj.image.base>moj</moj.image.base>
         <moj.image.tag>17</moj.image.tag>
+
+        <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
+        <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -253,11 +256,92 @@
 
     <build>
         <finalName>moj-game-server</finalName>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>net.revelc.code.formatter</groupId>
+                    <artifactId>formatter-maven-plugin</artifactId>
+                    <version>${formatter-maven-plugin.version}</version>
+                    <configuration>
+                        <!-- store outside of target to speed up formatting when mvn clean is used -->
+                        <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
+                        <configFile>${project.basedir}/ide/eclipse-format.xml</configFile>
+                        <lineEnding>LF</lineEnding>
+                        <skip>${format.skip}</skip>
+                        <compilerSource>1.${java.version}</compilerSource>
+                        <compilerCompliance>1.${java.version}</compilerCompliance>
+                        <compilerTargetPlatform>1.${java.version}</compilerTargetPlatform>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>net.revelc.code</groupId>
+                    <artifactId>impsort-maven-plugin</artifactId>
+                    <version>${impsort-maven-plugin.version}</version>
+                    <configuration>
+                        <!-- store outside of target to speed up formatting when mvn clean is used -->
+                        <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
+                        <groups>java.,javax.,jakarta.,org.,com.</groups>
+                        <staticGroups>*</staticGroups>
+                        <skip>${format.skip}</skip>
+                        <removeUnused>true</removeUnused>
+                        <compliance>${java.version}</compliance>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>io.github.git-commit-id</groupId>
+                    <artifactId>git-commit-id-maven-plugin</artifactId>
+                    <version>5.0.0</version>
+                    <configuration>
+                        <includeOnlyProperties>
+                            <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
+                        </includeOnlyProperties>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <forceJavacCompilerUse>true</forceJavacCompilerUse>
+                        <release>17</release>
+                        <source>17</source>
+                        <target>17</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.8.8</version>
+                    <configuration>
+                        <includes>
+                            <include>nl/**</include>
+                        </includes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>com.google.cloud.tools</groupId>
+                    <artifactId>jib-maven-plugin</artifactId>
+                    <version>3.3.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>io.github.git-commit-id</groupId>
                 <artifactId>git-commit-id-maven-plugin</artifactId>
-                <version>5.0.0</version>
                 <executions>
                     <execution>
                         <id>git-info</id>
@@ -267,11 +351,6 @@
                         <phase>initialize</phase>
                     </execution>
                 </executions>
-                <configuration>
-                    <includeOnlyProperties>
-                        <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
-                    </includeOnlyProperties>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -285,26 +364,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <forceJavacCompilerUse>true</forceJavacCompilerUse>
-                    <release>17</release>
-                    <source>17</source>
-                    <target>17</target>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-install-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -320,12 +387,6 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.8</version>
-                <configuration>
-                    <includes>
-                        <include>nl/**</include>
-                    </includes>
-                </configuration>
                 <executions>
                     <execution>
                         <id>jacoco-initialize</id>
@@ -362,7 +423,6 @@
                     <plugin>
                         <groupId>com.google.cloud.tools</groupId>
                         <artifactId>jib-maven-plugin</artifactId>
-                        <version>3.3.0</version>
                         <executions>
                             <execution>
                                 <id>single</id>
@@ -493,7 +553,6 @@
                     <plugin>
                         <groupId>com.google.cloud.tools</groupId>
                         <artifactId>jib-maven-plugin</artifactId>
-                        <version>3.3.0</version>
                         <executions>
                             <execution>
                                 <id>single</id>
@@ -568,6 +627,135 @@
                                             <commit>${git.commit.id.abbrev}</commit>
                                         </labels>
                                     </container>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>format</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!no-format</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>net.revelc.code.formatter</groupId>
+                        <artifactId>formatter-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>format</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>net.revelc.code</groupId>
+                        <artifactId>impsort-maven-plugin</artifactId>
+                        <configuration>
+                            <removeUnused>true</removeUnused>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>sort-imports</id>
+                                <goals>
+                                    <goal>sort</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>validate</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>no-format</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>net.revelc.code.formatter</groupId>
+                        <artifactId>formatter-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>validate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>net.revelc.code</groupId>
+                        <artifactId>impsort-maven-plugin</artifactId>
+                        <configuration>
+                            <removeUnused>true</removeUnused>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>check-imports</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+            </properties>
+            <build>
+                <defaultGoal>clean verify</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>clean-cache</id>
+            <activation>
+                <property>
+                    <name>clean-cache</name>
+                    <value>!false</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>clean-cache-dirs</id>
+                                <phase>pre-clean</phase>
+                                <inherited>true</inherited>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <configuration>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>.cache</directory>
+                                        </fileset>
+                                    </filesets>
                                 </configuration>
                             </execution>
                         </executions>

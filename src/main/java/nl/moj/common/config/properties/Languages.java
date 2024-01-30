@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,16 +16,18 @@
 */
 package nl.moj.common.config.properties;
 
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.util.JavaVersionUtil;
-import org.apache.commons.lang3.StringUtils;
-
-import javax.validation.constraints.NotEmpty;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.validation.constraints.NotEmpty;
+
+import org.apache.commons.lang3.StringUtils;
+
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.util.JavaVersionUtil;
 
 @Data
 @Slf4j
@@ -79,7 +81,8 @@ public class Languages {
             }
             return v;
         } else {
-            throw new IllegalArgumentException("No java version defined and no JAVA_HOME specified, cannot run without a javac/java...");
+            throw new IllegalArgumentException(
+                    "No java version defined and no JAVA_HOME specified, cannot run without a javac/java...");
         }
     }
 

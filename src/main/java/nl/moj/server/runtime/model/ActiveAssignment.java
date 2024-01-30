@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -33,7 +33,8 @@ import nl.moj.server.competition.model.CompetitionSession;
 @Builder
 @Slf4j
 /**
- * DTO: Holds the state of the current assignment (the assignment itself, the session it is part of and how long it has been running.)
+ * DTO: Holds the state of the current assignment (the assignment itself, the session it is part of and how long it has been
+ * running.)
  */
 public class ActiveAssignment {
 
@@ -49,11 +50,11 @@ public class ActiveAssignment {
 
     @Override
     public String toString() {
-        return "[" +assignment.getName() + ", " + competitionSession.getId()+"]";
+        return "[" + assignment.getName() + ", " + competitionSession.getId() + "]";
     }
 
     public CompetitionSession.SessionType getSessionType() {
-        if( competitionSession != null && competitionSession.getSessionType() != null ) {
+        if (competitionSession != null && competitionSession.getSessionType() != null) {
             return competitionSession.getSessionType();
         }
         return null;
@@ -62,28 +63,28 @@ public class ActiveAssignment {
     public List<String> getTestNames() {
         return assignmentFiles
                 .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST ||
-                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
+                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST)
                 .map(AssignmentFile::getName).collect(Collectors.toList());
     }
 
     public List<UUID> getTestUuids() {
         return assignmentFiles
                 .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST ||
-                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
+                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST)
                 .map(AssignmentFile::getUuid).collect(Collectors.toList());
     }
 
     public List<AssignmentFile> getTestFiles() {
         return assignmentFiles
                 .stream().filter(f -> f.getFileType() == AssignmentFileType.TEST ||
-                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST )
+                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST)
                 .collect(Collectors.toList());
     }
 
     public List<AssignmentFile> getSubmitTestFiles() {
         return assignmentFiles
                 .stream().filter(f -> f.getFileType() == AssignmentFileType.HIDDEN_TEST ||
-                                f.getFileType() == AssignmentFileType.INVISIBLE_TEST ||
+                        f.getFileType() == AssignmentFileType.INVISIBLE_TEST ||
                         f.getFileType() == AssignmentFileType.TEST)
                 .collect(Collectors.toList());
     }
@@ -99,7 +100,7 @@ public class ActiveAssignment {
     }
 
     public ExecutionModel getExecutionModel() {
-        if (assignmentDescriptor==null || assignmentDescriptor.getExecutionModel() == null) {
+        if (assignmentDescriptor == null || assignmentDescriptor.getExecutionModel() == null) {
             return ExecutionModel.PARALLEL;
         }
         return assignmentDescriptor.getExecutionModel();

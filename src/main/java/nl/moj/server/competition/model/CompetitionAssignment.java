@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,23 +16,23 @@
 */
 package nl.moj.server.competition.model;
 
+import javax.persistence.*;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import nl.moj.server.assignment.model.Assignment;
-
-import javax.persistence.*;
 
 @Entity
 @Table(name = "competition_assignments", uniqueConstraints = {
-        @UniqueConstraint(name = "competition_assignments_competition_idx_uk", columnNames = {"idx", "competition_id"})
+        @UniqueConstraint(name = "competition_assignments_competition_idx_uk", columnNames = { "idx", "competition_id" })
 })
 @Data
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "competition_assignments_seq", sequenceName = "competition_assignments_seq")
-@EqualsAndHashCode(of = {"id"})
+@EqualsAndHashCode(of = { "id" })
 public class CompetitionAssignment {
 
     @Id

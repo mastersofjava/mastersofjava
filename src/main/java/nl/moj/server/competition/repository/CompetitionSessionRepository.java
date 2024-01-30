@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -20,11 +20,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import nl.moj.server.competition.model.Competition;
-import nl.moj.server.competition.model.CompetitionSession;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
+import nl.moj.server.competition.model.Competition;
+import nl.moj.server.competition.model.CompetitionSession;
 
 @Repository
 public interface CompetitionSessionRepository extends JpaRepository<CompetitionSession, Long> {
@@ -36,4 +37,3 @@ public interface CompetitionSessionRepository extends JpaRepository<CompetitionS
     @Query(value = "SELECT * FROM COMPETITION_SESSIONS ORDER BY id DESC LIMIT 1", nativeQuery = true)
     Optional<CompetitionSession> findMostRecent();
 }
-

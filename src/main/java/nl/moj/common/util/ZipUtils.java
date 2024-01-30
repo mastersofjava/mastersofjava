@@ -50,7 +50,7 @@ public class ZipUtils {
         return null;
     }
 
-    public static void zip(Path source, OutputStream out, Predicate<Path> filter ) throws IOException {
+    public static void zip(Path source, OutputStream out, Predicate<Path> filter) throws IOException {
         try (ZipOutputStream zos = new ZipOutputStream(out)) {
             Files.walkFileTree(source, new SimpleFileVisitor<>() {
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -63,14 +63,14 @@ public class ZipUtils {
         }
     }
 
-
     public static void unzip(InputStream in, Path dest) throws IOException {
         try (ZipInputStream zipInputStream = new ZipInputStream(in)) {
             ZipEntry zipEntry = zipInputStream.getNextEntry();
             while (zipEntry != null) {
                 Path p = dest.resolve(zipEntry.getName());
                 if (!p.normalize().startsWith(dest)) {
-                    throw new IOException("Unzip entry " + p.toAbsolutePath() + " writing outside target folder " + dest.toAbsolutePath());
+                    throw new IOException(
+                            "Unzip entry " + p.toAbsolutePath() + " writing outside target folder " + dest.toAbsolutePath());
                 }
 
                 if (zipEntry.isDirectory()) {

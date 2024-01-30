@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -20,10 +20,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.UUID;
 
+import org.apache.tika.mime.MediaType;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Builder;
 import lombok.Data;
-import org.apache.tika.mime.MediaType;
 
 @Data
 @Builder(toBuilder = true)

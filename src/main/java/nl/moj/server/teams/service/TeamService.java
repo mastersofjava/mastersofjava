@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,7 +16,6 @@
 */
 package nl.moj.server.teams.service;
 
-import javax.transaction.Transactional;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,6 +27,11 @@ import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.stream.Stream;
 
+import javax.transaction.Transactional;
+
+import org.apache.commons.io.IOUtils;
+import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.common.storage.StorageService;
@@ -38,8 +42,6 @@ import nl.moj.server.runtime.repository.TeamAssignmentStatusRepository;
 import nl.moj.server.teams.model.Team;
 import nl.moj.server.teams.repository.TeamRepository;
 import nl.moj.server.user.repository.UserRepository;
-import org.apache.commons.io.IOUtils;
-import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -77,7 +79,7 @@ public class TeamService {
     public void cleanAssignment(UUID teamId, UUID sessionId, UUID assignmentId) throws IOException {
         Path teamAssignmentBase = getTeamAssignmentDirectory(teamId, sessionId, assignmentRepository.findByUuid(assignmentId)
                 .getName()).resolve("sources");
-        if( Files.exists(teamAssignmentBase)) {
+        if (Files.exists(teamAssignmentBase)) {
             try (Stream<Path> walk = Files.walk(teamAssignmentBase)) {
                 walk.sorted(Comparator.reverseOrder()).forEach(f -> {
                     try {

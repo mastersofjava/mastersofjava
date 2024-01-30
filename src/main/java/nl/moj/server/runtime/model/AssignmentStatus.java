@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -16,6 +16,10 @@
 */
 package nl.moj.server.runtime.model;
 
+import java.time.Duration;
+import java.time.Instant;
+
+import javax.persistence.*;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -24,17 +28,13 @@ import lombok.ToString;
 import nl.moj.server.assignment.model.Assignment;
 import nl.moj.server.competition.model.CompetitionSession;
 
-import javax.persistence.*;
-import java.time.Duration;
-import java.time.Instant;
-
 @Data
 @Entity
 @Table(name = "assignment_statuses")
 @NoArgsConstructor(force = true)
 @SequenceGenerator(name = "assignment_status_id_seq", sequenceName = "assignment_status_seq")
-@EqualsAndHashCode(of = {"id"})
-@ToString(exclude = {"competitionSession", "assignment"})
+@EqualsAndHashCode(of = { "id" })
+@ToString(exclude = { "competitionSession", "assignment" })
 public class AssignmentStatus {
 
     @Id
@@ -42,9 +42,7 @@ public class AssignmentStatus {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    
-    
-	// todo: JFALLMODE make optional for singleplayer mode
+    // todo: JFALLMODE make optional for singleplayer mode
 
     @Column(name = "time_remaining")
     private Duration timeRemaining;

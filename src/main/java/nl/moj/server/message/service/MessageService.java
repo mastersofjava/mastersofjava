@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -15,6 +15,23 @@
    limitations under the License.
 */
 package nl.moj.server.message.service;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.sleuth.Span;
+import org.springframework.cloud.sleuth.Tracer;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Controller;
 
 import lombok.extern.slf4j.Slf4j;
 import nl.moj.server.competition.repository.CompetitionSessionRepository;
@@ -41,21 +58,6 @@ import nl.moj.server.test.model.TestAttempt;
 import nl.moj.server.test.model.TestCase;
 import nl.moj.server.user.model.User;
 import nl.moj.server.user.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.sleuth.Span;
-import org.springframework.cloud.sleuth.Tracer;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Controller;
-
-import javax.transaction.Transactional;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Controller
 @Slf4j
@@ -74,7 +76,7 @@ public class MessageService {
 
     @Autowired
     public MessageService(SimpMessagingTemplate template, CompetitionSessionRepository competitionSessionRepository,
-                          UserService userService, Tracer tracer) {
+            UserService userService, Tracer tracer) {
         super();
         this.template = template;
         this.userService = userService;

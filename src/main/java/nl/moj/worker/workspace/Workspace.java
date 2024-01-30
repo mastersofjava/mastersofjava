@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public interface Workspace extends AutoCloseable {
 
@@ -18,6 +17,5 @@ public interface Workspace extends AutoCloseable {
     Path getSourcesRoot();
 
     Path getTargetRoot();
-
 
 }

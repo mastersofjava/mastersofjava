@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -15,6 +15,22 @@
    limitations under the License.
 */
 package nl.moj.server.submit.service;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
+
+import org.springframework.cloud.sleuth.annotation.NewSpan;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,20 +61,6 @@ import nl.moj.server.test.service.TestRequest;
 import nl.moj.server.test.service.TestService;
 import nl.moj.server.util.JMSResponseHelper;
 import nl.moj.server.util.TransactionHelper;
-import org.springframework.cloud.sleuth.annotation.NewSpan;
-import org.springframework.jms.core.JmsTemplate;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
-import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -118,7 +120,8 @@ public class SubmitService {
 
     private boolean assignmentFinished(SubmitAttempt sa) {
         TeamAssignmentStatus tas = sa.getAssignmentStatus();
-        Optional<AssignmentStatus> as = assignmentStatusRepository.findByCompetitionSessionAndAssignment(tas.getCompetitionSession(), tas.getAssignment());
+        Optional<AssignmentStatus> as = assignmentStatusRepository
+                .findByCompetitionSessionAndAssignment(tas.getCompetitionSession(), tas.getAssignment());
         return as.map(AssignmentStatus::getDateTimeEnd).orElse(null) != null;
     }
 
@@ -215,7 +218,7 @@ public class SubmitService {
                 try {
                     // save the team progress
                     teamService.updateAssignment(submitRequest.getTeam().getUuid(), submitRequest.getSession()
-                                    .getUuid(),
+                            .getUuid(),
                             submitRequest.getAssignment().getUuid(), submitRequest.getSources());
 
                     SubmitAttempt submitAttempt = prepareSubmitAttempt(submitRequest, registered,
@@ -244,22 +247,28 @@ public class SubmitService {
 
                     messageService.sendSubmitStarted(submitRequest.getTeam());
 
-                    log.info("Submit attempt {} for assignment {} by team {} registered.", submitAttempt.getUuid(), submitRequest.getAssignment()
-                            .getUuid(), submitRequest.getTeam().getUuid());
+                    log.info("Submit attempt {} for assignment {} by team {} registered.", submitAttempt.getUuid(),
+                            submitRequest.getAssignment()
+                                    .getUuid(),
+                            submitRequest.getTeam().getUuid());
 
                     return submitAttempt;
                 } catch (IOException e) {
                     messageService.sendSubmitUnprocessable(submitRequest.getTeam());
-                    throw new SubmitAttemptRegisterException(String.format("Failed to register submit attempt for assignment %s by team %s.", submitRequest.getAssignment()
-                            .getUuid(), submitRequest.getTeam().getUuid()), e);
+                    throw new SubmitAttemptRegisterException(String.format(
+                            "Failed to register submit attempt for assignment %s by team %s.", submitRequest.getAssignment()
+                                    .getUuid(),
+                            submitRequest.getTeam().getUuid()), e);
                 }
             }
             log.warn("Submit is not allowed for team '{}' named '{}'", submitRequest.getTeam()
                     .getUuid(), submitRequest.getTeam().getName());
 
-            messageService.sendSubmitRejected(submitRequest.getTeam(), remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
+            messageService.sendSubmitRejected(submitRequest.getTeam(),
+                    remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
             // send submit rejected
-            throw new SubmitAttemptRegisterException(remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
+            throw new SubmitAttemptRegisterException(
+                    remainingAttempts > 0 ? "Submit received after assignment ended." : "No more submit attempts left.");
         }
 
         // maybe send rejected message with another submit is still pending.
@@ -268,7 +277,7 @@ public class SubmitService {
     }
 
     private SubmitAttempt prepareSubmitAttempt(SubmitRequest submitRequest, Instant registered,
-                                               Duration timeRemaining) {
+            Duration timeRemaining) {
         final TeamAssignmentStatus as = teamAssignmentStatusRepository.findByAssignmentAndCompetitionSessionAndTeam(
                 submitRequest.getAssignment(), submitRequest.getSession(), submitRequest.getTeam()).orElseThrow();
 

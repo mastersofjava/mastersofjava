@@ -5,9 +5,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.nimbusds.jose.shaded.json.JSONObject;
-import lombok.RequiredArgsConstructor;
-import nl.moj.server.authorization.Role;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -30,6 +27,11 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 
+import com.nimbusds.jose.shaded.json.JSONObject;
+
+import lombok.RequiredArgsConstructor;
+import nl.moj.server.authorization.Role;
+
 @Configuration
 @EnableGlobalMethodSecurity(jsr250Enabled = true)
 @EnableWebSecurity
@@ -44,7 +46,8 @@ public class WebSecurityConfiguration {
     }
 
     OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler() {
-        OidcClientInitiatedLogoutSuccessHandler successHandler = new OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository);
+        OidcClientInitiatedLogoutSuccessHandler successHandler = new OidcClientInitiatedLogoutSuccessHandler(
+                clientRegistrationRepository);
         successHandler.setPostLogoutRedirectUri("{baseUrl}");
         return successHandler;
     }
@@ -52,20 +55,21 @@ public class WebSecurityConfiguration {
     @Bean //(name = BeanIds.SPRING_SECURITY_FILTER_CHAIN)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.authorizeRequests(a -> a
-                        .requestMatchers(new RequestHeaderRequestMatcher("Authorization"))
-                        .authenticated())
+                .requestMatchers(new RequestHeaderRequestMatcher("Authorization"))
+                .authenticated())
                 .oauth2ResourceServer().jwt()
                 .jwtAuthenticationConverter(customJwtAuthenticationConverter());
 
         http.authorizeRequests(a -> a
-                        .antMatchers("/","/actuator/health", "/error", "/public/**", "/manifest.json", "/browserconfig.xml", "/favicon.ico", "/api/assignment/*/content")
-                        .permitAll()
-                        .antMatchers("/play", "/feedback", "/rankings")
-                        .hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
-                        .antMatchers("/control", "/bootstrap", "/assignmentAdmin")
-                        .hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
-                        .anyRequest()
-                        .authenticated())
+                .antMatchers("/", "/actuator/health", "/error", "/public/**", "/manifest.json", "/browserconfig.xml",
+                        "/favicon.ico", "/api/assignment/*/content")
+                .permitAll()
+                .antMatchers("/play", "/feedback", "/rankings")
+                .hasAnyAuthority(Role.USER, Role.GAME_MASTER, Role.ADMIN) // always access
+                .antMatchers("/control", "/bootstrap", "/assignmentAdmin")
+                .hasAnyAuthority(Role.GAME_MASTER, Role.ADMIN) // only facilitators
+                .anyRequest()
+                .authenticated())
                 .headers(h -> h.frameOptions().disable())
                 .csrf(AbstractHttpConfigurer::disable)
                 .logout(l -> l.logoutSuccessHandler(oidcLogoutSuccessHandler()))

@@ -1,9 +1,9 @@
 package nl.moj.server.metrics;
 
+import java.util.Set;
+
 import lombok.Builder;
 import lombok.Value;
-
-import java.util.Set;
 
 @Value
 @Builder

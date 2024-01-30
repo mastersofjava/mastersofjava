@@ -1,21 +1,23 @@
 package nl.moj.server;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.UUID;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.server.assignment.service.AssignmentService;
-import nl.moj.common.util.ZipUtils;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
+import nl.moj.common.util.ZipUtils;
+import nl.moj.server.assignment.service.AssignmentService;
 
 @Controller
 @RequiredArgsConstructor

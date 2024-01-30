@@ -1,6 +1,6 @@
 /*
    Copyright 2020 First Eight BV (The Netherlands)
- 
+
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file / these files except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,7 +31,7 @@ import nl.moj.server.submit.json.SourceMessageDeserializer;
 @AllArgsConstructor
 @NoArgsConstructor
 /**
- * Compile or test command straight from the client. 
+ * Compile or test command straight from the client.
  */
 public class SourceMessage {
 

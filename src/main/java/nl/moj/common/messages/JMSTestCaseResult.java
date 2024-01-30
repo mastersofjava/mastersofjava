@@ -1,20 +1,21 @@
 package nl.moj.common.messages;
 
+import java.time.Instant;
+import java.util.UUID;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.jackson.Jacksonized;
 
-import java.time.Instant;
-import java.util.UUID;
-
 @Getter
 @Builder
 @Jacksonized
 @JsonIgnoreProperties(ignoreUnknown = true)
-@ToString(of = {"testCase", "success", "timeout", "aborted", "reason"})
+@ToString(of = { "testCase", "success", "timeout", "aborted", "reason" })
 public class JMSTestCaseResult {
 
     @JsonProperty("trace")

@@ -21,46 +21,46 @@ import nl.moj.common.bootstrap.BootstrapService;
 @ExtendWith(MockitoExtension.class)
 class BootstrapControllerTest {
 
-	@Mock
-	private BootstrapService bootstrapService;
-	
-	@InjectMocks
-	private BootstrapController controller;
-	
-	@Test
+    @Mock
+    private BootstrapService bootstrapService;
+
+    @InjectMocks
+    private BootstrapController controller;
+
+    @Test
 	void testShouldBootstrap() {
 		when(bootstrapService.isBootstrapNeeded()).thenReturn(true);
-		
+
 		assertEquals("bootstrap", controller.bootstrap(null));
 	}
 
-	@Test
+    @Test
 	void testIsAlreadyBootstrapped() {
 		when(bootstrapService.isBootstrapNeeded()).thenReturn(false);
-		
+
 		assertEquals("redirect:/", controller.bootstrap(mock(HttpServletRequest.class)));
 	}
 
-	@Test
+    @Test
 	void testIsAlreadyBootstrappedDoBootstrap() {
 		when(bootstrapService.isBootstrapNeeded()).thenReturn(false);
-		
+
 		assertEquals("redirect:/control", controller.doBootstrap(null));
 	}
-	
-	@Test
+
+    @Test
 	void testDoBootstrap() throws IOException {
 		when(bootstrapService.isBootstrapNeeded()).thenReturn(true);
 		assertEquals("redirect:/control", controller.doBootstrap(mock(RedirectAttributes.class)));
 	}
-	
-	@Test
+
+    @Test
 	void testDoBootstrapFailure() throws IOException {
 		when(bootstrapService.isBootstrapNeeded()).thenReturn(true);
 		doThrow(IOException.class)
 			.when(bootstrapService)
 			.bootstrap();
-		
+
 		assertEquals("redirect:/bootstrap", controller.doBootstrap(mock(RedirectAttributes.class)));
 	}
 }

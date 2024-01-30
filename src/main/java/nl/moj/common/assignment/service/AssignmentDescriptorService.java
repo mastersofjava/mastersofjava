@@ -2,19 +2,18 @@ package nl.moj.common.assignment.service;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
-import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
-import nl.moj.common.assignment.descriptor.ScoringRules;
-import nl.moj.server.assignment.model.Assignment;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.extern.slf4j.Slf4j;
+import nl.moj.common.assignment.descriptor.AssignmentDescriptor;
 
 @Service
 @Slf4j
@@ -41,10 +40,10 @@ public class AssignmentDescriptorService {
     public AssignmentDescriptor findInFolder(Path folder) {
         try (Stream<Path> files = Files.list(folder)) {
             List<Path> descriptors = files.filter(this::isAssignmentDescriptor).toList();
-            if( descriptors.size() == 1) {
+            if (descriptors.size() == 1) {
                 return parseAssignmentDescriptor(descriptors.get(0));
             }
-        } catch( IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
         return null;

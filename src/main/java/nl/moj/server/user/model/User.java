@@ -1,10 +1,9 @@
 package nl.moj.server.user.model;
 
+import javax.persistence.*;
+
 import lombok.*;
 import nl.moj.server.teams.model.Team;
-
-import javax.persistence.*;
-import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -14,7 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor(force = true)
 @AllArgsConstructor
 @Data
-@EqualsAndHashCode(of = {"name"})
+@EqualsAndHashCode(of = { "name" })
 public class User {
 
     @Id
@@ -35,6 +34,6 @@ public class User {
     private String email;
 
     @ManyToOne
-    @JoinColumn(name="team_id")
+    @JoinColumn(name = "team_id")
     private Team team;
 }
