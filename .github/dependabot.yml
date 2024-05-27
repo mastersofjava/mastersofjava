@@ -10,7 +10,7 @@ updates:
     labels:
       - area/dependencies
     ignore:
-      - dependency-name: *:*
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
     directory: "/"
